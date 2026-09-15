@@ -1,12 +1,6 @@
 {
   "name": "spark-dev",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
-  "features": {
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": true,
-      "configureZshAsDefaultShell": false
-    }
-  },
   "onCreateCommand": "corepack enable && corepack prepare pnpm@latest --activate",
   "postCreateCommand": "npm install -g supabase @anthropic-ai/claude-code && pnpm install --frozen-lockfile || true",
   "customizations": {
