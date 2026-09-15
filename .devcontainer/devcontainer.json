@@ -1,8 +1,11 @@
 {
   "name": "spark-dev",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+  "updateRemoteUserUID": false,
+
   "onCreateCommand": "corepack enable && corepack prepare pnpm@latest --activate",
   "postCreateCommand": "npm install -g supabase @anthropic-ai/claude-code && pnpm install --frozen-lockfile || true",
+
   "customizations": {
     "vscode": {
       "extensions": [
@@ -19,11 +22,13 @@
       }
     }
   },
+
   "waitFor": "postCreateCommand",
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": { "label": "Next.js dev server", "onAutoForward": "openPreview" }
   },
+
   "remoteEnv": {
     "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
     "SUPABASE_URL": "${localEnv:SUPABASE_URL}",
