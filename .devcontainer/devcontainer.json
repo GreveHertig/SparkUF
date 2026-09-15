@@ -3,7 +3,7 @@
   "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
   "updateRemoteUserUID": false,
 
-  "onCreateCommand": "corepack enable && corepack prepare pnpm@latest --activate",
+     "onCreateCommand": "sudo corepack enable && sudo corepack prepare pnpm@latest --activate",
   "postCreateCommand": "npm install -g supabase @anthropic-ai/claude-code && pnpm install --frozen-lockfile || true",
 
   "customizations": {
