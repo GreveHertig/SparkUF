@@ -1,32 +1,14 @@
+// Kontraktet mellan A och B: formen på ett "bevis" i Spark.
+// Enligt Datalöftet: inget påstående utan källa.
+
 export type Källa = {
-  namn: string;
-  hämtad: string;
+  namn: string;        // "Bolagsverket"
+  hämtad: string;      // ISO-datum, t.ex. "2026-09-16"
   url?: string;
 };
 
 export type Bevis = {
   påstående: string;
-  källa: Källa;
+  källa: Källa;         // obligatorisk — inget påstående utan källa
   citat?: string;
-};
-
-export type PoängDel = {
-  namn:
-    | "Marknad"
-    | "Konkurrens"
-    | "Passform"
-    | "Problem"
-    | "Betalningsvilja"
-    | "Produkt"
-    | "Traktion"
-    | "Genomförbarhet";
-  vikt: number;
-  poäng: number;
-  underlag: Bevis[];
-};
-
-export type Poäng = {
-  totalt: number;
-  delar: PoängDel[];
-  beräknad: string;
 };
