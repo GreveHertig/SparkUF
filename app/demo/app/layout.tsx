@@ -1,28 +1,45 @@
 "use client";
 
-import { use, useMemo, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { AppShell } from "@/screens/AppShell";
 import { DemoDataBadge } from "@/components/ui/DemoDataBadge";
 import { useI18n } from "@/i18n/context";
 import { demoProfileRepository } from "@/adapters/demo/ProfileRepository";
 import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
+import type { Profile } from "@/core/domain";
+
+type ShellData = { profile: Profile; score: number };
 
 // Demot har ingen backend, så adaptrarna kan anropas direkt från klienten
-// (avsnitt 3). Locale kommer från i18n-kontexten så att SV/EN-växeln byter
-// scenariespråk direkt, utan sidladdning. Promisen memoiseras per locale —
-// `use()` ska inte få en ny promise-identitet vid varje rendering.
+// (avsnitt 3). `use()` visade sig krascha med "async Client Component" när
+// locale ändrades (varje rendering skapade en ny promise-identitet) — en
+// vanlig useEffect/useState är den stabila lösningen för klientdata som
+// beror på en prop som kan ändras efter första renderingen.
 export default function DemoAppShellLayout({ children }: { children: ReactNode }) {
   const { locale } = useI18n();
-  const profilePromise = useMemo(() => demoProfileRepository.getProfile(), []);
-  const scorePromise = useMemo(() => demoEvidenceRepository.getScoreSnapshot(locale), [locale]);
-  const profile = use(profilePromise);
-  const score = use(scorePromise).total;
+  const [data, setData] = useState<ShellData | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all([demoProfileRepository.getProfile(), demoEvidenceRepository.getScoreSnapshot(locale)]).then(
+      ([profile, scoreSnapshot]) => {
+        if (!cancelled) setData({ profile, score: scoreSnapshot.total });
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
+
+  if (!data) return null;
 
   return (
     <AppShell
       homeHref="/demo/app"
-      profile={profile}
-      score={score}
+      profile={data.profile}
+      score={data.score}
       headerLeft={<DemoDataBadge />}
     >
       {children}

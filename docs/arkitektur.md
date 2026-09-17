@@ -136,11 +136,16 @@ committen).
   poängbricka) tills `ProfileRepository` respektive `EvidenceRepository` är
   byggda live, i stället för att hela `/app` visar "Kommer snart". Det gör
   det synligt när en enskild adapter blir klar, innan alla är det.
-- **Demoroutens `use()`-anrop är memoiserade per `locale`** (`useMemo` runt
-  varje adapteranrop i `app/demo/app/layout.tsx` och `page.tsx`) så att
-  React inte suspenderar på nytt vid varje rendering — `use()` ska aldrig få
-  en ny promise-identitet utan anledning. `app/demo/app/loading.tsx` ger
-  segmentet den Suspense-gräns `use()` kräver.
+- **Demoroutens klientkomponenter hämtar data med `useEffect`/`useState`,
+  inte `use()`.** Ett första försök använde `use()` med promises memoiserade
+  per `locale` via `useMemo`, men det kraschade med "An unknown Component is
+  an async Client Component" när språket byttes (varje ny `locale` gav en ny
+  promise-identitet till `use()`, vilket React/Next inte hanterade
+  tillförlitligt i en Client Component). `app/demo/app/layout.tsx` och
+  `page.tsx` anropar i stället demoadaptrarna i en `useEffect` med `[locale]`
+  som beroende och sätter datan i `useState` — standardmönstret för
+  klientdata som kan ändras efter första renderingen. `app/demo/app/loading.tsx`
+  är kvar som Next.js navigeringsladdning, inte som en Suspense-gräns.
 - **Bara Hem är byggd som delad skärm.** Övriga sidor i `docs/uppdrag.md`
   avsnitt 6 (`/app/resan`, `/app/poang`, `/app/marknad`, med flera) byggs i
   senare sessioner, men portarna de kommer behöva finns redan deklarerade.
