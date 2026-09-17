@@ -16,7 +16,13 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             {
-              group: ["@/adapters/live", "@/adapters/live/*", "**/adapters/live/*"],
+              group: [
+                "@/adapters/live",
+                "@/adapters/live/*",
+                "@/adapters/live/**",
+                "**/adapters/live/*",
+                "**/adapters/live/**",
+              ],
               message: "Demon importerar aldrig liveadaptrar. Se CLAUDE.md, avsnitt Arkitektur.",
             },
           ],

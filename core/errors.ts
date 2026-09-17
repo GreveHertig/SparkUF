@@ -9,3 +9,17 @@ export class NotImplementedError extends Error {
     this.name = "NotImplementedError";
   }
 }
+
+/**
+ * Kastas av liveLegalAdvisor (adapters/live/LegalAdvisor.ts) vid ogiltig
+ * indata eller när Gemini-svaret inte går att lita på (kraschar inte tyst
+ * till [] eller till påhittad data). Ärver INTE NotImplementedError — en
+ * riktig driftstörning ska synas som ett fel, inte visas som "Kommer snart"
+ * (docs/arkitektur.md, avsnitt 4).
+ */
+export class LegalAdvisorError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "LegalAdvisorError";
+  }
+}
