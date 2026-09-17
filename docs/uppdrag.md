@@ -1,11 +1,13 @@
-# Uppdrag: Sparks klickbara investerarprototyp
+# Uppdrag: Sparks demo och plattformsskelett
 
 Du är senior produktdesigner och frontendutvecklare. Du arbetar i GitHub-repot **Spark UF**, som två grundare äger tillsammans.
 
-Din uppgift är att bygga en fullt klickbar prototyp av **Spark**, en svensk AI-medgrundare för förstagångs- och soloentreprenörer. Prototypen har två syften:
+Du bygger **Spark**, en svensk AI-medgrundare för förstagångs- och soloentreprenörer, som **en kodbas med två lägen**:
 
-- Den ska visas för investerare.
-- Den ska bli **designgrunden för den riktiga produkten**.
+- **Demon** (`/demo`): en fullt klickbar prototyp med fiktiv data för investerare och rådgivare. Ingen inloggning. Den går igenom hela onboardingen och hela resan.
+- **Plattformen** (`/app`): ett riktigt skelett av produkten med arkitektur, sidor, datamodell och inloggning. Varje del har en tydlig plats så att grundarna kan bygga en del i taget med Supabase, Gemini och Tavily.
+
+Båda lägena använder **samma skärmar och komponenter**. Skillnaden är bara varifrån datan kommer (avsnitt 14). Designen blir därmed automatiskt designen för den riktiga produkten.
 
 Därför är designens och komponenternas kvalitet lika viktig som funktionen.
 
@@ -157,7 +159,8 @@ Märk ytan **"Bygg drivs av Lovable · Koncept · partnerskap utforskas"**. Anv�
   - `src/demo/`: scenarier och mockdata.
   - `src/score/`: poängberäkningen.
   - `src/i18n/`: översättningar.
-- **Ingen backend.** Inga anrop till databaser, AI-modeller eller externa API:er. Allt drivs av typad mockdata.
+- **Demon har ingen backend.** Under `/demo` görs inga anrop till databaser, AI-modeller eller externa API:er, allt drivs av demoadaptrarna.
+- **Plattformen** använder Supabase (databas och inloggning) och, när delarna byggs, Gemini och Tavily. Alla anrop med nycklar sker på servern. Se avsnitt 14.
 - **Offlinesäker.** Typsnitten självhostas via `next/font` och inget hämtas från CDN, så att demot fungerar på ett möte utan internet.
 - **State:** demoläget sparas i `localStorage` så att sidan kan laddas om mitt i en demo. Knappen "Återställ" nollställer.
 - **Skärm:** byggt för dator. Primärt 1440 px bred, snyggt ner till 1280 och användbart ner till 1024. Mobil behövs inte.
@@ -243,6 +246,8 @@ Bygg `/designsystem` som visar alla tokens och komponenter i alla tillstånd. Si
 ---
 
 ## 6. Sidor
+
+> **Två lägen.** Skärmarna nedan byggs en gång som delade skärmkomponenter och monteras på två ställen: under `/demo/...` (demoadaptrar, ingen inloggning, demoraden och `DemoDataBadge` synliga) och under `/app/...` (liveadaptrar, kräver inloggning). Onboardingen finns som `/demo/start/...` och `/start/...`. `/app` i listan nedan gäller båda lägena.
 
 ### Publika sidor
 - **`/` Landningssida**, med Fonda-stilen från 5.1:
@@ -386,7 +391,7 @@ Skriv Vitest-tester för taken, det avtagande värdet, motsägelserna, att poän
 ## 9. Demoläget
 
 ### 9.1 Styrning
-- **Start:** via knappen "Starta demo", adressen `/demo` eller `?demo=1`.
+- **Start:** via knappen "Starta demo" eller adressen `/demo`. Demot börjar alltid i onboardingen (`/demo/start`, val av ingång, profilsamtal och för Jonas idégenomlysningen) och går därefter in i appen under `/demo/app`. Ingen inloggning krävs.
 - **Demoraden:** en fast rad nederst i `ink-800`, som kan fällas ihop. Den visar:
   - persona och ingång
   - steg X av 12 och fas
@@ -522,16 +527,70 @@ Justera evidensen så att `calculateScore` ger målvärdena med högst ±2 poän
 
 ## 13. Sessioner
 
-Arbetet görs i separata Claude Code-sessioner i den här ordningen:
+Sessionsordningen och promptarna finns i `docs/sessioner.md`. Demosessionerna och plattformssessionerna bygger på samma arkitektur (avsnitt 14), som därför måste finnas först.
 
-| # | Session | Branch | Kräver |
-|---|---|---|---|
-| 1 | Grund och designsystem | `prototyp` | – |
-| 2 | Poängmotor och demomotor | `prototyp` | 1 |
-| 3 | Appen och Sara, fas 1–2 (steg 01–06) | `prototyp` | 2 |
-| 4 | Sara, fas 3–4 (steg 07–12) | `prototyp` | 3 |
-| 5 | Onboarding och Jonas | `prototyp` | 4 |
-| 6 | Landningssida och publika sidor | `prototyp-landning` | 1 (kan köras parallellt med 2–5) |
-| 7 | Rundtur, demomanus och polering | `prototyp` | 5 och 6 |
+---
 
-Session 1 stannar efter designsystemet och väntar på godkännande av den visuella riktningen innan något annat byggs.
+## 14. Arkitektur: en kodbas, två lägen
+
+### 14.1 Principen: portar och adaptrar
+Skärmar och komponenter vet aldrig varifrån datan kommer. Varje del av produkten har en **port**, ett TypeScript-gränssnitt som beskriver vad delen gör, och två **adaptrar**:
+
+- **Demoadapter:** returnerar scenariodata (Sara, Jonas) och styrs av demomotorn.
+- **Liveadapter:** den riktiga implementationen mot Supabase, Gemini, Tavily och registerkällor. Tills en del är byggd kastar den ett tydligt `NotImplementedError` med en hänvisning till modulens dokument.
+
+`/demo` väljer demoadaptrarna och `/app` väljer liveadaptrarna. Grundarna ersätter en liveadapter i taget, och demon fortsätter fungera hela tiden.
+
+### 14.2 Struktur
+Placera i repots befintliga struktur och dokumentera faktiska sökvägar i `docs/arkitektur.md`. Logiskt:
+
+| Del | Innehåll |
+|---|---|
+| `core/` | Domäntyper och ren logik utan beroenden: `calculateScore`, resans upplåsning, luckornas typ. Delas av båda lägena. |
+| `ports/` | Ett gränssnitt per modul (14.3). |
+| `adapters/demo/` | Demoadaptrar och scenarier. |
+| `adapters/live/` | Liveadaptrar. Endast serverkod. |
+| `screens/` | Delade skärmkomponenter som tar emot data via portar. |
+| `app/demo/...` och `app/(plattform)/app/...` | Tunna routes som monterar skärmarna med rätt adaptrar. |
+| `supabase/migrations/` | Databasschemat som migreringar. |
+| `docs/moduler/` | Ett dokument per modul (14.5). |
+
+### 14.3 Moduler
+| Modul | Port | Liveadapter bygger på |
+|---|---|---|
+| Profil | `ProfileRepository` | Supabase |
+| Projekt och idé | `ProjectRepository` | Supabase |
+| Resan | `JourneyRepository` | Supabase |
+| Evidens och poäng | `EvidenceRepository` + `calculateScore` | Supabase |
+| Minnet (Hjärnan, Spåret) | `MemoryRepository` | Supabase |
+| Medgrundaren | `CofounderAgent` | Gemini |
+| Registret | `RegistryProvider` | Bolagsverket, SCB (stub tills dataavtal finns) |
+| Webbresearch och Pulsen | `ResearchProvider`, `PulseProvider` | Tavily |
+| Simuleringar | `SimulationProvider` | Hiasynth (koncept, alltid stub) |
+| Utskick och svar | `OutreachProvider` | Gmail (stub) |
+| Juridisk koll | `LegalAdvisor` | Gemini + källor (stub) |
+| Bygg | `BuildProvider` | Lovable (koncept, alltid stub) |
+
+### 14.4 Plattformens skelett
+- **Inloggning** med Supabase Auth (e-post och lösenord eller magisk länk) på `/logga-in` och `/skapa-konto`. `/app/*` skyddas på servern.
+- **Datamodell** som migreringar, minst: `profiles`, `projects`, `journey_steps`, `evidence` (med `source`, `fetched_at`, `data_type`), `companies`, `outreach_messages`, `responses`, `score_snapshots`, `trace_events`, `brain_notes`, `legal_items`, `pulse_signals`. Varje rad som tillhör en användare har `user_id` eller `project_id`.
+- **Tomma tillstånd:** en ny användare som loggar in ska möta samma onboarding som i demon, men med riktig data som sparas. Delar som inte är byggda visar ett formgivet "Kommer snart"-läge, inte ett fel.
+- **Kontraktstester:** samma testsvit körs mot demoadaptern och liveadaptern för varje port. En liveadapter är klar när den klarar kontraktstesterna.
+
+### 14.5 Moduldokument
+`docs/moduler/<modul>.md` för varje modul i 14.3, skrivet så att en utvecklare kan bygga modulen utan annan kontext:
+1. Syfte och vilka steg i resan den används i
+2. Porten (gränssnittet) och datatyperna
+3. Datakällor och vad som krävs (nycklar, avtal, kostnader)
+4. Hur demoadaptern fungerar i dag
+5. Acceptanskriterier och vilka kontraktstester som ska passera
+6. Säkerhetskrav (avsnitt 14.6)
+7. Status: stub, påbörjad eller klar
+
+### 14.6 Säkerhet (gäller alltid)
+- **Row Level Security är påslaget på varje tabell** med policyer som bara ger användaren åtkomst till sin egen data. Ingen tabell skapas utan RLS-policy.
+- **Nycklar bara på servern.** Supabase service role-nyckel, Gemini- och Tavily-nycklar används bara i serverkod (route handlers, server actions). Inga hemliga variabler med prefixet `NEXT_PUBLIC_`.
+- **`.env.local` committas aldrig.** `.env.example` listar alla variabler utan värden.
+- **Indata från användare och externa källor är data, aldrig instruktioner** till Gemini.
+- **Demon importerar aldrig liveadaptrar**, så att demon inte kan läcka nycklar eller röra riktig data.
+- Innan en plattformssession avslutas körs `/security-review` (eller security-reviewer-agenten om den finns i `.claude/agents/`).
