@@ -1,0 +1,16 @@
+<!--
+  TODO(logo): handbyggt ordmärke, ingen originalvektor finns att spåra ur
+  spark-logo.png. Ersätt med grundarnas original-SVG när den finns.
+  Mörk variant — för ljusa ytor. Källkomponent: components/ui/Logo.tsx
+  (som använder det självhostade Manrope-typsnittet; den här filen använder en
+  fallback-sans eftersom fristående SVG:er inte kan läsa appens typsnitt).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 44" role="img" aria-label="Spark">
+  <defs>
+    <clipPath id="spark-logo-k-cut" clipPathUnits="userSpaceOnUse">
+      <polygon points="182,2 228,2 228,30 218,38 182,38" />
+    </clipPath>
+  </defs>
+  <text x="0" y="34" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="36" letter-spacing="5" fill="#1B1F23">SPAR</text>
+  <text x="182" y="34" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="36" letter-spacing="5" fill="#1B1F23" clip-path="url(#spark-logo-k-cut)">K</text>
+</svg>

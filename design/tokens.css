@@ -1,0 +1,106 @@
+/*
+ * Spark designtokens.
+ * Källa för värdena: docs/uppdrag.md avsnitt 5.2–5.4. Ändra bara här —
+ * design/tokens.ts speglar samma värden för bruk i JS/SVG (t.ex. Recharts).
+ *
+ * Variablerna här är rådata utan "--color-"-prefix. app/globals.css binder in
+ * dem i Tailwinds tema via @theme inline (samma mönster som next/font-scaffoldens
+ * --background -> --color-background), så att t.ex. --slate-50 blir bg-slate-50.
+ */
+
+:root {
+  /* Skiffergrå skala (paper -> ink), lätt blå underton.
+     50 och 900 är låsta till uppdragets paper-50/ink-900. */
+  --slate-50: #f1f2f6;
+  --slate-100: #e6e8ee;
+  --slate-200: #d3d7e0;
+  --slate-300: #b3b9c8;
+  --slate-400: #8b93a8;
+  --slate-500: #6b7387;
+  --slate-600: #545b6e;
+  --slate-700: #414759;
+  --slate-800: #262b31;
+  --slate-900: #1b1f23;
+  --slate-950: #121417;
+
+  /* Namngivna alias som uppdraget refererar till direkt. */
+  --paper-50: var(--slate-50);
+  --ink-800: var(--slate-800);
+  --ink-900: var(--slate-900);
+
+  /* Ljusblå accentskala, startvärde #CFE3FF. */
+  --accent-50: #f2f8ff;
+  --accent-100: #e2eefe;
+  --accent-200: #cfe3ff;
+  --accent-300: #a9cbfd;
+  --accent-400: #7eaefa;
+  --accent-500: #4f8bf0;
+  --accent-600: #366ad6;
+  --accent-700: #2952ab;
+  --accent-800: #203f83;
+  --accent-900: #1a3266;
+
+  --accent: var(--accent-500);
+
+  /* Poängnivåer — dämpade, aldrig skrikiga. */
+  --score-red: #b3564a;
+  --score-red-bg: #f3e4e1;
+  --score-orange: #b57a44;
+  --score-orange-bg: #f2e6d8;
+  --score-yellow: #a68a3d;
+  --score-yellow-bg: #efe8d3;
+  --score-green: #4d8a6a;
+  --score-green-bg: #dfeee6;
+  --score-strong: var(--slate-800);
+  --score-strong-bg: var(--accent-100);
+  --score-strong-glow: var(--accent-300);
+
+  /* Datatyper — vart sitt visuella språk. */
+  --data-register: var(--slate-700);
+  --data-register-bg: var(--slate-100);
+  --data-simulation: #7a5ea8;
+  --data-simulation-bg: #ece5f5;
+  --data-customer: #3d7a8a;
+  --data-customer-bg: #dfeef2;
+
+  /* Spacing, 4px-bas. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+
+  /* Radier — mjuka, aldrig vassa. */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-pill: 999px;
+
+  /* Typografi. */
+  --font-sans-fallback: ui-sans-serif, system-ui, sans-serif;
+  --font-serif-fallback: ui-serif, Georgia, serif;
+  --tracking-label: 0.08em;
+  --tracking-wordmark: 0.12em;
+
+  /* Rörelse — med mening, inte dekoration. */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --motion-count: 900ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+    --motion-count: 0ms;
+  }
+}

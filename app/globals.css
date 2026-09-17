@@ -1,26 +1,72 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "../design/tokens.css";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper-50: var(--paper-50);
+  --color-ink-800: var(--ink-800);
+  --color-ink-900: var(--ink-900);
+  --color-slate-50: var(--slate-50);
+  --color-slate-100: var(--slate-100);
+  --color-slate-200: var(--slate-200);
+  --color-slate-300: var(--slate-300);
+  --color-slate-400: var(--slate-400);
+  --color-slate-500: var(--slate-500);
+  --color-slate-600: var(--slate-600);
+  --color-slate-700: var(--slate-700);
+  --color-slate-800: var(--slate-800);
+  --color-slate-900: var(--slate-900);
+  --color-slate-950: var(--slate-950);
+  --color-accent-50: var(--accent-50);
+  --color-accent-100: var(--accent-100);
+  --color-accent-200: var(--accent-200);
+  --color-accent-300: var(--accent-300);
+  --color-accent-400: var(--accent-400);
+  --color-accent-500: var(--accent-500);
+  --color-accent-600: var(--accent-600);
+  --color-accent-700: var(--accent-700);
+  --color-accent-800: var(--accent-800);
+  --color-accent-900: var(--accent-900);
+  --color-accent: var(--accent);
+  --color-score-red: var(--score-red);
+  --color-score-red-bg: var(--score-red-bg);
+  --color-score-orange: var(--score-orange);
+  --color-score-orange-bg: var(--score-orange-bg);
+  --color-score-yellow: var(--score-yellow);
+  --color-score-yellow-bg: var(--score-yellow-bg);
+  --color-score-green: var(--score-green);
+  --color-score-green-bg: var(--score-green-bg);
+  --color-score-strong: var(--score-strong);
+  --color-score-strong-bg: var(--score-strong-bg);
+  --color-score-strong-glow: var(--score-strong-glow);
+  --color-data-register: var(--data-register);
+  --color-data-register-bg: var(--data-register-bg);
+  --color-data-simulation: var(--data-simulation);
+  --color-data-simulation-bg: var(--data-simulation-bg);
+  --color-data-customer: var(--data-customer);
+  --color-data-customer-bg: var(--data-customer-bg);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-pill: var(--radius-pill);
+  --font-sans: var(--font-sans, var(--font-sans-fallback));
+  --font-serif-italic: var(--font-serif-italic, var(--font-serif-fallback));
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Temat är ljust — arbetsytorna har ljus botten. Mörka ytor (sidomeny, hero,
+   sidfot, demorad) sätts medvetet med ink-800-klasser, inte via färgschema. */
+:root {
+  --background: var(--paper-50);
+  --foreground: var(--slate-800);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

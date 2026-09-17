@@ -1,0 +1,109 @@
+import type { Dictionary } from "./dictionary";
+
+export const sv = {
+  common: {
+    languageSwitch: {
+      sv: "SV",
+      en: "EN",
+      label: "Byt språk",
+    },
+    conceptBadge: "Koncept · partnerskap utforskas",
+    demoDataBadge: "Demo-data",
+    sourceTag: {
+      openDetails: "Visa källdetaljer",
+      quoteLabel: "Citat",
+      linkLabel: "Öppna källa",
+    },
+    pulseWhyItMattersPrefix: "Varför det spelar roll:",
+    doneItemsLabel: "Redan klart",
+  },
+  score: {
+    levels: {
+      unproven: {
+        name: "Oprövat",
+        message: "Du vet för lite än. Här är nästa steg.",
+      },
+      underbuiltUnproven: {
+        name: "Underbyggt men obevisat",
+        message: "Marknaden finns. Nu måste du prata med folk.",
+      },
+      demandConfirmed: {
+        name: "Efterfrågan bekräftad",
+        message: "Du har belägg. Bygg det minsta som testar resten.",
+      },
+      builtAndLaunched: {
+        name: "Byggt och lanserat",
+        message: "Det finns. Nu ska någon börja använda det.",
+      },
+      provenBusiness: {
+        name: "Bevisad affär",
+        message: "Kör.",
+      },
+    },
+  },
+  lockedState: {
+    title: "Låst",
+  },
+  designsystem: {
+    title: "Designsystem",
+    intro:
+      "Tokens och grundkomponenter för Spark. Den här sidan är till för att grundarna ska kunna vidareutveckla designen.",
+    sections: {
+      colors: "Färger",
+      typography: "Typografi",
+      spacing: "Avstånd och radier",
+      motion: "Rörelse",
+      components: "Komponenter",
+    },
+    typographySample: {
+      headingBefore: "En",
+      headingEmphasisOne: "resa",
+      headingMiddle: ". Tolv",
+      headingEmphasisTwo: "steg",
+      headingAfter: ".",
+      body: "Tabellsiffror används för alla tal, till exempel 4,2 Mkr eller 312 företag.",
+    },
+    components: {
+      eyebrow: "Eyebrow",
+      editorialHeading: "EditorialHeading",
+      sourceTag: "SourceTag",
+      dataFact: "DataFact",
+      conceptBadge: "ConceptBadge",
+      demoDataBadge: "DemoDataBadge",
+      scoreBadge: "ScoreBadge",
+      lockedState: "LockedState",
+      nextStepCard: "NextStepCard",
+      pulseCard: "PulseCard",
+      verdictCard: "VerdictCard",
+    },
+  },
+  demoContent: {
+    nextStep: {
+      eyebrow: "STEG 05 · SAMTALEN",
+      title: "Boka tre kundsamtal den här veckan",
+      why: "Du har inte pratat med en enda kund än — poängen kan inte gå över 30 förrän du gör det.",
+      doneItems: ["Idén nedskriven", "Målgrupp definierad"],
+      action: "Öppna steg 05",
+    },
+    pulse: {
+      category: "Marknad",
+      headline: "18 % av redovisningsbyråerna växte över 10 % förra året",
+      whyItMatters:
+        "Din målgrupp växer snabbare än branschen i snitt — det stärker Marknad-delen av din poäng.",
+      timestamp: "Uppdaterad 06:00",
+    },
+    verdict: {
+      headline: "Förfina · snäva segmentet",
+      reasoning:
+        "Du har inte bekräftat betalningsvilja hos en enda kund. Prata med fem till innan du bygger vidare.",
+    },
+    locked: {
+      title: "Traktion",
+      unlocksAfter: "Låses upp efter steg 10",
+    },
+    marketFact: {
+      label: "Redovisningsbyråer i Sverige med 5–20 anställda",
+      unit: "företag",
+    },
+  },
+} satisfies Dictionary;
