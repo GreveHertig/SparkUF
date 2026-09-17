@@ -21,7 +21,11 @@ const toneClasses: Record<DataType, string> = {
   customer: "bg-data-customer-bg text-data-customer",
 };
 
-/** Källa + datum, i variant efter datatyp. Klick visar detaljer. */
+/**
+ * Källa + datum, i variant efter datatyp. Klick visar detaljer.
+ * Simuleringar (uppdrag 2.2) bär alltid den synliga etiketten "Simulering",
+ * utöver den egna färgen — aldrig bara en färgskillnad.
+ */
 export function SourceTag({
   source,
   quote,
@@ -37,12 +41,19 @@ export function SourceTag({
           type="button"
           aria-label={t.common.sourceTag.openDetails}
           className={cn(
-            "inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-xs font-medium tabular-nums transition-colors",
+            "inline-flex w-fit shrink-0 items-center gap-1 self-start rounded-pill px-2 py-0.5 text-xs font-medium tabular-nums transition-colors",
             "hover:opacity-80 focus-visible:outline-2 focus-visible:outline-accent",
             toneClasses[dataType],
             className,
           )}
+          style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
         >
+          {dataType === "simulation" && (
+            <>
+              <span className="font-semibold uppercase">{t.common.simulationLabel}</span>
+              <span aria-hidden="true">·</span>
+            </>
+          )}
           <span>{source.namn}</span>
           <span aria-hidden="true">·</span>
           <span>{formatDate(source.hämtad, locale)}</span>
@@ -54,10 +65,10 @@ export function SourceTag({
           className="z-50 max-w-xs rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-lg"
         >
           <p className="font-semibold text-slate-900">{source.namn}</p>
-          <p className="mt-0.5 text-slate-500">{formatDate(source.hämtad, locale)}</p>
+          <p className="mt-0.5 text-slate-600">{formatDate(source.hämtad, locale)}</p>
           {quote && (
             <p className="mt-2 border-l-2 border-slate-200 pl-2 italic text-slate-600">
-              <span className="not-italic font-medium text-slate-500">
+              <span className="not-italic font-medium text-slate-600">
                 {t.common.sourceTag.quoteLabel}:{" "}
               </span>
               {quote}

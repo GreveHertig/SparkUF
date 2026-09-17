@@ -29,6 +29,11 @@ const exampleSourceWithQuote: Källa = {
   hämtad: "2026-09-10",
 };
 
+const hiasynthSource: Källa = {
+  namn: "Hiasynth",
+  hämtad: "2026-09-12",
+};
+
 const scoreExamples = [15, 40, 60, 78, 92];
 
 export default function DesignsystemPage() {
@@ -39,7 +44,7 @@ export default function DesignsystemPage() {
       <header className="flex flex-col gap-6 rounded-lg bg-ink-800 p-8">
         <div className="flex items-center justify-between">
           <Logo tone="light" height={22} />
-          <LanguageSwitch className="border-slate-600 text-paper-50" />
+          <LanguageSwitch tone="dark" />
         </div>
         <div>
           <EditorialHeading as="h1" className="text-paper-50">
@@ -92,7 +97,7 @@ export default function DesignsystemPage() {
             {Object.entries(spacing).map(([name, value]) => (
               <div key={name} className="flex flex-col items-center gap-1">
                 <div className="bg-accent-200" style={{ width: value, height: value }} />
-                <span className="text-xs text-slate-500">{name}</span>
+                <span className="text-xs text-slate-600">{name}</span>
               </div>
             ))}
           </div>
@@ -103,7 +108,7 @@ export default function DesignsystemPage() {
                   className="h-12 w-12 border border-slate-300 bg-white"
                   style={{ borderRadius: value }}
                 />
-                <span className="text-xs text-slate-500">{name}</span>
+                <span className="text-xs text-slate-600">{name}</span>
               </div>
             ))}
           </div>
@@ -127,14 +132,16 @@ export default function DesignsystemPage() {
           </ComponentDemo>
 
           <ComponentDemo title={t.designsystem.components.sourceTag}>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <SourceTag source={exampleSource} dataType="register" />
               <SourceTag
                 source={exampleSourceWithQuote}
                 dataType="customer"
                 quote="Vi betalar redan för tre olika verktyg som gör halva det här."
               />
-              <SourceTag source={{ namn: "Hiasynth", hämtad: "2026-09-12" }} dataType="simulation" />
+              {/* Uppdrag 2.2: allt Hiasynth-relaterat är simulering OCH koncept — båda etiketterna krävs. */}
+              <SourceTag source={hiasynthSource} dataType="simulation" />
+              <ConceptBadge />
             </div>
           </ComponentDemo>
 
@@ -178,6 +185,8 @@ export default function DesignsystemPage() {
               eyebrow={t.demoContent.nextStep.eyebrow}
               title={t.demoContent.nextStep.title}
               why={t.demoContent.nextStep.why}
+              maxPoints={t.demoContent.nextStep.maxPoints}
+              estimatedTime={t.demoContent.nextStep.estimatedTime}
               doneItems={t.demoContent.nextStep.doneItems}
               actionLabel={t.demoContent.nextStep.action}
               className="max-w-md"
@@ -221,7 +230,7 @@ function Section({ eyebrow, children }: { eyebrow: string; children: ReactNode }
 function ComponentDemo({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm font-semibold text-slate-500">{title}</p>
+      <p className="text-sm font-semibold text-slate-600">{title}</p>
       {children}
     </div>
   );
@@ -230,7 +239,7 @@ function ComponentDemo({ title, children }: { title: string; children: ReactNode
 function SwatchRow({ title, tones }: { title: string; tones: Record<string, string> }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-semibold text-slate-500">{title}</p>
+      <p className="text-sm font-semibold text-slate-600">{title}</p>
       <div className="flex flex-wrap gap-3">
         {Object.entries(tones).map(([name, hex]) => (
           <ColorCard key={name} name={name} hex={hex} />
@@ -247,8 +256,8 @@ function ColorCard({ name, hex, bgHex }: { name: string; hex: string; bgHex?: st
         className="h-14 w-20 rounded-md border border-slate-200"
         style={{ background: bgHex ?? hex }}
       />
-      <span className="text-xs text-slate-500">{name}</span>
-      <span className="text-xs text-slate-400">{hex}</span>
+      <span className="text-xs text-slate-600">{name}</span>
+      <span className="text-xs text-slate-600">{hex}</span>
     </div>
   );
 }

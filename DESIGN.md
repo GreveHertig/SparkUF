@@ -1,0 +1,45 @@
+# DESIGN.md — Spark
+
+Designbeslut för prototypen, i den ordning uppdraget kräver att de dokumenteras. Uppdateras varje session.
+
+## Session 1 — Grund och designsystem
+
+### Visuell riktning
+Inspirerad av Fonda (`design-referens/fonda/`), men egen: ljus, luftig arbetsyta i `paper-50`, mörka ytor medvetet i `ink-800` (sidomeny, hero, demorad — kommer i senare sessioner). Små versala eyebrow-etiketter med mittpunkt (`STEG 05 · SAMTALEN`), tung geometrisk sans för rubriker, enstaka kursiverade serif-ord för betoning, mjuka radier, subtila kanter, generöst med luft. Källetiketter är ett synligt typografiskt element (pill med datatypens färg), inte en fotnot — det här är Sparks tydligaste avvikelse från Fonda.
+
+### Typsnitt
+- **Manrope** (variabel, 400–800) som sans-serif. Geometrisk, harmonierar med ordmärkets bokstavsform, brett utbud av vikter för både brödtext och tunga rubriker.
+- **Instrument Serif Italic** (400) bara för `EditorialHeading.Em` — betoningsord i stora rubriker, aldrig brödtext.
+- Båda självhostade som `.woff2` under `design/fonts/` och laddade via `next/font/local` (`design/fonts.ts`). Inget hämtas från Google Fonts CDN vare sig vid build eller körning — demot fungerar offline.
+
+### Färger
+Skiffergrå skala 50–950 (lätt blå underton) mellan `paper-50 #F1F2F6` och `ink-900 #1B1F23`, med `ink-800 #262B31` som namngiven stopp för mörka ytor. Accentskala med `#CFE3FF` som startvärde (accent-200), mörkare stopp härledda för kontrast i aktiva/fokustillstånd. Poängnivåerna (`score-red/orange/yellow/green/strong`) är medvetet dämpade jordtoner, inte trafikljusfärger — `score-strong` är skiffergrå med ett svagt accentsken snarare än en egen "vinnarfärg". Datatyperna (`data-register/simulation/customer`) har varsin ton så att register-, simulerings- och kunddata går att skilja åt på avstånd.
+
+### Tokens-arkitektur
+`design/tokens.css` är källan (CSS-variabler, rå namn utan `--color-`/`--radius-`-prefix, t.ex. `--slate-50`, `--r-md`). `app/globals.css` mappar in dem i Tailwinds tema via `@theme inline` (samma mönster som `create-next-app`-scaffoldens `--background` → `--color-background`). **Viktigt beslut:** typsnittsvariablerna (`--font-sans`, `--font-serif-italic`) mappas medvetet INTE in i `@theme` — de sätts redan av `next/font/local` via klasser på `<html>`, och en `@theme inline`-rad med samma namn skulle skapa en `:root`-regel som konkurrerar med den klass-satta varianten. Verifierat i kompilerad CSS att detta fungerar korrekt (font-familjen och alla `rounded-*`/färgutiliteter löser ut till rätt värden, inga cirkulära variabler).
+
+`design/tokens.ts` speglar samma värden typat för JS/SVG (Recharts m.m. i senare sessioner). `score/levels.ts` är den *visuella* nivåtabellen från uppdrag 7.5 (tröskelvärde → ton → i18n-nyckel) — inte poängberäkningen. Session 2 återanvänder den härifrån för `calculateScore` i stället för att duplicera tröskelvärdena.
+
+### Loggan
+Ingen vektorfil fanns, bara `public/brand/spark-logo.png`. Tre försök innan det här höll:
+1. SVG-text i Manrope + en `clip-path` för K:s ben — fel bokstavsavstånd, blev "SPAR  K".
+2. CSS `mask-image` mot en beskuren kopia av originalbilden — visuellt korrekt i test, men opålitlig i praktiken (rendrade som en oklippt rektangel, sannolikt en bildladdning som inte hann/kunde slutföras i vissa miljöer).
+3. **Nuvarande lösning:** `public/brand/spark-logo.png` beskars till ordmärkets bounding box och spårades till en riktig vektorpath med `potrace` (installerat via `apt-get` för det här momentet). `components/ui/Logo.tsx` innehåller nu fem inbäddade `<path>`-element (S, P, A, R, K), färgade via `fill="currentColor"` och en `tone`-prop (`text-paper-50`/`text-ink-900`). Ingen extern bildresurs — kan inte misslyckas ladda. **TODO:** ersätt med grundarnas original-SVG när den finns.
+
+### i18n
+Typad `Dictionary` (`i18n/dictionary.ts`) som `sv.ts`/`en.ts` båda måste uppfylla (`satisfies Dictionary`) — TypeScript larmar om en nyckel saknas i endera språket. Egennamn (Bolagsverket, Hiasynth, m.fl.) ligger *inte* i ordböckerna, i enlighet med uppdrag 4 — de är källdata (`Källa.namn`), inte gränssnittstext. `i18n/format.ts` använder `Intl` för belopp och datum; **beslut:** engelska datum formateras med `en-GB` (inte `en-US`) eftersom uppdraget vill ha dag-månad-ordning ("14 September"), vilket är `en-GB`s standardordning men inte `en-US`s.
+
+### Komponenter
+`components/ui/` = komponenter som inte känner till demot (Eyebrow, EditorialHeading, SourceTag, DataFact, ConceptBadge, DemoDataBadge, LockedState, LanguageSwitch, Logo). `components/spark/` = produktbegrepp (ScoreBadge, VerdictCard, NextStepCard, PulseCard) — de vet vad en poäng, ett utslag eller en signal är. `SourceTag` och `DataFact` återanvänder `Källa`-typen från `types/evidence.ts` snarare än att definiera en egen form. `SourceTag` använder Radix Popover för källdetaljer (tillgänglig, tangentbordsstyrd disclosure). `ScoreBadge`s räkneanimation använder Framer Motion och stänger av sig själv vid `prefers-reduced-motion` (via `design/usePrefersReducedMotion.ts`, byggd med `useSyncExternalStore` för att undvika en `setState`-i-effekt-cascade).
+
+### Vad som medvetet INTE byggdes än
+`zustand` och `recharts` är inte tillagda som beroenden — inget i den här sessionen använder dem. De läggs till i Session 2 (demo-store) respektive när ett diagram faktiskt behövs.
+
+### Granskningsrunda: kontrast och tokens
+Grundaren granskade `/designsystem` i en riktig webbläsare och hittade flera fel som inte syntes vid textbaserad verifiering:
+- **Tailwind-utiliteter avgörs av CSS-källordning, inte className-ordning.** `EditorialHeading` hade en hårdkodad `text-slate-900` som kunde vinna över en påstådd override, oavsett vilken klass som stod sist i `className`-strängen. Lösning: ge aldrig grundkomponenter en hårdkodad textfärg som en anropare förväntas kunna byta ut — låt dem ärva eller kräv färgen som prop.
+- **Flex/grid stretchar barn som standard.** `ConceptBadge`, `DemoDataBadge` och `SourceTag` blev fullbredds-pillar första gången de hamnade i en `flex-col`- eller grid-förälder, eftersom `align-items: stretch` är standard. Lösning: `self-start w-fit shrink-0` direkt på komponenterna, inte bara på anroparens container.
+- **Kontrollräknade WCAG AA-kontraster avslöjade fler fel än det synliga.** `accent-500` klarade inte 3:1 som fokusring, och score-orange/yellow/green samt data-simulation/customer klarade inte 4.5:1 mot sina egna `-bg`-toner. Alla sex mörkades (samma nyans, lägre ljushet) tills de passerade — värdena finns i `design/tokens.css` och `design/tokens.ts`. `--accent` pekar nu på `accent-600` i stället för `accent-500`. Regel framåt: `slate-500` och ljusare räcker inte som textfärg mot `paper-50` — använd `slate-600` eller mörkare.
+
+### `/app` — förhandsgranskning (byggd i förtid, på begäran)
+Grundaren ville bedöma designen i en verklig appvy innan Session 1 godkänns, inte bara i designsystemkatalogen. `app/(app)/layout.tsx` (sidomeny + sidhuvud) och `app/(app)/app/page.tsx` (Hem) byggdes med **bara** komponenter från designsystemet, mot Saras steg 05 (uppdrag 9.3), med hårdkodad mockdata i `app/(app)/sara-mock.ts`. Det här är en förhandstitt för designgranskning — **inte** Session 3:s leverans. Session 3 bygger den riktiga demomotorn (`src/demo/scenarios/sara.ts`, styrd av demoraden) och ska ersätta `sara-mock.ts`, inte bygga vidare på den.

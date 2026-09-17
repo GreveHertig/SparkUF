@@ -10,7 +10,7 @@ export function ConceptBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-pill border border-dashed border-data-simulation px-2.5 py-1 text-xs font-semibold uppercase text-data-simulation",
+        "inline-flex w-fit shrink-0 items-center self-start rounded-pill border border-dashed border-data-simulation px-2.5 py-1 text-xs font-semibold uppercase text-data-simulation",
         className,
       )}
       style={{ letterSpacing: "var(--tracking-label)" }}

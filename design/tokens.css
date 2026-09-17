@@ -40,27 +40,32 @@
   --accent-800: #203f83;
   --accent-900: #1a3266;
 
-  --accent: var(--accent-500);
+  /* accent-500 mätte under 3:1 mot paper-50 som fokusring/knappfärg (icke-text
+     kräver 3:1, text 4.5:1 enligt WCAG AA) — accent-600 är den mörkaste ton som
+     fortfarande känns som "accent" och klarar båda. Verifierat: vit text på
+     accent-600 = 5.01, accent-600 som fokusring mot paper-50 = 4.48. */
+  --accent: var(--accent-600);
 
-  /* Poängnivåer — dämpade, aldrig skrikiga. */
-  --score-red: #b3564a;
+  /* Poängnivåer — dämpade, aldrig skrikiga. Mörkare än en första instinkt
+     skulle ge, för att nå 4.5:1 mot respektive -bg (kontrollerat, se DESIGN.md). */
+  --score-red: #a14d43;
   --score-red-bg: #f3e4e1;
-  --score-orange: #b57a44;
+  --score-orange: #895c33;
   --score-orange-bg: #f2e6d8;
-  --score-yellow: #a68a3d;
+  --score-yellow: #79652d;
   --score-yellow-bg: #efe8d3;
-  --score-green: #4d8a6a;
+  --score-green: #3e7056;
   --score-green-bg: #dfeee6;
   --score-strong: var(--slate-800);
   --score-strong-bg: var(--accent-100);
   --score-strong-glow: var(--accent-300);
 
-  /* Datatyper — vart sitt visuella språk. */
+  /* Datatyper — vart sitt visuella språk. Mörkade för 4.5:1 mot -bg. */
   --data-register: var(--slate-700);
   --data-register-bg: var(--slate-100);
-  --data-simulation: #7a5ea8;
+  --data-simulation: #7558a3;
   --data-simulation-bg: #ece5f5;
-  --data-customer: #3d7a8a;
+  --data-customer: #38717f;
   --data-customer-bg: #dfeef2;
 
   /* Spacing, 4px-bas. */
@@ -75,17 +80,15 @@
   --space-24: 6rem;
   --space-32: 8rem;
 
-  /* Radier — mjuka, aldrig vassa. */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.625rem;
-  --radius-lg: 1rem;
-  --radius-pill: 999px;
+  /* Radier — mjuka, aldrig vassa. Namngivna --r-* (inte --radius-*) för att
+     inte krocka med Tailwinds --radius-*-temavariabler i app/globals.css. */
+  --r-sm: 0.375rem;
+  --r-md: 0.625rem;
+  --r-lg: 1rem;
+  --r-pill: 999px;
 
   /* Typografi. */
-  --font-sans-fallback: ui-sans-serif, system-ui, sans-serif;
-  --font-serif-fallback: ui-serif, Georgia, serif;
   --tracking-label: 0.08em;
-  --tracking-wordmark: 0.12em;
 
   /* Rörelse — med mening, inte dekoration. */
   --motion-fast: 120ms;

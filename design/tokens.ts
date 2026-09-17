@@ -35,18 +35,20 @@ export const paper50 = slate[50];
 export const ink800 = slate[800];
 export const ink900 = slate[900];
 
+// Mörkade mot en första instinkt för att nå 4.5:1 kontrast mot respektive
+// -bg (kontrollerat mot WCAG AA, se DESIGN.md). Håll i synk med tokens.css.
 export const scoreColors = {
-  red: { fg: "#b3564a", bg: "#f3e4e1" },
-  orange: { fg: "#b57a44", bg: "#f2e6d8" },
-  yellow: { fg: "#a68a3d", bg: "#efe8d3" },
-  green: { fg: "#4d8a6a", bg: "#dfeee6" },
+  red: { fg: "#a14d43", bg: "#f3e4e1" },
+  orange: { fg: "#895c33", bg: "#f2e6d8" },
+  yellow: { fg: "#79652d", bg: "#efe8d3" },
+  green: { fg: "#3e7056", bg: "#dfeee6" },
   strong: { fg: slate[800], bg: accent[100], glow: accent[300] },
 } as const;
 
 export const dataTypeColors = {
   register: { fg: slate[700], bg: slate[100] },
-  simulation: { fg: "#7a5ea8", bg: "#ece5f5" },
-  customer: { fg: "#3d7a8a", bg: "#dfeef2" },
+  simulation: { fg: "#7558a3", bg: "#ece5f5" },
+  customer: { fg: "#38717f", bg: "#dfeef2" },
 } as const;
 
 export const spacing = {

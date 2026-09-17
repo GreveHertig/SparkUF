@@ -19,10 +19,7 @@ export function EditorialHeading({
 }: EditorialHeadingProps) {
   return (
     <Component
-      className={cn(
-        "text-4xl font-extrabold tracking-tight text-slate-900",
-        className,
-      )}
+      className={cn("text-4xl font-extrabold tracking-tight", className)}
     >
       {children}
     </Component>
@@ -30,9 +27,13 @@ export function EditorialHeading({
 }
 
 function Em({ children }: { children: ReactNode }) {
+  // Ingen egen textfärg — ärver alltid rubrikens färg. En hårdkodad färg här
+  // skulle kunna krocka med en färg satt via EditorialHeadings className,
+  // eftersom Tailwind-utiliteter avgörs av CSS-källordning, inte av vilken
+  // klass som står sist i className-strängen.
   return (
     <em
-      className="font-normal text-slate-800"
+      className="font-normal"
       style={{ fontFamily: "var(--font-serif-italic)", fontStyle: "italic" }}
     >
       {children}

@@ -22,14 +22,14 @@ export function LockedState({ unlockHint, children, className }: LockedStateProp
   return (
     <div
       className={cn(
-        "rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-slate-500",
+        "rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-slate-600",
         className,
       )}
     >
       <div className="flex items-center gap-2">
         <LockIcon />
         <span
-          className="text-xs font-semibold uppercase text-slate-500"
+          className="text-xs font-semibold uppercase text-slate-600"
           style={{ letterSpacing: "var(--tracking-label)" }}
         >
           {t.lockedState.title}

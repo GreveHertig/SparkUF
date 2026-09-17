@@ -44,13 +44,16 @@
   --color-data-simulation-bg: var(--data-simulation-bg);
   --color-data-customer: var(--data-customer);
   --color-data-customer-bg: var(--data-customer-bg);
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
-  --radius-pill: var(--radius-pill);
-  --font-sans: var(--font-sans, var(--font-sans-fallback));
-  --font-serif-italic: var(--font-serif-italic, var(--font-serif-fallback));
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-pill: var(--r-pill);
 }
+
+/* --font-sans och --font-serif-italic sätts av next/font/local (design/fonts.ts)
+   via klasser på <html> och används direkt som var(--font-sans) i CSS/JSX —
+   de mappas medvetet INTE in i @theme här, för att undvika att Tailwinds
+   :root-emission (samma variabelnamn) skuggar next/fonts klass-scopade värde. */
 
 /* Temat är ljust — arbetsytorna har ljus botten. Mörka ytor (sidomeny, hero,
    sidfot, demorad) sätts medvetet med ink-800-klasser, inte via färgschema. */

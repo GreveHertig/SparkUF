@@ -8,6 +8,10 @@ type NextStepCardProps = {
   eyebrow: string;
   title: string;
   why: string;
+  /** Uppdrag avsnitt 6: varje steg visar "kan ge upp till X poäng". */
+  maxPoints: number;
+  /** Färdigformaterad, lokaliserad tidsuppskattning, t.ex. "~15 min". */
+  estimatedTime: string;
   doneItems: string[];
   actionLabel: string;
   onAction?: () => void;
@@ -19,6 +23,8 @@ export function NextStepCard({
   eyebrow,
   title,
   why,
+  maxPoints,
+  estimatedTime,
   doneItems,
   actionLabel,
   onAction,
@@ -31,10 +37,13 @@ export function NextStepCard({
       <Eyebrow>{eyebrow}</Eyebrow>
       <p className="mt-2 text-xl font-bold text-slate-900">{title}</p>
       <p className="mt-2 text-sm text-slate-600">{why}</p>
+      <p className="mt-2 text-sm font-medium text-accent-700">
+        {t.common.upToPointsBefore} {maxPoints} {t.common.upToPointsAfter} · {estimatedTime}
+      </p>
       {doneItems.length > 0 && (
         <div className="mt-4">
           <p
-            className="text-xs font-semibold uppercase text-slate-400"
+            className="text-xs font-semibold uppercase text-slate-600"
             style={{ letterSpacing: "var(--tracking-label)" }}
           >
             {t.common.doneItemsLabel}
@@ -52,7 +61,8 @@ export function NextStepCard({
       <button
         type="button"
         onClick={onAction}
-        className="mt-5 inline-flex items-center gap-1 rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-paper-50 transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-accent"
+        className="mt-5 inline-flex items-center gap-1 rounded-md bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-2 focus-visible:outline-accent"
+        style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
       >
         {actionLabel}
       </button>

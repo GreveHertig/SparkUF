@@ -33,7 +33,7 @@ export function PulseCard({
     <div className={cn("rounded-lg border border-slate-200 bg-white p-5", className)}>
       <div className="flex items-center justify-between">
         <Eyebrow>{category}</Eyebrow>
-        <span className="text-xs text-slate-400">{timestamp}</span>
+        <span className="text-xs text-slate-600">{timestamp}</span>
       </div>
       <p className="mt-2 text-base font-semibold text-slate-900">{headline}</p>
       <p className="mt-2 text-sm text-slate-600">

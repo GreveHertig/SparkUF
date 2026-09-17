@@ -16,6 +16,10 @@ export type Dictionary = {
     };
     pulseWhyItMattersPrefix: string;
     doneItemsLabel: string;
+    /** Uppdrag 2.2: simuleringar ska alltid bära den här etiketten, oavsett källa. */
+    simulationLabel: string;
+    upToPointsBefore: string;
+    upToPointsAfter: string;
   };
   score: {
     levels: {
@@ -64,11 +68,45 @@ export type Dictionary = {
       verdictCard: string;
     };
   };
+  appShell: {
+    nav: {
+      home: string;
+      cofounder: string;
+      journey: string;
+      score: string;
+      market: string;
+      customers: string;
+      pulse: string;
+      memory: string;
+      legal: string;
+      build: string;
+    };
+    profileMenuLabel: string;
+  };
+  homePage: {
+    sinceLastTimeTitle: string;
+    emailSentLabel: string;
+    openRateLabel: string;
+    reminderSentLabel: string;
+    responsesReceivedLabel: string;
+    todaysPulseTitle: string;
+    scoreMovementTitle: string;
+    breakdownTitle: string;
+    unlocksAfterStepBefore: string;
+    recipientsUnit: string;
+    responsesUnit: string;
+    todayLabel: string;
+    heroHeadingBefore: string;
+    heroHeadingEmphasis: string;
+    heroHeadingAfter: string;
+  };
   demoContent: {
     nextStep: {
       eyebrow: string;
       title: string;
       why: string;
+      maxPoints: number;
+      estimatedTime: string;
       doneItems: string[];
       action: string;
     };
