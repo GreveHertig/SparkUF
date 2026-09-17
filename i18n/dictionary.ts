@@ -100,6 +100,11 @@ export type Dictionary = {
     heroHeadingEmphasis: string;
     heroHeadingAfter: string;
   };
+  comingSoon: {
+    eyebrow: string;
+    title: string;
+    body: string;
+  };
   demoContent: {
     nextStep: {
       eyebrow: string;

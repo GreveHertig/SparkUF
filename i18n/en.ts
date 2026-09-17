@@ -112,6 +112,11 @@ export const en = {
     heroHeadingEmphasis: "next",
     heroHeadingAfter: "step.",
   },
+  comingSoon: {
+    eyebrow: "THE PLATFORM",
+    title: "Coming soon",
+    body: "This part connects to real data once the live adapter is built. Explore the fictional demo in the meantime.",
+  },
   demoContent: {
     nextStep: {
       eyebrow: "STEP 05 · THE CALLS",

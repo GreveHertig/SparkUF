@@ -112,6 +112,11 @@ export const sv = {
     heroHeadingEmphasis: "nästa",
     heroHeadingAfter: "steg.",
   },
+  comingSoon: {
+    eyebrow: "PLATTFORMEN",
+    title: "Kommer snart",
+    body: "Den här delen kopplas mot riktig data när liveadaptern är byggd. Utforska den fiktiva demot under tiden.",
+  },
   demoContent: {
     nextStep: {
       eyebrow: "STEG 05 · SAMTALEN",
