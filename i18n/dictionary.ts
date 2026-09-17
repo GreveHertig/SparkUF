@@ -29,6 +29,19 @@ export type Dictionary = {
       builtAndLaunched: { name: string; message: string };
       provenBusiness: { name: string; message: string };
     };
+    /** De åtta delarna (avsnitt 7.2) — en enda källa för namnen, återanvänds
+     * av alla scenarier (adapters/demo/testScenario.ts idag, Sara/Jonas i
+     * Session 3/4) i stället för att varje scenario hårdkodar egna strängar. */
+    parts: {
+      market: string;
+      competition: string;
+      fit: string;
+      problem: string;
+      willingnessToPay: string;
+      product: string;
+      traction: string;
+      feasibility: string;
+    };
   };
   lockedState: {
     /** Etikett på själva låset, t.ex. i en pill ovanpå kortet. Villkoret för
@@ -133,5 +146,32 @@ export type Dictionary = {
       label: string;
       unit: string;
     };
+  };
+  /** Demoraden (avsnitt 9.1) — fast rad nederst i /demo/app. */
+  demoBar: {
+    personaLabel: string;
+    stepLabel: string;
+    stepOf: string;
+    phaseLabel: string;
+    phases: {
+      discover: string;
+      tryBeforeCalls: string;
+      tryAfterCalls: string;
+      launch: string;
+      grow: string;
+    };
+    momentLabel: string;
+    back: string;
+    next: string;
+    jumpToStep: string;
+    tourOn: string;
+    tourOff: string;
+    entryNoIdea: string;
+    entryHasIdea: string;
+    switchEntry: string;
+    reset: string;
+    resetConfirm: string;
+    collapse: string;
+    expand: string;
   };
 };

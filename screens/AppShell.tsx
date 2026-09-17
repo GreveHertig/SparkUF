@@ -13,19 +13,22 @@ import type { Profile } from "@/core/domain";
  * Delad sidomeny + sidhuvud för /app (avsnitt 6). Shellen vet ingenting om
  * demo eller live — den monterande routen skickar in profil, poäng (null
  * betyder "inte hämtad än", visas inte som 0) och vart Hem-länken ska peka.
- * Demoläget lägger sin egen `DemoDataBadge` i `headerLeft`.
+ * Demoläget lägger sin egen `DemoDataBadge` i `headerLeft` och `DemoBar` i
+ * `bottomBar` — shellen bara reserverar plats, den känner inte till demoraden.
  */
 export function AppShell({
   homeHref,
   profile,
   score,
   headerLeft,
+  bottomBar,
   children,
 }: {
   homeHref: string;
   profile: Profile;
   score: number | null;
   headerLeft?: ReactNode;
+  bottomBar?: ReactNode;
   children: ReactNode;
 }) {
   const { t } = useI18n();
@@ -78,7 +81,8 @@ export function AppShell({
             </div>
           </div>
         </header>
-        <main className={cn("flex-1 bg-paper-50 p-8")}>{children}</main>
+        <main className={cn("flex-1 bg-paper-50 p-8", Boolean(bottomBar) && "pb-20")}>{children}</main>
+        {bottomBar}
       </div>
     </div>
   );

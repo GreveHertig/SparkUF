@@ -3,9 +3,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { AppShell } from "@/screens/AppShell";
 import { DemoDataBadge } from "@/components/ui/DemoDataBadge";
+import { DemoBar } from "@/components/spark/DemoBar";
 import { useI18n } from "@/i18n/context";
 import { demoProfileRepository } from "@/adapters/demo/ProfileRepository";
 import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
+import { useDemoStore } from "@/adapters/demo/demoStore";
 import type { Profile } from "@/core/domain";
 
 type ShellData = { profile: Profile; score: number };
@@ -14,9 +16,12 @@ type ShellData = { profile: Profile; score: number };
 // (avsnitt 3). `use()` visade sig krascha med "async Client Component" när
 // locale ändrades (varje rendering skapade en ny promise-identitet) — en
 // vanlig useEffect/useState är den stabila lösningen för klientdata som
-// beror på en prop som kan ändras efter första renderingen.
+// beror på en prop som kan ändras efter första renderingen. Sedan Session 2
+// beror poängen även på demomotorns `beatIndex` (adapters/demo/demoStore.ts)
+// — samma mönster, ett beroende till.
 export default function DemoAppShellLayout({ children }: { children: ReactNode }) {
   const { locale } = useI18n();
+  const beatIndex = useDemoStore((state) => state.beatIndex);
   const [data, setData] = useState<ShellData | null>(null);
 
   useEffect(() => {
@@ -31,7 +36,7 @@ export default function DemoAppShellLayout({ children }: { children: ReactNode }
     return () => {
       cancelled = true;
     };
-  }, [locale]);
+  }, [locale, beatIndex]);
 
   if (!data) return null;
 
@@ -41,6 +46,7 @@ export default function DemoAppShellLayout({ children }: { children: ReactNode }
       profile={data.profile}
       score={data.score}
       headerLeft={<DemoDataBadge />}
+      bottomBar={<DemoBar />}
     >
       {children}
     </AppShell>

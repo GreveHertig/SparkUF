@@ -1,9 +1,11 @@
 import type { JourneyRepository } from "@/ports/JourneyRepository";
 import type { Locale } from "@/i18n/context";
-import { saraJourneySummary } from "./sara";
+import { useDemoStore } from "./demoStore";
+import { getJourneySummaryForBeat } from "./testScenario";
 
 export const demoJourneyRepository: JourneyRepository = {
   async getHomeSummary(locale: Locale) {
-    return saraJourneySummary[locale];
+    const { beatIndex } = useDemoStore.getState();
+    return getJourneySummaryForBeat(beatIndex, locale);
   },
 };

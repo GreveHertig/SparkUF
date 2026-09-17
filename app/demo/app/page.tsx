@@ -6,11 +6,15 @@ import { useI18n } from "@/i18n/context";
 import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
 import { demoPulseProvider } from "@/adapters/demo/PulseProvider";
+import { useDemoStore } from "@/adapters/demo/demoStore";
 
 // Se app/demo/app/layout.tsx — samma useEffect/useState-mönster i stället för
-// `use()`, som kraschade med "async Client Component" vid språkbyte.
+// `use()`, som kraschade med "async Client Component" vid språkbyte. Sedan
+// Session 2 beror Nästa steg-kortet och poängen även på demomotorns
+// `beatIndex`.
 export default function DemoAppHomePage() {
   const { locale } = useI18n();
+  const beatIndex = useDemoStore((state) => state.beatIndex);
   const [data, setData] = useState<AppHomeData | null>(null);
 
   useEffect(() => {
@@ -34,7 +38,7 @@ export default function DemoAppHomePage() {
     return () => {
       cancelled = true;
     };
-  }, [locale]);
+  }, [locale, beatIndex]);
 
   if (!data) return null;
 

@@ -1,7 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
+import { useDemoStore } from "@/adapters/demo/demoStore";
 import DemoAppShellLayout from "./layout";
 import DemoAppHomePage from "./page";
 
@@ -24,6 +25,13 @@ beforeAll(() => {
       }) as unknown as MediaQueryList);
 });
 
+// Demomotorns läge (adapters/demo/demoStore.ts) är en modul-singel som
+// persisteras i localStorage — nollställ till första momentet innan varje
+// test så att testerna inte påverkar varandra.
+beforeEach(() => {
+  useDemoStore.getState().reset();
+});
+
 // Regression test for en bugg där /demo/app kraschade med "An unknown
 // Component is an async Client Component" när man bytte språk. Orsaken var
 // `use()` med en promise vars identitet ändrades varje gång `locale` ändrades
@@ -40,10 +48,10 @@ describe("/demo/app språkväxel", () => {
     );
 
     expect(await screen.findByText("Sara Lindqvist")).toBeInTheDocument();
-    expect(await screen.findByText("Gå igenom svaren och förbered steg 06")).toBeInTheDocument();
+    expect(await screen.findByText("Svara på profilfrågorna")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "EN" }));
 
-    expect(await screen.findByText("Review the responses and prepare step 06")).toBeInTheDocument();
+    expect(await screen.findByText("Answer the profile questions")).toBeInTheDocument();
   });
 });
