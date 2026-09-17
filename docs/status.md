@@ -78,6 +78,7 @@ Se `docs/sessioner.md` — Session 2 (poängmotor + demomotor) är nästa. Reste
   - `app/(app)/sara-mock.ts` är borttagen (ersatt av `adapters/demo/sara.ts`) — inget annat importerade den.
 - **`eslint.config.mjs`:** `no-restricted-imports` för `app/demo/**` och `adapters/demo/**` blockerar import från `@/adapters/live/*`. Verifierad manuellt (tillfällig testfil, borttagen igen) — se `docs/arkitektur.md` avsnitt 6.
 - **`docs/arkitektur.md`:** skriven, med faktiska sökvägar, textdiagram och steg-för-steg för att byta en stub mot en riktig adapter.
+- **`.claude/agents/planner.md`, `code-reviewer.md`, `security-reviewer.md`:** hämtade från `github.com/affaan-m/ECC` (repot bytte namn från `everything-claude-code`, kanoniska engelska `agents/`-mappen, inte `.kiro/` eller de lokaliserade `docs/<språk>/agents/`-varianterna), visade för grundaren och placerade i `.claude/agents/` (grundaren körde kopieringen själv, se "Kända problem").
 - Verifierat: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` går alla igenom utan fel eller varningar. `pnpm build` + `next start` bekräftade i körning: `/app` renderar "Kommer snart", `/demo/app` renderar Saras riktiga data (poäng 43).
 
 ### Beslut nästa session behöver känna till
@@ -87,4 +88,4 @@ Se `docs/sessioner.md` — Session 2 (poängmotor + demomotor) är nästa. Reste
 - **`lib/demo-data/mock.ts` och `app/demo/page.tsx`** (Eriks ursprungliga scaffolding, från innan sessionerna) rördes inte — de hör inte till `/demo/app`. Avgör i en senare session om `lib/demo-data/mock.ts` fortfarande behövs.
 
 ### Kända problem
-- **Steg 6 i sessioner.md är inte klart.** `planner.md`, `code-reviewer.md` och `security-reviewer.md` hämtades från `github.com/affaan-m/ECC` (repot bytte namn från `everything-claude-code`) och visades för grundaren, men Claude Codes egen auto-läge-klassificerare blockerade både `Write` och `Bash` mot `.claude/agents/` som "Self-Modification" — den tillåter inte att jag skriver i Claude Codes egen agentkonfiguration utan uttrycklig bekräftelse i den sessionen. Filerna finns kvar i `/tmp/{planner,code-reviewer,security-reviewer}.md` i den containern (försvinner om containern byts). Grundaren behöver antingen lägga dem i `.claude/agents/` själv, eller köra om kommandot i ett läge som tillåter en vanlig behörighetsprompt.
+- Inga kvarstående. (Steg 6 klarades av: Claude Codes auto-läge-klassificerare blockerade `Write`/`Bash` mot `.claude/agents/` som "Self-Modification" — grundaren körde själv `cp`-kommandot med `!`-prefix, se nedan.)
