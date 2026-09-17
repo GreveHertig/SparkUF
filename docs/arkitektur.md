@@ -65,7 +65,7 @@ kommande sessioner.
 | Pulsen | `PulseProvider` | `adapters/demo/PulseProvider.ts` | Tavily | `docs/moduler/webbresearch-och-pulsen.md` |
 | Simuleringar | `SimulationProvider` | `adapters/demo/SimulationProvider.ts` | Hiasynth (koncept, alltid stub) | `docs/moduler/simuleringar.md` |
 | Utskick och svar | `OutreachProvider` | `adapters/demo/OutreachProvider.ts` | Gmail (stub) | `docs/moduler/utskick-och-svar.md` |
-| Juridisk koll | `LegalAdvisor` | `adapters/demo/LegalAdvisor.ts` | Gemini + källor (stub) | `docs/moduler/juridisk-koll.md` |
+| Juridisk koll | `LegalAdvisor` | `adapters/demo/LegalAdvisor.ts` | Gemini + kuraterade källor (byggd, ej sakgranskad) | `docs/moduler/juridisk-koll.md` |
 | Bygg | `BuildProvider` | `adapters/demo/BuildProvider.ts` | Lovable (koncept, alltid stub) | `docs/moduler/bygg.md` |
 
 `docs/moduler/*.md` skrivs i Session P2 (avsnitt 14.5). Fram tills dess är
