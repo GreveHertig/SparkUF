@@ -63,9 +63,10 @@ demot startades med (flaggat i `docs/status.md` Session 5).
 - `getProject()` returnerar `null` för en användare som inte gjort
   idégenomlysningen eller valt en idé än — ingen skärm får krascha på det.
 - När ett projekt finns är `id`, `name` och `oneLiner` alltid ifyllda.
-- Klarar kontraktstestet i `ports/ProjectRepository.contract.test.ts`
-  (prövar i dag bara `getProject` — `getIdeaScreening` är inte
-  kontraktstestad ännu, se `docs/status.md` Session 5).
+- Klarar kontraktstestet i `ports/ProjectRepository.contract.test.ts` mot
+  BÅDA adaptrarna nu (prövar fortfarande bara `getProject` —
+  `getIdeaScreening` är inte kontraktstestad, se `docs/status.md` Session 5
+  och Session P1).
 
 ## Säkerhet
 
@@ -76,10 +77,19 @@ aldrig instruktion (avsnitt 14.6).
 
 ## Status
 
-stub — `adapters/live/ProjectRepository.ts` kastar `NotImplementedError` för
-båda metoderna. `getProject` är fortfarande en enkel platshållare, inte
-kopplad till någon skärm. `getIdeaScreening` är kopplad till
-`/demo/start/ide` sedan Session 5, men bara läsande — porten saknar
-fortfarande en skrivmetod för att spara vad grundaren faktiskt väljer.
-Bygg skrivmetoden tillsammans med Jonas fulla resa (nästa gång den
-byggs), inte isolerat.
+påbörjad (Session P1, branch `plattform-p1-adaptrar`) — `getProject` är
+klar och testad mot Supabase, returnerar `null` för ett konto utan aktivt
+projekt (giltigt). `getIdeaScreening` är MEDVETET kvar som
+`NotImplementedError`: den är i praktiken Medgrundaren/Gemini-analys, och
+porten saknar fortfarande en skrivmetod för att spara vad grundaren väljer
+— båda olösta sedan Session P2/5, inte löst i förbifarten här
+(`ports/stubStatus.test.ts`s `PARTIELLA_STUBBAR`). Bygg skrivmetoden och
+`getIdeaScreening` tillsammans med Jonas fulla resa, inte isolerat.
+
+### Hur liveadaptern fungerar i dag
+
+`adapters/live/ProjectRepository.ts`: `getProject()` läser den inloggade
+användarens aktiva projekt (`is_active = true`) ur `projects` via
+`requireSupabaseUser()`. Ett unikt partiellt index
+(`projects_ett_aktivt_per_user`, i migreringen) håller "ett projekt i
+taget"-regeln på databasnivå, inte bara i applikationskoden.

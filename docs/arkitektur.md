@@ -52,21 +52,27 @@ kommande sessioner.
 
 ## 3. De 12 modulerna (avsnitt 14.3)
 
-| Modul | Port | Demoadapter | Liveadapter bygger på | Moduldokument (Session P2) |
+| Modul | Port | Liveadapter bygger på | Status | Moduldokument |
 |---|---|---|---|---|
-| Profil | `ProfileRepository` | `adapters/demo/ProfileRepository.ts` | Supabase | `docs/moduler/profil.md` |
-| Projekt och idé | `ProjectRepository` | `adapters/demo/ProjectRepository.ts` | Supabase | `docs/moduler/projekt-och-ide.md` |
-| Resan | `JourneyRepository` | `adapters/demo/JourneyRepository.ts` | Supabase | `docs/moduler/resan.md` |
-| Evidens och poäng | `EvidenceRepository` | `adapters/demo/EvidenceRepository.ts` | Supabase | `docs/moduler/evidens-och-poang.md` |
-| Minnet | `MemoryRepository` | `adapters/demo/MemoryRepository.ts` | Supabase | `docs/moduler/minnet.md` |
-| Medgrundaren | `CofounderAgent` | `adapters/demo/CofounderAgent.ts` | Gemini | `docs/moduler/medgrundaren.md` |
-| Registret | `RegistryProvider` | `adapters/demo/RegistryProvider.ts` | Bolagsverket, SCB (stub tills dataavtal) | `docs/moduler/registret.md` |
-| Webbresearch | `ResearchProvider` | `adapters/demo/ResearchProvider.ts` | Tavily | `docs/moduler/webbresearch-och-pulsen.md` |
-| Pulsen | `PulseProvider` | `adapters/demo/PulseProvider.ts` | Tavily | `docs/moduler/webbresearch-och-pulsen.md` |
-| Simuleringar | `SimulationProvider` | `adapters/demo/SimulationProvider.ts` | Hiasynth (koncept, alltid stub) | `docs/moduler/simuleringar.md` |
-| Utskick och svar | `OutreachProvider` | `adapters/demo/OutreachProvider.ts` | Gmail (stub) | `docs/moduler/utskick-och-svar.md` |
-| Juridisk koll | `LegalAdvisor` | `adapters/demo/LegalAdvisor.ts` | Gemini + kuraterade källor (byggd, ej sakgranskad) | `docs/moduler/juridisk-koll.md` |
-| Bygg | `BuildProvider` | `adapters/demo/BuildProvider.ts` | Lovable (koncept, alltid stub) | `docs/moduler/bygg.md` |
+| Profil | `ProfileRepository` | Supabase | påbörjad (P1) | `docs/moduler/profil.md` |
+| Projekt och idé | `ProjectRepository` | Supabase | påbörjad (P1) | `docs/moduler/projekt-och-ide.md` |
+| Resan | `JourneyRepository` | Supabase | påbörjad (P1) | `docs/moduler/resan.md` |
+| Evidens och poäng | `EvidenceRepository` | Supabase | klar (P1) | `docs/moduler/evidens-och-poang.md` |
+| Minnet | `MemoryRepository` | Supabase | klar (P1) | `docs/moduler/minnet.md` |
+| Medgrundaren | `CofounderAgent` | Gemini | stub | `docs/moduler/medgrundaren.md` |
+| Registret | `RegistryProvider` | Bolagsverket, SCB (stub tills dataavtal) | stub | `docs/moduler/registret.md` |
+| Webbresearch | `ResearchProvider` | Tavily | stub | `docs/moduler/webbresearch-och-pulsen.md` |
+| Pulsen | `PulseProvider` | Tavily | stub | `docs/moduler/webbresearch-och-pulsen.md` |
+| Simuleringar | `SimulationProvider` | Hiasynth (koncept, alltid stub) | stub | `docs/moduler/simuleringar.md` |
+| Utskick och svar | `OutreachProvider` | Gmail (stub) | stub | `docs/moduler/utskick-och-svar.md` |
+| Juridisk koll | `LegalAdvisor` | Gemini + kuraterade källor | klar (ej sakgranskad) | `docs/moduler/juridisk-koll.md` |
+| Bygg | `BuildProvider` | Lovable (koncept, alltid stub) | stub | `docs/moduler/bygg.md` |
+
+Varje modul har fortfarande en fungerande demoadapter i `adapters/demo/`
+(`adapters/demo/<Modul>.ts`) — tabellen ovan visar bara liveadapterns
+status, se avsnitt 2 för sökvägarna. "Påbörjad" betyder att en eller flera
+metoder i porten fortfarande är en medveten `NotImplementedError`-stub —
+`ports/stubStatus.test.ts`s `PARTIELLA_STUBBAR` vaktar exakt vilka.
 
 `docs/moduler/*.md` finns nu för alla 12 moduler (skrivna i Session P2,
 avsnitt 14.5, med `docs/moduler/juridisk-koll.md` som förebild).
@@ -91,8 +97,17 @@ Den anropande routen fångar felet och visar `<ComingSoon />` i stället för
 att låta det nå gränssnittet (avsnitt 5.4, 14.4 — "Tomma tillstånd"). Se
 `app/(app)/app/page.tsx` och `app/(app)/layout.tsx` för mönstret: all
 datahämtning sker i ett `try/catch` innan någon JSX konstrueras (ESLint-regeln
-`react-hooks/error-boundaries` tillåter inte JSX inuti `try/catch`), och
-`NotImplementedError` fångas specifikt — andra fel kastas vidare.
+`react-hooks/error-boundaries` tillåter inte JSX inuti `try/catch`).
+
+**Session P1 lade till ett andra "inget att visa än"-fel:**
+`EmptyStateError` (`core/errors.ts`) — kastas av en KLAR liveadapter när
+den inloggade användaren själv inte har någon data än (t.ex. ett nytt
+konto utan bevis). Skiljer sig från `NotImplementedError` (modulen är inte
+byggd) genom att modulen ÄR byggd, bara den här användarens rad(er)
+saknas. Route-filerna fångar båda via en delad hjälpare,
+`isPlaceholderError(error)`, och visar `<ComingSoon />` för båda — ett
+tredje, oväntat fel (t.ex. ett nätverksfel mot Supabase) kastas fortfarande
+vidare, aldrig tyst till "Kommer snart".
 
 ## 5. Byta en stub mot en riktig adapter
 
@@ -145,3 +160,43 @@ committen).
 - **`lib/demo-data/mock.ts` och `app/demo/page.tsx`** (Eriks ursprungliga
   scaffolding) rördes inte i den här sessionen — de hör inte till
   `/demo/app` och ligger utanför uppgiften.
+
+## 8. Inloggning: tre lager (Session P1)
+
+`/app/*` och `/start/*` skyddas av tre oberoende lager, inget ensamt
+tillräckligt:
+
+1. **`proxy.ts`** (projektroten — Next.js 16 döpte om `middleware.ts` till
+   `proxy.ts`, se `node_modules/next/dist/docs/.../proxy.md`). Kör före
+   varje matchad request (`matcher: ["/app/:path*", "/start/:path*",
+   "/logga-in", "/skapa-konto"]` — medvetet INTE hela sajten, `/demo/*` ska
+   aldrig göra ett Supabase-anrop). Anropar `supabase.auth.getUser()` via
+   `lib/server/supabaseProxy.ts`, omdirigerar tidigt och förnyar
+   sessionscookien.
+2. **`lib/server/session.ts`** — den BINDANDE kontrollen. `requireUser()`
+   anropas överst i `app/(app)/layout.tsx` och `app/start/layout.tsx`
+   (körs i varje Server Component-render, kan inte kringgås av
+   klientsidig navigering mellan syskon-sidor under samma layout).
+   `requireSupabaseUser()` används av liveadaptrarna — kastar
+   `NotAuthenticatedError` i stället för att omdirigera, en adapter ska
+   inte styra navigering. Båda delar ett enda `supabase.auth.getUser()`-
+   anrop per rendering via Reacts `cache()`.
+3. **RLS** (`supabase/migrations/`) — den bindande spärren i databasen om
+   de två föregående lagren på något sätt kringgås.
+
+**Känd begränsning:** enligt Next-dokumentets egen varning ("Layouts and
+auth checks") re-renderas inte en layout vid klientsidig navigering mellan
+syskonrutter under samma layout — `requireUser()` i `app/start/layout.tsx`
+körs alltså inte garanterat om igen när användaren navigerar
+`/start` → `/start/profil` utan en full sidladdning. I dag ofarligt
+(`/start`s sidor har ingen liveadapter kopplad än — `getOnboardingScript`
+och `getIdeaScreening` är fortfarande stubbar), men den dag de kopplas in
+ska den bindande kontrollen också sitta nära datahämtningen (Next-mönstret
+"Auth checks in page components"), inte bara i layouten.
+
+`test/stubs/supabaseFake.ts` mockar Supabase i alla kontraktstester —
+`docs/bygga-en-modul.md`s tre testlager gäller rakt av för de fem
+P1-portarna: kontraktstest (mockad), adapterns egna tester (mockad,
+kantfall/tomma tillstånd), och ett opt-in `.live.test.ts`
+(`adapters/live/rls.live.test.ts`) mot en riktig databas, `skipIf` på
+saknade testkonton.

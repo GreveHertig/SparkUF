@@ -88,9 +88,31 @@ nytt.
 
 ## Status
 
-stub — `adapters/live/EvidenceRepository.ts` kastar `NotImplementedError`
-för alla tre metoderna. Demoadaptern är klar (`core/score.ts` byggdes och
-testades i Session 2, `docs/status.md`) och används av alla poängvisande
-`/demo/app`-sidor. `calculateScore` i sig är redan produktionsklar ren
-logik — den här modulens arbete är bara att koppla in Supabase-hämtningen
-runt den, inte att skriva om räkningen.
+klar (Session P1, branch `plattform-p1-adaptrar`) — alla tre metoderna
+byggda och testade mot Supabase.
+
+### Hur liveadaptern fungerar i dag
+
+`adapters/live/EvidenceRepository.ts` hämtar `evidence`-rader (ordnade
+`created_at, id` — signifikant för avtagande värde-trappan), grupperar per
+del och skickar dem genom `calculateScore` — bevisat med ett test som
+jämför adapterns resultat mot ett direkt `calculateScore`-anrop på exakt
+samma underlag. Fasen härleds ur avklarade steg
+(`journey_steps.completed_at`) via `core/journey.ts`, inte hårdkodad.
+
+- `getScoreSnapshot`: `EmptyStateError` utan aktivt projekt eller utan
+  någon `evidence`-rad alls (ett nytt konto). `calculateScore`s egna fel
+  (en upplåst del utan bevis mitt i ett delvis underlag, 7.4) lämnas
+  MEDVETET okatchat — ett riktigt datafel enligt modulens egna regler, inte
+  "inget att visa än". Kan i praktiken inte inträffa förrän något skriver
+  till `evidence` (ingen skrivväg finns i P1).
+- `getScoreHistory`: tom lista utan snapshots — aldrig en påhittad punkt.
+- `getSuggestions`: returnerar MEDVETET en tom lista. Förklaring och
+  uppskattad tid per förslag (7.6) är skrivet produktinnehåll (jämför
+  demots `saraSuggestionCandidates`), inte något som går att härleda
+  mekaniskt ur rådata utan att uppfinna siffror och påståenden. Ingen
+  skärm i `/app` använder metoden än — flaggat här som en öppen uppgift
+  för en session som faktiskt skriver det innehållet, inte gissat.
+- Ingen skrivning sker vid läsning — `getScoreSnapshot` skriver aldrig en
+  ny `score_snapshots`-rad. Det gör (i en senare session) modulen som
+  markerar ett steg klart.
