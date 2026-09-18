@@ -10,4 +10,7 @@ export const liveBuildProvider: BuildProvider = {
   async getStatus() {
     throw new NotImplementedError("Bygg", DOC);
   },
+  async getSpec() {
+    throw new NotImplementedError("Bygg", DOC);
+  },
 };

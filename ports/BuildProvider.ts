@@ -1,3 +1,4 @@
+import type { Locale } from "@/i18n/context";
 import type { ByggBrief } from "@/core/domain";
 
 export type BuildStatus = "not_started" | "building" | "published";
@@ -6,4 +7,6 @@ export type BuildStatus = "not_started" | "building" | "published";
 export interface BuildProvider {
   startBuild(brief: ByggBrief): Promise<{ status: BuildStatus }>;
   getStatus(): Promise<{ status: BuildStatus; url?: string }>;
+  /** Specen bygget vilar på (/app/bygg) — `null` innan den finns. */
+  getSpec(locale: Locale): Promise<ByggBrief | null>;
 }
