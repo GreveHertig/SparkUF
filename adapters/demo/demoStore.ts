@@ -1,16 +1,16 @@
 "use client";
 
-// Demomotorn (avsnitt 9.1): var i testscenariot demot står, persisterat i
+// Demomotorn (avsnitt 9.1): var i Saras scenario demot står, persisterat i
 // localStorage så att sidan kan laddas om mitt i en demo. Bara demot
 // (adapters/demo/**, app/demo/**) importerar det här — /app har ingen
 // demorad och känner inte till att den här filen finns.
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { testScenarioBeats } from "./testScenario";
+import { saraBeats, getBeatAt, type SaraBeat } from "./sara";
 
 export type DemoEntry = "noIdea" | "hasIdea";
 
-const LAST_BEAT_INDEX = testScenarioBeats.length - 1;
+const LAST_BEAT_INDEX = saraBeats.length - 1;
 
 function clampBeatIndex(index: number): number {
   return Math.min(LAST_BEAT_INDEX, Math.max(0, index));
@@ -49,4 +49,16 @@ export const useDemoStore = create<DemoState>()(
   ),
 );
 
-export const DEMO_BEAT_COUNT = testScenarioBeats.length;
+export const DEMO_BEAT_COUNT = saraBeats.length;
+
+/** Nuvarande position i demot, utanför React (`useDemoStore.getState()`).
+ * Andra demoadaptrar (Registret, Pulsen, Juridik, Bygg, Minnet, Kunder)
+ * använder de här för att veta hur mycket av Saras resa som redan är
+ * upplåst — avsnitt 9.1: "allt speglar aktuellt läge". */
+export function getCurrentBeat(): SaraBeat {
+  return getBeatAt(useDemoStore.getState().beatIndex);
+}
+
+export function getCurrentStepNumber(): number {
+  return getCurrentBeat().stepNumber;
+}

@@ -48,7 +48,7 @@ describe("Demoraden i /demo/app", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Nästa ▶/ }));
 
-    expect(await screen.findByText("Se de första siffrorna ur registret")).toBeInTheDocument();
+    expect(await screen.findByText("Välj en idé ur tre förslag")).toBeInTheDocument();
     expect(screen.queryByText("Svara på profilfrågorna")).not.toBeInTheDocument();
   });
 
@@ -62,7 +62,7 @@ describe("Demoraden i /demo/app", () => {
     );
 
     fireEvent.click(await screen.findByRole("button", { name: /Nästa ▶/ }));
-    expect(await screen.findByText("Se de första siffrorna ur registret")).toBeInTheDocument();
+    expect(await screen.findByText("Välj en idé ur tre förslag")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /◀ Bakåt/ }));
     expect(await screen.findByText("Svara på profilfrågorna")).toBeInTheDocument();

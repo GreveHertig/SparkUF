@@ -147,6 +147,113 @@ export type Dictionary = {
       unit: string;
     };
   };
+  journeyPage: {
+    title: string;
+    subtitle: string;
+    status: {
+      done: string;
+      current: string;
+      locked: string;
+    };
+    phaseNames: {
+      discover: string;
+      tryPhase: string;
+      launch: string;
+      grow: string;
+    };
+    stepLabel: string;
+    openStep: string;
+    backToJourney: string;
+    whatHappened: string;
+    whatsNext: string;
+  };
+  cofounderPage: {
+    title: string;
+    subtitle: string;
+    toolRunningLabel: string;
+    toolDoneLabel: string;
+    emptyStateBody: string;
+  };
+  scorePage: {
+    title: string;
+    subtitle: string;
+    breakdownTitle: string;
+    suggestionsTitle: string;
+    gapType: {
+      insufficient: string;
+      contradicting: string;
+      structural: string;
+    };
+    pointsPerMinuteUnit: string;
+    historyTitle: string;
+  };
+  marketPage: {
+    title: string;
+    subtitle: string;
+    registerTitle: string;
+    competitorsTitle: string;
+    simulationTitle: string;
+    companyCountLabel: string;
+    medianRevenueLabel: string;
+    growthShareLabel: string;
+    regionShareLabel: string;
+  };
+  customersPage: {
+    title: string;
+    subtitle: string;
+    tableCompany: string;
+    tableSni: string;
+    tableEmployees: string;
+    tableRevenue: string;
+    tableStatus: string;
+    status: {
+      draft: string;
+      sent: string;
+      opened: string;
+      responded: string;
+    };
+    responseQuoteLabel: string;
+  };
+  pulsePage: {
+    title: string;
+    subtitle: string;
+    emptyState: string;
+  };
+  memoryPage: {
+    title: string;
+    subtitle: string;
+    tabs: {
+      profile: string;
+      brain: string;
+      trace: string;
+    };
+    profileBackgroundLabel: string;
+    profileResourcesLabel: string;
+    brainHint: string;
+    traceEmpty: string;
+  };
+  legalPage: {
+    title: string;
+    subtitle: string;
+    disclaimer: string;
+    status: {
+      uppfyllt: string;
+      ej_uppfyllt: string;
+      ej_tillämpligt: string;
+    };
+  };
+  buildPage: {
+    title: string;
+    subtitle: string;
+    status: {
+      not_started: string;
+      building: string;
+      published: string;
+    };
+    specTitle: string;
+    previewTitle: string;
+    publishedUrlLabel: string;
+  };
   /** Demoraden (avsnitt 9.1) — fast rad nederst i /demo/app. */
   demoBar: {
     personaLabel: string;

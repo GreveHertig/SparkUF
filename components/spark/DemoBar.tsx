@@ -5,7 +5,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
 import { useDemoStore } from "@/adapters/demo/demoStore";
-import { testScenarioBeats } from "@/adapters/demo/testScenario";
+import { saraBeats } from "@/adapters/demo/sara";
 
 /**
  * Demoraden (avsnitt 9.1): fast rad nederst i /demo/app, hopfällbar, med
@@ -27,9 +27,9 @@ export function DemoBar() {
   const setEntry = useDemoStore((state) => state.setEntry);
   const reset = useDemoStore((state) => state.reset);
 
-  const beat = testScenarioBeats[beatIndex];
+  const beat = saraBeats[beatIndex];
   const atStart = beatIndex === 0;
-  const atEnd = beatIndex === testScenarioBeats.length - 1;
+  const atEnd = beatIndex === saraBeats.length - 1;
 
   useEffect(() => {
     function isTypingTarget(target: EventTarget | null): boolean {
@@ -119,7 +119,7 @@ export function DemoBar() {
                 sideOffset={8}
                 className="z-50 flex flex-col gap-1 rounded-md border border-slate-200 bg-white p-2 shadow-lg"
               >
-                {testScenarioBeats.map((scenarioBeat, index) => (
+                {saraBeats.map((scenarioBeat, index) => (
                   <Popover.Close asChild key={scenarioBeat.id}>
                     <button
                       type="button"
