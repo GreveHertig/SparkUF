@@ -1279,6 +1279,19 @@ function beatAt(index: number): Beat {
  * andra demoadaptrar som behöver veta vad som redan hänt vid ett givet läge. */
 export const getBeatAt = beatAt;
 
+export function getCurrentStepNumberFor(beatIndex: number): number {
+  return beatAt(beatIndex).stepNumber;
+}
+
+/** Senaste beaten för ett givet officiellt steg (1–12) som redan nåtts vid
+ * `upToIndex` — steg 05 har två beats, så det är den senare (svaren) som
+ * räknas som "nådd" så snart demot passerat den. `undefined` om steget inte
+ * är nått än (används för Resan/[steg] och Resan-listan). */
+export function findLatestBeatForStep(stepNumber: number, upToIndex: number): Beat | undefined {
+  const reached = beats.filter((beat, index) => beat.stepNumber === stepNumber && index <= upToIndex);
+  return reached[reached.length - 1];
+}
+
 function totalForBeat(beat: Beat, locale: Locale): number {
   return calculateScore({
     phase: beat.phase,

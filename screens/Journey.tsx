@@ -1,0 +1,84 @@
+"use client";
+
+import Link from "next/link";
+import { EditorialHeading } from "@/components/ui/EditorialHeading";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { cn } from "@/design/cn";
+import { useI18n } from "@/i18n/context";
+import type { JourneyStepView, JourneyStepStatus } from "@/ports/JourneyRepository";
+
+export type JourneyData = {
+  steps: JourneyStepView[];
+};
+
+const PHASE_ORDER = ["discover", "tryPhase", "launch", "grow"] as const;
+
+const statusToneClasses: Record<JourneyStepStatus, string> = {
+  done: "border-score-green bg-score-green-bg text-score-green",
+  current: "border-accent-600 bg-accent-100 text-accent-700",
+  locked: "border-dashed border-slate-300 bg-slate-50 text-slate-500",
+};
+
+/** Resan (avsnitt 6): 12 steg i 4 faser med tillstånden klar/aktuell/låst,
+ * varje steg visar "kan ge upp till X poäng". Skärmen tar bara emot redan
+ * hämtad, redan språkvald data — den vet inte att den kom från demot. */
+export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (stepNumber: number) => string }) {
+  const { t } = useI18n();
+
+  return (
+    <div className="mx-auto flex max-w-5xl flex-col gap-10">
+      <div>
+        <Eyebrow>{t.appShell.nav.journey}</Eyebrow>
+        <EditorialHeading as="h1" className="mt-2">
+          {t.journeyPage.title}
+        </EditorialHeading>
+        <p className="mt-2 text-sm text-slate-600">{t.journeyPage.subtitle}</p>
+      </div>
+
+      <div className="flex flex-col gap-8">
+        {PHASE_ORDER.map((phase) => {
+          const stepsInPhase = data.steps.filter((step) => step.journeyPhase === phase);
+          if (stepsInPhase.length === 0) return null;
+
+          return (
+            <section key={phase} className="flex flex-col gap-3">
+              <Eyebrow>{t.journeyPage.phaseNames[phase]}</Eyebrow>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {stepsInPhase.map((step) => (
+                  <Link
+                    key={step.stepNumber}
+                    href={stepHref(step.stepNumber)}
+                    className={cn(
+                      "flex flex-col gap-2 rounded-lg border bg-white p-5 transition-colors hover:border-accent-400 focus-visible:outline-2 focus-visible:outline-accent-300",
+                    )}
+                    style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tabular-nums text-slate-500" style={{ letterSpacing: "var(--tracking-label)" }}>
+                        {t.journeyPage.stepLabel} {String(step.stepNumber).padStart(2, "0")}
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded-pill border px-2 py-0.5 text-xs font-semibold uppercase",
+                          statusToneClasses[step.status],
+                        )}
+                        style={{ letterSpacing: "var(--tracking-label)" }}
+                      >
+                        {t.journeyPage.status[step.status]}
+                      </span>
+                    </div>
+                    <p className="text-base font-bold text-slate-900">{step.title}</p>
+                    <p className="text-sm text-slate-600">{step.oneLiner}</p>
+                    <p className="mt-1 text-xs font-medium text-accent-700">
+                      {t.common.upToPointsBefore} {step.maxPoints} {t.common.upToPointsAfter}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

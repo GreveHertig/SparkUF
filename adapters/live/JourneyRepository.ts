@@ -7,4 +7,10 @@ export const liveJourneyRepository: JourneyRepository = {
   async getHomeSummary() {
     throw new NotImplementedError("Resan", DOC);
   },
+  async getSteps() {
+    throw new NotImplementedError("Resan", DOC);
+  },
+  async getStepDetail() {
+    throw new NotImplementedError("Resan", DOC);
+  },
 };
