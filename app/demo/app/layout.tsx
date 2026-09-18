@@ -43,6 +43,7 @@ export default function DemoAppShellLayout({ children }: { children: ReactNode }
   return (
     <AppShell
       homeHref="/demo/app"
+      navBasePath="/demo/app"
       profile={data.profile}
       score={data.score}
       headerLeft={<DemoDataBadge />}

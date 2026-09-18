@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import { Logo } from "@/components/ui/Logo";
 import { ScoreBadge } from "@/components/spark/ScoreBadge";
@@ -15,9 +16,13 @@ import type { Profile } from "@/core/domain";
  * betyder "inte hämtad än", visas inte som 0) och vart Hem-länken ska peka.
  * Demoläget lägger sin egen `DemoDataBadge` i `headerLeft` och `DemoBar` i
  * `bottomBar` — shellen bara reserverar plats, den känner inte till demoraden.
+ *
+ * `navBasePath` styr om sidomenyn länkar (t.ex. "/demo/app") eller förblir
+ * inert (utelämnad — /app har inga undersidor än, se docs/arkitektur.md 7).
  */
 export function AppShell({
   homeHref,
+  navBasePath,
   profile,
   score,
   headerLeft,
@@ -25,6 +30,7 @@ export function AppShell({
   children,
 }: {
   homeHref: string;
+  navBasePath?: string;
   profile: Profile;
   score: number | null;
   headerLeft?: ReactNode;
@@ -32,17 +38,18 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { t } = useI18n();
+  const pathname = usePathname();
 
-  const inertNavItems = [
-    t.appShell.nav.cofounder,
-    t.appShell.nav.journey,
-    t.appShell.nav.score,
-    t.appShell.nav.market,
-    t.appShell.nav.customers,
-    t.appShell.nav.pulse,
-    t.appShell.nav.memory,
-    t.appShell.nav.legal,
-    t.appShell.nav.build,
+  const navItems: { slug: string; label: string }[] = [
+    { slug: "medgrundaren", label: t.appShell.nav.cofounder },
+    { slug: "resan", label: t.appShell.nav.journey },
+    { slug: "poang", label: t.appShell.nav.score },
+    { slug: "marknad", label: t.appShell.nav.market },
+    { slug: "kunder", label: t.appShell.nav.customers },
+    { slug: "pulsen", label: t.appShell.nav.pulse },
+    { slug: "minnet", label: t.appShell.nav.memory },
+    { slug: "juridik", label: t.appShell.nav.legal },
+    { slug: "bygg", label: t.appShell.nav.build },
   ];
 
   return (
@@ -52,15 +59,33 @@ export function AppShell({
         <nav className="flex flex-col gap-1" aria-label={t.appShell.nav.home}>
           <Link
             href={homeHref}
-            className="rounded-md bg-slate-700 px-3 py-2 text-sm font-semibold text-paper-50 focus-visible:outline-2 focus-visible:outline-accent-300"
+            className={cn(
+              "rounded-md px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-accent-300",
+              pathname === homeHref ? "bg-slate-700 text-paper-50" : "text-slate-400 hover:text-paper-50",
+            )}
           >
             {t.appShell.nav.home}
           </Link>
-          {inertNavItems.map((label) => (
-            <span key={label} className="rounded-md px-3 py-2 text-sm font-medium text-slate-400">
-              {label}
-            </span>
-          ))}
+          {navItems.map(({ slug, label }) =>
+            navBasePath ? (
+              <Link
+                key={slug}
+                href={`${navBasePath}/${slug}`}
+                className={cn(
+                  "rounded-md px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-accent-300",
+                  pathname?.startsWith(`${navBasePath}/${slug}`)
+                    ? "bg-slate-700 text-paper-50"
+                    : "text-slate-400 hover:text-paper-50",
+                )}
+              >
+                {label}
+              </Link>
+            ) : (
+              <span key={slug} className="rounded-md px-3 py-2 text-sm font-medium text-slate-400">
+                {label}
+              </span>
+            ),
+          )}
         </nav>
       </aside>
 
