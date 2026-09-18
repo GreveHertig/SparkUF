@@ -1,5 +1,6 @@
 import type { Locale } from "@/i18n/context";
 import type { NextStep, SinceLastTime } from "@/core/domain";
+import type { Simulation } from "@/ports/SimulationProvider";
 
 export type JourneySummary = {
   todayIso: string;
@@ -19,6 +20,21 @@ export type JourneyStepView = {
   status: JourneyStepStatus;
 };
 
+/** Poängändringen som hör till det senast nådda momentet av ett steg
+ * (uppdrag 9.1, "efter": animerad poängändring och förklaring). `null` om
+ * steget är låst eller inget ännu hänt. */
+export type JourneyStepScoreDelta = {
+  total: number;
+  delta: number;
+  deltaReason: string;
+};
+
+/** Domen (steg 06): kör/förfina/pivotera + motivering. `null` för övriga steg. */
+export type JourneyStepVerdict = {
+  headline: string;
+  reasoning: string;
+};
+
 /** Stegets arbetsyta (/app/resan/[steg]). `why`/`doneItems`/`highlights` är
  * tomma för ett steg som fortfarande är låst — se `status`. */
 export type JourneyStepDetail = JourneyStepView & {
@@ -26,6 +42,16 @@ export type JourneyStepDetail = JourneyStepView & {
   doneItems: string[];
   highlights: string[];
   actionLabel: string;
+  /** Vilket av de tre klickbara momenten (uppdrag 9.1) som visas — styr en
+   * liten pill på stegets arbetsyta. Alltid "after" för ett redan klart steg. */
+  momentKind: "before" | "running" | "after";
+  scoreDelta: JourneyStepScoreDelta | null;
+  /** Delar som blev upplåsta av det här steget (avsnitt 9.1, "vad som
+   * låstes upp") — kod-härlett ur poängens låsta delar, aldrig hårdkodat. */
+  newlyUnlockedParts: string[];
+  verdict: JourneyStepVerdict | null;
+  /** Simulering kopplad till steget (avsnitt 2.2, steg 03/04/06). */
+  simulation: Simulation | null;
 };
 
 /**

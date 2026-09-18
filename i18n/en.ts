@@ -17,6 +17,7 @@ export const en = {
     pulseWhyItMattersPrefix: "Why it matters:",
     doneItemsLabel: "Already done",
     simulationLabel: "Simulation",
+    simulationPopulationLabel: "Simulated population",
     upToPointsBefore: "Can earn up to",
     upToPointsAfter: "points",
   },
@@ -184,6 +185,15 @@ export const en = {
     backToJourney: "Back to the journey",
     whatHappened: "What's been done",
     whatsNext: "What's left",
+    momentPill: {
+      before: "Before",
+      running: "Running",
+      after: "After",
+    },
+    runningHint: "The co-founder is running it now — see Co-founder for the tool run, step by step.",
+    scoreChangeTitle: "Score change",
+    unlockedTitle: "Newly unlocked",
+    simulationTitle: "Simulation",
   },
   cofounderPage: {
     title: "Co-founder",
@@ -233,6 +243,7 @@ export const en = {
       responded: "Responded",
     },
     responseQuoteLabel: "Response",
+    simulationTitle: "Simulation: price tolerance by firm size",
   },
   pulsePage: {
     title: "Pulse",

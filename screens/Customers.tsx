@@ -3,13 +3,17 @@
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { LockedState } from "@/components/ui/LockedState";
+import { SimulationCard } from "@/components/spark/SimulationCard";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
 import { formatCount } from "@/i18n/format";
 import type { CampaignRow, OutreachStatus } from "@/ports/OutreachProvider";
+import type { Simulation } from "@/ports/SimulationProvider";
 
 export type CustomersData = {
   rows: CampaignRow[];
+  /** Betalningstoleranssimuleringen (avsnitt 2.2, steg 04) — null innan steget är nått. */
+  simulation: Simulation | null;
 };
 
 const statusToneClasses: Record<OutreachStatus, string> = {
@@ -79,6 +83,13 @@ export function Customers({ data }: { data: CustomersData }) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {data.simulation && (
+        <section className="flex flex-col gap-2.5">
+          <Eyebrow>{t.customersPage.simulationTitle}</Eyebrow>
+          <SimulationCard simulation={data.simulation} className="max-w-xl" />
+        </section>
       )}
     </div>
   );

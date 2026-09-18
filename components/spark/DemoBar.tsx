@@ -138,7 +138,7 @@ export function DemoBar() {
                 side="top"
                 align="start"
                 sideOffset={8}
-                className="z-50 flex flex-col gap-1 rounded-md border border-slate-200 bg-white p-2 shadow-lg"
+                className="z-50 flex max-h-[70vh] flex-col gap-1 overflow-y-auto rounded-md border border-slate-200 bg-white p-2 shadow-lg"
               >
                 {saraBeats.map((scenarioBeat, index) => (
                   <Popover.Close asChild key={scenarioBeat.id}>

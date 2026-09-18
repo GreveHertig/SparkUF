@@ -3,8 +3,8 @@
 import { DataFact } from "@/components/ui/DataFact";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
-import { SourceTag } from "@/components/ui/SourceTag";
 import { LockedState } from "@/components/ui/LockedState";
+import { SimulationCard } from "@/components/spark/SimulationCard";
 import { useI18n } from "@/i18n/context";
 import type { MarketOverview } from "@/ports/RegistryProvider";
 import type { Simulation } from "@/ports/SimulationProvider";
@@ -15,8 +15,9 @@ export type MarketData = {
 };
 
 /** Marknad (avsnitt 6): registerbilden och simuleringar, tydligt åtskilda —
- * simuleringen bär alltid ConceptBadge-liknande märkning via `SourceTag`s
- * `dataType="simulation"` (visar alltid "Simulering" som text, inte bara färg). */
+ * simuleringen renderas alltid via `SimulationCard` (avsnitt 2.2, 8): etikett,
+ * population, källa och osäkerhetsintervall syns alltid, aldrig bara en
+ * färgskillnad. */
 export function Market({ data }: { data: MarketData | null }) {
   const { t } = useI18n();
 
@@ -76,14 +77,7 @@ export function Market({ data }: { data: MarketData | null }) {
 
           <section className="flex flex-col gap-2.5">
             <Eyebrow>{t.marketPage.simulationTitle}</Eyebrow>
-            <div className="rounded-lg border border-dashed border-data-simulation bg-data-simulation-bg/30 p-4">
-              <p className="text-sm font-medium text-slate-700">{data.simulation.question}</p>
-              <p className="font-numeric mt-2 text-lg font-bold text-slate-900">{data.simulation.result}</p>
-              <p className="mt-1 text-sm text-slate-600">{data.simulation.uncertaintyRangeLabel}</p>
-              <div className="mt-3">
-                <SourceTag source={data.simulation.source} dataType="simulation" />
-              </div>
-            </div>
+            <SimulationCard simulation={data.simulation} />
           </section>
         </>
       )}

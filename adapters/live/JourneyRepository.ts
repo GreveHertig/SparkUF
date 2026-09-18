@@ -114,6 +114,16 @@ export const liveJourneyRepository: JourneyRepository = {
       doneItems: [],
       highlights: [],
       actionLabel: "",
+      // Djup-momenten (poängförklaring, upplåsning, domen, simulering) är
+      // demo-specifikt innehåll byggt i den här sessionen (uppdrag 9.1) —
+      // plattformen får samma fält när Resan-modulen byggs vidare, se
+      // docs/moduler/resan.md. Plattformen har än så länge bara ett läge per
+      // steg (inget före/körning/efter-flöde), så momentKind är alltid "after".
+      momentKind: "after",
+      scoreDelta: null,
+      newlyUnlockedParts: [],
+      verdict: null,
+      simulation: null,
     };
     if (!projectId) return base;
 

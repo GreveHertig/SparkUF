@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Market, type MarketData } from "@/screens/Market";
 import { useI18n } from "@/i18n/context";
 import { demoRegistryProvider } from "@/adapters/demo/RegistryProvider";
-import { demoSimulationProvider } from "@/adapters/demo/SimulationProvider";
+import { demoSimulationProvider, simulationQuestions } from "@/adapters/demo/SimulationProvider";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import { getCurrentStepNumberFor } from "@/adapters/demo/sara";
 
@@ -19,7 +19,7 @@ export default function DemoMarketPage() {
     let cancelled = false;
     Promise.all([
       demoRegistryProvider.getMarketOverview(locale),
-      demoSimulationProvider.simulate("Hur mycket tid går åt till underlagsjakt per anställd och månad?", locale),
+      demoSimulationProvider.simulate(simulationQuestions.time[locale], locale),
     ]).then(([overview, simulation]) => {
       if (!cancelled) setData({ overview, simulation });
     });

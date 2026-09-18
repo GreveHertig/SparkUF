@@ -18,6 +18,8 @@ export type Dictionary = {
     doneItemsLabel: string;
     /** Uppdrag 2.2: simuleringar ska alltid bära den här etiketten, oavsett källa. */
     simulationLabel: string;
+    /** SimulationCard (uppdrag 2.2, 8): populationens storlek ska alltid synas. */
+    simulationPopulationLabel: string;
     upToPointsBefore: string;
     upToPointsAfter: string;
   };
@@ -176,6 +178,21 @@ export type Dictionary = {
     backToJourney: string;
     whatHappened: string;
     whatsNext: string;
+    /** Uppdrag 9.1: de tre klickbara momenten (före/körning/efter) — en liten
+     * pill ovanpå stegets arbetsyta som visar var i steget man är. */
+    momentPill: {
+      before: string;
+      running: string;
+      after: string;
+    };
+    /** Visas under körning-momentet — pekar mot Medgrundaren, där verktyget faktiskt visas. */
+    runningHint: string;
+    /** "Efter"-momentets poängändring med förklaring (uppdrag 9.1). */
+    scoreChangeTitle: string;
+    /** "Efter"-momentets "vad som låstes upp" (uppdrag 9.1), kod-härlett. */
+    unlockedTitle: string;
+    /** Simuleringsytan på stegets arbetsyta (uppdrag 2.2, steg 03/04/06). */
+    simulationTitle: string;
   };
   cofounderPage: {
     title: string;
@@ -227,6 +244,8 @@ export type Dictionary = {
       responded: string;
     };
     responseQuoteLabel: string;
+    /** Simulering av betalningstolerans per byråstorlek (uppdrag 2.2, steg 04). */
+    simulationTitle: string;
   };
   pulsePage: {
     title: string;

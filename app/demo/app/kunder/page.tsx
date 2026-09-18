@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { Customers, type CustomersData } from "@/screens/Customers";
 import { useI18n } from "@/i18n/context";
 import { demoOutreachProvider } from "@/adapters/demo/OutreachProvider";
+import { demoSimulationProvider, simulationQuestions } from "@/adapters/demo/SimulationProvider";
 import { useDemoStore } from "@/adapters/demo/demoStore";
+import { getCurrentStepNumberFor } from "@/adapters/demo/sara";
 
 export default function DemoCustomersPage() {
   const { locale } = useI18n();
@@ -13,8 +15,13 @@ export default function DemoCustomersPage() {
 
   useEffect(() => {
     let cancelled = false;
-    demoOutreachProvider.getCampaign(locale).then((rows) => {
-      if (!cancelled) setData({ rows });
+    const showSimulation = getCurrentStepNumberFor(beatIndex) >= 4;
+
+    Promise.all([
+      demoOutreachProvider.getCampaign(locale),
+      showSimulation ? demoSimulationProvider.simulate(simulationQuestions.tolerance[locale], locale) : null,
+    ]).then(([rows, simulation]) => {
+      if (!cancelled) setData({ rows, simulation });
     });
     return () => {
       cancelled = true;

@@ -17,6 +17,7 @@ export const sv = {
     pulseWhyItMattersPrefix: "Varför det spelar roll:",
     doneItemsLabel: "Redan klart",
     simulationLabel: "Simulering",
+    simulationPopulationLabel: "Simulerad population",
     upToPointsBefore: "Kan ge upp till",
     upToPointsAfter: "poäng",
   },
@@ -184,6 +185,15 @@ export const sv = {
     backToJourney: "Tillbaka till Resan",
     whatHappened: "Vad som gjorts",
     whatsNext: "Vad som återstår",
+    momentPill: {
+      before: "Före",
+      running: "Körning",
+      after: "Efter",
+    },
+    runningHint: "Medgrundaren kör nu — se Medgrundaren för verktygskörningen steg för steg.",
+    scoreChangeTitle: "Poängändring",
+    unlockedTitle: "Nyupplåst",
+    simulationTitle: "Simulering",
   },
   cofounderPage: {
     title: "Medgrundaren",
@@ -233,6 +243,7 @@ export const sv = {
       responded: "Svarat",
     },
     responseQuoteLabel: "Svar",
+    simulationTitle: "Simulering: betalningstolerans per byråstorlek",
   },
   pulsePage: {
     title: "Pulsen",
