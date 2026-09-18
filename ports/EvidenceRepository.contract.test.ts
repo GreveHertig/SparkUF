@@ -1,8 +1,56 @@
-import { expect } from "vitest";
+import { expect, vi } from "vitest";
 import type { EvidenceRepository } from "./EvidenceRepository";
 import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
 import { liveEvidenceRepository } from "@/adapters/live/EvidenceRepository";
 import { describeContract, contractIt } from "./testContract";
+import { makeSupabaseFake } from "@/test/stubs/supabaseFake";
+
+// Alla tre metoder är klara (docs/moduler/evidens-och-poang.md) — kontraktet
+// prövas nu mot liveadaptern också. Fixturen ger bevis för BÅDA delarna som
+// är upplåsta i discover-fasen (fit, market) — annars kastar
+// calculateScore/EmptyStateError och testet failar i stället för att pröva
+// kontraktet (contractIt skippar bara NotImplementedError, se testContract.ts).
+vi.mock("@/lib/server/session", () => ({
+  requireSupabaseUser: async () => ({
+    supabase: makeSupabaseFake({
+      projects: [
+        { id: "contract-project", user_id: "contract-test-user", name: "Testprojekt", one_liner: "En testidé.", is_active: true },
+      ],
+      evidence: [
+        {
+          id: "1",
+          user_id: "contract-test-user",
+          project_id: "contract-project",
+          part_id: "fit",
+          points: 6,
+          contradicts: false,
+          data_type: "customer",
+          source_name: "Kundintervju",
+          source_url: null,
+          fetched_at: "2026-09-01",
+          created_at: "2026-09-01T00:00:00Z",
+        },
+        {
+          id: "2",
+          user_id: "contract-test-user",
+          project_id: "contract-project",
+          part_id: "market",
+          points: 6,
+          contradicts: false,
+          data_type: "register",
+          source_name: "Bolagsverket",
+          source_url: "https://bolagsverket.se",
+          fetched_at: "2026-09-01",
+          created_at: "2026-09-01T00:00:01Z",
+        },
+      ],
+      score_snapshots: [
+        { user_id: "contract-test-user", project_id: "contract-project", total: 15, calculated_at: "2026-09-01T00:00:00Z" },
+      ],
+    }),
+    userId: "contract-test-user",
+  }),
+}));
 
 describeContract<EvidenceRepository>(
   "EvidenceRepository",

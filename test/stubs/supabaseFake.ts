@@ -103,7 +103,11 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
     }
 
     let rows = this.table.filter((row) => this.filters.every((filter) => filter(row)));
-    for (const { column, ascending } of this.orderSpecs) {
+    // Flera .order()-anrop är en sammansatt nyckel (primär, sekundär, ...),
+    // inte oberoende sorteringar — applicera dem i OMVÄND ordning med en
+    // stabil sort, så den sist tillämpade (den primära nyckeln) vinner och
+    // tidigare nycklar bara avgör ordningen inom en grupp av lika värden.
+    for (const { column, ascending } of [...this.orderSpecs].reverse()) {
       rows = [...rows].sort((a, b) => {
         const av = a[column] as string | number;
         const bv = b[column] as string | number;
