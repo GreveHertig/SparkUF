@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import * as Popover from "@radix-ui/react-popover";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
@@ -15,8 +16,11 @@ import { saraBeats } from "@/adapters/demo/sara";
  */
 export function DemoBar() {
   const { locale, t } = useI18n();
+  const pathname = usePathname();
+  const router = useRouter();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);
+  const onboardingDone = useDemoStore((state) => state.onboardingDone);
   const tourOn = useDemoStore((state) => state.tourOn);
   const collapsed = useDemoStore((state) => state.collapsed);
   const next = useDemoStore((state) => state.next);
@@ -25,11 +29,22 @@ export function DemoBar() {
   const toggleTour = useDemoStore((state) => state.toggleTour);
   const toggleCollapsed = useDemoStore((state) => state.toggleCollapsed);
   const setEntry = useDemoStore((state) => state.setEntry);
+  const completeOnboarding = useDemoStore((state) => state.completeOnboarding);
   const reset = useDemoStore((state) => state.reset);
 
+  // Steg/fas ur Saras beats betyder inget förrän grundaren är inne i
+  // /demo/app (avsnitt 9.1: demoraden ska fungera även under onboardingen,
+  // men "steg X av 12" hör bara hemma i appen).
+  const inApp = pathname?.startsWith("/demo/app") ?? false;
   const beat = saraBeats[beatIndex];
   const atStart = beatIndex === 0;
   const atEnd = beatIndex === saraBeats.length - 1;
+
+  function jumpToStep(index: number) {
+    goTo(index);
+    if (!onboardingDone) completeOnboarding();
+    if (!inApp) router.push("/demo/app");
+  }
 
   useEffect(() => {
     function isTypingTarget(target: EventTarget | null): boolean {
@@ -40,10 +55,10 @@ export function DemoBar() {
     function onKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return;
 
-      if (event.key === "ArrowRight") {
+      if (event.key === "ArrowRight" && inApp) {
         event.preventDefault();
         next();
-      } else if (event.key === "ArrowLeft") {
+      } else if (event.key === "ArrowLeft" && inApp) {
         event.preventDefault();
         back();
       } else if (event.key === "t" || event.key === "T") {
@@ -55,7 +70,7 @@ export function DemoBar() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [next, back, toggleTour, reset, t]);
+  }, [next, back, toggleTour, reset, t, inApp]);
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-700 bg-ink-800 text-paper-50">
@@ -69,8 +84,14 @@ export function DemoBar() {
 
         {!collapsed && (
           <span className="text-xs text-slate-300">
-            {t.demoBar.stepLabel} {beat.stepNumber} {t.demoBar.stepOf} · {t.demoBar.phaseLabel}{" "}
-            {t.demoBar.phases[beat.phase]} · {beat.momentLabel[locale]}
+            {inApp ? (
+              <>
+                {t.demoBar.stepLabel} {beat.stepNumber} {t.demoBar.stepOf} · {t.demoBar.phaseLabel}{" "}
+                {t.demoBar.phases[beat.phase]} · {beat.momentLabel[locale]}
+              </>
+            ) : (
+              t.demoBar.onboardingLabel
+            )}
           </span>
         )}
 
@@ -89,7 +110,7 @@ export function DemoBar() {
           <button
             type="button"
             onClick={back}
-            disabled={atStart}
+            disabled={!inApp || atStart}
             className="rounded-md px-3 py-1.5 text-sm font-medium text-paper-50 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-accent-300 disabled:opacity-40 disabled:hover:bg-transparent"
           >
             ◀ {t.demoBar.back}
@@ -97,7 +118,7 @@ export function DemoBar() {
           <button
             type="button"
             onClick={next}
-            disabled={atEnd}
+            disabled={!inApp || atEnd}
             className="rounded-md px-3 py-1.5 text-sm font-medium text-paper-50 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-accent-300 disabled:opacity-40 disabled:hover:bg-transparent"
           >
             {t.demoBar.next} ▶
@@ -123,7 +144,7 @@ export function DemoBar() {
                   <Popover.Close asChild key={scenarioBeat.id}>
                     <button
                       type="button"
-                      onClick={() => goTo(index)}
+                      onClick={() => jumpToStep(index)}
                       className={cn(
                         "rounded-md px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-100",
                         index === beatIndex && "bg-accent-100 font-semibold text-accent-700",

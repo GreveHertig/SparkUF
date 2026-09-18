@@ -6,9 +6,8 @@
 // demorad och känner inte till att den här filen finns.
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { OnboardingEntry } from "@/core/domain";
 import { saraBeats, getBeatAt, type SaraBeat } from "./sara";
-
-export type DemoEntry = "noIdea" | "hasIdea";
 
 const LAST_BEAT_INDEX = saraBeats.length - 1;
 
@@ -18,7 +17,11 @@ function clampBeatIndex(index: number): number {
 
 type DemoState = {
   beatIndex: number;
-  entry: DemoEntry;
+  entry: OnboardingEntry;
+  /** Har grundaren klickat sig igenom /demo/start? (avsnitt 9.1: demot ska
+   * alltid börja i onboardingen.) Styr om /demo/app skickar tillbaka till
+   * /demo/start — se app/demo/app/layout.tsx. */
+  onboardingDone: boolean;
   tourOn: boolean;
   collapsed: boolean;
   next: () => void;
@@ -26,7 +29,8 @@ type DemoState = {
   goTo: (index: number) => void;
   toggleTour: () => void;
   toggleCollapsed: () => void;
-  setEntry: (entry: DemoEntry) => void;
+  setEntry: (entry: OnboardingEntry) => void;
+  completeOnboarding: () => void;
   reset: () => void;
 };
 
@@ -35,6 +39,7 @@ export const useDemoStore = create<DemoState>()(
     (set) => ({
       beatIndex: 0,
       entry: "noIdea",
+      onboardingDone: false,
       tourOn: false,
       collapsed: false,
       next: () => set((state) => ({ beatIndex: clampBeatIndex(state.beatIndex + 1) })),
@@ -43,7 +48,8 @@ export const useDemoStore = create<DemoState>()(
       toggleTour: () => set((state) => ({ tourOn: !state.tourOn })),
       toggleCollapsed: () => set((state) => ({ collapsed: !state.collapsed })),
       setEntry: (entry) => set({ entry }),
-      reset: () => set({ beatIndex: 0, entry: "noIdea", tourOn: false }),
+      completeOnboarding: () => set({ onboardingDone: true }),
+      reset: () => set({ beatIndex: 0, entry: "noIdea", onboardingDone: false, tourOn: false }),
     }),
     { name: "spark:demo-state" },
   ),

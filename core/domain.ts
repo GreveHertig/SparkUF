@@ -14,6 +14,12 @@ export type Profile = {
   initials: string;
 };
 
+/** Vilken ingång grundaren valde i onboardingen (avsnitt 2.1): "noIdea" —
+ * "Jag har ingen idé än", "hasIdea" — "Jag har redan en idé". Delad mellan
+ * ports/, adapters/demo/ (demoStore) och screens/ så att ingen av dem
+ * duplicerar typen. */
+export type OnboardingEntry = "noIdea" | "hasIdea";
+
 /** En del av poängens nedbrytning (avsnitt 7.2), redan upplåst. */
 export type ScorePart = {
   name: string;

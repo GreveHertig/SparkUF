@@ -1,10 +1,8 @@
-import { mockPoäng } from "@/lib/demo-data/mock";
+import { redirect } from "next/navigation";
 
-export default function DemoPage() {
-  return (
-    <main>
-      <h1>Spark — förhandstitt</h1>
-      <p>Poäng (exempel, inte skarp data): {mockPoäng.totalt} / 100</p>
-    </main>
-  );
+// Demot ska alltid börja i onboardingen (avsnitt 9.1). Ersätter Eriks
+// ursprungliga platshållare (mockPoäng ur lib/demo-data/mock.ts) — den filen
+// rörs inte, men är inte längre importerad någonstans.
+export default function DemoRootPage() {
+  redirect("/demo/start");
 }

@@ -1,10 +1,16 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import DemoAppShellLayout from "./layout";
 import DemoAppHomePage from "./page";
+
+// Se demo-bar.test.tsx för varför next/navigation behöver mockas här.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: () => {}, replace: () => {} }),
+  usePathname: () => "/demo/app",
+}));
 
 // jsdom saknar matchMedia — ScoreBadge (via usePrefersReducedMotion) behöver
 // den. Orelaterat till buggen den här filen testar, men krävs för att kunna
@@ -30,6 +36,7 @@ beforeAll(() => {
 // test så att testerna inte påverkar varandra.
 beforeEach(() => {
   useDemoStore.getState().reset();
+  useDemoStore.getState().completeOnboarding();
 });
 
 // Regression test for en bugg där /demo/app kraschade med "An unknown

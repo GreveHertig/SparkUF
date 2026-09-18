@@ -7,4 +7,7 @@ export const liveProfileRepository: ProfileRepository = {
   async getProfile() {
     throw new NotImplementedError("Profil", DOC);
   },
+  async getOnboardingScript() {
+    throw new NotImplementedError("Profil", DOC);
+  },
 };

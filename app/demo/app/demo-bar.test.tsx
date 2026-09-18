@@ -1,10 +1,19 @@
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import DemoAppShellLayout from "./layout";
 import DemoAppHomePage from "./page";
+
+// DemoBar (avsnitt 9.1) läser pathname för att veta om den ska visa
+// steg/fas eller onboarding-läget, och layouten skickar tillbaka till
+// /demo/start om onboardingen inte är klar — båda kräver next/navigation,
+// som inte finns monterad i den här rena render()-miljön.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: () => {}, replace: () => {} }),
+  usePathname: () => "/demo/app",
+}));
 
 // Två tester i den här filen renderar samma träd — utan explicit cleanup
 // mellan dem blir DOM:en kvar från förra testet och t.ex. "◀ Bakåt" matchar
@@ -30,6 +39,9 @@ beforeAll(() => {
 
 beforeEach(() => {
   useDemoStore.getState().reset();
+  // Den här filen testar /demo/app:s demorad, inte onboardingen (som har
+  // egna tester) — simulera en session som redan klickat sig igenom den.
+  useDemoStore.getState().completeOnboarding();
 });
 
 // Session 2: demomotorn + calculateScore ska vara kopplade till /demo/app så

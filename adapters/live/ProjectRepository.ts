@@ -7,4 +7,7 @@ export const liveProjectRepository: ProjectRepository = {
   async getProject() {
     throw new NotImplementedError("Projekt och idé", DOC);
   },
+  async getIdeaScreening() {
+    throw new NotImplementedError("Projekt och idé", DOC);
+  },
 };

@@ -266,7 +266,7 @@ export type Dictionary = {
     previewTitle: string;
     publishedUrlLabel: string;
   };
-  /** Demoraden (avsnitt 9.1) — fast rad nederst i /demo/app. */
+  /** Demoraden (avsnitt 9.1) — fast rad nederst i /demo/app och /demo/start. */
   demoBar: {
     personaLabel: string;
     stepLabel: string;
@@ -280,6 +280,8 @@ export type Dictionary = {
       grow: string;
     };
     momentLabel: string;
+    /** Visas i stället för steg/fas medan onboardingen inte är klar. */
+    onboardingLabel: string;
     back: string;
     next: string;
     jumpToStep: string;
@@ -292,5 +294,36 @@ export type Dictionary = {
     resetConfirm: string;
     collapse: string;
     expand: string;
+  };
+  /** Onboardingen (avsnitt 2.1, 6): val av ingång, profilsamtalet och
+   * idégenomlysningen. Delade skärmar, monterade under /demo/start och /start. */
+  onboarding: {
+    entry: {
+      eyebrow: string;
+      title: string;
+      subtitle: string;
+      noIdea: { title: string; body: string; cta: string };
+      hasIdea: { title: string; body: string; cta: string };
+    };
+    profile: {
+      eyebrow: string;
+      title: string;
+      subtitle: string;
+      buildingTitle: string;
+      continueCta: string;
+    };
+    idea: {
+      eyebrow: string;
+      title: string;
+      founderIntroLabel: string;
+      assumptionsTitle: string;
+      testableLabel: string;
+      notTestableYetLabel: string;
+      registerTitle: string;
+      weaknessTitle: string;
+      sharperTitle: string;
+      sharperWhyLabel: string;
+      continueCta: string;
+    };
   };
 };

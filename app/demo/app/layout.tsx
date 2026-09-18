@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/screens/AppShell";
 import { DemoDataBadge } from "@/components/ui/DemoDataBadge";
 import { DemoBar } from "@/components/spark/DemoBar";
@@ -20,9 +21,20 @@ type ShellData = { profile: Profile; score: number };
 // beror poängen även på demomotorns `beatIndex` (adapters/demo/demoStore.ts)
 // — samma mönster, ett beroende till.
 export default function DemoAppShellLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
+  const onboardingDone = useDemoStore((state) => state.onboardingDone);
   const [data, setData] = useState<ShellData | null>(null);
+
+  // Avsnitt 9.1: demot ska alltid börja i onboardingen. Zustands `persist`
+  // hydrerar från localStorage först efter första klientrendering, så det
+  // här får inte avgöras i själva renderingen (det skulle skicka tillbaka
+  // även återvändande besökare under ett ögonblick) — en effekt som körs
+  // efter hydrering är den stabila platsen, samma resonemang som datahämtningen nedan.
+  useEffect(() => {
+    if (!onboardingDone) router.replace("/demo/start");
+  }, [onboardingDone, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +50,7 @@ export default function DemoAppShellLayout({ children }: { children: ReactNode }
     };
   }, [locale, beatIndex]);
 
+  if (!onboardingDone) return null;
   if (!data) return null;
 
   return (
