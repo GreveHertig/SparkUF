@@ -17,7 +17,14 @@ import { en } from "@/i18n/en";
 import type { Dictionary } from "@/i18n/dictionary";
 import type { NextStep, SinceLastTime, ScoreSnapshot, Källa, Profile, PulseSignal } from "@/core/domain";
 import type { JourneySummary } from "@/ports/JourneyRepository";
-import { calculateScore, type PartEvidence, type PhaseId, type EvidenceItem, type ScorePartId } from "@/core/score";
+import {
+  calculateScore,
+  type PartEvidence,
+  type PhaseId,
+  type EvidenceItem,
+  type ScorePartId,
+  type ScoreSuggestionInput,
+} from "@/core/score";
 
 const dictionaries: Record<Locale, Dictionary> = { sv, en };
 
@@ -1449,6 +1456,161 @@ export const SARA_STEPS: readonly StepMeta[] = [
     maxPoints: 14,
   },
 ];
+
+/** Kandidater för "Höj din poäng" (7.6) — en per del, alltid samma
+ * förklaring oavsett beat. `deriveSuggestions` (core/score.ts) filtrerar
+ * bort låsta delar och sorterar efter poäng per minut, så det är
+ * filtreringen/sorteringen som är "härledd med kod", inte den här listan. */
+export const saraSuggestionCandidates: Record<Locale, ScoreSuggestionInput[]> = {
+  sv: [
+    {
+      partId: "market",
+      label: "Marknad",
+      gapType: "insufficient",
+      pointsGain: 3,
+      estimatedMinutes: 15,
+      explanation: "Bara delar av registret är hämtat — hämta hela marknadsbilden för fler poäng.",
+      actionLabel: "Se marknadsbilden",
+    },
+    {
+      partId: "competition",
+      label: "Konkurrens",
+      gapType: "insufficient",
+      pointsGain: 2,
+      estimatedMinutes: 10,
+      explanation: "Bara tre konkurrenter kartlagda ytligt — gräv djupare i deras prissättning.",
+      actionLabel: "Se konkurrenterna",
+    },
+    {
+      partId: "fit",
+      label: "Passform",
+      gapType: "structural",
+      pointsGain: 0,
+      estimatedMinutes: 0,
+      explanation: "Du kan inte bygga produkten själv. Löses av Lovable-bygget i steg 10 — inte av mer arbete nu.",
+      actionLabel: "Läs om bygget",
+    },
+    {
+      partId: "problem",
+      label: "Problem",
+      gapType: "insufficient",
+      pointsGain: 2,
+      estimatedMinutes: 30,
+      explanation: "Fler kundsamtal stärker problembekräftelsen ytterligare.",
+      actionLabel: "Boka fler samtal",
+    },
+    {
+      partId: "willingnessToPay",
+      label: "Betalningsvilja",
+      gapType: "contradicting",
+      pointsGain: 6,
+      estimatedMinutes: 60,
+      explanation: "3 av 9 säger nej till priset — prata med fem kunder till i det smalare segmentet innan du bygger vidare.",
+      actionLabel: "Boka fler samtal",
+    },
+    {
+      partId: "product",
+      label: "Produkt",
+      gapType: "insufficient",
+      pointsGain: 4,
+      estimatedMinutes: 120,
+      explanation: "MVP:n är inte helt byggd än — färdigställ enligt omfånget från steg 08.",
+      actionLabel: "Se omfånget",
+    },
+    {
+      partId: "feasibility",
+      label: "Genomförbarhet",
+      gapType: "insufficient",
+      pointsGain: 2,
+      estimatedMinutes: 20,
+      explanation: "Registrera bolagsformen och ordna F-skatt och moms.",
+      actionLabel: "Se det formella",
+    },
+    {
+      partId: "traction",
+      label: "Traktion",
+      gapType: "insufficient",
+      pointsGain: 5,
+      estimatedMinutes: 480,
+      explanation: "Fler betalande kunder stärker traktionen mot Bevisad affär.",
+      actionLabel: "Se kunderna",
+    },
+  ],
+  en: [
+    {
+      partId: "market",
+      label: "Market",
+      gapType: "insufficient",
+      pointsGain: 3,
+      estimatedMinutes: 15,
+      explanation: "Only part of the registry is fetched — pull the full market picture for more points.",
+      actionLabel: "See the market picture",
+    },
+    {
+      partId: "competition",
+      label: "Competition",
+      gapType: "insufficient",
+      pointsGain: 2,
+      estimatedMinutes: 10,
+      explanation: "Only three competitors mapped shallowly — dig deeper into their pricing.",
+      actionLabel: "See the competitors",
+    },
+    {
+      partId: "fit",
+      label: "Fit",
+      gapType: "structural",
+      pointsGain: 0,
+      estimatedMinutes: 0,
+      explanation: "You can't build the product yourself. Solved by the Lovable build in step 10 — not by more work now.",
+      actionLabel: "Read about the build",
+    },
+    {
+      partId: "problem",
+      label: "Problem",
+      gapType: "insufficient",
+      pointsGain: 2,
+      estimatedMinutes: 30,
+      explanation: "More customer calls further strengthen the problem confirmation.",
+      actionLabel: "Book more calls",
+    },
+    {
+      partId: "willingnessToPay",
+      label: "Willingness to pay",
+      gapType: "contradicting",
+      pointsGain: 6,
+      estimatedMinutes: 60,
+      explanation: "3 of 9 say no to the price — talk to five more customers in the narrower segment before building further.",
+      actionLabel: "Book more calls",
+    },
+    {
+      partId: "product",
+      label: "Product",
+      gapType: "insufficient",
+      pointsGain: 4,
+      estimatedMinutes: 120,
+      explanation: "The MVP isn't fully built yet — finish it per the scope from step 08.",
+      actionLabel: "See the scope",
+    },
+    {
+      partId: "feasibility",
+      label: "Feasibility",
+      gapType: "insufficient",
+      pointsGain: 2,
+      estimatedMinutes: 20,
+      explanation: "Register the company form and arrange F-tax and VAT.",
+      actionLabel: "See the paperwork",
+    },
+    {
+      partId: "traction",
+      label: "Traction",
+      gapType: "insufficient",
+      pointsGain: 5,
+      estimatedMinutes: 480,
+      explanation: "More paying customers strengthen traction toward Proven business.",
+      actionLabel: "See the customers",
+    },
+  ],
+};
 
 /** Bara Saras pulssignal för "idag" (Hem-sidan) — se adapters/demo/PulseProvider.ts
  * för hela listan (9.5) som Pulsen-sidan visar. */

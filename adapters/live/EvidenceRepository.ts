@@ -7,4 +7,7 @@ export const liveEvidenceRepository: EvidenceRepository = {
   async getScoreSnapshot() {
     throw new NotImplementedError("Evidens och poäng", DOC);
   },
+  async getSuggestions() {
+    throw new NotImplementedError("Evidens och poäng", DOC);
+  },
 };
