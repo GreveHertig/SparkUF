@@ -22,8 +22,6 @@ import { liveBuildProvider } from "@/adapters/live/BuildProvider";
  * Juridisk koll är redan byggd och står därför inte i listan.
  */
 const STILL_STUBS: { module: string; call: () => Promise<unknown> }[] = [
-  { module: "Profil", call: () => liveProfileRepository.getProfile() },
-  { module: "Projekt och idé", call: () => liveProjectRepository.getProject() },
   { module: "Resan", call: () => liveJourneyRepository.getHomeSummary("sv") },
   { module: "Evidens och poäng", call: () => liveEvidenceRepository.getScoreSnapshot("sv") },
   { module: "Minnet", call: () => liveMemoryRepository.getBrainNotes() },
@@ -38,6 +36,34 @@ const STILL_STUBS: { module: string; call: () => Promise<unknown> }[] = [
 
 describe("Stub-vakt: obyggda liveadaptrar kastar fortfarande NotImplementedError", () => {
   it.each(STILL_STUBS)("$module", async ({ call }) => {
+    await expect(call()).rejects.toBeInstanceOf(NotImplementedError);
+  });
+});
+
+/**
+ * Session P1:s dokumenterade blinda fläck (docs/status.md, Session P2):
+ * `contractIt` kan skilja "hela modulen är en stub" från "en enskild metod i
+ * en annars byggd adapter kastar av misstag" — MEN bara om det fångas här
+ * också. Profil och Projekt och idé är nu "påbörjade" (getProfile/getProject
+ * är klara), men de två metoderna nedan är MEDVETET kvar som stubbar
+ * (olösta designbeslut, se docs/moduler/profil.md och
+ * docs/moduler/projekt-och-ide.md) — inte bortglömda.
+ */
+const PARTIELLA_STUBBAR: { module: string; metod: string; call: () => Promise<unknown> }[] = [
+  {
+    module: "Profil",
+    metod: "getOnboardingScript",
+    call: () => liveProfileRepository.getOnboardingScript("noIdea", "sv"),
+  },
+  {
+    module: "Projekt och idé",
+    metod: "getIdeaScreening",
+    call: () => liveProjectRepository.getIdeaScreening("sv"),
+  },
+];
+
+describe("Stub-vakt: enstaka metoder i annars klara liveadaptrar kastar fortfarande NotImplementedError", () => {
+  it.each(PARTIELLA_STUBBAR)("$module.$metod", async ({ call }) => {
     await expect(call()).rejects.toBeInstanceOf(NotImplementedError);
   });
 });
