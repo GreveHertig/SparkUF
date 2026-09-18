@@ -1,8 +1,19 @@
-import { expect } from "vitest";
+import { expect, vi } from "vitest";
 import type { JourneyRepository } from "./JourneyRepository";
 import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
 import { describeContract, contractIt } from "./testContract";
+import { makeSupabaseFake } from "@/test/stubs/supabaseFake";
+
+// getSteps/getStepDetail är klara (docs/moduler/resan.md) — kontraktet
+// prövas nu mot liveadaptern också. Inget projekt i fixturen behövs: båda
+// metoderna fungerar för ett helt nytt konto (steg 1 "current", resten
+// "locked"). getHomeSummary är fortfarande en medveten stub (beror på
+// Utskick och svar, inte byggd i P1) — contractIt skippar den delen av sig
+// själv, se ports/stubStatus.test.ts's PARTIELLA_STUBBAR.
+vi.mock("@/lib/server/session", () => ({
+  requireSupabaseUser: async () => ({ supabase: makeSupabaseFake({}), userId: "contract-test-user" }),
+}));
 
 describeContract<JourneyRepository>(
   "JourneyRepository",

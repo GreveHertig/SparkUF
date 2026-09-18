@@ -5,6 +5,7 @@ import { ALL_PART_IDS, calculateScore, type EvidenceItem, type PartEvidence, typ
 import { deriveCurrentStepNumber, scorePhaseForStep } from "@/core/journey";
 import { EmptyStateError } from "@/core/errors";
 import { requireSupabaseUser } from "@/lib/server/session";
+import { getActiveProjectId } from "@/lib/server/activeProject";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sv } from "@/i18n/sv";
 import { en } from "@/i18n/en";
@@ -29,17 +30,6 @@ type EvidenceRow = {
   source_url: string | null;
   fetched_at: string;
 };
-
-async function getActiveProjectId(supabase: SupabaseClient, userId: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (error) throw new Error(`Evidens och poäng: kunde inte läsa projektet (${error.message}).`);
-  return data ? (data.id as string) : null;
-}
 
 async function getEvidenceRows(
   supabase: SupabaseClient,

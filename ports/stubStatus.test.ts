@@ -21,7 +21,6 @@ import { liveBuildProvider } from "@/adapters/live/BuildProvider";
  * Juridisk koll är redan byggd och står därför inte i listan.
  */
 const STILL_STUBS: { module: string; call: () => Promise<unknown> }[] = [
-  { module: "Resan", call: () => liveJourneyRepository.getHomeSummary("sv") },
   { module: "Minnet", call: () => liveMemoryRepository.getBrainNotes() },
   { module: "Medgrundaren", call: () => liveCofounderAgent.sendMessage("hej", [], "sv") },
   { module: "Registret", call: () => liveRegistryProvider.getMarketOverview("sv") },
@@ -42,10 +41,11 @@ describe("Stub-vakt: obyggda liveadaptrar kastar fortfarande NotImplementedError
  * Session P1:s dokumenterade blinda fläck (docs/status.md, Session P2):
  * `contractIt` kan skilja "hela modulen är en stub" från "en enskild metod i
  * en annars byggd adapter kastar av misstag" — MEN bara om det fångas här
- * också. Profil och Projekt och idé är nu "påbörjade" (getProfile/getProject
- * är klara), men de två metoderna nedan är MEDVETET kvar som stubbar
- * (olösta designbeslut, se docs/moduler/profil.md och
- * docs/moduler/projekt-och-ide.md) — inte bortglömda.
+ * också. Profil, Projekt och idé och Resan är alla "påbörjade" (inte
+ * "klara") — huvudmetoderna fungerar, men metoden nedan per modul är
+ * MEDVETET kvar som stub (olösta designbeslut eller ett beroende på en
+ * annan, obyggd modul — se respektive docs/moduler/<modul>.md) — inte
+ * bortglömd.
  */
 const PARTIELLA_STUBBAR: { module: string; metod: string; call: () => Promise<unknown> }[] = [
   {
@@ -58,9 +58,14 @@ const PARTIELLA_STUBBAR: { module: string; metod: string; call: () => Promise<un
     metod: "getIdeaScreening",
     call: () => liveProjectRepository.getIdeaScreening("sv"),
   },
+  {
+    module: "Resan",
+    metod: "getHomeSummary",
+    call: () => liveJourneyRepository.getHomeSummary("sv"),
+  },
 ];
 
-describe("Stub-vakt: enstaka metoder i annars klara liveadaptrar kastar fortfarande NotImplementedError", () => {
+describe("Stub-vakt: enstaka metoder i annars påbörjade liveadaptrar kastar fortfarande NotImplementedError", () => {
   it.each(PARTIELLA_STUBBAR)("$module.$metod", async ({ call }) => {
     await expect(call()).rejects.toBeInstanceOf(NotImplementedError);
   });

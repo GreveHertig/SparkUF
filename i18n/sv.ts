@@ -340,6 +340,8 @@ export const sv = {
     },
   },
   journeySteps: {
+    eyebrowPrefix: "Steg",
+    defaultActionLabel: "Fortsätt",
     step1: {
       title: "Om dig",
       oneLiner: "Profilsamtal om bakgrund, kompetens, nätverk, tid, pengar och riskaptit.",
