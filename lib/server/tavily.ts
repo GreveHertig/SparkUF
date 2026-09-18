@@ -39,6 +39,9 @@ export type TavilySearchResult = {
   publishedDate?: string;
 };
 
+// `search` tar inte emot ett `TavilySearchInput` än — den finns typad för
+// att visa formen den riktiga implementationen ska ha, men ingen anropare
+// finns förrän modulsessionen bygger frågan mot Tavily på riktigt.
 export async function search(): Promise<TavilySearchResult[]> {
   getTavilyApiKey();
   throw new NotImplementedError("Webbresearch och Pulsen", DOC);
