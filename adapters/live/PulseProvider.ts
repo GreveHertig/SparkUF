@@ -7,4 +7,7 @@ export const livePulseProvider: PulseProvider = {
   async getTodaysSignal() {
     throw new NotImplementedError("Pulsen", DOC);
   },
+  async getSignals() {
+    throw new NotImplementedError("Pulsen", DOC);
+  },
 };
