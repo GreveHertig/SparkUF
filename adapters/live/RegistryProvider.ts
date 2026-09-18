@@ -7,4 +7,7 @@ export const liveRegistryProvider: RegistryProvider = {
   async searchCompanies() {
     throw new NotImplementedError("Registret", DOC);
   },
+  async getMarketOverview() {
+    throw new NotImplementedError("Registret", DOC);
+  },
 };

@@ -10,4 +10,7 @@ export const liveOutreachProvider: OutreachProvider = {
   async getStatuses() {
     throw new NotImplementedError("Utskick och svar", DOC);
   },
+  async getCampaign() {
+    throw new NotImplementedError("Utskick och svar", DOC);
+  },
 };
