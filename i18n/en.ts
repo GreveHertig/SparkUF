@@ -374,7 +374,6 @@ export const en = {
       passwordNeedsNumber: "Password must contain at least one number.",
       passwordRequired: "Enter your password.",
       invalidCredentials: "Wrong email or password.",
-      emailInUse: "An account with that email already exists.",
       unexpected: "Something went wrong. Please try again shortly.",
     },
     signOutCta: "Log out",

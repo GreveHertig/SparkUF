@@ -55,7 +55,7 @@ describe("app/(auth)/actions", () => {
       expect(state?.fieldErrors?.password).toContain("password_needs_number");
     });
 
-    it("mappar Supabases 'e-post upptagen'-fel till en generisk kod, aldrig Supabases egen text", async () => {
+    it("visar samma 'kolla din mejl'-svar för ett upptaget konto som för en ny registrering (skydd mot kontouppräkning)", async () => {
       signUpMock.mockResolvedValue({
         data: { user: null, session: null },
         error: { message: "User already registered", code: "user_already_exists" },
@@ -65,7 +65,10 @@ describe("app/(auth)/actions", () => {
         undefined,
         formData({ name: "Sara Lindqvist", email: "sara@exempel.se", password: "abcdefg1" }),
       );
-      expect(state?.formError).toBe("email_in_use");
+      // Aldrig ett distinkt felmeddelande här — annars kan formuläret
+      // användas för att lista ut vilka e-postadresser redan har konton.
+      expect(state?.checkEmail).toBe(true);
+      expect(state?.formError).toBeUndefined();
     });
 
     it("visar 'kolla din mejl' när kontot skapas utan session (e-postbekräftelse påslagen)", async () => {

@@ -374,7 +374,6 @@ export const sv = {
       passwordNeedsNumber: "Lösenordet måste innehålla minst en siffra.",
       passwordRequired: "Ange ditt lösenord.",
       invalidCredentials: "Fel e-post eller lösenord.",
-      emailInUse: "Det finns redan ett konto med den e-postadressen.",
       unexpected: "Något gick fel. Försök igen om en stund.",
     },
     signOutCta: "Logga ut",

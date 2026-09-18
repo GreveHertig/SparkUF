@@ -366,7 +366,6 @@ export type Dictionary = {
       passwordNeedsNumber: string;
       passwordRequired: string;
       invalidCredentials: string;
-      emailInUse: string;
       unexpected: string;
     };
     signOutCta: string;

@@ -24,7 +24,7 @@ export type SignUpFieldErrorCode =
   | "password_needs_letter"
   | "password_needs_number";
 
-export type AuthFormErrorCode = "invalid_credentials" | "email_in_use" | "unexpected";
+export type AuthFormErrorCode = "invalid_credentials" | "unexpected";
 
 export type SignInFieldErrors = Partial<Record<"email" | "password", SignInFieldErrorCode[]>>;
 export type SignUpFieldErrors = Partial<Record<"name" | "email" | "password", SignUpFieldErrorCode[]>>;
@@ -69,14 +69,16 @@ function readNext(formData: FormData): string {
 /** Supabases egna felkoder (@supabase/auth-js), aldrig dess meddelandetext. */
 function mapAuthError(error: AuthError): AuthFormErrorCode {
   switch (error.code) {
-    case "user_already_exists":
-    case "email_exists":
-      return "email_in_use";
     case "invalid_credentials":
       return "invalid_credentials";
     default:
       return "unexpected";
   }
+}
+
+/** true för Supabases "kontot finns redan"-koder. */
+function isAccountExistsError(error: AuthError): boolean {
+  return error.code === "user_already_exists" || error.code === "email_exists";
 }
 
 export async function signUp(_prevState: SignUpFormState, formData: FormData): Promise<SignUpFormState> {
@@ -101,6 +103,14 @@ export async function signUp(_prevState: SignUpFormState, formData: FormData): P
   });
 
   if (error) {
+    // Kontot finns redan (Supabase: user_already_exists/email_exists) ger
+    // AVSIKTLIGT samma svar som en lyckad registrering ("kolla din mejl"),
+    // aldrig ett distinkt felmeddelande — annars kan formuläret användas för
+    // att lista ut vilka e-postadresser redan har konton (kontouppräkning).
+    // security-reviewer, Session P1.
+    if (isAccountExistsError(error)) {
+      return { checkEmail: true };
+    }
     return { formError: mapAuthError(error) };
   }
 

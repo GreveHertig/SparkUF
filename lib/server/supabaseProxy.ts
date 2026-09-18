@@ -13,6 +13,16 @@ import type { NextRequest, NextResponse } from "next/server";
  * i stället för att skrivas direkt på ett svar — proxy.ts vet inte förrän
  * efter `getUser()`-anropet om den till slut returnerar `NextResponse.next()`
  * eller en redirect, och båda måste bära cookies om en tokenförnyelse skett.
+ *
+ * `setAll` skriver ÄVEN de nya cookievärdena direkt på `request.cookies`
+ * (inte bara i `pending`). Supabases refresh-tokens är engångs (se
+ * @supabase/ssr:s README) — om proxyn förnyar sessionen men bara skriver
+ * det nya värdet på UTGÅENDE svar, skulle samma requests nedströms
+ * Server Component-rendering (via `NextResponse.next({ request })`) fortfarande
+ * se det GAMLA, redan förbrukade tokenvärdet i sina cookies och misslyckas —
+ * en falsk utloggning direkt efter en lyckad förnyelse. Att mutera
+ * `request.cookies` innan `NextResponse.next({ request })` byggs är
+ * Next-dokumentets och Supabases egna referensmönster för just det här.
  */
 
 type PendingCookie = { name: string; value: string; options: CookieOptions };
@@ -38,6 +48,9 @@ export function createSupabaseProxyClient(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
+        for (const { name, value } of cookiesToSet) {
+          request.cookies.set(name, value);
+        }
         pending.push(...cookiesToSet);
       },
     },
