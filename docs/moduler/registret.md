@@ -40,6 +40,13 @@ obligatorisk på `MarketOverview`, Datalöftets krav.
   omsättnings- och anställningsfördelning per SNI-kod och län. Ger underlaget
   för `getMarketOverview`s aggregat (`companyCount`, `medianRevenueKsek`,
   `growthSharePercent`, `regionSharePercent`).
+- **Uppdaterat efter dataspiken (2026-09-18, se `docs/dataspiken.md`):**
+  Bolagsverkets och SCB:s "API för värdefulla datamängder" är gratis och
+  kräver inget avtal, bara en kundanmälan (skickad, väntar på
+  godkännande). Blockeraren är alltså godkännandet plus att Bolagsverkets
+  användarvillkor läses (de gick inte att läsa under spiken), inte ett
+  avtal. Rekommenderad MVP-källa är den här, inte Allabolag/UC eller
+  Ratsit. Stycket nedan är kvar som historik.
 - **Blockeraren är avtal, inte kod.** Båda källorna kräver ett dataavtal
   eller en licens innan liveadaptern kan byggas — se `docs/uppdrag.md`
   avsnitt 14.3 ("stub tills dataavtal finns"). `.env.example` har därför

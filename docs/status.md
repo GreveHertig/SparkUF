@@ -677,3 +677,24 @@ på Resan/[steg] och en `−0`-fix på Hem/Poäng.
   webbläsare (se ovan) — fungerar i teorin (Radix Popover + `overflow-y-
   auto`) men inte klickad igenom.
 - Inga nya problem i övrigt.
+
+## Dataspiken — källa för RegistryProvider (klar, gren `dataspiken`)
+
+Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
+
+### Klart
+- **`docs/dataspiken.md`:** källa, kostnad, villkor och rekommendation per källa, med varje uppgift märkt Verifierat / Sekundärt / Osäkert.
+- **Rekommendation:** bygg `RegistryProvider` på Bolagsverkets och SCB:s "API för värdefulla datamängder" (gratis, inget avtal, öppen licens enligt förordning (EU) 2023/138). Allabolag/UC går vi inte vidare med utan ett medvetet avtalsbeslut. Ratsit: gå inte vidare.
+- **Årsredovisningarna** levereras som iXBRL: strukturerade taggar inuti en dokumentfil per bolag och år, inte en färdig tabell. Bara aktiebolag lämnar in digitalt.
+- **`docs/moduler/registret.md`:** rättade formuleringen "blockeraren är avtal" med en hänvisning till dataspiken.
+
+### Beslut nästa session behöver känna till
+- **Bolagsverkets faktiska användarvillkor är inte lästa.** Alla deras sidor svarade med CAPTCHA, API-portalen med 403. Licensfrågan (får vi lagra och visa namngivna företag?) är besvarad som "sannolikt ja" utifrån EU-förordningen och Bolagsverkets sammanfattade text, inte utifrån villkoren. Läs dem innan cachning byggs.
+- **Oklart om Bolagsverkets API kan söka på SNI-kod.** `searchCompanies` kan behöva SCB:s API eller filnedladdning. Avgörs i en spik med riktiga nycklar (ordning i `dataspiken.md` avsnitt 3).
+- **Reklamspärr och enskilda firmor:** SCB-registret innehåller fysiska personer och en reklamspärr-variabel. Förslag: namngivna listor bara för aktiebolag och utan reklamspärrade. Kräver Juridisk koll och en vuxen/handledare.
+- **Allabolag/UC är ett öppet beslut för grundaren** (partner + vuxen/handledare innan kontakt eller avtal). Villkoren förbjuder regelbunden, systematisk lagring utan skriftligt medgivande. Rättighetshavaren står som Proff AS i villkoren men UC Affärsinformation AB i integritetspolicyn, vilket är oklart.
+
+### Kända problem / öppna frågor
+- **Utskick och svar saknar källa till mottagarnas kontaktuppgifter.** Registret ger varken e-post eller telefon. Bör lösas innan utskick byggs live (`dataspiken.md` avsnitt 6, fråga 5).
+- **Ratsit** verifierades bara via sökresultat (403 på deras sidor). En söksammanfattning antyder att de också säljer ett API, vilket inte bekräftades.
+- Väntar på godkännande av Eriks kundanmälan hos Bolagsverket.
