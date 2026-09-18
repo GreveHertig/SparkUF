@@ -339,6 +339,56 @@ export const en = {
       continueCta: "Continue to the profile chat",
     },
   },
+  journeySteps: {
+    step1: {
+      title: "About you",
+      oneLiner: "A profile chat about background, skills, network, time, money and risk appetite.",
+    },
+    step2: {
+      title: "Opportunities",
+      oneLiner: "Ideas grounded in the profile, crossed with gaps in the registry.",
+    },
+    step3: {
+      title: "The market",
+      oneLiner: "Real numbers from the registry: number of firms, size, revenue, growth and geography.",
+    },
+    step4: {
+      title: "The customer",
+      oneLiner: "Customer profile from the registry. The result is a list of named companies.",
+    },
+    step5: {
+      title: "The calls",
+      oneLiner: "Contact list, Swedish outreach, opens, responses and a reminder. B2B only.",
+    },
+    step6: {
+      title: "The verdict",
+      oneLiner: "Go, refine or pivot, based on actual responses with quotes and numbers.",
+    },
+    step7: {
+      title: "Business case and price",
+      oneLiner: "Swedish calculation with VAT, payroll tax, F-tax, cost floor and break-even.",
+    },
+    step8: {
+      title: "The scope",
+      oneLiner: "MVP from the evidence. Build only what respondents actually asked for.",
+    },
+    step9: {
+      title: "The paperwork",
+      oneLiner: "Sole proprietorship or limited company, Bolagsverket, F-tax, VAT and bookkeeping.",
+    },
+    step10: {
+      title: "Live",
+      oneLiner: "Landing page or MVP, built and published.",
+    },
+    step11: {
+      title: "The first customers",
+      oneLiner: "30-day plan across Swedish channels: LinkedIn, industry forums, Nyföretagarcentrum.",
+    },
+    step12: {
+      title: "Capital",
+      oneLiner: "Almi, Vinnova, Tillväxtverket, regional funds, bank loans and bootstrapping.",
+    },
+  },
   auth: {
     logIn: {
       eyebrow: "LOG IN",

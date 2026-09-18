@@ -339,6 +339,58 @@ export const sv = {
       continueCta: "Fortsätt till profilsamtalet",
     },
   },
+  journeySteps: {
+    step1: {
+      title: "Om dig",
+      oneLiner: "Profilsamtal om bakgrund, kompetens, nätverk, tid, pengar och riskaptit.",
+    },
+    step2: {
+      title: "Möjligheter",
+      oneLiner: "Idéer grundade i profilen, korsade med luckor i registret.",
+    },
+    step3: {
+      title: "Marknaden",
+      oneLiner:
+        "Riktiga siffror ur registret: antal företag, storlek, omsättning, tillväxt och geografi.",
+    },
+    step4: {
+      title: "Kunden",
+      oneLiner: "Kundprofil ur registret. Resultatet är en lista på namngivna företag.",
+    },
+    step5: {
+      title: "Samtalen",
+      oneLiner: "Kontaktlista, svensk outreach, öppningar, svar och påminnelse. Bara B2B.",
+    },
+    step6: {
+      title: "Domen",
+      oneLiner: "Kör, förfina eller pivotera, baserat på faktiska svar med citat och siffror.",
+    },
+    step7: {
+      title: "Affärsfall och pris",
+      oneLiner:
+        "Svensk kalkyl med moms, arbetsgivaravgifter, F-skatt, kostnadsgolv och break-even.",
+    },
+    step8: {
+      title: "Omfånget",
+      oneLiner: "MVP ur bevisen. Bygg bara det de som svarade faktiskt bad om.",
+    },
+    step9: {
+      title: "Det formella",
+      oneLiner: "Enskild firma eller aktiebolag, Bolagsverket, F-skatt, moms och bokföring.",
+    },
+    step10: {
+      title: "Live",
+      oneLiner: "Landningssida eller MVP, byggd och publicerad.",
+    },
+    step11: {
+      title: "Första kunderna",
+      oneLiner: "30-dagarsplan i svenska kanaler: LinkedIn, branschforum, Nyföretagarcentrum.",
+    },
+    step12: {
+      title: "Kapital",
+      oneLiner: "Almi, Vinnova, Tillväxtverket, regionala medel, banklån och bootstrapping.",
+    },
+  },
   auth: {
     logIn: {
       eyebrow: "LOGGA IN",

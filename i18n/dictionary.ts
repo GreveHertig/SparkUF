@@ -328,6 +328,25 @@ export type Dictionary = {
       continueCta: string;
     };
   };
+  /** De 12 officiella stegens titel/ingress (uppdrag 1.5) — produktkonstanter,
+   * en enda källa för liveadaptern (adapters/live/JourneyRepository.ts,
+   * core/journey.ts's JOURNEY_STEP_META). Nyckeln "step1".."step12" (inte ett
+   * index-baserat objekt) håller den typtvingad utan en satsning på att
+   * TypeScript förstår numeriska nycklar 1-12 exakt. */
+  journeySteps: {
+    step1: { title: string; oneLiner: string };
+    step2: { title: string; oneLiner: string };
+    step3: { title: string; oneLiner: string };
+    step4: { title: string; oneLiner: string };
+    step5: { title: string; oneLiner: string };
+    step6: { title: string; oneLiner: string };
+    step7: { title: string; oneLiner: string };
+    step8: { title: string; oneLiner: string };
+    step9: { title: string; oneLiner: string };
+    step10: { title: string; oneLiner: string };
+    step11: { title: string; oneLiner: string };
+    step12: { title: string; oneLiner: string };
+  };
   /** Inloggning (uppdrag 14.4): /logga-in, /skapa-konto. Fältfelen skickas
    * som koder från app/(auth)/actions.ts (Server Actions) — ingen text
    * lämnar servern, bara nycklar hit. */
