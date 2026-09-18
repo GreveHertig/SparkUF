@@ -91,8 +91,22 @@ obegränsad lagring.
 
 ## Status
 
-stub — `adapters/live/MemoryRepository.ts` kastar `NotImplementedError`
-för alla fyra metoderna. Demoadaptern är klar och används av
-`/demo/app/minnet`. Bygg efter att `trace_events` skrivs av åtminstone en
-annan modul (t.ex. Utskick och svar), så Spåret har något riktigt att visa
-första gången liveadaptern testas end-to-end.
+klar (Session P1, branch `plattform-p1-adaptrar`) — alla fyra metoderna
+byggda och testade mot Supabase. Byggd FÖRE att någon annan modul skriver
+till `trace_events` (avviker från den tidigare planen nedan, ett medvetet
+val i P1 — `getTraceEvents` är fullt fungerande men returnerar en tom lista
+tills en skrivande modul, t.ex. Utskick och svar, finns).
+
+### Hur liveadaptern fungerar i dag
+
+`adapters/live/MemoryRepository.ts`:
+
+- `getProfileSummary`: läser `profiles`-radens sex fält, kastar
+  `EmptyStateError` om något saknas (ett konto som gjort **01 Om dig** men
+  inte fyllt i bakgrund/resurser).
+- `getBrainNotes`/`setBrainNotes`: `setBrainNotes` trimmar och hävdar
+  ≤20000 tecken (samma gräns som databasens `check`-villkor, en andra
+  spärr), `upsert`ar på `user_id`. Skriv-läs-rundtur bevisad med ett test —
+  kriteriet demoadaptern inte kan uppfylla (se ovan).
+- `getTraceEvents`: kronologisk ordning, äldst först, tom lista tills
+  någon modul faktiskt skriver händelser.

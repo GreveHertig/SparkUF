@@ -61,9 +61,10 @@ frågor/svar (samma innehåll, olika datastruktur, som Saras del av
 - `name` och `initials` är alltid ifyllda — en användare utan namn har inte
   slutfört **01 Om dig**, och den sidan visar då ett tomt tillstånd, inte en
   halvfärdig profil.
-- Klarar kontraktstestet i `ports/ProfileRepository.contract.test.ts`
-  (kontraktstestet prövar i dag bara `getProfile` — `getOnboardingScript` är
-  inte kontraktstestad ännu, se `docs/status.md` Session 5).
+- Klarar kontraktstestet i `ports/ProfileRepository.contract.test.ts` mot
+  BÅDA adaptrarna nu (Supabase mockad bort i CI, `test/stubs/supabaseFake.ts`)
+  — kontraktstestet prövar fortfarande bara `getProfile`, `getOnboardingScript`
+  är inte kontraktstestad (se `docs/status.md` Session 5 och Session P1).
 
 ## Säkerhet
 
@@ -74,9 +75,23 @@ här modulen).
 
 ## Status
 
-stub — `adapters/live/ProfileRepository.ts` kastar `NotImplementedError` för
-båda metoderna. Demoadaptern är klar och används av `/demo/app`s sidhuvud
-och (sedan Session 5) `/demo/start/profil`. `getProfile` är fortfarande
-enklast att bygga tidigt i Session P1 tillsammans med inloggningen;
-`getOnboardingScript` väntar troligen på designbeslutet om profilsamtalet
-ska bli ett riktigt Gemini-samtal (se ovan) innan den byggs på riktigt.
+påbörjad (Session P1, branch `plattform-p1-adaptrar`) — `getProfile` är
+klar och testad mot Supabase. `getOnboardingScript` är MEDVETET kvar som
+`NotImplementedError`: designbeslutet ovan (Gemini-samtal eller fritext)
+är fortfarande olöst, och den här sessionen löser det inte i förbifarten
+(`ports/stubStatus.test.ts`s `PARTIELLA_STUBBAR` vaktar att den fortsätter
+kasta).
+
+### Hur liveadaptern fungerar i dag
+
+`adapters/live/ProfileRepository.ts`: `getProfile()` läser
+`profiles`-radens `name`/`initials` via `requireSupabaseUser()`
+(`lib/server/session.ts`) — ingen service-role-nyckel, RLS + användarens
+egen session räcker. En `handle_new_user()`-trigger
+(`supabase/migrations/20260918090000_profiles_projects_journey.sql`)
+skapar raden automatiskt vid signup (namnet kommer från
+`auth.users.raw_user_meta_data`, satt av `app/(auth)/actions.ts`s
+`signUp()`), så `getProfile()` alltid hittar en rad. Ett tomt eller
+saknat namn (kontot har inte gjort **01 Om dig** än) kastar
+`EmptyStateError` — samma "Kommer snart"-yta som en obyggd modul, se
+`docs/arkitektur.md` avsnitt 4.
