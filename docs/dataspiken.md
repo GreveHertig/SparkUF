@@ -4,6 +4,31 @@ Research, ingen kod. Underlag för `docs/moduler/registret.md` (porten
 `ports/RegistryProvider.ts`) och Datalöftet i `docs/uppdrag.md` 1.2.
 Skriven 2026-09-18 på branchen `dataspiken`.
 
+## ⚠ Olösta — Erik och Theodor måste titta på dessa innan RegistryProvider byggs
+
+**Bygg inte `adapters/live/RegistryProvider.ts` förrän båda punkterna är
+avgjorda.** Ingen av dem går att lösa med kod eller mer research från
+Claude.
+
+1. **Licensvillkoren för Bolagsverkets värdefulla datamängder (namngivna
+   företag) är inte verifierade.** Bolagsverkets sidor blockerades av
+   CAPTCHA, både i researchen och i chatten, och API-portalen gav 403.
+   Bedömningen "sannolikt ja" i avsnitt 2 bygger på EU-förordningen och på
+   sammanfattningar av Bolagsverkets text, inte på villkoren själva. **Erik
+   läser dem i sin egen webbläsare** innan vi bygger vidare. Läs särskilt
+   vad de säger om lagring/cachning, vidareutnyttjande, källhänvisning och
+   personuppgifter.
+2. **Ingen av källorna ger en e-postadress till en mottagare.**
+   Bolagsverket/SCB ger inga kontaktuppgifter alls. Allabolag ger möjligen
+   ett telefonnummer, men det är **overifierat** att Allabolag faktiskt
+   returnerar det i ett skarpt API-anrop (vi läste bara UC:s och
+   Enentos sidor, ingen API-dokumentation eller svar). Det här är ett
+   öppet problem för **hela steg 05 (Utskick och svar)**, som skickar
+   e-post via Gmail (`docs/moduler/utskick-och-svar.md`). **Erik tar det
+   med Theodor.**
+
+Detaljer och övriga öppna frågor finns i avsnitt 6.
+
 ## Kort svar
 
 - **MVP bygger vi på Bolagsverkets och SCB:s "API för värdefulla datamängder".**

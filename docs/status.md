@@ -678,23 +678,33 @@ på Resan/[steg] och en `−0`-fix på Hem/Poäng.
   auto`) men inte klickad igenom.
 - Inga nya problem i övrigt.
 
-## Dataspiken — källa för RegistryProvider (klar, gren `dataspiken`)
+## Dataspiken — källa för RegistryProvider (research klar, PR mot `prototyp`, gren `dataspiken`)
 
 Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
 
+### ⚠ Blockerar bygget av RegistryProvider — Erik och Theodor måste avgöra
+**Bygg inte `adapters/live/RegistryProvider.ts` förrän båda är avgjorda.**
+1. **Bolagsverkets licensvillkor för namngivna företag är inte verifierade.** CAPTCHA blockerade både researchen och chatten, API-portalen gav 403. "Sannolikt ja" bygger på förordning (EU) 2023/138 och sammanfattningar. **Erik läser villkoren i sin egen webbläsare.**
+2. **Ingen källa ger e-postadress till en mottagare.** Bolagsverket/SCB ger inga kontaktuppgifter. Allabolag ger möjligen telefon, men det är overifierat att skarpa API-anrop returnerar det. Öppet problem för **hela steg 05**. **Erik tar det med Theodor.**
+
 ### Klart
-- **`docs/dataspiken.md`:** källa, kostnad, villkor och rekommendation per källa, med varje uppgift märkt Verifierat / Sekundärt / Osäkert.
-- **Rekommendation:** bygg `RegistryProvider` på Bolagsverkets och SCB:s "API för värdefulla datamängder" (gratis, inget avtal, öppen licens enligt förordning (EU) 2023/138). Allabolag/UC går vi inte vidare med utan ett medvetet avtalsbeslut. Ratsit: gå inte vidare.
-- **Årsredovisningarna** levereras som iXBRL: strukturerade taggar inuti en dokumentfil per bolag och år, inte en färdig tabell. Bara aktiebolag lämnar in digitalt.
-- **`docs/moduler/registret.md`:** rättade formuleringen "blockeraren är avtal" med en hänvisning till dataspiken.
+- **`docs/dataspiken.md`:** källa, kostnad, villkor och rekommendation per källa, varje uppgift märkt Verifierat / Sekundärt / Osäkert, med de två blockerarna överst.
+- **Rekommendation:** bygg `RegistryProvider` på Bolagsverkets och SCB:s "API för värdefulla datamängder" (gratis, inget avtal, öppen licens enligt förordning (EU) 2023/138). Allabolag/UC: inte i MVP, öppet avtalsbeslut. Ratsit: gå inte vidare.
+- **Årsredovisningarna** är iXBRL: taggade siffror inuti en dokumentfil per bolag och år, inte en färdig tabell. Bara aktiebolag lämnar in digitalt.
+- **`docs/moduler/registret.md`:** rättade "blockeraren är avtal" med hänvisning till dataspiken.
+
+### Var vi står / vad som är kvar innan nästa session
+- **Väntar på Bolagsverkets godkännande** av Eriks kundanmälan (nycklar).
+- **Erik:** läs Bolagsverkets användarvillkor (punkt 1 ovan).
+- **Erik + Theodor:** lös mottagarnas kontaktuppgifter för steg 05 (punkt 2 ovan).
+- **Grundaren + partner + vuxen/handledare:** Allabolag/UC är ett öppet avtalsbeslut. Villkoren förbjuder regelbunden, systematisk lagring utan skriftligt medgivande. Ingen kontakt tas och inget formulär skickas innan dess.
+- **Först därefter:** en spik med riktiga nycklar (ordning i `dataspiken.md` avsnitt 3), sedan bygg enligt `docs/bygga-en-modul.md`.
 
 ### Beslut nästa session behöver känna till
-- **Bolagsverkets faktiska användarvillkor är inte lästa.** Alla deras sidor svarade med CAPTCHA, API-portalen med 403. Licensfrågan (får vi lagra och visa namngivna företag?) är besvarad som "sannolikt ja" utifrån EU-förordningen och Bolagsverkets sammanfattade text, inte utifrån villkoren. Läs dem innan cachning byggs.
-- **Oklart om Bolagsverkets API kan söka på SNI-kod.** `searchCompanies` kan behöva SCB:s API eller filnedladdning. Avgörs i en spik med riktiga nycklar (ordning i `dataspiken.md` avsnitt 3).
+- **Oklart om Bolagsverkets API kan söka på SNI-kod.** `searchCompanies` kan behöva SCB:s API eller filnedladdning. Avgörs i spiken.
 - **Reklamspärr och enskilda firmor:** SCB-registret innehåller fysiska personer och en reklamspärr-variabel. Förslag: namngivna listor bara för aktiebolag och utan reklamspärrade. Kräver Juridisk koll och en vuxen/handledare.
-- **Allabolag/UC är ett öppet beslut för grundaren** (partner + vuxen/handledare innan kontakt eller avtal). Villkoren förbjuder regelbunden, systematisk lagring utan skriftligt medgivande. Rättighetshavaren står som Proff AS i villkoren men UC Affärsinformation AB i integritetspolicyn, vilket är oklart.
+- **Rättighetshavaren för Allabolag** står som Proff AS i villkoren men UC Affärsinformation AB i integritetspolicyn. Oklart vem som ska ge tillstånd.
 
 ### Kända problem / öppna frågor
-- **Utskick och svar saknar källa till mottagarnas kontaktuppgifter.** Registret ger varken e-post eller telefon. Bör lösas innan utskick byggs live (`dataspiken.md` avsnitt 6, fråga 5).
-- **Ratsit** verifierades bara via sökresultat (403 på deras sidor). En söksammanfattning antyder att de också säljer ett API, vilket inte bekräftades.
-- Väntar på godkännande av Eriks kundanmälan hos Bolagsverket.
+- **Ratsit** verifierades bara via sökresultat (403 på deras sidor). En söksammanfattning antyder ett API, vilket inte bekräftades.
+- SCB:s statistikdatabas (branschaggregat) är inte undersökt. SCB byter från certifikat till API-nycklar i september 2026.
