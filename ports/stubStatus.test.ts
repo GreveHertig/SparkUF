@@ -3,7 +3,6 @@ import { NotImplementedError } from "@/core/errors";
 import { liveProfileRepository } from "@/adapters/live/ProfileRepository";
 import { liveProjectRepository } from "@/adapters/live/ProjectRepository";
 import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
-import { liveMemoryRepository } from "@/adapters/live/MemoryRepository";
 import { liveCofounderAgent } from "@/adapters/live/CofounderAgent";
 import { liveRegistryProvider } from "@/adapters/live/RegistryProvider";
 import { liveResearchProvider } from "@/adapters/live/ResearchProvider";
@@ -21,7 +20,6 @@ import { liveBuildProvider } from "@/adapters/live/BuildProvider";
  * Juridisk koll är redan byggd och står därför inte i listan.
  */
 const STILL_STUBS: { module: string; call: () => Promise<unknown> }[] = [
-  { module: "Minnet", call: () => liveMemoryRepository.getBrainNotes() },
   { module: "Medgrundaren", call: () => liveCofounderAgent.sendMessage("hej", [], "sv") },
   { module: "Registret", call: () => liveRegistryProvider.getMarketOverview("sv") },
   { module: "Webbresearch", call: () => liveResearchProvider.search("test") },
