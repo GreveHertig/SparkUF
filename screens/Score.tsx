@@ -62,13 +62,15 @@ export function Score({ data }: { data: ScoreData }) {
       <div className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4">
         <ScoreBadge score={snapshot.total} size="large" />
         <div>
-          <p className="text-sm font-semibold text-slate-900">
-            <span className="font-numeric">
-              {snapshot.delta > 0 ? "+" : "−"}
-              {Math.abs(snapshot.delta)}
-            </span>{" "}
-            {snapshot.deltaReason}
-          </p>
+          {snapshot.delta !== 0 && (
+            <p className="text-sm font-semibold text-slate-900">
+              <span className="font-numeric">
+                {snapshot.delta > 0 ? "+" : "−"}
+                {Math.abs(snapshot.delta)}
+              </span>{" "}
+              {snapshot.deltaReason}
+            </p>
+          )}
           <p className="font-numeric text-xs text-slate-600">
             {snapshot.previousTotal} → {snapshot.total}
           </p>

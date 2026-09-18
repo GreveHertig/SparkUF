@@ -46,8 +46,12 @@ beforeEach(() => {
 
 // Session 2: demomotorn + calculateScore ska vara kopplade till /demo/app så
 // att poängen och Nästa steg-kortet ändras när man klickar i demoraden.
+// Sedan djupsessionen (uppdrag 9.1) har varje steg tre moment (före/körning/
+// efter, se adapters/demo/sara.ts) — Nästa steg-kortets titel är därför
+// oförändrad över de två första klicken (samma steg, nytt moment) och byts
+// först på det tredje klicket, när steg 02 börjar.
 describe("Demoraden i /demo/app", () => {
-  it("byter Nästa steg-titel och poäng när man klickar Nästa ▶", async () => {
+  it("byter Nästa steg-titel och poäng när man klickar Nästa ▶ genom ett steg", async () => {
     render(
       <LocaleProvider>
         <DemoAppShellLayout>
@@ -58,8 +62,15 @@ describe("Demoraden i /demo/app", () => {
 
     expect(await screen.findByText("Svara på profilfrågorna")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Nästa ▶/ }));
+    const next = () => fireEvent.click(screen.getByRole("button", { name: /Nästa ▶/ }));
 
+    next(); // 01-om-dig-korning — samma steg, nytt moment
+    expect(await screen.findByText("Svara på profilfrågorna")).toBeInTheDocument();
+
+    next(); // 01-om-dig-efter — samma steg, nytt moment
+    expect(await screen.findByText("Svara på profilfrågorna")).toBeInTheDocument();
+
+    next(); // 02-mojligheter-fore — nytt steg
     expect(await screen.findByText("Välj en idé ur tre förslag")).toBeInTheDocument();
     expect(screen.queryByText("Svara på profilfrågorna")).not.toBeInTheDocument();
   });
@@ -73,7 +84,11 @@ describe("Demoraden i /demo/app", () => {
       </LocaleProvider>,
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: /Nästa ▶/ }));
+    expect(await screen.findByText("Svara på profilfrågorna")).toBeInTheDocument();
+    const next = () => fireEvent.click(screen.getByRole("button", { name: /Nästa ▶/ }));
+    next();
+    next();
+    next();
     expect(await screen.findByText("Välj en idé ur tre förslag")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /◀ Bakåt/ }));

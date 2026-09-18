@@ -134,13 +134,15 @@ export function AppHome({ data }: { data: AppHomeData }) {
           <div className="flex items-center gap-4">
             <ScoreBadge score={data.score.total} size="large" />
           </div>
-          <p className="text-sm font-semibold text-score-red">
-            <span className="font-numeric">
-              {data.score.delta > 0 ? "+" : "−"}
-              {Math.abs(data.score.delta)}
-            </span>{" "}
-            {data.score.deltaReason}
-          </p>
+          {data.score.delta !== 0 && (
+            <p className="text-sm font-semibold text-score-red">
+              <span className="font-numeric">
+                {data.score.delta > 0 ? "+" : "−"}
+                {Math.abs(data.score.delta)}
+              </span>{" "}
+              {data.score.deltaReason}
+            </p>
+          )}
           <p className="font-numeric text-xs text-slate-600">
             {data.score.previousTotal} → {data.score.total}
           </p>
