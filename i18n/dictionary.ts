@@ -334,13 +334,6 @@ export type Dictionary = {
    * index-baserat objekt) håller den typtvingad utan en satsning på att
    * TypeScript förstår numeriska nycklar 1-12 exakt. */
   journeySteps: {
-    /** "Steg"/"Step" — adapters/live/JourneyRepository.ts bygger
-     * NextStep.eyebrow ur den här ("STEG 05 · SAMTALEN"), samma form som
-     * adapters/demo/sara.ts's hårdkodade eyebrows. */
-    eyebrowPrefix: string;
-    /** Visas som handlingsknappens text för ett steg utan eget skrivet
-     * actionLabel än (ingen skärm skriver till journey_steps i P1). */
-    defaultActionLabel: string;
     step1: { title: string; oneLiner: string };
     step2: { title: string; oneLiner: string };
     step3: { title: string; oneLiner: string };

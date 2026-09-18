@@ -340,8 +340,6 @@ export const en = {
     },
   },
   journeySteps: {
-    eyebrowPrefix: "Step",
-    defaultActionLabel: "Continue",
     step1: {
       title: "About you",
       oneLiner: "A profile chat about background, skills, network, time, money and risk appetite.",
