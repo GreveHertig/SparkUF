@@ -13,10 +13,11 @@ export default async function LiveAppHomePage() {
   let data: AppHomeData | null = null;
 
   try {
-    const [journey, score, pulse] = await Promise.all([
+    const [journey, score, pulse, scoreHistory] = await Promise.all([
       liveJourneyRepository.getHomeSummary("sv"),
       liveEvidenceRepository.getScoreSnapshot("sv"),
       livePulseProvider.getTodaysSignal("sv"),
+      liveEvidenceRepository.getScoreHistory("sv"),
     ]);
     data = {
       todayIso: journey.todayIso,
@@ -24,6 +25,7 @@ export default async function LiveAppHomePage() {
       nextStep: journey.nextStep,
       sinceLastTime: journey.sinceLastTime,
       pulse,
+      scoreHistory,
     };
   } catch (error) {
     if (!(error instanceof NotImplementedError)) throw error;

@@ -43,3 +43,36 @@ Grundaren granskade `/designsystem` i en riktig webbläsare och hittade flera fe
 
 ### `/app` — förhandsgranskning (byggd i förtid, på begäran)
 Grundaren ville bedöma designen i en verklig appvy innan Session 1 godkänns, inte bara i designsystemkatalogen. `app/(app)/layout.tsx` (sidomeny + sidhuvud) och `app/(app)/app/page.tsx` (Hem) byggdes med **bara** komponenter från designsystemet, mot Saras steg 05 (uppdrag 9.3), med hårdkodad mockdata i `app/(app)/sara-mock.ts`. Det här är en förhandstitt för designgranskning — **inte** Session 3:s leverans. Session 3 bygger den riktiga demomotorn (`src/demo/scenarios/sara.ts`, styrd av demoraden) och ska ersätta `sara-mock.ts`, inte bygga vidare på den.
+
+## Designuppdatering — high-tech dashboard
+
+Grundaren visade tre referensbilder (`design-referens/dashboard/`, ej committade som en del av leveransen — bara underlag): en tät instrumentpanel med KPI-rad, sparklines och mätare, och en lugn centrerad promptruta. Uttrycket skulle tas, inte färgerna — våra `paper-50`/`ink-800`/accentskalan ligger fast, oförändrade sedan Session 1. Det här var en ren token/komponentuppdatering: inget innehåll (i18n-texter, scenariodata i `sara.ts`, poängformler i `core/score.ts`) ändrades.
+
+### Typsnitt: Funnel Display + JetBrains Mono
+Manrope byttes till **Funnel Display** (variabel, 300–800) som `--font-sans` (brödtext och gränssnittstext). Valt framför Mona Sans (uppdragets andra alternativ): Funnel Display är en stramare, mer geometrisk display-grotesk — närmare det "tätt, tech"-intryck referensbilderna visar, medan Mona Sans är mer humanistiskt neutral. **Instrument Serif Italic** är oförändrad, bara `EditorialHeading.Em`.
+
+Ny **JetBrains Mono** (variabel, 400–700) som `--font-mono`, för alla siffror: poäng, belopp, procent, antal. Båda hämtade som `.woff2` ur `@fontsource-variable/funnel-display`/`@fontsource-variable/jetbrains-mono` (samma öppna Google Fonts-källa som Manrope/Instrument Serif, OFL-1.1) och lagda som riktiga filer under `design/fonts/funnel-display/` och `design/fonts/jetbrains-mono/` — **inte** npm-beroenden. Samma mönster som tidigare: `next/font/local`, självhostat, inget hämtas från en CDN vid build eller körning.
+
+`--font-mono` mappas medvetet **inte** in i `app/globals.css`s `@theme inline`, av exakt samma anledning som `--font-sans`/`--font-serif-italic` sedan Session 1 (se ovan): en `@theme`-rad med samma variabelnamn skulle skapa en konkurrerande `:root`-regel. Siffror får mono-typsnittet via en egen utility-klass, `.font-numeric` (definierad i `globals.css`, inte Tailwinds inbyggda `.font-mono`-klass — den namngavs annorlunda för att inte tävla med Tailwinds egen genererade utility). `tabular-nums` är redan globalt satt på `body` sedan Session 1, så `.font-numeric` byter bara typsnittsfamilj. Klassen sätts bara på de faktiska siffrorna, aldrig på hela meningar som råkar innehålla ett tal (t.ex. `PulseCard`s "Uppdaterad 06:00" är medvetet kvar i sans — det är en mening, inte ett tal).
+
+### KPI-rader och sparklines
+Nya `components/spark/KpiTile.tsx` + `KpiRow.tsx`: en tät ruta per nyckeltal (label, mono-värde, valfri sparkline, valfri deltachip, `SourceTag`). Ny `components/ui/Sparkline.tsx`: minimal inline-SVG (polyline + mjuk fyllning), ingen ny dependency — `recharts` är fortfarande inte motiverat för en 60×20px-linje (samma avvägning Session 1 gjorde uttryckligen för hela projektet).
+
+**Databeslut:** en sparkline ritas bara där en genuin flerpunktsserie finns — annars ingen sparkline alls, hellre än en påhittad form (CLAUDE.md: siffror ska ha källa, ingen hårdkodad/påhittad data). Den enda serien med riktig historik i demot är **totalpoängen per beat** (redan beräknad av `calculateScore`). Det exponerades som en ny port-metod, `EvidenceRepository.getScoreHistory(locale)`: demoadaptern härleder den ur `adapters/demo/sara.ts`s nya `getScoreHistoryUpToBeat` (återanvänder den befintliga `totalForBeat`-hjälpfunktionen, ingen egen poänglogik), liveadaptern kastar `NotImplementedError` som alla andra obyggda metoder. Övriga KPI:er (mottagare, öppningsfrekvens, svar mottagna, upplåsta delar, bästa förslaget) visas som täta tal **utan** sparkline.
+
+KPI-raden på Hem (`screens/AppHome.tsx`) visar fem rutor, på Poäng (`screens/Score.tsx`) fyra — se respektive fil. Duplicerar delvis informationen i korten under (t.ex. "Vad som hänt sedan sist"), vilket är avsiktligt: en dashboards KPI-rad är en sammanfattning, detaljvyn nedanför är oförändrad.
+
+En verklig bugg hittades och fixades under webbläsarverifieringen: vid det allra första momentet (`score.delta === 0`) visade deltachippen `−0` (minus noll, ett känt kosmetiskt fel i den äldre "Poängrörelse"-kortet enligt `docs/status.md`, som nu spreds till den nya KPI-rutan). Fixat genom att bara rendera deltachippen när `delta !== 0`.
+
+### Medgrundaren — centrerad promptruta
+Ny `components/spark/PromptBox.tsx`: ljus ruta, `rounded-2xl`, tunn `border-slate-200`, mjuk skugga, dämpad placeholder, liten rund accent-skickaknapp nere till höger — enligt referensbilden. Medgrundaren i demot är helt förskriven (`ChatMessage.tsx`s egen kommentar: "Ingen inmatning i demot"), så rutan är **medvetet inert**: `disabled` textarea + `disabled` knapp, ingen koppling till `useDemoStore`/`next()`. Den lägger inte till funktion eller innehåll, bara den visuella affordansen. Placeholder-texten är en ny i18n-nyckel (`cofounderPage.promptPlaceholder`), inte hårdkodad.
+
+Transkriptet (`ChatMessage`) ligger kvar ovanför, slimmat (mindre padding, tätare radavstånd) men fortsatt bubbelbaserat — referensbildens "samtalet ligger ovanför rutan" tolkades som att promptrutan är en enda, sidan-omfattande yta under hela transkriptet, inte en ersättning av varje enskilt meddelande.
+
+### Täthetspass
+Padding i kort ett steg ner genomgående (`p-6`→`p-4`/`p-5`, `gap-6`→`gap-4` osv.), `leading-snug` på brödtext i kort, tätare sidomeny/sidhuvud i `AppShell.tsx` (`w-60`→`w-56`, `p-6`→`p-5`, `px-8 py-4`→`px-6 py-3`). Kanttjockleken är oförändrad (1px `border-slate-200` var redan tunnast Tailwind klarar).
+
+**Accent starkare i aktiva/primära lägen:** sidomenyns aktiva länk bytte `bg-slate-700` mot `bg-accent-600 text-white` — återanvänder en redan kontrollräknad kontrastsiffra från Session 1 (vit text på `accent-600` = 5.01:1, klarar WCAG AA för text oavsett bakgrund eftersom ytan är självbärande). Inga nya färgtoner uppfanns.
+
+### Verifiering
+`pnpm typecheck`/`lint`/`test`/`build` gröna. Klickad igenom med Playwright (headless Chromium, `pnpm dev`) genom alla elva `/demo/app`-sidorna (inkl. `/resan/[steg]`) på **både sv och en** — inga konsol- eller sidfel på någon av de 22 kombinationerna. Detta täpper till en känd lucka från Session 3 ("Engelska texter … Inte manuellt klickigenomgången på engelska i en riktig webbläsare"). `/app` (livevyn) opåverkad — visar fortfarande "Kommer snart", nu med `getScoreHistory` också anropad (och stubbad) i dess `Promise.all`, konsekvent med de andra portmetoderna.

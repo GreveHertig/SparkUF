@@ -4,9 +4,9 @@ import localFont from "next/font/local";
 // vid vare sig build eller körning, så demot fungerar utan internet.
 
 export const sans = localFont({
-  src: "./fonts/manrope/Manrope-Variable.woff2",
+  src: "./fonts/funnel-display/FunnelDisplay-Variable.woff2",
   variable: "--font-sans",
-  weight: "400 800",
+  weight: "300 800",
   display: "swap",
 });
 
@@ -15,5 +15,12 @@ export const serifItalic = localFont({
   variable: "--font-serif-italic",
   weight: "400",
   style: "italic",
+  display: "swap",
+});
+
+export const mono = localFont({
+  src: "./fonts/jetbrains-mono/JetBrainsMono-Variable.woff2",
+  variable: "--font-mono",
+  weight: "400 700",
   display: "swap",
 });

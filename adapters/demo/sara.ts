@@ -1321,6 +1321,14 @@ export function getScoreSnapshotForBeat(index: number, locale: Locale): ScoreSna
   });
 }
 
+/** Totalpoängen för varje beat fram till och med `index` (designuppdatering:
+ * KPI-radens sparkline, se DESIGN.md). Återanvänder `totalForBeat` — samma
+ * beräkning `getScoreSnapshotForBeat` gör, ingen egen poänglogik här. */
+export function getScoreHistoryUpToBeat(index: number, locale: Locale): number[] {
+  const clamped = Math.min(beats.length - 1, Math.max(0, index));
+  return beats.slice(0, clamped + 1).map((beat) => totalForBeat(beat, locale));
+}
+
 export function getJourneySummaryForBeat(index: number, locale: Locale): JourneySummary {
   const beat = beatAt(index);
   return {

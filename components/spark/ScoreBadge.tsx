@@ -49,17 +49,19 @@ export function ScoreBadge({ score, size = "compact", className }: ScoreBadgePro
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 rounded-pill font-bold tabular-nums",
+        "inline-flex items-center gap-2 rounded-pill font-bold",
         toneClasses[level.tone],
-        size === "large" ? "px-5 py-2.5 text-4xl" : "px-3 py-1 text-sm",
+        size === "large" ? "px-4 py-2 text-4xl" : "px-2.5 py-1 text-sm",
         className,
       )}
     >
-      <motion.span>{rounded}</motion.span>
-      <span
-        className={cn("font-medium opacity-70", size === "large" ? "text-lg" : "text-xs")}
-      >
-        / 100
+      <span className="font-numeric inline-flex items-baseline gap-2">
+        <motion.span>{rounded}</motion.span>
+        <span
+          className={cn("font-medium opacity-70", size === "large" ? "text-lg" : "text-xs")}
+        >
+          / 100
+        </span>
       </span>
       {size === "large" && (
         <span

@@ -33,9 +33,9 @@ export function DataFact({
   const displayValue = typeof value === "number" ? formatCount(value, locale) : value;
 
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
+    <div className={cn("flex flex-col gap-1", className)}>
       <p className="text-sm text-slate-600">{label}</p>
-      <p className="text-2xl font-bold tabular-nums text-slate-900">
+      <p className="font-numeric text-2xl font-semibold text-slate-900">
         {displayValue}
         {unit && <span className="ml-1 text-base font-medium text-slate-600">{unit}</span>}
       </p>

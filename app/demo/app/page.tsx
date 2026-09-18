@@ -24,7 +24,8 @@ export default function DemoAppHomePage() {
       demoJourneyRepository.getHomeSummary(locale),
       demoEvidenceRepository.getScoreSnapshot(locale),
       demoPulseProvider.getTodaysSignal(locale),
-    ]).then(([journey, score, pulse]) => {
+      demoEvidenceRepository.getScoreHistory(locale),
+    ]).then(([journey, score, pulse, scoreHistory]) => {
       if (cancelled) return;
       setData({
         todayIso: journey.todayIso,
@@ -32,6 +33,7 @@ export default function DemoAppHomePage() {
         nextStep: journey.nextStep,
         sinceLastTime: journey.sinceLastTime,
         pulse,
+        scoreHistory,
       });
     });
 

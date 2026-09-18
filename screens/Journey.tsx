@@ -26,7 +26,7 @@ export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (step
   const { t } = useI18n();
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-10">
+    <div className="mx-auto flex max-w-5xl flex-col gap-8">
       <div>
         <Eyebrow>{t.appShell.nav.journey}</Eyebrow>
         <EditorialHeading as="h1" className="mt-2">
@@ -35,26 +35,26 @@ export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (step
         <p className="mt-2 text-sm text-slate-600">{t.journeyPage.subtitle}</p>
       </div>
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6">
         {PHASE_ORDER.map((phase) => {
           const stepsInPhase = data.steps.filter((step) => step.journeyPhase === phase);
           if (stepsInPhase.length === 0) return null;
 
           return (
-            <section key={phase} className="flex flex-col gap-3">
+            <section key={phase} className="flex flex-col gap-2.5">
               <Eyebrow>{t.journeyPage.phaseNames[phase]}</Eyebrow>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {stepsInPhase.map((step) => (
                   <Link
                     key={step.stepNumber}
                     href={stepHref(step.stepNumber)}
                     className={cn(
-                      "flex flex-col gap-2 rounded-lg border bg-white p-5 transition-colors hover:border-accent-400 focus-visible:outline-2 focus-visible:outline-accent-300",
+                      "flex flex-col gap-1.5 rounded-lg border bg-white p-4 transition-colors hover:border-accent-400 focus-visible:outline-2 focus-visible:outline-accent-300",
                     )}
                     style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tabular-nums text-slate-500" style={{ letterSpacing: "var(--tracking-label)" }}>
+                      <span className="font-numeric text-xs font-semibold uppercase text-slate-500" style={{ letterSpacing: "var(--tracking-label)" }}>
                         {t.journeyPage.stepLabel} {String(step.stepNumber).padStart(2, "0")}
                       </span>
                       <span
@@ -68,9 +68,9 @@ export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (step
                       </span>
                     </div>
                     <p className="text-base font-bold text-slate-900">{step.title}</p>
-                    <p className="text-sm text-slate-600">{step.oneLiner}</p>
+                    <p className="text-sm leading-snug text-slate-600">{step.oneLiner}</p>
                     <p className="mt-1 text-xs font-medium text-accent-700">
-                      {t.common.upToPointsBefore} {step.maxPoints} {t.common.upToPointsAfter}
+                      {t.common.upToPointsBefore} <span className="font-numeric">{step.maxPoints}</span> {t.common.upToPointsAfter}
                     </p>
                   </Link>
                 ))}

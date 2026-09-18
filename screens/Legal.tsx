@@ -17,7 +17,7 @@ export function Legal({ data }: { data: LegalData }) {
   const { t } = useI18n();
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
         <Eyebrow>{t.appShell.nav.legal}</Eyebrow>
         <EditorialHeading as="h1" className="mt-2">
@@ -31,7 +31,7 @@ export function Legal({ data }: { data: LegalData }) {
       ) : (
         <>
           <LegalMap krav={data.krav} />
-          <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-xs text-slate-600">
+          <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3.5 text-xs leading-snug text-slate-600">
             {t.legalPage.disclaimer}
           </p>
         </>

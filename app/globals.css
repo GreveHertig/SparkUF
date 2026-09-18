@@ -50,10 +50,21 @@
   --radius-pill: var(--r-pill);
 }
 
-/* --font-sans och --font-serif-italic sätts av next/font/local (design/fonts.ts)
-   via klasser på <html> och används direkt som var(--font-sans) i CSS/JSX —
-   de mappas medvetet INTE in i @theme här, för att undvika att Tailwinds
-   :root-emission (samma variabelnamn) skuggar next/fonts klass-scopade värde. */
+/* --font-sans, --font-serif-italic och --font-mono sätts av next/font/local
+   (design/fonts.ts) via klasser på <html> och används direkt som
+   var(--font-sans) i CSS/JSX — de mappas medvetet INTE in i @theme här, för
+   att undvika att Tailwinds :root-emission (samma variabelnamn) skuggar
+   next/fonts klass-scopade värde. Av samma anledning heter mono-siffrornas
+   utility-klass nedan `.font-numeric`, inte `.font-mono` — Tailwind genererar
+   redan en `.font-mono`-utility (default-monospace-stacken), och en egen regel
+   med samma namn skulle tävla med den i stället för att komplettera den. */
+
+/* Designuppdatering (high-tech dashboard): alla siffror — poäng, belopp,
+   procent, antal — i JetBrains Mono. `tabular-nums` sätts redan globalt på
+   body nedan, så den här klassen bara byter typsnittsfamilj. */
+.font-numeric {
+  font-family: var(--font-mono);
+}
 
 /* Temat är ljust — arbetsytorna har ljus botten. Mörka ytor (sidomeny, hero,
    sidfot, demorad) sätts medvetet med ink-800-klasser, inte via färgschema. */

@@ -2,7 +2,7 @@ import type { EvidenceRepository } from "@/ports/EvidenceRepository";
 import type { Locale } from "@/i18n/context";
 import { deriveSuggestions, ALL_PART_IDS, PHASE_UNLOCKED_PARTS, type ScorePartId } from "@/core/score";
 import { useDemoStore } from "./demoStore";
-import { getScoreSnapshotForBeat, getBeatAt, saraSuggestionCandidates } from "./sara";
+import { getScoreSnapshotForBeat, getScoreHistoryUpToBeat, getBeatAt, saraSuggestionCandidates } from "./sara";
 
 // Poängen sätts aldrig direkt i mockdata (avsnitt 7.1) — den räknas av
 // calculateScore (core/score.ts) från det aktuella momentets bevis i
@@ -20,5 +20,10 @@ export const demoEvidenceRepository: EvidenceRepository = {
     const unlocked = new Set(PHASE_UNLOCKED_PARTS[phase]);
     const lockedPartIds = ALL_PART_IDS.filter((id: ScorePartId) => !unlocked.has(id));
     return deriveSuggestions(saraSuggestionCandidates[locale], lockedPartIds);
+  },
+
+  async getScoreHistory(locale: Locale) {
+    const { beatIndex } = useDemoStore.getState();
+    return getScoreHistoryUpToBeat(beatIndex, locale);
   },
 };

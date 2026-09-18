@@ -17,11 +17,11 @@ export function ToolRunCard({ label, steps, className }: ToolRunCardProps) {
   const { t } = useI18n();
 
   return (
-    <div className={cn("rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4", className)}>
+    <div className={cn("rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3.5", className)}>
       <Eyebrow>
         {t.cofounderPage.toolRunningLabel}: {label}
       </Eyebrow>
-      <ul className="mt-3 flex flex-col gap-1.5">
+      <ul className="mt-2.5 flex flex-col gap-1">
         {steps.map((step) => (
           <li key={step} className="flex items-center gap-2 text-sm text-slate-700">
             <CheckIcon />

@@ -12,4 +12,7 @@ export interface EvidenceRepository {
   /** "Höj din poäng" (7.6) — härledd med `deriveSuggestions` (core/score.ts),
    * sorterad efter poäng per minut, låsta delar redan bortfiltrerade. */
   getSuggestions(locale: Locale): Promise<ScoreSuggestion[]>;
+  /** Totalpoängen genom resan hittills, kronologisk ordning (designuppdatering:
+   * KPI-radens sparkline). Bara en genuin sekvens — inga påhittade punkter. */
+  getScoreHistory(locale: Locale): Promise<number[]>;
 }

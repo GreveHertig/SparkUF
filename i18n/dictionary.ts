@@ -21,6 +21,14 @@ export type Dictionary = {
     upToPointsBefore: string;
     upToPointsAfter: string;
   };
+  /** KPI-raden (designuppdatering: high-tech dashboard) — täta nyckeltal högst
+   * upp på Hem och Poäng, se screens/AppHome.tsx och screens/Score.tsx. */
+  kpi: {
+    scoreLabel: string;
+    scoreDeltaLabel: string;
+    unlockedPartsLabel: string;
+    bestSuggestionLabel: string;
+  };
   score: {
     levels: {
       unproven: { name: string; message: string };
@@ -173,6 +181,10 @@ export type Dictionary = {
     toolRunningLabel: string;
     toolDoneLabel: string;
     emptyStateBody: string;
+    /** Promptrutan (designuppdatering): dämpad platshållartext. Rutan är
+     * inert i demot — se components/spark/PromptBox.tsx. */
+    promptPlaceholder: string;
+    promptSendLabel: string;
   };
   scorePage: {
     title: string;

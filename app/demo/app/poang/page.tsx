@@ -13,11 +13,13 @@ export default function DemoScorePage() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([demoEvidenceRepository.getScoreSnapshot(locale), demoEvidenceRepository.getSuggestions(locale)]).then(
-      ([snapshot, suggestions]) => {
-        if (!cancelled) setData({ snapshot, suggestions });
-      },
-    );
+    Promise.all([
+      demoEvidenceRepository.getScoreSnapshot(locale),
+      demoEvidenceRepository.getSuggestions(locale),
+      demoEvidenceRepository.getScoreHistory(locale),
+    ]).then(([snapshot, suggestions, scoreHistory]) => {
+      if (!cancelled) setData({ snapshot, suggestions, scoreHistory });
+    });
     return () => {
       cancelled = true;
     };

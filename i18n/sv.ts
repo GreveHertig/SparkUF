@@ -20,6 +20,12 @@ export const sv = {
     upToPointsBefore: "Kan ge upp till",
     upToPointsAfter: "poäng",
   },
+  kpi: {
+    scoreLabel: "Poäng",
+    scoreDeltaLabel: "Förändring",
+    unlockedPartsLabel: "Upplåsta delar",
+    bestSuggestionLabel: "Bästa förslaget",
+  },
   score: {
     levels: {
       unproven: {
@@ -184,6 +190,8 @@ export const sv = {
     toolRunningLabel: "Kör verktyg",
     toolDoneLabel: "Klart",
     emptyStateBody: "Klicka Nästa i demoraden för att fortsätta samtalet.",
+    promptPlaceholder: "Skriv till din medgrundare …",
+    promptSendLabel: "Skicka",
   },
   scorePage: {
     title: "Poäng",

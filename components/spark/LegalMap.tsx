@@ -19,7 +19,7 @@ export function LegalMap({ krav }: { krav: JuridisktKrav[] }) {
   return (
     <div className="flex flex-col gap-3">
       {krav.map((item) => (
-        <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-5">
+        <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm font-semibold text-slate-900">{item.rubrik}</p>
             <span
@@ -29,7 +29,7 @@ export function LegalMap({ krav }: { krav: JuridisktKrav[] }) {
               {t.legalPage.status[item.status]}
             </span>
           </div>
-          <p className="text-sm text-slate-600">{item.beskrivning}</p>
+          <p className="text-sm leading-snug text-slate-600">{item.beskrivning}</p>
           <SourceTag source={item.källa} />
         </div>
       ))}

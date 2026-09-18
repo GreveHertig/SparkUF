@@ -15,7 +15,7 @@ export function Pulse({ data }: { data: PulseData }) {
   const { t } = useI18n();
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8">
+    <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <div>
         <Eyebrow>{t.appShell.nav.pulse}</Eyebrow>
         <EditorialHeading as="h1" className="mt-2">
@@ -27,7 +27,7 @@ export function Pulse({ data }: { data: PulseData }) {
       {data.signals.length === 0 ? (
         <p className="text-sm text-slate-600">{t.pulsePage.emptyState}</p>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {data.signals.map((signal, index) => (
             <PulseCard
               key={`${signal.headline}-${index}`}

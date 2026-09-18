@@ -33,12 +33,13 @@ export function NextStepCard({
   const { t } = useI18n();
 
   return (
-    <div className={cn("rounded-lg border border-slate-200 bg-white p-6", className)}>
+    <div className={cn("rounded-lg border border-slate-200 bg-white p-5", className)}>
       <Eyebrow>{eyebrow}</Eyebrow>
       <p className="mt-2 text-xl font-bold text-slate-900">{title}</p>
-      <p className="mt-2 text-sm text-slate-600">{why}</p>
+      <p className="mt-2 text-sm leading-snug text-slate-600">{why}</p>
       <p className="mt-2 text-sm font-medium text-accent-700">
-        {t.common.upToPointsBefore} {maxPoints} {t.common.upToPointsAfter} · {estimatedTime}
+        {t.common.upToPointsBefore} <span className="font-numeric">{maxPoints}</span> {t.common.upToPointsAfter} ·{" "}
+        <span className="font-numeric">{estimatedTime}</span>
       </p>
       {doneItems.length > 0 && (
         <div className="mt-4">

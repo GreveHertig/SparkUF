@@ -20,13 +20,13 @@ export function VerdictCard({ score, headline, reasoning, className }: VerdictCa
   const level = getScoreLevel(score);
 
   return (
-    <div className={cn("rounded-lg border border-slate-200 bg-white p-6", className)}>
+    <div className={cn("rounded-lg border border-slate-200 bg-white p-5", className)}>
       <Eyebrow>{t.score.levels[level.key].name}</Eyebrow>
       <div className="mt-3">
         <ScoreBadge score={score} size="large" />
       </div>
-      <p className="mt-4 text-lg font-semibold text-slate-900">{headline}</p>
-      <p className="mt-2 text-sm text-slate-600">{reasoning}</p>
+      <p className="mt-3 text-lg font-semibold text-slate-900">{headline}</p>
+      <p className="mt-2 text-sm leading-snug text-slate-600">{reasoning}</p>
     </div>
   );
 }

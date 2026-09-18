@@ -20,6 +20,12 @@ export const en = {
     upToPointsBefore: "Can earn up to",
     upToPointsAfter: "points",
   },
+  kpi: {
+    scoreLabel: "Score",
+    scoreDeltaLabel: "Change",
+    unlockedPartsLabel: "Unlocked parts",
+    bestSuggestionLabel: "Best suggestion",
+  },
   score: {
     levels: {
       unproven: {
@@ -184,6 +190,8 @@ export const en = {
     toolRunningLabel: "Running tool",
     toolDoneLabel: "Done",
     emptyStateBody: "Click Next in the demo bar to continue the conversation.",
+    promptPlaceholder: "Message your co-founder …",
+    promptSendLabel: "Send",
   },
   scorePage: {
     title: "Score",

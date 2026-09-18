@@ -30,13 +30,13 @@ export function PulseCard({
   const { t } = useI18n();
 
   return (
-    <div className={cn("rounded-lg border border-slate-200 bg-white p-5", className)}>
+    <div className={cn("rounded-lg border border-slate-200 bg-white p-4", className)}>
       <div className="flex items-center justify-between">
         <Eyebrow>{category}</Eyebrow>
         <span className="text-xs text-slate-600">{timestamp}</span>
       </div>
       <p className="mt-2 text-base font-semibold text-slate-900">{headline}</p>
-      <p className="mt-2 text-sm text-slate-600">
+      <p className="mt-2 text-sm leading-snug text-slate-600">
         <span className="font-medium text-slate-700">
           {t.common.pulseWhyItMattersPrefix}{" "}
         </span>

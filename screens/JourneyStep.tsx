@@ -14,20 +14,21 @@ export function JourneyStepScreen({ data, backHref }: { data: JourneyStepDetail;
   const { t } = useI18n();
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
         <Link href={backHref} className="text-sm font-medium text-accent-700 hover:underline">
           ← {t.journeyPage.backToJourney}
         </Link>
         <Eyebrow className="mt-4">
-          {t.journeyPage.stepLabel} {String(data.stepNumber).padStart(2, "0")} · {t.journeyPage.status[data.status]}
+          <span className="font-numeric">{t.journeyPage.stepLabel} {String(data.stepNumber).padStart(2, "0")}</span> ·{" "}
+          {t.journeyPage.status[data.status]}
         </Eyebrow>
         <EditorialHeading as="h1" className="mt-2">
           {data.title}
         </EditorialHeading>
-        <p className="mt-2 text-sm text-slate-600">{data.oneLiner}</p>
+        <p className="mt-2 text-sm leading-snug text-slate-600">{data.oneLiner}</p>
         <p className="mt-2 text-sm font-medium text-accent-700">
-          {t.common.upToPointsBefore} {data.maxPoints} {t.common.upToPointsAfter}
+          {t.common.upToPointsBefore} <span className="font-numeric">{data.maxPoints}</span> {t.common.upToPointsAfter}
         </p>
       </div>
 
@@ -36,7 +37,7 @@ export function JourneyStepScreen({ data, backHref }: { data: JourneyStepDetail;
           <p className="text-sm">{data.oneLiner}</p>
         </LockedState>
       ) : (
-        <div className={cn("flex flex-col gap-6 rounded-lg border border-slate-200 bg-white p-6")}>
+        <div className={cn("flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-5")}>
           {data.why && (
             <section>
               <Eyebrow>{data.status === "current" ? t.journeyPage.whatsNext : t.journeyPage.whatHappened}</Eyebrow>

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChatMessage } from "@/components/spark/ChatMessage";
+import { PromptBox } from "@/components/spark/PromptBox";
 import { ToolRunCard } from "@/components/spark/ToolRunCard";
 import { TimeSkip } from "@/components/spark/TimeSkip";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
@@ -25,7 +26,7 @@ export function Cofounder({ data }: { data: CofounderData }) {
   const { locale, t } = useI18n();
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-10">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
         <Eyebrow>{t.appShell.nav.cofounder}</Eyebrow>
         <EditorialHeading as="h1" className="mt-2">
@@ -36,9 +37,9 @@ export function Cofounder({ data }: { data: CofounderData }) {
 
       {data.moments.length === 0 && <p className="text-sm text-slate-600">{t.cofounderPage.emptyStateBody}</p>}
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6">
         {data.moments.map((moment) => (
-          <section key={moment.id} className="flex flex-col gap-3">
+          <section key={moment.id} className="flex flex-col gap-2">
             <Eyebrow>{moment.momentLabel}</Eyebrow>
             {moment.items.map((item, index) =>
               item.kind === "message" ? (
@@ -52,6 +53,8 @@ export function Cofounder({ data }: { data: CofounderData }) {
           </section>
         ))}
       </div>
+
+      <PromptBox />
     </div>
   );
 }

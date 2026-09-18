@@ -17,7 +17,7 @@ export function ChatMessage({ role, text, className }: ChatMessageProps) {
     <div className={cn("flex", isFounder ? "justify-end" : "justify-start", className)}>
       <p
         className={cn(
-          "max-w-lg rounded-lg px-4 py-2.5 text-sm",
+          "max-w-lg rounded-lg px-3.5 py-2 text-sm leading-snug",
           isFounder ? "bg-accent-600 text-white" : "border border-slate-200 bg-white text-slate-900",
         )}
       >

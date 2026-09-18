@@ -54,15 +54,16 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-60 shrink-0 flex-col gap-8 bg-ink-800 p-6">
+      <aside className="flex w-56 shrink-0 flex-col gap-6 bg-ink-800 p-5">
         <Logo tone="light" height={18} />
-        <nav className="flex flex-col gap-1" aria-label={t.appShell.nav.home}>
+        <nav className="flex flex-col gap-0.5" aria-label={t.appShell.nav.home}>
           <Link
             href={homeHref}
             className={cn(
-              "rounded-md px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-accent-300",
-              pathname === homeHref ? "bg-slate-700 text-paper-50" : "text-slate-400 hover:text-paper-50",
+              "rounded-md px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-300",
+              pathname === homeHref ? "bg-accent-600 text-white" : "text-slate-400 hover:text-paper-50",
             )}
+            style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
           >
             {t.appShell.nav.home}
           </Link>
@@ -72,16 +73,17 @@ export function AppShell({
                 key={slug}
                 href={`${navBasePath}/${slug}`}
                 className={cn(
-                  "rounded-md px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-accent-300",
+                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent-300",
                   pathname?.startsWith(`${navBasePath}/${slug}`)
-                    ? "bg-slate-700 text-paper-50"
+                    ? "bg-accent-600 text-white"
                     : "text-slate-400 hover:text-paper-50",
                 )}
+                style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
               >
                 {label}
               </Link>
             ) : (
-              <span key={slug} className="rounded-md px-3 py-2 text-sm font-medium text-slate-400">
+              <span key={slug} className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-400">
                 {label}
               </span>
             ),
@@ -90,14 +92,14 @@ export function AppShell({
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-4">
+        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
           <div>{headerLeft}</div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {score !== null && <ScoreBadge score={score} />}
             <LanguageSwitch />
             <div className="flex items-center gap-2" aria-label={t.appShell.profileMenuLabel}>
               <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700"
                 aria-hidden="true"
               >
                 {profile.initials}
@@ -106,7 +108,7 @@ export function AppShell({
             </div>
           </div>
         </header>
-        <main className={cn("flex-1 bg-paper-50 p-8", Boolean(bottomBar) && "pb-20")}>{children}</main>
+        <main className={cn("flex-1 bg-paper-50 p-6", Boolean(bottomBar) && "pb-20")}>{children}</main>
         {bottomBar}
       </div>
     </div>

@@ -24,7 +24,7 @@ export function Customers({ data }: { data: CustomersData }) {
   const { locale, t } = useI18n();
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-8">
+    <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div>
         <Eyebrow>{t.appShell.nav.customers}</Eyebrow>
         <EditorialHeading as="h1" className="mt-2">
@@ -40,30 +40,30 @@ export function Customers({ data }: { data: CustomersData }) {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs font-semibold uppercase text-slate-500">
-                <th className="px-4 py-3">{t.customersPage.tableCompany}</th>
-                <th className="px-4 py-3">{t.customersPage.tableSni}</th>
-                <th className="px-4 py-3">{t.customersPage.tableEmployees}</th>
-                <th className="px-4 py-3">{t.customersPage.tableRevenue}</th>
-                <th className="px-4 py-3">{t.customersPage.tableStatus}</th>
+                <th className="px-3 py-2">{t.customersPage.tableCompany}</th>
+                <th className="px-3 py-2">{t.customersPage.tableSni}</th>
+                <th className="px-3 py-2">{t.customersPage.tableEmployees}</th>
+                <th className="px-3 py-2">{t.customersPage.tableRevenue}</th>
+                <th className="px-3 py-2">{t.customersPage.tableStatus}</th>
               </tr>
             </thead>
             <tbody>
               {data.rows.map((row) => (
                 <tr key={row.companyName} className="border-b border-slate-100 last:border-0 align-top">
-                  <td className="px-4 py-3 font-medium text-slate-900">
+                  <td className="px-3 py-2 font-medium text-slate-900">
                     {row.companyName}
                     {row.quote && (
-                      <p className="mt-1 text-xs italic text-slate-600">
+                      <p className="mt-1 text-xs italic leading-snug text-slate-600">
                         {t.customersPage.responseQuoteLabel}: &quot;{row.quote}&quot;
                       </p>
                     )}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-slate-600">{row.sniCode}</td>
-                  <td className="px-4 py-3 tabular-nums text-slate-600">{row.employees}</td>
-                  <td className="px-4 py-3 tabular-nums text-slate-600">
+                  <td className="font-numeric px-3 py-2 text-slate-600">{row.sniCode}</td>
+                  <td className="font-numeric px-3 py-2 text-slate-600">{row.employees}</td>
+                  <td className="font-numeric px-3 py-2 text-slate-600">
                     {formatCount(row.revenueKsek, locale)} tkr
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2">
                     <span
                       className={cn(
                         "rounded-pill px-2 py-0.5 text-xs font-semibold uppercase",

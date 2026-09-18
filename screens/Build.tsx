@@ -28,7 +28,7 @@ export function Build({ data }: { data: BuildData }) {
   const { t } = useI18n();
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <Eyebrow>{t.appShell.nav.build}</Eyebrow>
@@ -44,7 +44,7 @@ export function Build({ data }: { data: BuildData }) {
         <LockedState unlockHint={`${t.homePage.unlocksAfterStepBefore} 07`} />
       ) : (
         <>
-          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-5">
+          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
             <span
               className={cn("rounded-pill px-2.5 py-1 text-xs font-semibold uppercase", statusToneClasses[data.status])}
               style={{ letterSpacing: "var(--tracking-label)" }}
@@ -58,9 +58,9 @@ export function Build({ data }: { data: BuildData }) {
             )}
           </div>
 
-          <section className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-6">
+          <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5">
             <Eyebrow>{t.buildPage.specTitle}</Eyebrow>
-            <p className="text-sm text-slate-800">{data.spec.sammanfattning}</p>
+            <p className="text-sm leading-snug text-slate-800">{data.spec.sammanfattning}</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-xs font-semibold uppercase text-slate-500" style={{ letterSpacing: "var(--tracking-label)" }}>
@@ -75,7 +75,7 @@ export function Build({ data }: { data: BuildData }) {
                 </li>
               ))}
             </ul>
-            <div className="flex flex-col gap-2 border-t border-slate-100 pt-4">
+            <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
               {data.spec.underlag.map((bevis, index) => (
                 <div key={index} className="flex flex-col gap-1">
                   <p className="text-sm text-slate-700">{bevis.påstående}</p>
@@ -86,9 +86,9 @@ export function Build({ data }: { data: BuildData }) {
           </section>
 
           {data.status === "published" && (
-            <section className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6">
+            <section className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5">
               <Eyebrow>{t.buildPage.previewTitle}</Eyebrow>
-              <p className="mt-2 text-sm text-slate-600">{data.spec.sammanfattning}</p>
+              <p className="mt-2 text-sm leading-snug text-slate-600">{data.spec.sammanfattning}</p>
             </section>
           )}
         </>
