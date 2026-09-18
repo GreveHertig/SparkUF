@@ -29,10 +29,16 @@ export const demoMemoryRepository: MemoryRepository = {
 
   async getTraceEvents(locale: Locale) {
     const { beatIndex } = useDemoStore.getState();
-    return saraBeats.slice(0, beatIndex + 1).map((beat) => ({
-      id: beat.id,
-      timestampIso: beat.todayIso,
-      description: `${beat.momentLabel[locale]} — ${beat.nextStep[locale].title}`,
-    }));
+    // Bara "efter"-moment loggas (avsnitt 9.1: "nya poster i Spåret" hör till
+    // efter, inte till före/körning) — annars skulle varje steg ge tre
+    // rader i Spåret för samma händelse.
+    return saraBeats
+      .slice(0, beatIndex + 1)
+      .filter((beat) => beat.momentKind === "after")
+      .map((beat) => ({
+        id: beat.id,
+        timestampIso: beat.todayIso,
+        description: beat.traceSummary?.[locale] ?? `${beat.momentLabel[locale]} — ${beat.nextStep[locale].title}`,
+      }));
   },
 };

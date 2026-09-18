@@ -2,7 +2,7 @@ import type { Locale } from "@/i18n/context";
 import type { OutreachProvider, CampaignRow, OutreachStatus } from "@/ports/OutreachProvider";
 import { saraCompanies } from "./RegistryProvider";
 import { useDemoStore } from "./demoStore";
-import { getBeatAt, getCurrentStepNumberFor } from "./sara";
+import { getBeatAt } from "./sara";
 
 /** De nio svaren (9.3 steg 05–06) — index i saraCompanies. Tre säger nej
  * till priset 2 000 kr (samtliga under 10 anställda), sex bekräftar
@@ -46,15 +46,38 @@ const responses: Record<number, Record<Locale, string>> = {
   },
 };
 
-const RESPONDED_INDICES = Object.keys(responses).map(Number);
-// Öppnat men inte svarat än, synligt redan i utskicksmomentet (05a) innan svaren kommit in.
+// De sex som svarar först (05a-utskicket-efter) och bekräftar problemet,
+// respektive de tre som svarar senare (05b-svaren-efter) och säger nej till
+// priset — se responses ovan för citaten. Tillsammans de nio svaren i 9.3.
+const FIRST_WAVE_INDICES = [5, 8, 10, 13, 15, 19];
+const SECOND_WAVE_INDICES = [0, 2, 9];
+const RESPONDED_INDICES = [...FIRST_WAVE_INDICES, ...SECOND_WAVE_INDICES];
+// Öppnat men inte svarat än, synligt redan under utskicksmomentets körning.
 const OPENED_BEFORE_RESPONSES = [0, 2, 5, 8, 9, 10, 13, 15];
 
-function statusFor(index: number, stepNumber: number, isSendMoment: boolean): OutreachStatus {
-  if (stepNumber <= 4) return "draft";
-  if (isSendMoment) return OPENED_BEFORE_RESPONSES.includes(index) ? "opened" : "sent";
-  if (RESPONDED_INDICES.includes(index)) return "responded";
-  return "opened";
+type OutreachStage = "notSent" | "sending" | "firstWave" | "secondWave";
+
+/** Vilket skede utskicket är i, härlett ur den aktuella beatens moment
+ * (avsnitt 9.1) i stället för en enda hårdkodad beat-id-jämförelse — håller
+ * sig stabil oavsett hur steg 05:s interna beats namnges. */
+function stageFor(beat: ReturnType<typeof getBeatAt>): OutreachStage {
+  if (beat.stepNumber < 5) return "notSent";
+  if (beat.id.startsWith("05a")) {
+    if (beat.momentKind === "before") return "notSent";
+    if (beat.momentKind === "running") return "sending";
+    return "firstWave";
+  }
+  if (beat.id.startsWith("05b")) {
+    return beat.momentKind === "after" ? "secondWave" : "firstWave";
+  }
+  return "secondWave";
+}
+
+function statusFor(index: number, stage: OutreachStage): OutreachStatus {
+  if (stage === "notSent") return "draft";
+  if (stage === "sending") return OPENED_BEFORE_RESPONSES.includes(index) ? "opened" : "sent";
+  if (stage === "firstWave") return FIRST_WAVE_INDICES.includes(index) ? "responded" : "opened";
+  return RESPONDED_INDICES.includes(index) ? "responded" : "opened";
 }
 
 export const demoOutreachProvider: OutreachProvider = {
@@ -65,19 +88,20 @@ export const demoOutreachProvider: OutreachProvider = {
 
   async getCampaign(locale: Locale) {
     const { beatIndex } = useDemoStore.getState();
-    const stepNumber = getCurrentStepNumberFor(beatIndex);
-    if (stepNumber < 4) return [];
+    const beat = getBeatAt(beatIndex);
+    if (beat.stepNumber < 4) return [];
 
-    const isSendMoment = getBeatAt(beatIndex).id === "05a-utskicket";
-    return saraCompanies.map(
-      (company, index): CampaignRow => ({
+    const stage = stageFor(beat);
+    return saraCompanies.map((company, index): CampaignRow => {
+      const status = statusFor(index, stage);
+      return {
         companyName: company.name,
         sniCode: company.sniCode,
         employees: company.employees,
         revenueKsek: company.revenueKsek,
-        status: statusFor(index, stepNumber, isSendMoment),
-        quote: !isSendMoment && stepNumber >= 5 ? responses[index]?.[locale] : undefined,
-      }),
-    );
+        status,
+        quote: status === "responded" ? responses[index]?.[locale] : undefined,
+      };
+    });
   },
 };

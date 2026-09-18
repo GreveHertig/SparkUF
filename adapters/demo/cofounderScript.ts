@@ -3,6 +3,12 @@
 // det här är inte CofounderAgent-porten (den är till för liveadapterns
 // riktiga Gemini-samtal, se ports/CofounderAgent.ts) utan en ren
 // presentationsskript kopplat till Saras beats i sara.ts.
+//
+// Steg 01–06 har tre nycklar var (`-fore`/`-korning`/`-efter`, se
+// adapters/demo/sara.ts) som speglar de tre klickbara momenten i 9.1: en kort
+// teaser i "-fore", själva verktygskörningen/samtalet i "-korning", och en
+// kort sammanfattning i "-efter" (fynden själva visas redan i highlights på
+// Resan/[steg] och Hem — här handlar det bara om vad Medgrundaren säger).
 import type { Locale } from "@/i18n/context";
 
 export type TranscriptItem =
@@ -24,8 +30,16 @@ function skip(sv: string, en: string): TranscriptItem {
 
 /** Nyckel = beat.id i adapters/demo/sara.ts. */
 export const cofounderScript: Record<string, TranscriptItem[]> = {
-  "01-om-dig": [
-    msg("cofounder", "Innan vi börjar behöver jag veta vem du är. Vad gör du idag?", "Before we start, I need to know who you are. What do you do today?"),
+  // --- Steg 01 · Om dig -----------------------------------------------
+  "01-om-dig-fore": [
+    msg(
+      "cofounder",
+      "Innan vi börjar behöver jag veta vem du är. Redo?",
+      "Before we start, I need to know who you are. Ready?",
+    ),
+  ],
+  "01-om-dig-korning": [
+    msg("cofounder", "Vad gör du idag?", "What do you do today?"),
     msg(
       "founder",
       "Jag jobbar som redovisningsassistent på en liten byrå. Har gjort det i fyra år.",
@@ -44,8 +58,30 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
       "Det löser vi senare — Lovable bygger åt dig när det är dags. Din styrka är branschinsikten.",
       "We'll solve that later — Lovable builds it for you when the time comes. Your strength is your industry knowledge.",
     ),
+    tool(
+      "Sammanställer profilen",
+      "Compiling the profile",
+      ["Lyssnar på bakgrund", "Noterar resurser", "Sammanfattar riskaptit"],
+      ["Listening to background", "Noting resources", "Summarizing risk appetite"],
+    ),
   ],
-  "02-mojligheter": [
+  "01-om-dig-efter": [
+    msg(
+      "cofounder",
+      "Profilen är klar. Branschinsikten är din styrka — att du inte kan bygga själv löser vi med Lovable i steg 10.",
+      "The profile is done. Your industry knowledge is your strength — not being able to build it yourself gets solved by Lovable in step 10.",
+    ),
+  ],
+
+  // --- Steg 02 · Möjligheter -------------------------------------------
+  "02-mojligheter-fore": [
+    msg(
+      "cofounder",
+      "Dags att hitta en idé. Jag korsar din profil mot registret.",
+      "Time to find an idea. I'll cross your profile against the registry.",
+    ),
+  ],
+  "02-mojligheter-korning": [
     tool(
       "Söker i Bolagsverkets register",
       "Searching the Bolagsverket registry",
@@ -58,9 +94,20 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
       "I see three possible ideas. The one that stands out: automatic collection of receipts for accounting firms.",
     ),
     msg("founder", "Det är precis det jag själv är trött på varje månadsskifte.", "That's exactly what I'm tired of every month-end."),
-    msg("cofounder", "Då kallar vi den Kvittojakten.", "Then we'll call it Kvittojakten."),
   ],
-  "03-marknaden": [
+  "02-mojligheter-efter": [
+    msg("cofounder", "Då kallar vi den Kvittojakten. Nästa: se vad registret säger om marknaden.", "Then we'll call it Kvittojakten. Next: see what the registry says about the market."),
+  ],
+
+  // --- Steg 03 · Marknaden -----------------------------------------------
+  "03-marknaden-fore": [
+    msg(
+      "cofounder",
+      "Dags att hämta de första riktiga siffrorna ur registret.",
+      "Time to pull the first real numbers from the registry.",
+    ),
+  ],
+  "03-marknaden-korning": [
     tool(
       "Hämtar från Bolagsverket och SCB",
       "Fetching from Bolagsverket and Statistics Sweden",
@@ -75,16 +122,28 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
     msg("founder", "Och konkurrenterna?", "And the competitors?"),
     msg(
       "cofounder",
-      "Tre stycken, ingen dominerar. Jag har också kört en simulering — märkt Simulering, den ger aldrig poäng.",
-      "Three of them, none dominant. I also ran a simulation — labeled Simulation, it never earns points.",
+      "Tre stycken, ingen dominerar — men jag har bara skrapat på ytan av dem så här långt. Jag har också kört en simulering — märkt Simulering, den ger aldrig poäng.",
+      "Three of them, none dominant — but I've only scratched the surface on them so far. I also ran a simulation — labeled Simulation, it never earns points.",
     ),
   ],
-  "04-kunden": [
+  "03-marknaden-efter": [
+    msg(
+      "cofounder",
+      "Marknaden ser lovande ut. Konkurrensen är upplåst nu — jag gräver djupare i den när vi bygger kundlistan.",
+      "The market looks promising. Competition is unlocked now — I'll dig deeper into it when we build the customer list.",
+    ),
+  ],
+
+  // --- Steg 04 · Kunden ----------------------------------------------------
+  "04-kunden-fore": [
+    msg("cofounder", "Nu bygger vi kundprofilen och listar namngivna byråer.", "Now let's build the customer profile and list named firms."),
+  ],
+  "04-kunden-korning": [
     tool(
       "Bygger kundprofilen",
       "Building the customer profile",
-      ["Filtrerar på storlek och omsättning", "Namnger de 40 snabbast växande"],
-      ["Filtering by size and revenue", "Naming the 40 fastest-growing"],
+      ["Filtrerar på storlek och omsättning", "Namnger de 40 snabbast växande", "Fördjupar konkurrentbilden"],
+      ["Filtering by size and revenue", "Naming the 40 fastest-growing", "Deepening the competitor picture"],
     ),
     msg(
       "cofounder",
@@ -94,11 +153,23 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
     msg("founder", "Kan du skriva ett mejl till dem?", "Can you write them an email?"),
     msg(
       "cofounder",
-      "Ja. Men bara B2B — jag skickar aldrig till privatpersoner utan samtycke.",
-      "Yes. But B2B only — I never send to individuals without consent.",
+      "Ja. Men bara B2B — jag skickar aldrig till privatpersoner utan samtycke. Jag har också en simulering på vad olika stora byråer skulle kunna tänkas betala.",
+      "Yes. But B2B only — I never send to individuals without consent. I've also got a simulation on what firms of different sizes might be willing to pay.",
     ),
   ],
-  "05a-utskicket": [
+  "04-kunden-efter": [
+    msg(
+      "cofounder",
+      "Kundlistan är klar och konkurrensbilden fördjupad. Nästa: skicka utskicket.",
+      "The customer list is done and the competitor picture is deeper. Next: send the outreach.",
+    ),
+  ],
+
+  // --- Steg 05a · Samtalen (utskicket) --------------------------------------
+  "05a-utskicket-fore": [
+    msg("cofounder", "Dags att skicka till de 40 byråerna. Redo?", "Time to send to the 40 firms. Ready?"),
+  ],
+  "05a-utskicket-korning": [
     tool(
       "Skickar från din Gmail",
       "Sending from your Gmail",
@@ -113,22 +184,60 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
       "38% have opened it. I'll send a reminder in four days if it's quiet.",
     ),
     skip("4 dagar senare", "4 days later"),
+    msg("cofounder", "Påminnelsen är skickad. Nu väntar vi på svar.", "The reminder is sent. Now we wait for responses."),
+  ],
+  "05a-utskicket-efter": [
+    tool(
+      "Läser in svaren",
+      "Reading the responses",
+      ["Läser 6 svar", "Jämför mot problemhypotesen", "Uppdaterar Problem och Betalningsvilja"],
+      ["Reading 6 responses", "Comparing against the problem hypothesis", "Updating Problem and Willingness to pay"],
+    ),
     msg(
       "cofounder",
-      "Påminnelsen är skickad. Sex svar har kommit in — alla bekräftar att problemet är verkligt.",
-      "The reminder is sent. Six responses have come in — all confirm the problem is real.",
+      "Sex svar har kommit in — alla bekräftar att problemet är verkligt. Problem och Betalningsvilja är upplåsta nu.",
+      "Six responses have come in — all confirm the problem is real. Problem and Willingness to pay are unlocked now.",
     ),
   ],
-  "05b-svaren": [
-    msg("cofounder", "Tre svar till kom in. Alla tre säger nej till 2 000 kr.", "Three more responses came in. All three say no to SEK 2,000."),
+
+  // --- Steg 05b · Samtalen (svaren — poängen sjunker) -----------------------
+  "05b-svaren-korning": [
+    skip("3 dagar senare", "3 days later"),
+    msg("cofounder", "Tre svar till kom in.", "Three more responses came in."),
+    tool(
+      "Jämför de nya svaren",
+      "Comparing the new responses",
+      ["Läser de tre nya svaren", "Upptäcker: alla tre säger nej till priset", "Räknar om Betalningsvilja"],
+      ["Reading the three new responses", "Finding: all three say no to the price", "Recalculating Willingness to pay"],
+    ),
+  ],
+  "05b-svaren-efter": [
     msg("founder", "Sjunker poängen nu?", "Does the score drop now?"),
     msg(
       "cofounder",
       "Ja, från 47 till 43. Motsägande svar räknas fullt ut, och ett skevt underlag straffar delen. Det är inte ett fel — det är regeln.",
       "Yes, from 47 to 43. Contradicting responses count in full, and a skewed sample penalizes the part. That's not a bug — it's the rule.",
     ),
+    msg(
+      "cofounder",
+      "Se Poäng-fliken för exakt uträkning: 9 − 3 gånger 0,85 är ungefär 5, inte 6.",
+      "See the Score tab for the exact math: 9 minus 3, times 0.85, is about 5, not 6.",
+    ),
   ],
-  "06-domen": [
+
+  // --- Steg 06 · Domen ------------------------------------------------------
+  "06-domen-fore": [
+    msg("cofounder", "Dags att fälla domen på de nio svaren.", "Time to hand down the verdict on the nine responses."),
+  ],
+  "06-domen-korning": [
+    tool(
+      "Sammanställer domen",
+      "Compiling the verdict",
+      ["Väger 9 svar mot varandra", "Beräknar skevheten i betalningsviljan", "Simulerar priskänslighet i nya segment"],
+      ["Weighing 9 responses against each other", "Calculating the skew in willingness to pay", "Simulating price sensitivity in new segments"],
+    ),
+  ],
+  "06-domen-efter": [
     msg(
       "cofounder",
       "Domen: förfina, inte kör och inte pivotera. 7 av 9 bekräftar problemet, men 6 av 9 tycker 2 000 kr är för dyrt. Alla som sa ja har 10 eller fler anställda.",
@@ -141,6 +250,7 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
       "Yes — 10–20 employees. A price simulation (Hiasynth, concept) supports SEK 1,000–1,300 there.",
     ),
   ],
+
   "07-affarsfall": [
     tool(
       "Räknar den svenska kalkylen",

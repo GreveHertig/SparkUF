@@ -1,12 +1,28 @@
 import type { JourneyRepository, JourneyStepView, JourneyStepDetail, JourneyStepStatus } from "@/ports/JourneyRepository";
 import type { Locale } from "@/i18n/context";
+import type { ScoreSnapshot } from "@/core/domain";
+import { demoSimulationProvider, simulationQuestions } from "./SimulationProvider";
 import { useDemoStore } from "./demoStore";
-import { getJourneySummaryForBeat, getCurrentStepNumberFor, SARA_STEPS, findLatestBeatForStep } from "./sara";
+import {
+  getJourneySummaryForBeat,
+  getCurrentStepNumberFor,
+  getScoreSnapshotForBeat,
+  getBeatAt,
+  SARA_STEPS,
+  findLatestBeatIndexForStep,
+} from "./sara";
 
 function statusFor(stepNumber: number, currentStepNumber: number): JourneyStepStatus {
   if (stepNumber < currentStepNumber) return "done";
   if (stepNumber === currentStepNumber) return "current";
   return "locked";
+}
+
+/** "Vad som låstes upp" (avsnitt 9.1) — kod-härlett ur skillnaden mellan
+ * föregående och nuvarande beats låsta delar, aldrig hårdkodat. */
+function diffNewlyUnlocked(previous: ScoreSnapshot, current: ScoreSnapshot): string[] {
+  const stillLocked = new Set(current.lockedParts.map((part) => part.name));
+  return previous.lockedParts.filter((part) => !stillLocked.has(part.name)).map((part) => part.name);
 }
 
 export const demoJourneyRepository: JourneyRepository = {
@@ -38,7 +54,6 @@ export const demoJourneyRepository: JourneyRepository = {
     const { beatIndex } = useDemoStore.getState();
     const currentStepNumber = getCurrentStepNumberFor(beatIndex);
     const status = statusFor(stepNumber, currentStepNumber);
-    const beat = findLatestBeatForStep(stepNumber, beatIndex);
 
     const base: JourneyStepDetail = {
       stepNumber: meta.stepNumber,
@@ -51,9 +66,24 @@ export const demoJourneyRepository: JourneyRepository = {
       doneItems: [],
       highlights: [],
       actionLabel: "",
+      momentKind: "after",
+      scoreDelta: null,
+      newlyUnlockedParts: [],
+      verdict: null,
+      simulation: null,
     };
 
-    if (!beat) return base;
+    const foundIndex = findLatestBeatIndexForStep(stepNumber, beatIndex);
+    if (foundIndex === undefined) return base;
+    const beat = getBeatAt(foundIndex);
+
+    const snapshot = getScoreSnapshotForBeat(foundIndex, locale);
+    const newlyUnlockedParts =
+      foundIndex > 0 ? diffNewlyUnlocked(getScoreSnapshotForBeat(foundIndex - 1, locale), snapshot) : [];
+
+    const simulation = beat.simulationKind
+      ? await demoSimulationProvider.simulate(simulationQuestions[beat.simulationKind][locale], locale)
+      : null;
 
     return {
       ...base,
@@ -61,6 +91,11 @@ export const demoJourneyRepository: JourneyRepository = {
       doneItems: beat.nextStep[locale].doneItems,
       highlights: beat.highlights[locale],
       actionLabel: beat.nextStep[locale].actionLabel,
+      momentKind: beat.momentKind,
+      scoreDelta: { total: snapshot.total, delta: snapshot.delta, deltaReason: snapshot.deltaReason },
+      newlyUnlockedParts,
+      verdict: beat.verdict ? beat.verdict[locale] : null,
+      simulation,
     };
   },
 };
