@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
+import { expect, vi } from "vitest";
 import type { LegalAdvisor } from "./LegalAdvisor";
 import { demoLegalAdvisor } from "@/adapters/demo/LegalAdvisor";
 import { liveLegalAdvisor } from "@/adapters/live/LegalAdvisor";
+import { describeContract, contractIt } from "./testContract";
 
 // Kontraktstestet ska köra utan nätverk/API-nyckel i CI. liveLegalAdvisors
 // egen logik (val av ämnen, injicering av kuraterad källa, validering) är
@@ -32,22 +33,21 @@ vi.mock("@/lib/server/gemini", () => ({
   ),
 }));
 
-function legalAdvisorContractTests(name: string, advisor: LegalAdvisor) {
-  describe(`LegalAdvisor-kontrakt: ${name}`, () => {
-    it("returnerar en array", async () => {
+describeContract<LegalAdvisor>(
+  "LegalAdvisor",
+  { demo: demoLegalAdvisor, live: liveLegalAdvisor },
+  (advisor) => {
+    contractIt("returnerar en array", async () => {
       const result = await advisor.getLegalMap("aktiebolag");
       expect(Array.isArray(result)).toBe(true);
     });
 
-    it("varje krav har en ifylld källa (Datalöftet)", async () => {
+    contractIt("varje krav har en ifylld källa (Datalöftet)", async () => {
       const result = await advisor.getLegalMap("aktiebolag");
       for (const krav of result) {
         expect(krav.källa.namn).toBeTruthy();
         expect(krav.källa.hämtad).toBeTruthy();
       }
     });
-  });
-}
-
-legalAdvisorContractTests("demo", demoLegalAdvisor);
-legalAdvisorContractTests("live (mockad Gemini)", liveLegalAdvisor);
+  },
+);
