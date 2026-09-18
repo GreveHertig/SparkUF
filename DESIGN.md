@@ -76,3 +76,15 @@ Padding i kort ett steg ner genomgående (`p-6`→`p-4`/`p-5`, `gap-6`→`gap-4`
 
 ### Verifiering
 `pnpm typecheck`/`lint`/`test`/`build` gröna. Klickad igenom med Playwright (headless Chromium, `pnpm dev`) genom alla elva `/demo/app`-sidorna (inkl. `/resan/[steg]`) på **både sv och en** — inga konsol- eller sidfel på någon av de 22 kombinationerna. Detta täpper till en känd lucka från Session 3 ("Engelska texter … Inte manuellt klickigenomgången på engelska i en riktig webbläsare"). `/app` (livevyn) opåverkad — visar fortfarande "Kommer snart", nu med `getScoreHistory` också anropad (och stubbad) i dess `Promise.all`, konsekvent med de andra portmetoderna.
+
+## Session P1 — inloggning: TextField
+
+`/logga-in` och `/skapa-konto` (uppdrag 14.4) behövde ett formulärfält, och inget i designsystemet täckte det — `components/ui/` hade elva komponenter men ingen etikett+fält+felmeddelande-primitiv. Ny `components/ui/TextField.tsx`: label, `<input>`, valfri hint-text, valfritt felmeddelande (`role="alert"`, `aria-invalid`, `aria-describedby`). Samma mönster som `LockedState`/`ComingSoon` — komponenten vet inget om i18n, all text kommer in som redan uppslagna strängar från anroparen.
+
+**Beslut: fältfel är koder, inte text, ända fram till komponenten.** `app/(auth)/actions.ts` (Server Actions) returnerar snake_case-koder (`"password_too_short"` osv.), aldrig färdig text — CLAUDE.md: "Ingen hårdkodad text" gäller även serverkod. `app/(auth)/errorMessages.ts` slår koden mot en `Record<Kod, NyckelITDictionary>` (inte en `switch`/funktion), så TypeScript vägrar kompilera om en ny felkod läggs till i `actions.ts` utan en motsvarande rad här. `LogInForm.tsx`/`SignUpForm.tsx` slår sedan upp den nyckeln i `t.auth.errors`.
+
+**Beslut: Supabases egna felmeddelanden visas aldrig.** `mapAuthError` i `actions.ts` växlar på `error.code` (Supabases stabila felkoder, `@supabase/auth-js`) till en av tre generiska kategorier (`invalid_credentials`, `email_in_use`, `unexpected`) — aldrig `error.message`, som kan skilja sig mellan "fel lösenord" och "kontot finns inte" (användaruppräkning) eller läcka interna detaljer.
+
+Formuläret använder Reacts `useActionState` (samma mönster som Next.js egen auth-guide) i stället för ett kontrollerat formulär med egen `useState` per fält — mindre kod, och valideringsfel överlever en helsides-omladdning utan JavaScript (progressiv förbättring).
+
+`TextField` demonstreras i `/designsystem` med tre lägen: tomt, hint synlig, fel synligt (hint och fel visas aldrig samtidigt — felet vinner).

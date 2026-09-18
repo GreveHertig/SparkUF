@@ -3,12 +3,14 @@ import { ComingSoon } from "@/components/ui/ComingSoon";
 import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
 import { liveEvidenceRepository } from "@/adapters/live/EvidenceRepository";
 import { livePulseProvider } from "@/adapters/live/PulseProvider";
-import { NotImplementedError } from "@/core/errors";
+import { isPlaceholderError } from "@/core/errors";
 
-// Alla tre liveadaptrar är stubbar (docs/moduler/resan.md,
-// evidens-och-poang.md, webbresearch-och-pulsen.md) — sidan visar "Kommer
-// snart" i stället för att krascha, tills P1 bygger dem en i taget.
-// JSX konstrueras aldrig inuti try/catch (react-hooks/error-boundaries).
+// Pulsen är fortfarande en stub (docs/moduler/webbresearch-och-pulsen.md,
+// NotImplementedError). Resan och Evidens kan vara klara men ändå sakna
+// data för ett nytt konto (EmptyStateError — t.ex. inga bevis samlade än).
+// Båda felen visar "Kommer snart" i stället för att krascha
+// (isPlaceholderError, core/errors.ts). JSX konstrueras aldrig inuti
+// try/catch (react-hooks/error-boundaries).
 export default async function LiveAppHomePage() {
   let data: AppHomeData | null = null;
 
@@ -28,7 +30,7 @@ export default async function LiveAppHomePage() {
       scoreHistory,
     };
   } catch (error) {
-    if (!(error instanceof NotImplementedError)) throw error;
+    if (!isPlaceholderError(error)) throw error;
   }
 
   if (!data) {

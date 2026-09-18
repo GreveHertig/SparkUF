@@ -19,6 +19,10 @@ import type { Profile } from "@/core/domain";
  *
  * `navBasePath` styr om sidomenyn länkar (t.ex. "/demo/app") eller förblir
  * inert (utelämnad — /app har inga undersidor än, se docs/arkitektur.md 7).
+ *
+ * `headerRight` (Session P1) är samma icke-demo-medvetna mönster som
+ * `headerLeft`/`bottomBar`: /app skickar in en utloggningsknapp
+ * (components/spark/SignOutButton.tsx), /demo/app skickar ingenting.
  */
 export function AppShell({
   homeHref,
@@ -26,6 +30,7 @@ export function AppShell({
   profile,
   score,
   headerLeft,
+  headerRight,
   bottomBar,
   children,
 }: {
@@ -34,6 +39,7 @@ export function AppShell({
   profile: Profile;
   score: number | null;
   headerLeft?: ReactNode;
+  headerRight?: ReactNode;
   bottomBar?: ReactNode;
   children: ReactNode;
 }) {
@@ -106,6 +112,7 @@ export function AppShell({
               </span>
               <span className="text-sm font-medium text-slate-700">{profile.name}</span>
             </div>
+            {headerRight}
           </div>
         </header>
         <main className={cn("flex-1 bg-paper-50 p-6", Boolean(bottomBar) && "pb-20")}>{children}</main>
