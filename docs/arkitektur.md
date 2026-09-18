@@ -68,8 +68,8 @@ kommande sessioner.
 | Juridisk koll | `LegalAdvisor` | `adapters/demo/LegalAdvisor.ts` | Gemini + kuraterade källor (byggd, ej sakgranskad) | `docs/moduler/juridisk-koll.md` |
 | Bygg | `BuildProvider` | `adapters/demo/BuildProvider.ts` | Lovable (koncept, alltid stub) | `docs/moduler/bygg.md` |
 
-`docs/moduler/*.md` skrivs i Session P2 (avsnitt 14.5). Fram tills dess är
-hänvisningen i `NotImplementedError` ett medvetet framåtpekande.
+`docs/moduler/*.md` finns nu för alla 12 moduler (skrivna i Session P2,
+avsnitt 14.5, med `docs/moduler/juridisk-koll.md` som förebild).
 
 ## 4. Hur en liveadapter kastar sitt fel
 
@@ -96,20 +96,13 @@ datahämtning sker i ett `try/catch` innan någon JSX konstrueras (ESLint-regeln
 
 ## 5. Byta en stub mot en riktig adapter
 
-1. Öppna `adapters/live/<Modul>.ts` och `ports/<Modul>.ts` för att se exakt
-   vilken metod som ska implementeras och vilken form datan ska ha.
-2. Läs `docs/moduler/<modul>.md` (Session P2) för datakällor, nycklar och
-   acceptanskriterier.
-3. Skriv den riktiga implementationen. Nycklar (Supabase service role,
-   Gemini, Tavily) används bara här, aldrig i `screens/` eller i routen.
-4. Kör kontraktstesterna för porten (Session P2 bygger en gemensam svit som
-   körs mot både demo- och liveadaptern) tills de går igenom.
-5. Rör **inget** i `screens/` eller i route-filerna. Så snart
-   `adapters/live/<Modul>.ts` inte längre kastar `NotImplementedError`
-   försvinner `ComingSoon` automatiskt och skärmen visar riktig data — det är
-   hela poängen med portar och adaptrar.
-6. Kör `/security-review` (eller security-reviewer-agenten) innan sessionen
-   avslutas, se `docs/uppdrag.md` 14.6.
+Fullständig steg-för-steg-guide (branch, kontraktstest, tre testlager,
+nycklar, granskning, dokumentation): `docs/bygga-en-modul.md`. I korthet:
+läs `docs/moduler/<modul>.md` och `ports/<Modul>.ts`, implementera i
+`adapters/live/<Modul>.ts` med nycklar bara i `lib/server/`, rör aldrig
+`screens/` eller route-filerna (så snart adaptern slutar kasta
+`NotImplementedError` försvinner `ComingSoon` av sig själv), och kör
+`/security-review` innan sessionen avslutas.
 
 ## 6. Importkontroll: demon får aldrig importera liveadaptrar
 
