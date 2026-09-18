@@ -4,6 +4,9 @@ import { NotImplementedError } from "@/core/errors";
 const DOC = "docs/moduler/minnet.md";
 
 export const liveMemoryRepository: MemoryRepository = {
+  async getProfileSummary() {
+    throw new NotImplementedError("Minnet", DOC);
+  },
   async getBrainNotes() {
     throw new NotImplementedError("Minnet", DOC);
   },
