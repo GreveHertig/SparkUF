@@ -87,6 +87,8 @@ export type Dictionary = {
       nextStepCard: string;
       pulseCard: string;
       verdictCard: string;
+      /** Session P1: /logga-in, /skapa-konto — se DESIGN.md. */
+      textField: string;
     };
   };
   appShell: {
@@ -325,5 +327,48 @@ export type Dictionary = {
       sharperWhyLabel: string;
       continueCta: string;
     };
+  };
+  /** Inloggning (uppdrag 14.4): /logga-in, /skapa-konto. Fältfelen skickas
+   * som koder från app/(auth)/actions.ts (Server Actions) — ingen text
+   * lämnar servern, bara nycklar hit. */
+  auth: {
+    logIn: {
+      eyebrow: string;
+      title: string;
+      subtitle: string;
+      emailLabel: string;
+      passwordLabel: string;
+      submitCta: string;
+      switchPrompt: string;
+      switchCta: string;
+    };
+    signUp: {
+      eyebrow: string;
+      title: string;
+      subtitle: string;
+      nameLabel: string;
+      emailLabel: string;
+      passwordLabel: string;
+      passwordHint: string;
+      submitCta: string;
+      switchPrompt: string;
+      switchCta: string;
+    };
+    checkEmail: {
+      title: string;
+      body: string;
+    };
+    errors: {
+      nameTooShort: string;
+      emailInvalid: string;
+      passwordTooShort: string;
+      passwordNeedsLetter: string;
+      passwordNeedsNumber: string;
+      passwordRequired: string;
+      invalidCredentials: string;
+      emailInUse: string;
+      unexpected: string;
+    };
+    signOutCta: string;
   };
 };

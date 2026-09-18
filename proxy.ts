@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createSupabaseProxyClient } from "@/lib/server/supabaseProxy";
+import { safeNextPath } from "@/lib/safeNextPath";
 
 // Next.js 16: `middleware.ts` är döpt om till `proxy.ts` (samma funktion,
 // se node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md
@@ -29,13 +30,6 @@ export const config = {
 
 const AUTH_ROUTES = new Set(["/logga-in", "/skapa-konto"]);
 
-function isSafeNextPath(path: string | null): path is string {
-  if (!path) return false;
-  if (!path.startsWith("/")) return false;
-  if (path.startsWith("//")) return false; // skyddsschema-relativ open redirect
-  return path.startsWith("/app") || path.startsWith("/start");
-}
-
 export async function proxy(request: NextRequest) {
   const { supabase, applyPendingCookies } = createSupabaseProxyClient(request);
   const {
@@ -52,8 +46,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && isAuthRoute) {
-    const nextParam = request.nextUrl.searchParams.get("next");
-    const destination = isSafeNextPath(nextParam) ? nextParam : "/app";
+    const destination = safeNextPath(request.nextUrl.searchParams.get("next"));
     return applyPendingCookies(NextResponse.redirect(new URL(destination, request.url)));
   }
 

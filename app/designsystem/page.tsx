@@ -10,6 +10,7 @@ import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import { LockedState } from "@/components/ui/LockedState";
 import { Logo } from "@/components/ui/Logo";
 import { SourceTag } from "@/components/ui/SourceTag";
+import { TextField } from "@/components/ui/TextField";
 import { NextStepCard } from "@/components/spark/NextStepCard";
 import { PulseCard } from "@/components/spark/PulseCard";
 import { ScoreBadge } from "@/components/spark/ScoreBadge";
@@ -211,6 +212,23 @@ export default function DesignsystemPage() {
               reasoning={t.demoContent.verdict.reasoning}
               className="max-w-md"
             />
+          </ComponentDemo>
+
+          <ComponentDemo title={t.designsystem.components.textField}>
+            <div className="flex max-w-xs flex-col gap-4">
+              <TextField label={t.auth.signUp.emailLabel} type="email" placeholder="du@exempel.se" />
+              <TextField
+                label={t.auth.signUp.passwordLabel}
+                type="password"
+                hint={t.auth.signUp.passwordHint}
+              />
+              <TextField
+                label={t.auth.signUp.passwordLabel}
+                type="password"
+                defaultValue="kort"
+                error={t.auth.errors.passwordTooShort}
+              />
+            </div>
           </ComponentDemo>
         </div>
       </Section>
