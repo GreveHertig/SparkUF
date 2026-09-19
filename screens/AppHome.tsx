@@ -49,44 +49,46 @@ export function AppHome({ data }: { data: AppHomeData }) {
         </EditorialHeading>
       </div>
 
-      <KpiRow>
-        <KpiTile
-          label={t.kpi.scoreLabel}
-          value={score.total}
-          unit="/ 100"
-          trend={data.scoreHistory}
-          delta={
-            score.delta !== 0
-              ? { value: `${score.delta > 0 ? "+" : "−"}${Math.abs(score.delta)}`, direction: score.delta > 0 ? "up" : "down" }
-              : undefined
-          }
-        />
-        <KpiTile
-          label={t.kpi.unlockedPartsLabel}
-          value={`${unlockedCount}/${totalPartsCount}`}
-        />
-        <KpiTile
-          label={t.homePage.emailSentLabel}
-          value={sinceLastTime.recipientCount}
-          unit={t.homePage.recipientsUnit}
-          source={sinceLastTime.emailSentSource}
-          dataType="register"
-        />
-        <KpiTile
-          label={t.homePage.openRateLabel}
-          value={sinceLastTime.openRate}
-          unit="%"
-          source={sinceLastTime.openRateSource}
-          dataType="register"
-        />
-        <KpiTile
-          label={t.homePage.responsesReceivedLabel}
-          value={sinceLastTime.responsesReceived}
-          unit={t.homePage.responsesUnit}
-          source={sinceLastTime.responsesSource}
-          dataType="customer"
-        />
-      </KpiRow>
+      <div data-tour-id="hem-kpi">
+        <KpiRow>
+          <KpiTile
+            label={t.kpi.scoreLabel}
+            value={score.total}
+            unit="/ 100"
+            trend={data.scoreHistory}
+            delta={
+              score.delta !== 0
+                ? { value: `${score.delta > 0 ? "+" : "−"}${Math.abs(score.delta)}`, direction: score.delta > 0 ? "up" : "down" }
+                : undefined
+            }
+          />
+          <KpiTile
+            label={t.kpi.unlockedPartsLabel}
+            value={`${unlockedCount}/${totalPartsCount}`}
+          />
+          <KpiTile
+            label={t.homePage.emailSentLabel}
+            value={sinceLastTime.recipientCount}
+            unit={t.homePage.recipientsUnit}
+            source={sinceLastTime.emailSentSource}
+            dataType="register"
+          />
+          <KpiTile
+            label={t.homePage.openRateLabel}
+            value={sinceLastTime.openRate}
+            unit="%"
+            source={sinceLastTime.openRateSource}
+            dataType="register"
+          />
+          <KpiTile
+            label={t.homePage.responsesReceivedLabel}
+            value={sinceLastTime.responsesReceived}
+            unit={t.homePage.responsesUnit}
+            source={sinceLastTime.responsesSource}
+            dataType="customer"
+          />
+        </KpiRow>
+      </div>
 
       <NextStepCard
         eyebrow={data.nextStep.eyebrow}
@@ -129,7 +131,7 @@ export function AppHome({ data }: { data: AppHomeData }) {
           </p>
         </section>
 
-        <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4">
+        <section data-tour-id="hem-score-movement" className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4">
           <Eyebrow>{t.homePage.scoreMovementTitle}</Eyebrow>
           <div className="flex items-center gap-4">
             <ScoreBadge score={data.score.total} size="large" />

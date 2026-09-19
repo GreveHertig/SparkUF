@@ -35,7 +35,7 @@ export function Market({ data }: { data: MarketData | null }) {
         <LockedState unlockHint={`${t.homePage.unlocksAfterStepBefore} 02`} />
       ) : (
         <>
-          <section className="flex flex-col gap-3">
+          <section data-tour-id="market-register" className="flex flex-col gap-3">
             <Eyebrow>{t.marketPage.registerTitle}</Eyebrow>
             <div className="grid grid-cols-2 gap-4 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-4">
               <DataFact
@@ -63,7 +63,7 @@ export function Market({ data }: { data: MarketData | null }) {
             </div>
           </section>
 
-          <section className="flex flex-col gap-3">
+          <section data-tour-id="market-competitors" className="flex flex-col gap-3">
             <Eyebrow>{t.marketPage.competitorsTitle}</Eyebrow>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {data.overview.competitors.map((competitor) => (
@@ -75,7 +75,7 @@ export function Market({ data }: { data: MarketData | null }) {
             </div>
           </section>
 
-          <section className="flex flex-col gap-2.5">
+          <section data-tour-id="market-simulation" className="flex flex-col gap-2.5">
             <Eyebrow>{t.marketPage.simulationTitle}</Eyebrow>
             <SimulationCard simulation={data.simulation} />
           </section>

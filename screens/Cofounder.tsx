@@ -65,7 +65,7 @@ export function Cofounder({ data }: { data: CofounderData }) {
       {!data.moment && <p className="text-sm text-slate-600">{t.cofounderPage.emptyStateBody}</p>}
 
       {data.moment && (
-        <section className="flex flex-col gap-2">
+        <section data-tour-id="cofounder-moment" className="flex flex-col gap-2">
           <Eyebrow>{data.moment.momentLabel}</Eyebrow>
           {data.moment.items.map((item, index) =>
             item.kind === "message" ? (

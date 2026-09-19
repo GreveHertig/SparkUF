@@ -29,11 +29,15 @@ type DemoState = {
    * /demo/start — se app/demo/app/layout.tsx. */
   onboardingDone: boolean;
   tourOn: boolean;
+  /** Index i TOUR_STEPS (adapters/demo/tourSteps.ts) — bara meningsfullt
+   * medan `tourOn` är sant. */
+  tourStepIndex: number;
   collapsed: boolean;
   next: () => void;
   back: () => void;
   goTo: (index: number) => void;
   toggleTour: () => void;
+  setTourStep: (index: number) => void;
   toggleCollapsed: () => void;
   setEntry: (entry: OnboardingEntry) => void;
   completeOnboarding: () => void;
@@ -47,18 +51,31 @@ export const useDemoStore = create<DemoState>()(
       entry: "noIdea",
       onboardingDone: false,
       tourOn: false,
+      tourStepIndex: 0,
       collapsed: false,
       next: () => set((state) => ({ beatIndex: clampBeatIndex(state.beatIndex + 1) })),
       back: () => set((state) => ({ beatIndex: clampBeatIndex(state.beatIndex - 1) })),
       goTo: (index) => set({ beatIndex: clampBeatIndex(index) }),
-      toggleTour: () => set((state) => ({ tourOn: !state.tourOn })),
+      // Rundturens 20 stopp (adapters/demo/tourSteps.ts) är skrivna mot Saras
+      // beats — att slå på rundturen tvingar därför alltid entry till
+      // "noIdea" och startar om från stopp 1, oavsett var i demot eller vilken
+      // persona presentatören stod i. Att slå av gör bara tourOn falskt, ingen
+      // annan sidoeffekt (TourOverlay slutar rendera, resten av läget orört).
+      toggleTour: () =>
+        set((state) =>
+          state.tourOn
+            ? { tourOn: false }
+            : { tourOn: true, tourStepIndex: 0, entry: "noIdea", beatIndex: 0 },
+        ),
+      setTourStep: (index) => set({ tourStepIndex: index }),
       toggleCollapsed: () => set((state) => ({ collapsed: !state.collapsed })),
       // Ett byte av ingång byter också vilken resa (Saras/Jonas) beatIndex
       // pekar in i — nollställ till steg 1 så man aldrig hamnar mitt i den
       // andra personans array.
       setEntry: (entry) => set({ entry, beatIndex: 0 }),
       completeOnboarding: () => set({ onboardingDone: true }),
-      reset: () => set({ beatIndex: 0, entry: "noIdea", onboardingDone: false, tourOn: false }),
+      reset: () =>
+        set({ beatIndex: 0, entry: "noIdea", onboardingDone: false, tourOn: false, tourStepIndex: 0 }),
     }),
     { name: "spark:demo-state" },
   ),

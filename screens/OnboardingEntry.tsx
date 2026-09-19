@@ -33,7 +33,7 @@ export function OnboardingEntry({ data }: { data: OnboardingEntryData }) {
         <p className="mt-3 text-sm text-slate-600">{t.onboarding.entry.subtitle}</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div data-tour-id="entry-cards" className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <EntryCard
           title={t.onboarding.entry.noIdea.title}
           body={t.onboarding.entry.noIdea.body}

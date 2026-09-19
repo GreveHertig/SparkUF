@@ -403,6 +403,13 @@ export const en = {
       oneLiner: "Almi, Vinnova, Tillväxtverket, regional funds, bank loans and bootstrapping.",
     },
   },
+  tour: {
+    nextCta: "Next",
+    skipCta: "Skip tour",
+    finishCta: "Finish tour",
+    stopLabel: "Stop",
+    ofLabel: "of",
+  },
   publicNav: {
     pricingLink: "Pricing",
     logInLink: "Log in",

@@ -405,6 +405,13 @@ export const sv = {
       oneLiner: "Almi, Vinnova, Tillväxtverket, regionala medel, banklån och bootstrapping.",
     },
   },
+  tour: {
+    nextCta: "Nästa",
+    skipCta: "Hoppa över",
+    finishCta: "Avsluta rundtur",
+    stopLabel: "Stopp",
+    ofLabel: "av",
+  },
   publicNav: {
     pricingLink: "Priser",
     logInLink: "Logga in",

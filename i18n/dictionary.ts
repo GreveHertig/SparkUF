@@ -375,6 +375,16 @@ export type Dictionary = {
     step11: { title: string; oneLiner: string };
     step12: { title: string; oneLiner: string };
   };
+  /** Den guidade rundturen (avsnitt 9.2) — bara gränssnittstexten (knappar,
+   * stoppräknare). Själva de 20 stoppens titel/text ligger i
+   * `adapters/demo/tourSteps.ts`, samma mönster som `cofounderScript.ts`. */
+  tour: {
+    nextCta: string;
+    skipCta: string;
+    finishCta: string;
+    stopLabel: string;
+    ofLabel: string;
+  };
   /** Delad header/footer för de publika sidorna (avsnitt 6: /, /priser).
    * `/logga-in`/`/skapa-konto` har sin egen minimala AuthLayout-header sedan
    * P1 och återanvänder inte den här — de är fejkade/riktiga formulär, inte

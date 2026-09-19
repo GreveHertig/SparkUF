@@ -40,7 +40,7 @@ export function Customers({ data }: { data: CustomersData }) {
       {data.rows.length === 0 ? (
         <LockedState unlockHint={`${t.homePage.unlocksAfterStepBefore} 03`} />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <div data-tour-id="customers-table" className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs font-semibold uppercase text-slate-500">
