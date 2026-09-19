@@ -286,6 +286,7 @@ export const sv = {
     specTitle: "Spec",
     previewTitle: "Förhandsvisning",
     publishedUrlLabel: "Publicerad på",
+    creditsUsedLabel: "Credits använda",
   },
   demoBar: {
     personaLabel: "Sara Lindqvist · Persona A",

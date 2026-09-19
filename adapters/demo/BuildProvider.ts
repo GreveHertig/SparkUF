@@ -40,6 +40,18 @@ function statusFor(currentStep: number): BuildStatus {
   return "published";
 }
 
+// Avsnitt 2.3: "Visa att bygget kostar credits." Skelett, komponenter och
+// den färdiga sidan (se cofounderScript.ts "10-live-korning") kostar
+// tillsammans 62 credits i det här scenariot — ett fiktivt, men fast, tal.
+const CREDITS_WHILE_BUILDING = 40;
+const CREDITS_PUBLISHED = 62;
+
+function creditsFor(status: BuildStatus): number | undefined {
+  if (status === "building") return CREDITS_WHILE_BUILDING;
+  if (status === "published") return CREDITS_PUBLISHED;
+  return undefined;
+}
+
 export const demoBuildProvider: BuildProvider = {
   async startBuild() {
     return { status: "building" };
@@ -48,7 +60,7 @@ export const demoBuildProvider: BuildProvider = {
   async getStatus() {
     const currentStep = getCurrentStepNumberFor(useDemoStore.getState().beatIndex);
     const status = statusFor(currentStep);
-    return { status, url: status === "published" ? PUBLISHED_URL : undefined };
+    return { status, url: status === "published" ? PUBLISHED_URL : undefined, creditsUsed: creditsFor(status) };
   },
 
   async getSpec(locale: Locale) {

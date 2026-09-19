@@ -289,6 +289,8 @@ export type Dictionary = {
     specTitle: string;
     previewTitle: string;
     publishedUrlLabel: string;
+    /** Avsnitt 2.3: "Visa att bygget kostar credits." */
+    creditsUsedLabel: string;
   };
   /** Demoraden (avsnitt 9.1) — fast rad nederst i /demo/app och /demo/start. */
   demoBar: {

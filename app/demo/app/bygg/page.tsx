@@ -14,7 +14,7 @@ export default function DemoBuildPage() {
   useEffect(() => {
     let cancelled = false;
     Promise.all([demoBuildProvider.getStatus(), demoBuildProvider.getSpec(locale)]).then(([status, spec]) => {
-      if (!cancelled) setData({ status: status.status, url: status.url, spec });
+      if (!cancelled) setData({ status: status.status, url: status.url, creditsUsed: status.creditsUsed, spec });
     });
     return () => {
       cancelled = true;

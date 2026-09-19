@@ -286,6 +286,7 @@ export const en = {
     specTitle: "Spec",
     previewTitle: "Preview",
     publishedUrlLabel: "Published at",
+    creditsUsedLabel: "Credits used",
   },
   demoBar: {
     personaLabel: "Sara Lindqvist · Persona A",

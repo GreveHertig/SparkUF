@@ -896,52 +896,67 @@ const [step06Fore, step06Korning, step06Efter] = makeStepBeats({
 // ---------------------------------------------------------------------------
 // Steg 07 · Affärsfall och pris
 // ---------------------------------------------------------------------------
-const step07: Beat = {
-  id: "07-affarsfall",
+const step07NextStep: Record<Locale, NextStep> = {
+  sv: {
+    eyebrow: "STEG 07 · AFFÄRSFALL OCH PRIS",
+    title: "Sätt priset: 1 190 kr/mån exkl. moms",
+    why: "Svensk kalkyl med moms, arbetsgivaravgifter, F-skatt, kostnadsgolv och break-even. Spann 900–1 500 kr, motiverat ur fyra underlag.",
+    maxPoints: 8,
+    estimatedTime: "~15 min",
+    doneItems: ["Marknadsbilden klar", "Kundsamtal klara", "Förfiningen klar"],
+    actionLabel: "Se kalkylen",
+  },
+  en: {
+    eyebrow: "STEP 07 · BUSINESS CASE AND PRICE",
+    title: "Set the price: SEK 1,190/month excl. VAT",
+    why: "Swedish calculation with VAT, payroll tax, F-tax, cost floor and break-even. Range SEK 900–1,500, justified from four sources.",
+    maxPoints: 8,
+    estimatedTime: "~15 min",
+    doneItems: ["Market picture done", "Customer calls done", "Refinement done"],
+    actionLabel: "See the calculation",
+  },
+};
+
+const step07SinceLastTime: Record<Locale, SinceLastTime> = {
+  sv: noSinceLastTime("sv", "2026-01-26", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
+  }),
+  en: noSinceLastTime("en", "2026-01-26", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("The outreach, step 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Customer calls, step 05", "2026-01-20"),
+  }),
+};
+
+// 1.5/9.1: prissättningen motiveras uttryckligen ur alla fyra underlagen
+// (vad kunderna tål, vad jämförbara aktörer tar, vad kunderna själva sagt,
+// vad som krävs för att gå ihop) — inte bara nämnda i förbigående. Priset
+// (1 190 kr) ligger dessutom mitt i Hiasynth-simuleringens stödda intervall
+// från steg 06 (1 000–1 300 kr), återanvänd här som steg 07:s egen simulering
+// (avsnitt 2.2: Hiasynth används i steg 03, 04, 06 OCH 07).
+const [step07Fore, step07Korning, step07Efter] = makeStepBeats({
+  idPrefix: "07-affarsfall",
   stepNumber: 7,
-  phase: "launch",
-  todayIso: "2026-01-28",
-  momentKind: "after",
-  momentLabel: { sv: "Affärsfall och pris", en: "Business case and price" },
-  nextStep: {
-    sv: {
-      eyebrow: "STEG 07 · AFFÄRSFALL OCH PRIS",
-      title: "Sätt priset: 1 190 kr/mån exkl. moms",
-      why: "Svensk kalkyl med moms, arbetsgivaravgifter, F-skatt, kostnadsgolv och break-even. Spann 900–1 500 kr, motiverat ur fyra underlag.",
-      maxPoints: 8,
-      estimatedTime: "~15 min",
-      doneItems: ["Marknadsbilden klar", "Kundsamtal klara", "Förfiningen klar"],
-      actionLabel: "Se kalkylen",
-    },
-    en: {
-      eyebrow: "STEP 07 · BUSINESS CASE AND PRICE",
-      title: "Set the price: SEK 1,190/month excl. VAT",
-      why: "Swedish calculation with VAT, payroll tax, F-tax, cost floor and break-even. Range SEK 900–1,500, justified from four sources.",
-      maxPoints: 8,
-      estimatedTime: "~15 min",
-      doneItems: ["Market picture done", "Customer calls done", "Refinement done"],
-      actionLabel: "See the calculation",
-    },
-  },
-  sinceLastTime: {
-    sv: noSinceLastTime("sv", "2026-01-28", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
-    }),
-    en: noSinceLastTime("en", "2026-01-28", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("The outreach, step 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Customer calls, step 05", "2026-01-20"),
-    }),
-  },
-  partsByLocale: partsBoth(
+  phaseBefore: "tryAfterCalls",
+  phaseAfter: "launch",
+  momentLabelBase: { sv: "Affärsfall och pris", en: "Business case and price" },
+  nextStep: step07NextStep,
+  datesFore: "2026-01-26",
+  datesKorning: "2026-01-27",
+  datesEfter: "2026-01-28",
+  sinceLastTimeFore: step07SinceLastTime,
+  sinceLastTimeKorning: step07SinceLastTime,
+  sinceLastTimeEfter: step07SinceLastTime,
+  partsCarried: step06Efter.partsByLocale,
+  partsAfter: partsBoth(
     {
       fit: [pt(5, källa("Profilsamtal", "2026-01-05")), pt(3, källa("Profilsamtal", "2026-01-07"))],
       market: [
@@ -971,70 +986,90 @@ const step07: Beat = {
       feasibility: [pt(2, källa("Business case, step 07", "2026-01-28"))],
     },
   ),
-  deltaReason: { sv: "efter affärsfallet", en: "after the business case" },
-  highlights: {
+  deltaReasonAfter: { sv: "efter affärsfallet", en: "after the business case" },
+  highlightsAfter: {
     sv: [
-      "Pris motiverat ur fyra saker: vad kunderna tål, vad jämförbara aktörer tar, vad kunderna själva sagt, vad som krävs för att gå ihop.",
-      "Kostnadsgolv ~8 500 kr/mån.",
-      "Break-even vid 8 kunder.",
+      "Pris satt till 1 190 kr/mån exkl. moms, spann 900–1 500 kr.",
+      "1. Vad kunderna tål: medianomsättning 4,2 Mkr, byråer med 10+ anställda tål mer än de mindre.",
+      "2. Vad jämförbara aktörer tar: näraliggande verktyg tar 800–1 600 kr/mån.",
+      "3. Vad kunderna själva sagt: median 900 kr bland de nio svaren, men alla som sa ja har 10 eller fler anställda.",
+      "4. Vad som krävs för att gå ihop: kostnadsgolv ~8 500 kr/mån, break-even vid 8 kunder (8 × 1 190 kr = 9 520 kr).",
+      "Prissimuleringen (Hiasynth, koncept) från steg 06 stöder 1 000–1 300 kr — 1 190 kr ligger mitt i intervallet.",
     ],
     en: [
-      "Price justified from four things: what customers can afford, what comparable players charge, what customers themselves said, what's needed to break even.",
-      "Cost floor ~SEK 8,500/month.",
-      "Break-even at 8 customers.",
+      "Price set to SEK 1,190/month excl. VAT, range SEK 900–1,500.",
+      "1. What customers can afford: median revenue SEK 4.2M, firms with 10+ employees can afford more than smaller ones.",
+      "2. What comparable players charge: adjacent tools charge SEK 800–1,600/month.",
+      "3. What customers themselves said: median SEK 900 among the nine responses, but everyone who said yes has 10 or more employees.",
+      "4. What's needed to break even: cost floor ~SEK 8,500/month, break-even at 8 customers (8 × SEK 1,190 = SEK 9,520).",
+      "The price simulation (Hiasynth, concept) from step 06 supports SEK 1,000–1,300 — SEK 1,190 sits right in the middle.",
     ],
   },
-};
+  traceSummaryAfter: {
+    sv: "Priset satt: 1 190 kr/mån, motiverat ur fyra underlag. Kostnadsgolv ~8 500 kr/mån, break-even vid 8 kunder.",
+    en: "Price set: SEK 1,190/month, justified from four sources. Cost floor ~SEK 8,500/month, break-even at 8 customers.",
+  },
+  simulationKindAfter: "price",
+});
 
 // ---------------------------------------------------------------------------
 // Steg 08 · Omfånget
 // ---------------------------------------------------------------------------
-const step08: Beat = {
-  id: "08-omfanget",
+const step08NextStep: Record<Locale, NextStep> = {
+  sv: {
+    eyebrow: "STEG 08 · OMFÅNGET",
+    title: "Snäva in MVP:n ur bevisen",
+    why: "Bygg bara det de som svarade faktiskt bad om: kvittoförfrågan via sms-länk, uppladdning, status per kund och export.",
+    maxPoints: 12,
+    estimatedTime: "~15 min",
+    doneItems: ["Affärsfallet klart"],
+    actionLabel: "Se omfånget",
+  },
+  en: {
+    eyebrow: "STEP 08 · THE SCOPE",
+    title: "Narrow the MVP from the evidence",
+    why: "Build only what the respondents actually asked for: SMS-link receipt requests, upload, per-customer status and export.",
+    maxPoints: 12,
+    estimatedTime: "~15 min",
+    doneItems: ["Business case done"],
+    actionLabel: "See the scope",
+  },
+};
+
+const step08SinceLastTime: Record<Locale, SinceLastTime> = {
+  sv: noSinceLastTime("sv", "2026-02-01", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
+  }),
+  en: noSinceLastTime("en", "2026-02-01", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("The outreach, step 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Customer calls, step 05", "2026-01-20"),
+  }),
+};
+
+const [step08Fore, step08Korning, step08Efter] = makeStepBeats({
+  idPrefix: "08-omfanget",
   stepNumber: 8,
-  phase: "launch",
-  todayIso: "2026-02-03",
-  momentKind: "after",
-  momentLabel: { sv: "Omfånget", en: "The scope" },
-  nextStep: {
-    sv: {
-      eyebrow: "STEG 08 · OMFÅNGET",
-      title: "Snäva in MVP:n ur bevisen",
-      why: "Bygg bara det de som svarade faktiskt bad om: kvittoförfrågan via sms-länk, uppladdning, status per kund och export.",
-      maxPoints: 12,
-      estimatedTime: "~15 min",
-      doneItems: ["Affärsfallet klart"],
-      actionLabel: "Se omfånget",
-    },
-    en: {
-      eyebrow: "STEP 08 · THE SCOPE",
-      title: "Narrow the MVP from the evidence",
-      why: "Build only what the respondents actually asked for: SMS-link receipt requests, upload, per-customer status and export.",
-      maxPoints: 12,
-      estimatedTime: "~15 min",
-      doneItems: ["Business case done"],
-      actionLabel: "See the scope",
-    },
-  },
-  sinceLastTime: {
-    sv: noSinceLastTime("sv", "2026-02-03", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
-    }),
-    en: noSinceLastTime("en", "2026-02-03", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("The outreach, step 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Customer calls, step 05", "2026-01-20"),
-    }),
-  },
-  partsByLocale: partsBoth(
+  phaseBefore: "launch",
+  phaseAfter: "launch",
+  momentLabelBase: { sv: "Omfånget", en: "The scope" },
+  nextStep: step08NextStep,
+  datesFore: "2026-02-01",
+  datesKorning: "2026-02-02",
+  datesEfter: "2026-02-03",
+  sinceLastTimeFore: step08SinceLastTime,
+  sinceLastTimeKorning: step08SinceLastTime,
+  sinceLastTimeEfter: step08SinceLastTime,
+  partsCarried: step07Efter.partsByLocale,
+  partsAfter: partsBoth(
     {
       fit: [pt(5, källa("Profilsamtal", "2026-01-05")), pt(3, källa("Profilsamtal", "2026-01-07"))],
       market: [
@@ -1076,8 +1111,8 @@ const step08: Beat = {
       ],
     },
   ),
-  deltaReason: { sv: "efter omfångsbeslutet", en: "after the scope decision" },
-  highlights: {
+  deltaReasonAfter: { sv: "efter omfångsbeslutet", en: "after the scope decision" },
+  highlightsAfter: {
     sv: [
       "MVP: kvittoförfrågan via sms-länk, uppladdning, status per kund och export.",
       "Bortvalt med motivering: OCR och egen app — ingen av respondenterna bad om det.",
@@ -1087,57 +1122,70 @@ const step08: Beat = {
       "Deliberately cut: OCR and a dedicated app — none of the respondents asked for it.",
     ],
   },
-};
+  traceSummaryAfter: {
+    sv: "Omfånget snävat in ur bevisen: kvittoförfrågan, uppladdning, status och export — inget mer.",
+    en: "Scope narrowed from the evidence: receipt request, upload, status and export — nothing more.",
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Steg 09 · Det formella
 // ---------------------------------------------------------------------------
-const step09: Beat = {
-  id: "09-det-formella",
+const step09NextStep: Record<Locale, NextStep> = {
+  sv: {
+    eyebrow: "STEG 09 · DET FORMELLA",
+    title: "Registrera enskild firma",
+    why: "Enskild firma till start (låg risk, inget aktiekapital) — byt till AB vid tillväxt. F-skatt, moms och bokföring ordnas samtidigt.",
+    maxPoints: 8,
+    estimatedTime: "~30 min",
+    doneItems: ["Omfånget klart"],
+    actionLabel: "Se den juridiska kartan",
+  },
+  en: {
+    eyebrow: "STEP 09 · THE PAPERWORK",
+    title: "Register a sole proprietorship",
+    why: "Sole proprietorship to start (low risk, no share capital) — switch to a limited company on growth. F-tax, VAT and bookkeeping arranged at the same time.",
+    maxPoints: 8,
+    estimatedTime: "~30 min",
+    doneItems: ["Scope done"],
+    actionLabel: "See the legal map",
+  },
+};
+
+const step09SinceLastTime: Record<Locale, SinceLastTime> = {
+  sv: noSinceLastTime("sv", "2026-02-05", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
+  }),
+  en: noSinceLastTime("en", "2026-02-05", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("The outreach, step 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Customer calls, step 05", "2026-01-20"),
+  }),
+};
+
+const [step09Fore, step09Korning, step09Efter] = makeStepBeats({
+  idPrefix: "09-det-formella",
   stepNumber: 9,
-  phase: "launch",
-  todayIso: "2026-02-06",
-  momentKind: "after",
-  momentLabel: { sv: "Det formella", en: "The paperwork" },
-  nextStep: {
-    sv: {
-      eyebrow: "STEG 09 · DET FORMELLA",
-      title: "Registrera enskild firma",
-      why: "Enskild firma till start (låg risk, inget aktiekapital) — byt till AB vid tillväxt. F-skatt, moms och bokföring ordnas samtidigt.",
-      maxPoints: 8,
-      estimatedTime: "~30 min",
-      doneItems: ["Omfånget klart"],
-      actionLabel: "Se den juridiska kartan",
-    },
-    en: {
-      eyebrow: "STEP 09 · THE PAPERWORK",
-      title: "Register a sole proprietorship",
-      why: "Sole proprietorship to start (low risk, no share capital) — switch to a limited company on growth. F-tax, VAT and bookkeeping arranged at the same time.",
-      maxPoints: 8,
-      estimatedTime: "~30 min",
-      doneItems: ["Scope done"],
-      actionLabel: "See the legal map",
-    },
-  },
-  sinceLastTime: {
-    sv: noSinceLastTime("sv", "2026-02-06", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
-    }),
-    en: noSinceLastTime("en", "2026-02-06", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("The outreach, step 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Customer calls, step 05", "2026-01-20"),
-    }),
-  },
-  partsByLocale: partsBoth(
+  phaseBefore: "launch",
+  phaseAfter: "launch",
+  momentLabelBase: { sv: "Det formella", en: "The paperwork" },
+  nextStep: step09NextStep,
+  datesFore: "2026-02-05",
+  datesKorning: "2026-02-05",
+  datesEfter: "2026-02-06",
+  sinceLastTimeFore: step09SinceLastTime,
+  sinceLastTimeKorning: step09SinceLastTime,
+  sinceLastTimeEfter: step09SinceLastTime,
+  partsCarried: step08Efter.partsByLocale,
+  partsAfter: partsBoth(
     {
       fit: [pt(5, källa("Profilsamtal", "2026-01-05")), pt(3, källa("Profilsamtal", "2026-01-07"))],
       market: [
@@ -1173,8 +1221,8 @@ const step09: Beat = {
       feasibility: [pt(8, källa("Bolagsverket", "2026-02-06"))],
     },
   ),
-  deltaReason: { sv: "efter registreringen", en: "after registration" },
-  highlights: {
+  deltaReasonAfter: { sv: "efter registreringen", en: "after registration" },
+  highlightsAfter: {
     sv: [
       "Bolagsform: enskild firma.",
       "Juridisk karta: GDPR och personuppgiftsbiträdesavtal, skydd av ekonomiska underlag, B2B-villkor och transparens om AI används.",
@@ -1184,57 +1232,70 @@ const step09: Beat = {
       "Legal map: GDPR and data processing agreements, protection of financial records, B2B terms and transparency about AI use.",
     ],
   },
-};
+  traceSummaryAfter: {
+    sv: "Enskild firma registrerad hos Bolagsverket, F-skatt och moms ordnat. Juridisk karta klar.",
+    en: "Sole proprietorship registered with Bolagsverket, F-tax and VAT arranged. Legal map done.",
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Steg 10 · Live
 // ---------------------------------------------------------------------------
-const step10: Beat = {
-  id: "10-live",
+const step10NextStep: Record<Locale, NextStep> = {
+  sv: {
+    eyebrow: "STEG 10 · LIVE",
+    title: "Publicera MVP:n via Lovable",
+    why: "Bygg via Lovable (koncept) — från spec till förhandsvisning till publicering på fiktiv domän. Tre pilotbyråer kommer igång gratis.",
+    maxPoints: 12,
+    estimatedTime: "~1 dag",
+    doneItems: ["Det formella klart"],
+    actionLabel: "Se bygget",
+  },
+  en: {
+    eyebrow: "STEP 10 · LIVE",
+    title: "Publish the MVP via Lovable",
+    why: "Build via Lovable (concept) — from spec to preview to publishing on a fictional domain. Three pilot firms get started for free.",
+    maxPoints: 12,
+    estimatedTime: "~1 day",
+    doneItems: ["Paperwork done"],
+    actionLabel: "See the build",
+  },
+};
+
+const step10SinceLastTime: Record<Locale, SinceLastTime> = {
+  sv: noSinceLastTime("sv", "2026-02-08", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
+  }),
+  en: noSinceLastTime("en", "2026-02-08", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("The outreach, step 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Customer calls, step 05", "2026-01-20"),
+  }),
+};
+
+const [step10Fore, step10Korning, step10Efter] = makeStepBeats({
+  idPrefix: "10-live",
   stepNumber: 10,
-  phase: "launch",
-  todayIso: "2026-02-16",
-  momentKind: "after",
-  momentLabel: { sv: "Live", en: "Live" },
-  nextStep: {
-    sv: {
-      eyebrow: "STEG 10 · LIVE",
-      title: "Publicera MVP:n via Lovable",
-      why: "Bygg via Lovable (koncept) — från spec till förhandsvisning till publicering på fiktiv domän. Tre pilotbyråer kommer igång gratis.",
-      maxPoints: 12,
-      estimatedTime: "~1 dag",
-      doneItems: ["Det formella klart"],
-      actionLabel: "Se bygget",
-    },
-    en: {
-      eyebrow: "STEP 10 · LIVE",
-      title: "Publish the MVP via Lovable",
-      why: "Build via Lovable (concept) — from spec to preview to publishing on a fictional domain. Three pilot firms get started for free.",
-      maxPoints: 12,
-      estimatedTime: "~1 day",
-      doneItems: ["Paperwork done"],
-      actionLabel: "See the build",
-    },
-  },
-  sinceLastTime: {
-    sv: noSinceLastTime("sv", "2026-02-16", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
-    }),
-    en: noSinceLastTime("en", "2026-02-16", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("The outreach, step 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Customer calls, step 05", "2026-01-20"),
-    }),
-  },
-  partsByLocale: partsBoth(
+  phaseBefore: "launch",
+  phaseAfter: "launch",
+  momentLabelBase: { sv: "Live", en: "Live" },
+  nextStep: step10NextStep,
+  datesFore: "2026-02-08",
+  datesKorning: "2026-02-15",
+  datesEfter: "2026-02-16",
+  sinceLastTimeFore: step10SinceLastTime,
+  sinceLastTimeKorning: step10SinceLastTime,
+  sinceLastTimeEfter: step10SinceLastTime,
+  partsCarried: step09Efter.partsByLocale,
+  partsAfter: partsBoth(
     {
       fit: [pt(5, källa("Profilsamtal", "2026-01-05")), pt(3, källa("Profilsamtal", "2026-01-07"))],
       market: [
@@ -1284,65 +1345,104 @@ const step10: Beat = {
       feasibility: [pt(8, källa("Bolagsverket", "2026-02-06"))],
     },
   ),
-  deltaReason: { sv: "efter publiceringen", en: "after publishing" },
-  highlights: {
+  deltaReasonAfter: { sv: "efter publiceringen", en: "after publishing" },
+  highlightsAfter: {
     sv: [
-      "MVP byggd och publicerad via Lovable (koncept, partnerskap utforskas).",
-      "Tre pilotbyråer kommer igång gratis.",
+      "Bygg drivs av Lovable · Koncept · partnerskap utforskas.",
+      "Från skelett till komponenter till en färdig sida, publicerad på en fiktiv domän.",
+      "MVP byggd och publicerad. Tre pilotbyråer kommer igång gratis.",
+      "Bygget kostar credits — synligt på Bygg-sidan (62 credits i det här scenariot).",
     ],
-    en: ["MVP built and published via Lovable (concept, partnership in exploration).", "Three pilot firms get started for free."],
+    en: [
+      "The build is powered by Lovable · Concept · partnership in exploration.",
+      "From skeleton to components to a finished page, published to a fictional domain.",
+      "MVP built and published. Three pilot firms get started for free.",
+      "The build costs credits — visible on the Build page (62 credits in this scenario).",
+    ],
   },
-};
+  traceSummaryAfter: {
+    sv: "MVP publicerad via Lovable (koncept) på en fiktiv domän. Tre pilotbyråer igång gratis.",
+    en: "MVP published via Lovable (concept) on a fictional domain. Three pilot firms running for free.",
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Steg 11 · Första kunderna
 // ---------------------------------------------------------------------------
-const step11: Beat = {
-  id: "11-forsta-kunderna",
+const step11NextStep: Record<Locale, NextStep> = {
+  sv: {
+    eyebrow: "STEG 11 · FÖRSTA KUNDERNA",
+    title: "Kör 30-dagarsplanen",
+    why: "LinkedIn, branschnätverk för redovisningskonsulter och Nyföretagarcentrum. Fem betalande byråer ger 5 950 kr i MRR.",
+    maxPoints: 14,
+    estimatedTime: "~30 dagar",
+    doneItems: ["Live klart", "Tre pilotbyråer igång"],
+    actionLabel: "Se kunderna",
+  },
+  en: {
+    eyebrow: "STEP 11 · THE FIRST CUSTOMERS",
+    title: "Run the 30-day plan",
+    why: "LinkedIn, an industry network for accounting consultants and Nyföretagarcentrum. Five paying firms give SEK 5,950 in MRR.",
+    maxPoints: 14,
+    estimatedTime: "~30 days",
+    doneItems: ["Live done", "Three pilot firms running"],
+    actionLabel: "See the customers",
+  },
+};
+
+const step11SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
+  sv: noSinceLastTime("sv", "2026-02-17", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
+  }),
+  en: noSinceLastTime("en", "2026-02-17", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("The outreach, step 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Customer calls, step 05", "2026-01-20"),
+  }),
+};
+
+const step11SinceLastTimeAfter: Record<Locale, SinceLastTime> = {
+  sv: noSinceLastTime("sv", "2026-03-18", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
+  }),
+  en: noSinceLastTime("en", "2026-03-18", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("The outreach, step 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Customer calls, step 05", "2026-01-20"),
+  }),
+};
+
+const [step11Fore, step11Korning, step11Efter] = makeStepBeats({
+  idPrefix: "11-forsta-kunderna",
   stepNumber: 11,
-  phase: "grow",
-  todayIso: "2026-03-18",
-  momentKind: "after",
-  momentLabel: { sv: "Första kunderna", en: "The first customers" },
-  nextStep: {
-    sv: {
-      eyebrow: "STEG 11 · FÖRSTA KUNDERNA",
-      title: "Kör 30-dagarsplanen",
-      why: "LinkedIn, branschnätverk för redovisningskonsulter och Nyföretagarcentrum. Fem betalande byråer ger 5 950 kr i MRR.",
-      maxPoints: 14,
-      estimatedTime: "~30 dagar",
-      doneItems: ["Live klart", "Tre pilotbyråer igång"],
-      actionLabel: "Se kunderna",
-    },
-    en: {
-      eyebrow: "STEP 11 · THE FIRST CUSTOMERS",
-      title: "Run the 30-day plan",
-      why: "LinkedIn, an industry network for accounting consultants and Nyföretagarcentrum. Five paying firms give SEK 5,950 in MRR.",
-      maxPoints: 14,
-      estimatedTime: "~30 days",
-      doneItems: ["Live done", "Three pilot firms running"],
-      actionLabel: "See the customers",
-    },
-  },
-  sinceLastTime: {
-    sv: noSinceLastTime("sv", "2026-03-18", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
-    }),
-    en: noSinceLastTime("en", "2026-03-18", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("The outreach, step 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Customer calls, step 05", "2026-01-20"),
-    }),
-  },
-  partsByLocale: partsBoth(
+  phaseBefore: "launch",
+  phaseAfter: "grow",
+  momentLabelBase: { sv: "Första kunderna", en: "The first customers" },
+  nextStep: step11NextStep,
+  datesFore: "2026-02-17",
+  datesKorning: "2026-02-17",
+  datesEfter: "2026-03-18",
+  sinceLastTimeFore: step11SinceLastTimeBefore,
+  sinceLastTimeKorning: step11SinceLastTimeBefore,
+  sinceLastTimeEfter: step11SinceLastTimeAfter,
+  partsCarried: step10Efter.partsByLocale,
+  partsAfter: partsBoth(
     {
       fit: [pt(5, källa("Profilsamtal", "2026-01-05")), pt(3, källa("Profilsamtal", "2026-01-07"))],
       market: [
@@ -1394,62 +1494,94 @@ const step11: Beat = {
       traction: [pt(9, källa("Customer list, step 11", "2026-03-18"), { dataType: "customer" })],
     },
   ),
-  deltaReason: { sv: "efter de fem betalande kunderna", en: "after the five paying customers" },
-  highlights: {
+  deltaReasonAfter: { sv: "efter de fem betalande kunderna", en: "after the five paying customers" },
+  highlightsAfter: {
     sv: ["30-dagarsplan i svenska kanaler.", "5 betalande byråer, 5 950 kr i MRR."],
     en: ["30-day plan across Swedish channels.", "5 paying firms, SEK 5,950 in MRR."],
   },
-};
+  traceSummaryAfter: {
+    sv: "30-dagarsplanen gav fem betalande byråer och 5 950 kr i MRR.",
+    en: "The 30-day plan brought in five paying firms and SEK 5,950 in MRR.",
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Steg 12 · Kapital
 // ---------------------------------------------------------------------------
-const step12: Beat = {
-  id: "12-kapital",
+const step12NextStep: Record<Locale, NextStep> = {
+  sv: {
+    eyebrow: "STEG 12 · KAPITAL",
+    title: "Ansök hos Almi och Vinnova",
+    why: "Ansökningsunderlag förberett ur Spåret. Slutvy: Bevisad affär.",
+    maxPoints: 14,
+    estimatedTime: "~1 vecka",
+    doneItems: ["Första kunderna klart", "5 betalande byråer"],
+    actionLabel: "Se ansökan",
+  },
+  en: {
+    eyebrow: "STEP 12 · CAPITAL",
+    title: "Apply to Almi and Vinnova",
+    why: "Application materials prepared from the Trace. Final view: Proven business.",
+    maxPoints: 14,
+    estimatedTime: "~1 week",
+    doneItems: ["First customers done", "5 paying firms"],
+    actionLabel: "See the application",
+  },
+};
+
+const step12SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
+  sv: noSinceLastTime("sv", "2026-03-19", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
+  }),
+  en: noSinceLastTime("en", "2026-03-19", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("The outreach, step 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Customer calls, step 05", "2026-01-20"),
+  }),
+};
+
+const step12SinceLastTimeAfter: Record<Locale, SinceLastTime> = {
+  sv: noSinceLastTime("sv", "2026-04-10", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
+  }),
+  en: noSinceLastTime("en", "2026-04-10", {
+    recipientCount: 40,
+    openRate: 38,
+    openRateSource: källa("The outreach, step 05", "2026-01-16"),
+    reminderSentDateIso: "2026-01-18",
+    responsesReceived: 9,
+    responsesSource: källa("Customer calls, step 05", "2026-01-20"),
+  }),
+};
+
+const [step12Fore, step12Korning, step12Efter] = makeStepBeats({
+  idPrefix: "12-kapital",
   stepNumber: 12,
-  phase: "grow",
-  todayIso: "2026-04-10",
-  momentKind: "after",
-  momentLabel: { sv: "Kapital", en: "Capital" },
-  nextStep: {
-    sv: {
-      eyebrow: "STEG 12 · KAPITAL",
-      title: "Ansök hos Almi och Vinnova",
-      why: "Ansökningsunderlag förberett ur Spåret. Slutvy: Bevisad affär.",
-      maxPoints: 14,
-      estimatedTime: "~1 vecka",
-      doneItems: ["Första kunderna klart", "5 betalande byråer"],
-      actionLabel: "Se ansökan",
-    },
-    en: {
-      eyebrow: "STEP 12 · CAPITAL",
-      title: "Apply to Almi and Vinnova",
-      why: "Application materials prepared from the Trace. Final view: Proven business.",
-      maxPoints: 14,
-      estimatedTime: "~1 week",
-      doneItems: ["First customers done", "5 paying firms"],
-      actionLabel: "See the application",
-    },
-  },
-  sinceLastTime: {
-    sv: noSinceLastTime("sv", "2026-04-10", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
-    }),
-    en: noSinceLastTime("en", "2026-04-10", {
-      recipientCount: 40,
-      openRate: 38,
-      openRateSource: källa("The outreach, step 05", "2026-01-16"),
-      reminderSentDateIso: "2026-01-18",
-      responsesReceived: 9,
-      responsesSource: källa("Customer calls, step 05", "2026-01-20"),
-    }),
-  },
-  partsByLocale: partsBoth(
+  phaseBefore: "grow",
+  phaseAfter: "grow",
+  momentLabelBase: { sv: "Kapital", en: "Capital" },
+  nextStep: step12NextStep,
+  datesFore: "2026-03-19",
+  datesKorning: "2026-04-03",
+  datesEfter: "2026-04-10",
+  sinceLastTimeFore: step12SinceLastTimeBefore,
+  sinceLastTimeKorning: step12SinceLastTimeBefore,
+  sinceLastTimeEfter: step12SinceLastTimeAfter,
+  partsCarried: step11Efter.partsByLocale,
+  partsAfter: partsBoth(
     {
       fit: [pt(5, källa("Profilsamtal", "2026-01-05")), pt(3, källa("Profilsamtal", "2026-01-07"))],
       market: [
@@ -1501,12 +1633,16 @@ const step12: Beat = {
       traction: [pt(13, källa("Customer list, step 12", "2026-04-10"), { dataType: "customer" })],
     },
   ),
-  deltaReason: { sv: "efter fortsatt traktion", en: "after continued traction" },
-  highlights: {
+  deltaReasonAfter: { sv: "efter fortsatt traktion", en: "after continued traction" },
+  highlightsAfter: {
     sv: ["Almi och Vinnova, med ansökningsunderlag förberett ur Spåret.", "Slutvy: Bevisad affär."],
     en: ["Almi and Vinnova, with application materials prepared from the Trace.", "Final view: Proven business."],
   },
-};
+  traceSummaryAfter: {
+    sv: "Ansökningar till Almi och Vinnova förberedda ur Spåret. Bevisad affär.",
+    en: "Applications to Almi and Vinnova prepared from the Trace. Proven business.",
+  },
+});
 
 const beats: Beat[] = [
   step01Fore,
@@ -1529,12 +1665,24 @@ const beats: Beat[] = [
   step06Fore,
   step06Korning,
   step06Efter,
-  step07,
-  step08,
-  step09,
-  step10,
-  step11,
-  step12,
+  step07Fore,
+  step07Korning,
+  step07Efter,
+  step08Fore,
+  step08Korning,
+  step08Efter,
+  step09Fore,
+  step09Korning,
+  step09Efter,
+  step10Fore,
+  step10Korning,
+  step10Efter,
+  step11Fore,
+  step11Korning,
+  step11Efter,
+  step12Fore,
+  step12Korning,
+  step12Efter,
 ];
 
 export const saraBeats: readonly Beat[] = beats;

@@ -251,20 +251,42 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
     ),
   ],
 
-  "07-affarsfall": [
+  // --- Steg 07 · Affärsfall och pris ------------------------------------
+  "07-affarsfall-fore": [
+    msg("cofounder", "Dags att räkna på priset. Jag väger fyra saker mot varandra.", "Time to work out the price. I'm weighing four things against each other."),
+  ],
+  "07-affarsfall-korning": [
     tool(
       "Räknar den svenska kalkylen",
       "Running the Swedish calculation",
-      ["Moms och arbetsgivaravgifter", "Kostnadsgolv", "Break-even"],
-      ["VAT and payroll tax", "Cost floor", "Break-even"],
+      ["Moms och arbetsgivaravgifter", "Kostnadsgolv", "Break-even", "Väger mot prissimuleringen"],
+      ["VAT and payroll tax", "Cost floor", "Break-even", "Weighing against the price simulation"],
     ),
     msg(
       "cofounder",
       "1 190 kr i månaden, exklusive moms. Kostnadsgolvet ligger på ~8 500 kr i månaden, break-even vid 8 kunder.",
       "SEK 1,190 a month, excluding VAT. The cost floor is ~SEK 8,500/month, break-even at 8 customers.",
     ),
+    msg("founder", "Men tre av nio sa nej till 2 000 kr. Är 1 190 för högt ändå?", "But three of nine said no to SEK 2,000. Is 1,190 still too high?"),
+    msg(
+      "cofounder",
+      "Du sa i steg 06 att du hellre tappar småbyråerna än sänker priset. 1 190 kr ligger mitt i simuleringens stödda intervall, 1 000–1 300 kr, och alla som sa ja har 10 eller fler anställda.",
+      "You said in step 06 that you'd rather lose the small firms than cut the price. SEK 1,190 sits right in the simulation's supported range, SEK 1,000–1,300, and everyone who said yes has 10 or more employees.",
+    ),
   ],
-  "08-omfanget": [
+  "07-affarsfall-efter": [
+    msg(
+      "cofounder",
+      "Priset står: 1 190 kr/mån, motiverat ur fyra underlag. Nästa: snäva in vad MVP:n faktiskt ska göra.",
+      "The price stands: SEK 1,190/month, justified from four sources. Next: narrow down what the MVP should actually do.",
+    ),
+  ],
+
+  // --- Steg 08 · Omfånget ------------------------------------------------
+  "08-omfanget-fore": [
+    msg("cofounder", "Nu bestämmer vi vad MVP:n faktiskt ska göra — inte mer.", "Now let's decide what the MVP should actually do — nothing more."),
+  ],
+  "08-omfanget-korning": [
     msg("cofounder", "Vad ska MVP:n faktiskt göra? Jag har gått igenom alla nio svaren.", "What should the MVP actually do? I've gone through all nine responses."),
     msg("founder", "Bara det de bad om.", "Just what they asked for."),
     msg(
@@ -273,7 +295,19 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
       "SMS-link receipt requests, upload, per-customer status, export. No OCR, no app — nobody asked for it.",
     ),
   ],
-  "09-det-formella": [
+  "08-omfanget-efter": [
+    msg(
+      "cofounder",
+      "Omfånget är låst. Nästa: registrera bolaget och ordna det formella.",
+      "The scope is locked. Next: register the company and sort out the paperwork.",
+    ),
+  ],
+
+  // --- Steg 09 · Det formella ----------------------------------------------
+  "09-det-formella-fore": [
+    msg("cofounder", "Dags att registrera bolaget. Jag föreslår enskild firma till start.", "Time to register the company. I suggest a sole proprietorship to start."),
+  ],
+  "09-det-formella-korning": [
     tool(
       "Registrerar hos Bolagsverket",
       "Registering with Bolagsverket",
@@ -286,16 +320,44 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
       "Done. Sole proprietorship, F-tax and VAT are registered. I've also mapped the legal picture: GDPR, data processing agreements and transparency about AI use.",
     ),
   ],
-  "10-live": [
+  "09-det-formella-efter": [
+    msg(
+      "cofounder",
+      "Det formella är klart. Nästa: bygga och publicera MVP:n via Lovable.",
+      "The paperwork is done. Next: build and publish the MVP via Lovable.",
+    ),
+  ],
+
+  // --- Steg 10 · Live --------------------------------------------------
+  "10-live-fore": [
+    msg(
+      "cofounder",
+      "Nu bygger vi. Jag skriver specen ur bevisen från steg 08 — du kan inte bygga själv, minns du, men det behövs inte.",
+      "Now we build. I'll write the spec from the evidence in step 08 — you can't build it yourself, remember, but you don't need to.",
+    ),
+  ],
+  "10-live-korning": [
     tool(
       "Bygger via Lovable (koncept)",
       "Building via Lovable (concept)",
-      ["Skriver specen", "Förhandsvisning", "Publicerar på fiktiv domän"],
-      ["Writing the spec", "Preview", "Publishing to a fictional domain"],
+      ["Skriver specen", "Bygger skelettet", "Lägger till komponenter", "Färdig sida", "Publicerar på fiktiv domän"],
+      ["Writing the spec", "Building the skeleton", "Adding components", "Finished page", "Publishing to a fictional domain"],
     ),
-    msg("cofounder", "Publicerad. Tre pilotbyråer kör redan gratis.", "Published. Three pilot firms are already running for free."),
+    msg(
+      "cofounder",
+      "Skelettet står, komponenterna är på plats. Bygget har hittills kostat 40 credits — se Bygg-sidan för hela underlaget.",
+      "The skeleton is up, the components are in place. The build has cost 40 credits so far — see the Build page for the full picture.",
+    ),
   ],
-  "11-forsta-kunderna": [
+  "10-live-efter": [
+    msg("cofounder", "Publicerad. Tre pilotbyråer kör redan gratis. Bygget kostade totalt 62 credits.", "Published. Three pilot firms are already running for free. The build cost 62 credits in total."),
+  ],
+
+  // --- Steg 11 · Första kunderna ------------------------------------------
+  "11-forsta-kunderna-fore": [
+    msg("cofounder", "Dags att hitta de första betalande kunderna. Jag har en 30-dagarsplan.", "Time to find the first paying customers. I have a 30-day plan."),
+  ],
+  "11-forsta-kunderna-korning": [
     msg(
       "cofounder",
       "30-dagarsplanen är klar: LinkedIn, ett branschnätverk för redovisningskonsulter och Nyföretagarcentrum.",
@@ -304,7 +366,19 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
     skip("30 dagar senare", "30 days later"),
     msg("cofounder", "Fem betalande byråer. 5 950 kr i MRR.", "Five paying firms. SEK 5,950 in MRR."),
   ],
-  "12-kapital": [
+  "11-forsta-kunderna-efter": [
+    msg(
+      "cofounder",
+      "Traktion bekräftad: 5 betalande kunder, 5 950 kr i MRR. Nästa: kapital.",
+      "Traction confirmed: 5 paying customers, SEK 5,950 in MRR. Next: capital.",
+    ),
+  ],
+
+  // --- Steg 12 · Kapital -------------------------------------------------
+  "12-kapital-fore": [
+    msg("cofounder", "Dags att söka kapital. Jag förbereder ansökningarna ur Spåret.", "Time to apply for capital. I'll prepare the applications from the Trace."),
+  ],
+  "12-kapital-korning": [
     tool(
       "Förbereder ansökan",
       "Preparing the application",
@@ -317,5 +391,8 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
       "The applications to Almi and Vinnova are ready, with the full record from the Trace. You're at Proven business now.",
     ),
     msg("founder", "Kör.", "Go."),
+  ],
+  "12-kapital-efter": [
+    msg("cofounder", "Ansökningarna är inskickade. Bevisad affär — hela vägen från en idé du inte hade till fem betalande kunder.", "The applications are submitted. Proven business — all the way from an idea you didn't have to five paying customers."),
   ],
 };

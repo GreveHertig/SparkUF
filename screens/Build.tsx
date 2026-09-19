@@ -13,6 +13,7 @@ import type { BuildStatus } from "@/ports/BuildProvider";
 export type BuildData = {
   status: BuildStatus;
   url?: string;
+  creditsUsed?: number;
   spec: ByggBrief | null;
 };
 
@@ -55,6 +56,11 @@ export function Build({ data }: { data: BuildData }) {
               <a href={data.url} target="_blank" rel="noreferrer" className="text-sm text-accent-700 underline underline-offset-2">
                 {t.buildPage.publishedUrlLabel}: {data.url}
               </a>
+            )}
+            {data.creditsUsed !== undefined && (
+              <span className="ml-auto text-sm font-medium text-slate-600">
+                {t.buildPage.creditsUsedLabel}: {data.creditsUsed}
+              </span>
             )}
           </div>
 
