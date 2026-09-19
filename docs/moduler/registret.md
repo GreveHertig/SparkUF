@@ -131,8 +131,50 @@ andra tabeller.
 
 ## Status
 
-stub — `adapters/live/RegistryProvider.ts` kastar `NotImplementedError` för
-båda metoderna. Blockerad på dataavtal med Bolagsverket och/eller SCB, inte
-på kod. Demoadaptern är klar och används av `/demo/app/marknad` och
-`/demo/app/kunder` (via Utskick och svar). Bygg enligt
-`docs/bygga-en-modul.md` när avtalet finns.
+**påbörjad — grindad, transporten oskriven.** `adapters/live/RegistryProvider.ts`
+är byggd: grind, indatavalidering, aktiebolag utan reklamspärr, källstämpling
+och ärlighet kring luckor. Men `lib/server/scb.ts` och `lib/server/bolagsverket.ts`
+kastar `RegistryTransportError` (inga nycklar, ingen API-spec, kundanmälan är
+inte skickad). Kontraktstestet är grönt **mot mockad transport i en ANTAGEN
+svarsform** (`lib/server/registrySchemas.ts`): det bevisar vår logik, inte att
+Bolagsverket/SCB ser ut så. **Exponering är spärrad**, se "Licensgrind".
+Demoadaptern är klar och används av `/demo/app/marknad` och
+`/demo/app/kunder` (via Utskick och svar).
+
+## Hur liveadaptern fungerar i dag
+
+- **Första satsen** i båda metoderna: `assertRegistryAccessAllowed()`.
+- **`searchCompanies`:** validerar SNI (`12.345`-form) och anställdagränser före
+  allt annat. Hämtar rader, behåller bara aktiebolag, aktiva, utan reklamspärr,
+  med exakt SNI-match och känt antal anställda inom intervallet (max 50), hämtar
+  omsättning per bolag och **utelämnar** bolag utan känd omsättning (aldrig 0).
+  Okänt län ger `""`. Inga träffar ger `[]`.
+- **`getMarketOverview(locale, sniCode?)`:** `companyCount` över aktiva bolag,
+  `regionSharePercent` = största länets andel av bolag med känt län, median och
+  tillväxtandel över ett urval (max 100) aktiebolag med digital årsredovisning,
+  konkurrenter = de fem största namngivbara bolagen med verksamhetsbeskrivning
+  (rensad, kortad till 200 tecken, aldrig instruktion). `source.hämtad` är
+  anropsdagen. **`basis`** anger antal bolag bakom varje siffra; `0` betyder
+  okänt och siffran får inte visas.
+- **Porten ändrades i två avseenden** (beslutat 2026-09-19): valfritt `basis`
+  på `MarketOverview` (D3) och valfri andra parameter `sniCode` på
+  `getMarketOverview` (nytt beslut: porten saknade branschangivelse, så
+  liveadaptern visste inte vad den skulle sammanfatta; utan `sniCode` gäller
+  sammanfattningen hela registret). Båda valfria, så demo, skärmar och
+  kontraktstest är oförändrade.
+- Fel: `RegistryLockedError` (grind, visas som `ComingSoon`),
+  `RegistryInputError` (ogiltig indata), `RegistryTransportError` (transport
+  eller oväntat svar). Ingen ärver `NotImplementedError`.
+
+## Kvar innan modulen är klar
+
+1. Spik med riktiga nycklar (`docs/dataspiken.md` §3): kan man söka på SNI, vilka
+   iXBRL-taggar finns, går län att härleda, vad säger villkoren om lagring.
+2. Skriv transporten och skriv om `lib/server/registrySchemas.ts` mot det
+   verkliga svaret; byt `RegistryProvider.live.test.ts` mot riktiga anrop.
+   Respektera SCB:s gränser (2 000 rader/anrop, 10 anrop/10 s).
+3. Läs Bolagsverkets villkor (Verifierat) och lyft licensgrinden.
+4. Portens `employees`/`revenueKsek` är icke-nullbara, så bolag med okänt värde
+   utelämnas i dag. Överväg nullbara fält när en skärm ska visa dem.
+5. Enskilda firmor/reklamspärr med Juridisk koll + vuxen/handledare
+   (`docs/dataspiken.md` §6 fråga 4).

@@ -60,7 +60,7 @@ kommande sessioner.
 | Evidens och poäng | `EvidenceRepository` | Supabase | klar (P1) | `docs/moduler/evidens-och-poang.md` |
 | Minnet | `MemoryRepository` | Supabase | klar (P1) | `docs/moduler/minnet.md` |
 | Medgrundaren | `CofounderAgent` | Gemini | stub | `docs/moduler/medgrundaren.md` |
-| Registret | `RegistryProvider` | Bolagsverket, SCB (stub tills dataavtal) | stub | `docs/moduler/registret.md` |
+| Registret | `RegistryProvider` | Bolagsverket, SCB (`lib/server/scb.ts`, `bolagsverket.ts`, oskrivna; grindad via `lib/server/registryAccess.ts`) | påbörjad, grindad | `docs/moduler/registret.md` |
 | Webbresearch | `ResearchProvider` | Tavily | stub | `docs/moduler/webbresearch-och-pulsen.md` |
 | Pulsen | `PulseProvider` | Tavily | stub | `docs/moduler/webbresearch-och-pulsen.md` |
 | Simuleringar | `SimulationProvider` | Hiasynth (koncept, alltid stub) | stub | `docs/moduler/simuleringar.md` |
