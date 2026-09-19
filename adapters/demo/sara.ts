@@ -25,6 +25,7 @@ import { en } from "@/i18n/en";
 import type { Dictionary } from "@/i18n/dictionary";
 import type { NextStep, SinceLastTime, ScoreSnapshot, Källa, Profile } from "@/core/domain";
 import type { JourneySummary } from "@/ports/JourneyRepository";
+import type { JourneyEngine } from "./journeyEngine";
 import {
   calculateScore,
   type PartEvidence,
@@ -61,17 +62,17 @@ export const saraResources: Record<Locale, { time: string; money: string; risk: 
   en: { time: "15 hours a week", money: "SEK 30,000 saved", risk: "Medium risk appetite" },
 };
 
-function källa(namn: string, hämtad: string): Källa {
+export function källa(namn: string, hämtad: string): Källa {
   return { namn, hämtad };
 }
 
-function pt(points: number, source: Källa, overrides: Partial<EvidenceItem> = {}): EvidenceItem {
+export function pt(points: number, source: Källa, overrides: Partial<EvidenceItem> = {}): EvidenceItem {
   return { points, source, dataType: "register", ...overrides };
 }
 
 /** Bygger PartEvidence för alla åtta delar. Delar utan angivna items får en
  * tom lista — calculateScore hoppar över dem om de inte är upplåsta i fasen. */
-function parts(locale: Locale, filled: Partial<Record<ScorePartId, EvidenceItem[]>>): PartEvidence[] {
+export function parts(locale: Locale, filled: Partial<Record<ScorePartId, EvidenceItem[]>>): PartEvidence[] {
   const labels = dictionaries[locale].score.parts;
   return (Object.keys(labels) as ScorePartId[]).map((partId) => ({
     partId,
@@ -81,7 +82,7 @@ function parts(locale: Locale, filled: Partial<Record<ScorePartId, EvidenceItem[
 }
 
 /** Två parallella `parts()`-anrop (sv+en) — sparar en rad per evidensuppsättning. */
-function partsBoth(
+export function partsBoth(
   filledSv: Partial<Record<ScorePartId, EvidenceItem[]>>,
   filledEn: Partial<Record<ScorePartId, EvidenceItem[]>>,
 ): Record<Locale, PartEvidence[]> {
@@ -112,8 +113,11 @@ export type Beat = {
   simulationKind?: "time" | "tolerance" | "price";
 };
 
-const noSinceLastTime = (locale: Locale, todayIso: string, overrides: Partial<SinceLastTime> = {}): SinceLastTime => {
-  const source = källa(dictionaries[locale].demoBar.personaLabel, todayIso);
+export const noSinceLastTime = (locale: Locale, todayIso: string, overrides: Partial<SinceLastTime> = {}): SinceLastTime => {
+  // Platshållarkälla för ett tomt "sedan sist"-läge (inget utskick än) —
+  // egennamnsfri scenariodata, inte UI-kedjetext, så den hör hemma här och
+  // inte i i18n-ordböckerna (samma resonemang som övriga källor i den här filen).
+  const source = källa(locale === "sv" ? "Inget utskick ännu" : "No outreach yet", todayIso);
   return {
     emailSentSource: source,
     recipientCount: 0,
@@ -126,20 +130,20 @@ const noSinceLastTime = (locale: Locale, todayIso: string, overrides: Partial<Si
   };
 };
 
-function zeroSinceLastTimeBoth(dateIso: string): Record<Locale, SinceLastTime> {
+export function zeroSinceLastTimeBoth(dateIso: string): Record<Locale, SinceLastTime> {
   return { sv: noSinceLastTime("sv", dateIso), en: noSinceLastTime("en", dateIso) };
 }
 
 /** "· Före"/"· Körning"/"· Efter" — samma pill-text som journeyPage.momentPill
  * (screens/JourneyStep.tsx), återanvänd här för demoradens momentLabel. */
-function withMoment(base: Record<Locale, string>, kind: "before" | "running" | "after"): Record<Locale, string> {
+export function withMoment(base: Record<Locale, string>, kind: "before" | "running" | "after"): Record<Locale, string> {
   return {
     sv: `${base.sv} · ${dictionaries.sv.journeyPage.momentPill[kind]}`,
     en: `${base.en} · ${dictionaries.en.journeyPage.momentPill[kind]}`,
   };
 }
 
-type StepBeatsInput = {
+export type StepBeatsInput = {
   idPrefix: string;
   stepNumber: number;
   phaseBefore: PhaseId;
@@ -164,7 +168,7 @@ type StepBeatsInput = {
 /** Bygger de tre symmetriska beatsen för ett steg (01–04, 06). Steg 05 har en
  * egen, asymmetrisk form (05a har alla tre, 05b bara körning+efter) och
  * skrivs för hand längre ner. */
-function makeStepBeats(input: StepBeatsInput): [Beat, Beat, Beat] {
+export function makeStepBeats(input: StepBeatsInput): [Beat, Beat, Beat] {
   const noHighlights = { sv: [] as string[], en: [] as string[] };
   const noDelta = { sv: "", en: "" };
 
@@ -2045,4 +2049,20 @@ export const saraSuggestionCandidates: Record<Locale, ScoreSuggestionInput[]> = 
       actionLabel: "See the customers",
     },
   ],
+};
+
+/** Saras resa som en `JourneyEngine` (adapters/demo/journeyEngine.ts) —
+ * gör motorn utbytbar mot `jonasEngine` för ingångsmedvetna demoadaptrar. */
+export const saraEngine: JourneyEngine = {
+  beats: saraBeats,
+  steps: SARA_STEPS,
+  suggestionCandidates: saraSuggestionCandidates,
+  getBeatAt,
+  getCurrentStepNumberFor,
+  findBeatIndexById,
+  findLatestBeatIndexForStep,
+  findLatestBeatForStep,
+  getScoreSnapshotForBeat,
+  getScoreHistoryUpToBeat,
+  getJourneySummaryForBeat,
 };

@@ -294,7 +294,11 @@ export type Dictionary = {
   };
   /** Demoraden (avsnitt 9.1) — fast rad nederst i /demo/app och /demo/start. */
   demoBar: {
-    personaLabel: string;
+    /** Egennamnet (Sara/Jonas) hör hemma i källdata (adapters/demo/sara.ts
+     * respektive jonas.ts), inte här — de här är bara etiketten för vilken
+     * persona, komponerad tillsammans med profilens namn i DemoBar.tsx. */
+    personaALabel: string;
+    personaBLabel: string;
     stepLabel: string;
     stepOf: string;
     phaseLabel: string;

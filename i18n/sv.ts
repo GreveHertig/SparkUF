@@ -197,7 +197,7 @@ export const sv = {
   },
   cofounderPage: {
     title: "Medgrundaren",
-    subtitle: "Samtalet mellan Sara och Spark, klick för klick genom resan.",
+    subtitle: "Samtalet med Spark, klick för klick genom resan.",
     contextTitle: "Sedan tidigare",
     toolRunningLabel: "Kör verktyg",
     toolDoneLabel: "Klart",
@@ -289,7 +289,8 @@ export const sv = {
     creditsUsedLabel: "Credits använda",
   },
   demoBar: {
-    personaLabel: "Sara Lindqvist · Persona A",
+    personaALabel: "Persona A",
+    personaBLabel: "Persona B",
     stepLabel: "Steg",
     stepOf: "av 12",
     phaseLabel: "Fas",

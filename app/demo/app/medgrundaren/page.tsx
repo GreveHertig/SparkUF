@@ -4,15 +4,18 @@ import { useMemo } from "react";
 import { Cofounder, type CofounderData } from "@/screens/Cofounder";
 import { useI18n } from "@/i18n/context";
 import { useDemoStore } from "@/adapters/demo/demoStore";
-import { saraBeats } from "@/adapters/demo/sara";
+import { engineFor } from "@/adapters/demo/journeyEngine";
 import { cofounderScript } from "@/adapters/demo/cofounderScript";
+import { jonasCofounderScript } from "@/adapters/demo/jonasCofounderScript";
 
-// Dialogen byggs synkront ur Saras beats (adapters/demo/sara.ts) och
-// cofounderScript.ts — inget att hämta asynkront, så useMemo räcker (till
-// skillnad från övriga /demo/app-sidor som await:ar riktiga adapteranrop,
-// se app/demo/app/layout.tsx). Dialogen är inte CofounderAgent-porten (den
-// är till för liveadapterns riktiga Gemini-samtal, se
-// ports/CofounderAgent.ts) utan ett rent presentationsskript.
+// Dialogen byggs synkront ur den aktuella personans beats
+// (adapters/demo/sara.ts/jonas.ts) och ett förskrivet skript
+// (cofounderScript.ts/jonasCofounderScript.ts) — inget att hämta
+// asynkront, så useMemo räcker (till skillnad från övriga /demo/app-sidor
+// som await:ar riktiga adapteranrop, se app/demo/app/layout.tsx). Dialogen
+// är inte CofounderAgent-porten (den är till för liveadapterns riktiga
+// Gemini-samtal, se ports/CofounderAgent.ts) utan ett rent
+// presentationsskript.
 //
 // Visar bara det AKTUELLA momentet, inte hela historiken (grundarens
 // önskemål: en ren chattyta, inga uppslukande scrollbara transkript).
@@ -21,10 +24,13 @@ import { cofounderScript } from "@/adapters/demo/cofounderScript";
 export default function DemoCofounderPage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
+  const entry = useDemoStore((state) => state.entry);
 
   const data: CofounderData = useMemo(() => {
-    const currentBeat = saraBeats[beatIndex];
-    const context = saraBeats
+    const engine = engineFor(entry);
+    const script = entry === "hasIdea" ? jonasCofounderScript : cofounderScript;
+    const currentBeat = engine.getBeatAt(beatIndex);
+    const context = engine.beats
       .slice(0, beatIndex)
       .filter((beat) => beat.momentKind === "after")
       .map((beat) => ({
@@ -37,10 +43,10 @@ export default function DemoCofounderPage() {
       moment: {
         id: currentBeat.id,
         momentLabel: `${currentBeat.stepNumber} · ${currentBeat.momentLabel[locale]}`,
-        items: cofounderScript[currentBeat.id] ?? [],
+        items: script[currentBeat.id] ?? [],
       },
     };
-  }, [locale, beatIndex]);
+  }, [locale, beatIndex, entry]);
 
   return <Cofounder data={data} />;
 }
