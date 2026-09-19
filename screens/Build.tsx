@@ -64,7 +64,7 @@ export function Build({ data }: { data: BuildData }) {
             )}
           </div>
 
-          <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5">
+          <section data-tour-id="build-spec" className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5">
             <Eyebrow>{t.buildPage.specTitle}</Eyebrow>
             <p className="text-sm leading-snug text-slate-800">{data.spec.sammanfattning}</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

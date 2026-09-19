@@ -59,13 +59,17 @@ export const useDemoStore = create<DemoState>()(
       // Rundturens 20 stopp (adapters/demo/tourSteps.ts) är skrivna mot Saras
       // beats — att slå på rundturen tvingar därför alltid entry till
       // "noIdea" och startar om från stopp 1, oavsett var i demot eller vilken
-      // persona presentatören stod i. Att slå av gör bara tourOn falskt, ingen
+      // persona presentatören stod i. Stopp 1 (adapters/demo/tourSteps.ts,
+      // "valkommen") pekar på /demo/app — onboardingDone måste därför sättas
+      // här också, annars skickar app/demo/app/layout.tsx:s onboarding-koll
+      // presentatören rakt tillbaka till /demo/start (samma mönster som
+      // DemoBar.tsx:s jumpToStep). Att slå av gör bara tourOn falskt, ingen
       // annan sidoeffekt (TourOverlay slutar rendera, resten av läget orört).
       toggleTour: () =>
         set((state) =>
           state.tourOn
             ? { tourOn: false }
-            : { tourOn: true, tourStepIndex: 0, entry: "noIdea", beatIndex: 0 },
+            : { tourOn: true, tourStepIndex: 0, entry: "noIdea", beatIndex: 0, onboardingDone: true },
         ),
       setTourStep: (index) => set({ tourStepIndex: index }),
       toggleCollapsed: () => set((state) => ({ collapsed: !state.collapsed })),

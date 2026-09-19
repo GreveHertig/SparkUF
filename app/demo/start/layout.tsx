@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { DemoBar } from "@/components/spark/DemoBar";
+import { TourOverlay } from "@/components/spark/TourOverlay";
 import { DemoDataBadge } from "@/components/ui/DemoDataBadge";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import { Logo } from "@/components/ui/Logo";
@@ -24,6 +25,7 @@ export default function DemoStartLayout({ children }: { children: ReactNode }) {
       </header>
       <main className="flex-1 px-6">{children}</main>
       <DemoBar />
+      <TourOverlay />
     </div>
   );
 }

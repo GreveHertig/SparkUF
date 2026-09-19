@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/screens/AppShell";
 import { DemoDataBadge } from "@/components/ui/DemoDataBadge";
 import { DemoBar } from "@/components/spark/DemoBar";
+import { TourOverlay } from "@/components/spark/TourOverlay";
 import { useI18n } from "@/i18n/context";
 import { demoProfileRepository } from "@/adapters/demo/ProfileRepository";
 import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
@@ -63,6 +64,7 @@ export default function DemoAppShellLayout({ children }: { children: ReactNode }
       bottomBar={<DemoBar />}
     >
       {children}
+      <TourOverlay />
     </AppShell>
   );
 }
