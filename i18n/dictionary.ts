@@ -197,6 +197,9 @@ export type Dictionary = {
   cofounderPage: {
     title: string;
     subtitle: string;
+    /** "Sedan tidigare" (avsnitt 10) — kort rad med redan kända beslut,
+     * inte scrollbar historik. Se screens/Cofounder.tsx. */
+    contextTitle: string;
     toolRunningLabel: string;
     toolDoneLabel: string;
     emptyStateBody: string;

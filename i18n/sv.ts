@@ -198,6 +198,7 @@ export const sv = {
   cofounderPage: {
     title: "Medgrundaren",
     subtitle: "Samtalet mellan Sara och Spark, klick för klick genom resan.",
+    contextTitle: "Sedan tidigare",
     toolRunningLabel: "Kör verktyg",
     toolDoneLabel: "Klart",
     emptyStateBody: "Klicka Nästa i demoraden för att fortsätta samtalet.",

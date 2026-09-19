@@ -33,6 +33,10 @@ export default function DemoStartProfilePage() {
 
   return (
     <OnboardingProfile
+      // Ett byte av ingång (annat persona-samtal) ska börja om från
+      // början — `key` monterar skärmen på nytt i stället för att den
+      // behöver nollställa sitt eget framstegs-state (avsnitt 9.1).
+      key={entry}
       data={{
         script,
         continueHref: "/demo/app",

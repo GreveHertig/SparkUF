@@ -198,6 +198,7 @@ export const en = {
   cofounderPage: {
     title: "Co-founder",
     subtitle: "The conversation between Sara and Spark, click by click through the journey.",
+    contextTitle: "So far",
     toolRunningLabel: "Running tool",
     toolDoneLabel: "Done",
     emptyStateBody: "Click Next in the demo bar to continue the conversation.",

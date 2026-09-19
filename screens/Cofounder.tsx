@@ -15,13 +15,27 @@ export type CofounderMoment = {
   items: TranscriptItem[];
 };
 
-export type CofounderData = {
-  moments: CofounderMoment[];
+/** En kort, redan känd fakta eller ett redan taget beslut (Spårets
+ * "-efter"-sammanfattningar) — visas som en rad, aldrig som chattbubblor. */
+export type CofounderContextItem = {
+  id: string;
+  text: string;
 };
 
-/** Chattytan (avsnitt 6, 8, 10): förskriven dialog som går att klicka igenom
- * via demoraden, med ToolRunCard när ett verktyg körs. Skärmen vet inte att
- * dialogen är förskriven — den bara renderar de moment den fått in. */
+export type CofounderData = {
+  /** Sedan tidigare (avsnitt 10): kort, redan känt — inte scrollbar historik. */
+  context: CofounderContextItem[];
+  /** Bara det aktuella momentet — `null` om inget skript finns för det
+   * (ska i praktiken aldrig hända för en nådd beat). */
+  moment: CofounderMoment | null;
+};
+
+/** Chattytan (avsnitt 6, 8, 10): en ren yta för det aktuella momentet, inte
+ * hela den tidigare chatthistoriken — tidigare beslut refereras kort i en
+ * "Sedan tidigare"-rad i stället för att rullas upp (Medgrundaren tar också
+ * tillbaka tidigare beslut i själva repliken, se cofounderScript.ts).
+ * Skärmen vet inte att dialogen är förskriven — den bara renderar det
+ * moment och den kontext den fått in. */
 export function Cofounder({ data }: { data: CofounderData }) {
   const { locale, t } = useI18n();
 
@@ -35,24 +49,35 @@ export function Cofounder({ data }: { data: CofounderData }) {
         <p className="mt-2 text-sm text-slate-600">{t.cofounderPage.subtitle}</p>
       </div>
 
-      {data.moments.length === 0 && <p className="text-sm text-slate-600">{t.cofounderPage.emptyStateBody}</p>}
+      {data.context.length > 0 && (
+        <section className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <Eyebrow>{t.cofounderPage.contextTitle}</Eyebrow>
+          <ul className="flex flex-col gap-1">
+            {data.context.map((item) => (
+              <li key={item.id} className="text-sm leading-snug text-slate-600">
+                {item.text}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
-      <div className="flex flex-col gap-6">
-        {data.moments.map((moment) => (
-          <section key={moment.id} className="flex flex-col gap-2">
-            <Eyebrow>{moment.momentLabel}</Eyebrow>
-            {moment.items.map((item, index) =>
-              item.kind === "message" ? (
-                <ChatMessage key={index} role={item.role} text={item.text[locale]} />
-              ) : item.kind === "tool" ? (
-                <ToolRunCard key={index} label={item.label[locale]} steps={item.steps[locale]} />
-              ) : (
-                <TimeSkip key={index} label={item.label[locale]} />
-              ),
-            )}
-          </section>
-        ))}
-      </div>
+      {!data.moment && <p className="text-sm text-slate-600">{t.cofounderPage.emptyStateBody}</p>}
+
+      {data.moment && (
+        <section className="flex flex-col gap-2">
+          <Eyebrow>{data.moment.momentLabel}</Eyebrow>
+          {data.moment.items.map((item, index) =>
+            item.kind === "message" ? (
+              <ChatMessage key={index} role={item.role} text={item.text[locale]} />
+            ) : item.kind === "tool" ? (
+              <ToolRunCard key={index} label={item.label[locale]} steps={item.steps[locale]} />
+            ) : (
+              <TimeSkip key={index} label={item.label[locale]} />
+            ),
+          )}
+        </section>
+      )}
 
       <PromptBox />
     </div>
