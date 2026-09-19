@@ -1,26 +1,33 @@
-import { render, screen } from "@testing-library/react";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import LandningPage from "./page";
 import PricingPage from "./priser/page";
 
 // jsdom saknar matchMedia — ScoreBadge/VerdictCard (via usePrefersReducedMotion)
-// behöver den, se app/demo/app/locale-switch.test.tsx för samma mönster.
+// behöver den, se app/demo/app/locale-switch.test.tsx för samma mönster. Sätt
+// matches: true (till skillnad från den filens matches: false) så att
+// ScoreBadges räkneanimation (Framer Motion, requestAnimationFrame) aldrig
+// startar här — annars kan en animationstick försöka köra efter att den här
+// testfilens jsdom-miljö redan monterats ner, vilket gav ett flakigt
+// "window is not defined" när hela sviten kördes tillsammans med andra filer.
 beforeAll(() => {
-  window.matchMedia =
-    window.matchMedia ||
-    ((query: string) =>
-      ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false,
-      }) as unknown as MediaQueryList);
+  window.matchMedia = ((query: string) =>
+    ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList) as typeof window.matchMedia;
+});
+
+afterEach(() => {
+  cleanup();
 });
 
 // Ingen PublicHeader (och därmed ingen LanguageSwitch) i den här renderingen
