@@ -42,8 +42,7 @@ obligatorisk på `MarketOverview`, Datalöftets krav.
   `growthSharePercent`, `regionSharePercent`).
 - **Uppdaterat efter dataspiken (2026-09-18, se `docs/dataspiken.md`):**
   Bolagsverkets och SCB:s "API för värdefulla datamängder" är gratis och
-  kräver inget avtal, bara en kundanmälan (skickad, väntar på
-  godkännande). Blockeraren är alltså godkännandet plus att Bolagsverkets
+  kräver inget avtal, bara en kundanmälan (**inte skickad än**). Blockeraren är alltså godkännandet plus att Bolagsverkets
   användarvillkor läses (de gick inte att läsa under spiken), inte ett
   avtal. Rekommenderad MVP-källa är den här, inte Allabolag/UC eller
   Ratsit. Stycket nedan är kvar som historik.
@@ -94,6 +93,29 @@ obligatorisk på `MarketOverview`, Datalöftets krav.
   konkurrent märkt "(fiktivt)"/"(fictional)" — den etiketten är exklusiv för
   demot (uppdrag 2.5).
 - Klarar kontraktstestet i `ports/RegistryProvider.contract.test.ts`.
+
+## Licensgrind (villkor för exponering)
+
+**Villkor:** RegistryProvider (liveadaptern) får inte visas för eller användas
+av någon utanför Erik och Theodor (t.ex. demo för lärare, investerare eller
+andra UF-företag) förrän licensfrågan om namngivna aktiebolag är uppgraderad
+från **Sekundärt** till **Verifierat** i `docs/dataspiken.md` (§6 fråga 1),
+dvs. tills en människa faktiskt läst Bolagsverkets egna villkor om
+återanvändning/visning av namngiven data. API-åtkomstsidan ("inget avtal,
+avgiftsfritt") är redan verifierad men säger ingenting om visning eller
+lagring av namngivna företag. Internt utvecklingsarbete och tester är okej.
+
+**Mekanism (fyra lager, inget ensamt tillräckligt):**
+1. Ingen liveyta: ingen `/app/marknad`-route finns, `screens/` och routes rörs inte. Demon använder fiktiv data.
+2. `lib/server/registryAccess.ts`: kräver både `REGISTRY_LIVE_ENABLED=true` och att inloggad `user.id` finns i `REGISTRY_ALLOWED_USER_IDS`. Avstängd som standard. Anropas som första sats i båda portmetoderna. Nekat ger `RegistryLockedError` (visas som `ComingSoon`) innan något externt anrop görs.
+3. CI-vakt i `ports/stubStatus.test.ts` (`LICENSGRINDADE`): testerna blir röda om grinden tas bort eller försvagas.
+4. Ingen lagring: inget skrivs till `public.companies` förrän licensen är Verifierat.
+
+**Så lyfts grinden:** en människa läser Bolagsverkets villkor, `docs/dataspiken.md`
+§6 fråga 1 ändras till Verifierat i en commit som också uppdaterar det här
+avsnittet, och först därefter får `REGISTRY_ALLOWED_USER_IDS` utökas eller
+grinden tas bort. Reglerna för enskilda firmor/reklamspärr (§6 fråga 4,
+Juridisk koll + vuxen/handledare) är en separat, fortfarande öppen fråga.
 
 ## Säkerhet
 

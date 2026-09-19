@@ -1232,7 +1232,7 @@ Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
 - **`docs/moduler/registret.md`:** rättade "blockeraren är avtal" med hänvisning till dataspiken.
 
 ### Var vi står / vad som är kvar innan nästa session
-- **Väntar på Bolagsverkets godkännande** av Eriks kundanmälan (nycklar).
+- **Kundanmälan till Bolagsverket är inte skickad än** (Erik 2026-09-19; tidigare stod här felaktigt att den väntade på godkännande).
 - **Erik:** läs Bolagsverkets användarvillkor när nycklarna kommer (blockerar inte Fas 1).
 - **Fas 2:** bygg `OutreachProvider` med Tavily + Gemini för mottagarnas e-post (punkt 2 ovan).
 - **Grundaren + partner + vuxen/handledare:** Allabolag/UC är ett öppet avtalsbeslut. Villkoren förbjuder regelbunden, systematisk lagring utan skriftligt medgivande. Ingen kontakt tas och inget formulär skickas innan dess.
@@ -1246,3 +1246,15 @@ Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
 ### Kända problem / öppna frågor
 - **Ratsit** verifierades bara via sökresultat (403 på deras sidor). En söksammanfattning antyder ett API, vilket inte bekräftades.
 - SCB:s statistikdatabas (branschaggregat) är inte undersökt. SCB byter från certifikat till API-nycklar i september 2026.
+
+## Modul: Registret — liveadapter (påbörjad, branch `modul/registret`)
+
+Byggs enligt `docs/bygga-en-modul.md`. Godkänd plan 2026-09-19 (beslut D1–D7):
+grönt mot mockad transport accepteras (den riktiga HTTP-transporten blir en
+andra PR efter spiken), grind via Supabase `user.id` (Erik och Theodor), valfritt
+`basis`-fält i porten, `RegistryLockedError` visas som `ComingSoon`, inget
+skrivs till Supabase, `.mcp.json` och `supabase/.temp/` gitignorerade.
+
+**Villkor:** ingen exponering utom för Erik och Theodor förrän `docs/dataspiken.md`
+§6 fråga 1 är Verifierat. Se "Licensgrind" i `docs/moduler/registret.md`.
+(Uppdateras vid sessionens slut.)

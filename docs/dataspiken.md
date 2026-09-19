@@ -33,7 +33,7 @@ vidare med `RegistryProvider` (Fas 1):
 
 - **MVP bygger vi på Bolagsverkets och SCB:s "API för värdefulla datamängder".**
   Gratis, inget avtal, öppen licens enligt EU-lag. Åtkomst väntar på
-  godkännande av kundanmälan (skickad av Erik).
+  en kundanmälan (**inte skickad än**, bekräftat av Erik 2026-09-19; tidigare version av det här dokumentet sa felaktigt "skickad").
 - **Allabolag/UC går vi inte vidare med nu.** Villkoren förbjuder
   uttryckligen systematisk lagring, det är sannolikt en betald B2B-tjänst
   och det kräver ett avtal. Det är ett **öppet beslut för grundaren**, se
@@ -328,7 +328,7 @@ sannolikt inget.
 
 | # | Fråga | Vem/hur | Blockerar |
 |---|---|---|---|
-| 1 | Bolagsverkets faktiska användarvillkor (lagring, vidareutnyttjande, källhänvisning). Licensen är sekundärt bekräftad av två AI-sökningar | Erik läser i webbläsare vid godkännande | Inget i Fas 1. Läses för att nå Verifierat |
+| 1 | Bolagsverkets faktiska användarvillkor (lagring, vidareutnyttjande, källhänvisning). Licensen är sekundärt bekräftad av två AI-sökningar | Erik läser i webbläsare vid godkännande | **Bygget: nej. Exponering: ja.** Ingen annan än Erik och Theodor får se eller använda liveregisterdata (ingen demo för lärare, investerare eller andra UF-företag) förrän den här raden är **Verifierat**, dvs. en människa läst Bolagsverkets egna villkor för visning/återanvändning av namngivna uppgifter. Skyddas av licensgrinden, se `docs/moduler/registret.md` |
 | 2 | Kan Bolagsverkets API söka på SNI, eller krävs SCB/filer? | Spik med nycklar | `searchCompanies` |
 | 3 | Vilka iXBRL-taggar finns för små bolag, och täckning | Spik med nycklar | `revenueKsek`, `growthSharePercent`, median |
 | 4 | Får namngivna aktiebolag lagras/visas, och hur hanteras enskilda firmor och reklamspärr? | Juridisk koll + vuxen/handledare | Steg 04–05 i live |
