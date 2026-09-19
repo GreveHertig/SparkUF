@@ -88,3 +88,36 @@ Padding i kort ett steg ner genomgående (`p-6`→`p-4`/`p-5`, `gap-6`→`gap-4`
 Formuläret använder Reacts `useActionState` (samma mönster som Next.js egen auth-guide) i stället för ett kontrollerat formulär med egen `useState` per fält — mindre kod, och valideringsfel överlever en helsides-omladdning utan JavaScript (progressiv förbättring).
 
 `TextField` demonstreras i `/designsystem` med tre lägen: tomt, hint synlig, fel synligt (hint och fel visas aldrig samtidigt — felet vinner).
+
+## Session 6 — Landningssida (gren `prototyp-landning`)
+
+Uppdrag: bygg `/`, `/priser` och de publika delarna av `/logga-in`/`/skapa-konto` (uppdrag avsnitt 5, 6), i Fonda-stilen från 5.1, med riktiga produktkort i stället för illustrationer. `/logga-in`/`/skapa-konto` var redan riktiga Supabase-formulär sedan Session P1 — återanvända rakt av, inte ombyggda.
+
+### Ny delad ram: `components/spark/PublicHeader.tsx` + `PublicFooter.tsx`
+De publika sidorna (`/`, `/priser`) delar en ny `app/(marketing)/layout.tsx` med en ljus, sticky header (logga, Priser, Logga in, SV/EN, "Starta demo") och en footer (tagline, produkt-/kontolänkar, fiktions-/ansvarsnot). Header är medvetet ljus (inte `ink-800`) och ligger ovanför den mörka hero-sektionen som en egen sektion i sidan — samma "ljus arbetsyta, mörka ytor medvetet" princip som Session 1 satte, bara tillämpad på en ny yta. `/logga-in`/`/skapa-konto` behöll sin egen minimala `AuthLayout`-header (P1) i stället för att återanvända `PublicHeader` — de är formulär, inte marknadsföringsytor, och P1:s header (logga + SV/EN) är redan rätt avskalad för dem.
+
+### Landningssidan: riktiga komponenter, inga illustrationer
+Alla nio sektionerna i uppdrag 6 byggda i `app/(marketing)/page.tsx` med redan existerande designsystemkomponenter — ingen ny visuell primitiv utom en liten lokal `FeatureCard`-hjälpare (titel + brödtext + valfri children-slot, återanvänd tre gånger i "Fyra saker Medgrundaren gör" och två gånger i "Koncept på väg", motiverar en gemensam komponent utan att vara en för tidig abstraktion):
+
+- **Hero:** `NextStepCard` (samma komponent som `/demo/app`, egen text, inte kopplad till en adapter) bredvid en `EditorialHeading` med `.Em` på "Spark" — den enda rubriken på sidan som använder kursiv betoning, avsiktligt sparsamt använt (5.4: "inga dekorativa detaljer") i stället för på varje sektionsrubrik.
+- **Datalöftet:** tre `DataFact`+`SourceTag`-kort med exakt uppdragets egna exempeltal (312 byråer, 4,2 Mkr, 18 %) — samma illustrativa siffror som `docs/uppdrag.md` avsnitt 1.1 själv använder, med Bolagsverket/SCB som källa.
+- **Resan:** stegen grupperade i de fyra faserna, titlar hämtade rakt ur `journeySteps`/`journeyPage.phaseNames` (aldrig dubblerade), ett nytt citat per fas i `landingPage.journey.phaseQuotes`.
+- **Fyra saker Medgrundaren gör:** `ToolRunCard`, ett `ChatMessage`-par (rak dom) och `PulseCard` — plus en fjärde, avsiktligt enklare "Nästa steg"-ruta (en `Eyebrow` + poängrad, inte en full andra `NextStepCard` — hero visar redan den komponenten i sin helhet, en identisk dubblett hade känts repetitiv vid skrollning).
+- **Poängen:** `VerdictCard` med `score={54}` — samma poäng och utslag ("Förfina · snäva segmentet") som Saras riktiga steg 06 i demot, en avsiktlig kontinuitetsdetalj, inte en slump.
+- **Juridisk koll:** `LegalMap` med två exempelkrav (F-skatt/Skatteverket, personuppgiftsbiträdesavtal/IMY), samma `t.legalPage.disclaimer` som `/demo/app/juridik` använder.
+- **Minnet:** ett `ChatMessage`-par som uttryckligen refererar ett tidigare beslut ("Du sa i steg 06...") — skild från "Säger rakt ut"-kortet i sektion 4, som inte refererar historik.
+- **Koncept på väg:** `SimulationCard` för Hiasynth (riktig `Simulation`-form, `source.namn` med "(koncept)"-suffix som redan används i `adapters/demo/SimulationProvider.ts`) och `ToolRunCard` + `ConceptBadge` för Lovable.
+- **Priser/FAQ/avslutning:** en pristeaser som länkar till `/priser`, fem FAQ-poster som `<dl>`, och en sista mörk uppmaningssektion som speglar hero.
+
+### `/priser`
+Tre nivåer (Gratis, Grundare 199 kr/mån, Bygg-credits) enligt uppdrag 6, alla under en gemensam "Förslag — inte fastställda priser"-etikett (streckad kant, som `ConceptBadge`s visuella språk men utan att återanvända just den komponenten — det är inte ett Hiasynth/Lovable-koncept, bara ett prisförslag). Grundare-nivån är visuellt högre prioriterad (`border-accent-600`, "Mest valt"-bricka). Gratis/Grundare länkar till `/skapa-konto`, Bygg-credits till `/demo` (det finns inget att köpa än, bara att se).
+
+### i18n
+Fyra nya toppnycklar (`publicNav`, `publicFooter`, `landingPage`, `pricingPage`) i `i18n/dictionary.ts`, fullt typade och skrivna på båda språken direkt (`satisfies Dictionary` fångade två saknade fält under arbetet). Engelska namn på svenska myndigheter (Bolagsverket, Skatteverket, IMY) förklaras med en kort parentes vid första förekomsten i `landingPage.dataPromise.body`/`legal.body` i stället för en ny tooltip-komponent — uppdrag 4 ber om en tooltip, men inget tooltip-primitiv finns i designsystemet än och att bygga en enkom för det här vore fel session för det. Flaggat som en känd, medveten avgränsning nedan.
+
+### Verifiering
+`pnpm typecheck`/`lint`/`test`/`build` gröna (ny testfil `app/(marketing)/page.test.tsx`: SV-innehåll, EN-innehåll via `localStorage`-satt `spark:locale` — samma mönster som `locale-switch.test.tsx`, men utan att klicka en `LanguageSwitch`-knapp eftersom headern med växeln inte är en del av sidkomponenten som testas). Klickad igenom med Playwright (headless Chromium, tillfälligt installerat i en scratch-mapp utanför repot) mot `/` och `/priser` på båda språken — alla nio sektionerna, inga konsolfel. En verklig layoutbugg hittades och fixades under det: "Ett steg i taget"-kortet i "Fyra saker Medgrundaren gör" var tomt (ingen `children`) medan de tre andra korten i samma rad-par hade riktigt innehåll, vilket såg trasigt ut i ett grid med lika kolumnbredd — fixat genom att lägga till en liten poäng-/tidsrad, se ovan.
+
+### Kända problem / medvetna begränsningar
+- **Ingen tooltip-komponent** för engenamn på engelska (uppdrag 4) — löst med inline-parentes i stället, se ovan. Bygg en riktig tooltip-primitiv i en framtida session om fler ytor behöver samma sak.
+- **`DataFact`s `SourceTag`-pill kan radbryta** i den smalaste av de tre Datalöftet-rutorna ("Bolagsverket · 14 september" på två rader) vid 1440 px — samma komponent och mönster som redan används i `screens/Market.tsx` (4 kolumner), inte en ny regression, men trängre här på grund av 3 kolumner i en halv `max-w-6xl`-bredd. Kosmetiskt, ingen överlappning eller bruten layout. Åtgärda vid en framtida poleringssession om det stör i en riktig genomgång.
