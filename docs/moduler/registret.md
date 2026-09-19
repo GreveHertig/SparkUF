@@ -176,6 +176,8 @@ Demoadaptern är klar och används av `/demo/app/marknad` och
 
 ## Kvar innan modulen är klar
 
+0. **Senare session:** koppla `sniCode` automatiskt till projektets bransch (beslutat 2026-09-19 att lämna den valfri tills dess).
+
 1. Spik med riktiga nycklar (`docs/dataspiken.md` §3): kan man söka på SNI, vilka
    iXBRL-taggar finns, går län att härleda, vad säger villkoren om lagring.
 2. Skriv transporten och skriv om `lib/server/registrySchemas.ts` mot det

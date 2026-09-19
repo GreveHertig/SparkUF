@@ -1285,8 +1285,9 @@ tester är okej.
   mockad transport i en antagen svarsform. Den riktiga transporten är en andra PR
   efter spiken. Modulstatus är därför "påbörjad", inte "klar".
 - **`getMarketOverview` fick valfri `sniCode`** eftersom porten inte hade någon
-  branschangivelse. Utan den gäller sammanfattningen hela registret. Bekräfta eller
-  ändra när `/app/marknad` byggs (kanske ska SNI hämtas ur projektet).
+  branschangivelse. Utan den gäller sammanfattningen hela registret. **Beslutat 2026-09-19 (Erik):** `sniCode`
+  förblir en valfri parameter tills vidare. Automatisk koppling till projektets
+  bransch tas i en senare session (när `/app/marknad` byggs).
 - **Ingen liveyta finns** (`/app/marknad` byggs inte här) och `docs/bygga-en-modul.md`
   §11.2 (`ComingSoon` ska försvinna) är därför medvetet inte tillämpligt.
 - **Inget skrivs till Supabase** (`public.companies` har ingen skrivpolicy, en
