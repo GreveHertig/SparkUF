@@ -41,3 +41,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env.local
+
+# lokal MCP-konfiguration och Supabase CLI-temp
+.mcp.json
+supabase/.temp/

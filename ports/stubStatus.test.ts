@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { NotImplementedError } from "@/core/errors";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { NotImplementedError, RegistryLockedError } from "@/core/errors";
 import { liveProfileRepository } from "@/adapters/live/ProfileRepository";
 import { liveProjectRepository } from "@/adapters/live/ProjectRepository";
 import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
@@ -21,7 +21,6 @@ import { liveBuildProvider } from "@/adapters/live/BuildProvider";
  */
 const STILL_STUBS: { module: string; call: () => Promise<unknown> }[] = [
   { module: "Medgrundaren", call: () => liveCofounderAgent.sendMessage("hej", [], "sv") },
-  { module: "Registret", call: () => liveRegistryProvider.getMarketOverview("sv") },
   { module: "Webbresearch", call: () => liveResearchProvider.search("test") },
   { module: "Pulsen", call: () => livePulseProvider.getTodaysSignal("sv") },
   { module: "Simuleringar", call: () => liveSimulationProvider.simulate("test", "sv") },
@@ -66,5 +65,39 @@ const PARTIELLA_STUBBAR: { module: string; metod: string; call: () => Promise<un
 describe("Stub-vakt: enstaka metoder i annars påbörjade liveadaptrar kastar fortfarande NotImplementedError", () => {
   it.each(PARTIELLA_STUBBAR)("$module.$metod", async ({ call }) => {
     await expect(call()).rejects.toBeInstanceOf(NotImplementedError);
+  });
+});
+
+/**
+ * Licensvakt (docs/moduler/registret.md, "Licensgrind"): Registret är BYGGT men
+ * får inte exponeras för någon utom Erik och Theodor förrän licensen för
+ * namngivna aktiebolag är Verifierat (docs/dataspiken.md §6 fråga 1). Utan
+ * REGISTRY_LIVE_ENABLED och allowlist ska varje metod neka med
+ * RegistryLockedError. Går det här testet sönder har grinden tagits bort eller
+ * försvagats — lyft den bara i samma commit som dataspiken ändras till Verifierat.
+ * (Transporten är oskriven, så ett släppt igenom-anrop skulle ge ett annat fel.)
+ */
+describe("Licensvakt: Registret nekar utan öppen grind", () => {
+  const saved = { ...process.env };
+  beforeEach(() => {
+    delete process.env.REGISTRY_LIVE_ENABLED;
+    delete process.env.REGISTRY_ALLOWED_USER_IDS;
+  });
+  afterEach(() => {
+    process.env = { ...saved };
+  });
+
+  it("searchCompanies", async () => {
+    await expect(liveRegistryProvider.searchCompanies({ sniCode: "69.201" })).rejects.toBeInstanceOf(
+      RegistryLockedError,
+    );
+  });
+  it("grinden slår indatavalideringen (ogiltig SNI ger ändå RegistryLockedError)", async () => {
+    await expect(liveRegistryProvider.searchCompanies({ sniCode: "ogiltig" })).rejects.toBeInstanceOf(
+      RegistryLockedError,
+    );
+  });
+  it("getMarketOverview", async () => {
+    await expect(liveRegistryProvider.getMarketOverview("sv")).rejects.toBeInstanceOf(RegistryLockedError);
   });
 });
