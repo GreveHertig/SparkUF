@@ -9,6 +9,10 @@ import { useDemoStore } from "@/adapters/demo/demoStore";
 // samma på live- och demoadaptern), så bara beatIndex behövs här.
 export default function DemoLegalPage() {
   const beatIndex = useDemoStore((state) => state.beatIndex);
+  const entry = useDemoStore((state) => state.entry);
+  // demoLegalAdvisor returnerar redan [] för Jonas (persona B) — kravtexten
+  // är skriven mot Kvittojakten, se adapters/demo/LegalAdvisor.ts.
+  const notInScenario = entry === "hasIdea";
   const [data, setData] = useState<LegalData | null>(null);
 
   useEffect(() => {
@@ -23,5 +27,5 @@ export default function DemoLegalPage() {
 
   if (!data) return null;
 
-  return <Legal data={data} />;
+  return <Legal data={data} notInScenario={notInScenario} />;
 }

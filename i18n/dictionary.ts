@@ -118,6 +118,11 @@ export type Dictionary = {
     scoreMovementTitle: string;
     breakdownTitle: string;
     unlocksAfterStepBefore: string;
+    /** Ärligt tomt läge när ett steg saknar data för den aktiva personan i
+     * demot — skild från unlocksAfterStepBefore, som antyder att det kommer
+     * senare (avsnitt: flera demomoduler är fortfarande bara byggda för
+     * Sara). */
+    notInThisScenario: string;
     recipientsUnit: string;
     responsesUnit: string;
     todayLabel: string;
@@ -197,6 +202,9 @@ export type Dictionary = {
   cofounderPage: {
     title: string;
     subtitle: string;
+    /** "Sedan tidigare" (avsnitt 10) — kort rad med redan kända beslut,
+     * inte scrollbar historik. Se screens/Cofounder.tsx. */
+    contextTitle: string;
     toolRunningLabel: string;
     toolDoneLabel: string;
     emptyStateBody: string;
@@ -286,10 +294,16 @@ export type Dictionary = {
     specTitle: string;
     previewTitle: string;
     publishedUrlLabel: string;
+    /** Avsnitt 2.3: "Visa att bygget kostar credits." */
+    creditsUsedLabel: string;
   };
   /** Demoraden (avsnitt 9.1) — fast rad nederst i /demo/app och /demo/start. */
   demoBar: {
-    personaLabel: string;
+    /** Egennamnet (Sara/Jonas) hör hemma i källdata (adapters/demo/sara.ts
+     * respektive jonas.ts), inte här — de här är bara etiketten för vilken
+     * persona, komponerad tillsammans med profilens namn i DemoBar.tsx. */
+    personaALabel: string;
+    personaBLabel: string;
     stepLabel: string;
     stepOf: string;
     phaseLabel: string;
@@ -365,6 +379,181 @@ export type Dictionary = {
     step10: { title: string; oneLiner: string };
     step11: { title: string; oneLiner: string };
     step12: { title: string; oneLiner: string };
+  };
+  /** Den guidade rundturen (avsnitt 9.2) — bara gränssnittstexten (knappar,
+   * stoppräknare). Själva de 20 stoppens titel/text ligger i
+   * `adapters/demo/tourSteps.ts`, samma mönster som `cofounderScript.ts`. */
+  tour: {
+    nextCta: string;
+    skipCta: string;
+    finishCta: string;
+    stopLabel: string;
+    ofLabel: string;
+  };
+  /** Delad header/footer för de publika sidorna (avsnitt 6: /, /priser).
+   * `/logga-in`/`/skapa-konto` har sin egen minimala AuthLayout-header sedan
+   * P1 och återanvänder inte den här — de är fejkade/riktiga formulär, inte
+   * marknadsföringsytor. */
+  publicNav: {
+    pricingLink: string;
+    logInLink: string;
+    startDemoCta: string;
+    createAccountCta: string;
+  };
+  publicFooter: {
+    tagline: string;
+    fictionalNote: string;
+    rightsNote: string;
+    columns: {
+      product: string;
+      account: string;
+    };
+  };
+  /** Landningssidan (avsnitt 5.1, 6). Sektionsordningen i `app/(marketing)/page.tsx`
+   * matchar uppdragets numrerade lista rakt av. */
+  landingPage: {
+    hero: {
+      eyebrow: string;
+      headingBefore: string;
+      headingEmphasis: string;
+      headingAfter: string;
+      subtitle: string;
+      startDemoCta: string;
+      createAccountCta: string;
+      /** Levande produktkort i hero (5.1: "produkten syns i marknadsföringen") —
+       * samma NextStepCard som /demo/app, egen text, inte kopplad till en adapter. */
+      productCard: {
+        eyebrow: string;
+        title: string;
+        why: string;
+        maxPoints: number;
+        estimatedTime: string;
+        doneItems: string[];
+        action: string;
+      };
+    };
+    problem: {
+      eyebrow: string;
+      title: string;
+      body: string;
+    };
+    dataPromise: {
+      eyebrow: string;
+      title: string;
+      body: string;
+      companyCountLabel: string;
+      medianRevenueLabel: string;
+      growthShareLabel: string;
+    };
+    journey: {
+      eyebrow: string;
+      title: string;
+      subtitle: string;
+      /** Ett kort citat per fas (5.1: "ett kort citat per fas") — själva
+       * stegen återanvänds ur `journeySteps` och `journeyPage.phaseNames`. */
+      phaseQuotes: {
+        discover: string;
+        tryPhase: string;
+        launch: string;
+        grow: string;
+      };
+    };
+    /** "Fyra saker Medgrundaren gör" (avsnitt 6) — fyra kort, vart och ett med
+     * en riktig gränssnittskomponent (NextStepCard/ToolRunCard/ChatMessage/PulseCard). */
+    cofounder: {
+      eyebrow: string;
+      title: string;
+      subtitle: string;
+      nextStep: { title: string; body: string };
+      toolRun: { label: string; steps: string[]; title: string; body: string };
+      honesty: { title: string; body: string; founderLine: string; cofounderLine: string };
+      pulse: {
+        title: string;
+        body: string;
+        category: string;
+        headline: string;
+        whyItMatters: string;
+        timestamp: string;
+      };
+    };
+    score: {
+      eyebrow: string;
+      title: string;
+      body: string;
+      verdictHeadline: string;
+      verdictReasoning: string;
+    };
+    legal: {
+      eyebrow: string;
+      title: string;
+      body: string;
+      sampleItems: {
+        item1: { rubrik: string; beskrivning: string };
+        item2: { rubrik: string; beskrivning: string };
+      };
+    };
+    /** "Minnet som chattutdrag" (avsnitt 5.1, 6) — separat sektion från
+     * cofounder.honesty ovan: den här refererar uttryckligen ett tidigare beslut. */
+    memory: {
+      eyebrow: string;
+      title: string;
+      body: string;
+      founderLine: string;
+      cofounderLine: string;
+    };
+    concepts: {
+      eyebrow: string;
+      title: string;
+      body: string;
+      hiasynth: {
+        title: string;
+        body: string;
+        question: string;
+        result: string;
+        uncertaintyRangeLabel: string;
+      };
+      lovable: { title: string; body: string; buildSteps: string[]; creditsLabel: string };
+    };
+    pricingTeaser: {
+      eyebrow: string;
+      title: string;
+      body: string;
+      cta: string;
+    };
+    faq: {
+      eyebrow: string;
+      title: string;
+      q1: { question: string; answer: string };
+      q2: { question: string; answer: string };
+      q3: { question: string; answer: string };
+      q4: { question: string; answer: string };
+      q5: { question: string; answer: string };
+    };
+    finalCta: {
+      title: string;
+      body: string;
+      startDemoCta: string;
+      createAccountCta: string;
+    };
+  };
+  /** `/priser` (avsnitt 6): tre nivåer, uttryckligen märkta som förslag. */
+  pricingPage: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    proposalNote: string;
+    free: { name: string; price: string; priceUnit: string; description: string; features: string[]; cta: string };
+    founder: {
+      name: string;
+      price: string;
+      priceUnit: string;
+      description: string;
+      features: string[];
+      cta: string;
+      badge: string;
+    };
+    build: { name: string; price: string; priceUnit: string; description: string; features: string[]; cta: string };
+    faqLinkLabel: string;
   };
   /** Inloggning (uppdrag 14.4): /logga-in, /skapa-konto. Fältfelen skickas
    * som koder från app/(auth)/actions.ts (Server Actions) — ingen text

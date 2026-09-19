@@ -678,6 +678,545 @@ på Resan/[steg] och en `−0`-fix på Hem/Poäng.
   auto`) men inte klickad igenom.
 - Inga nya problem i övrigt.
 
+## Session — Två flödesfixar, Saras steg 07–12 i djup (klar, gren `prototyp`)
+
+Uppdrag: (1) profilsamtalet ska gå framåt utan klick, (2) Medgrundaren ska
+visa en ren chattyta i stället för hela historiken, (3) Session 4 — Saras
+steg 07–12 i samma tre-momentsdjup som 01–06 (uppdrag 9.1), med extra
+noggrannhet på steg 07:s prissättningsunderlag och steg 10:s
+Lovable-koncept. Två commits: flödesfixarna, sedan djupet i 07–12.
+
+### Klart — flödesfixar
+- **`screens/OnboardingProfile.tsx`:** profilsamtalet går nu framåt av sig
+  själv. Medgrundarens fråga visas, svaret dyker upp ~900 ms senare, och
+  samtalet går vidare till nästa fråga ~1 400 ms efter det — ingen knapp
+  att klicka på längre. Implementerat med två `useEffect` som bara sätter
+  state inuti `setTimeout`-callbacks (ESLints `react-hooks/set-state-in-
+  effect` tillåter inte synkrona `setState`-anrop i en effekts body direkt
+  — se kommentarerna i filen). Ett bytt ingång (annat persona-samtal)
+  monteras om via `key={entry}` på anropande route
+  (`app/demo/start/profil/page.tsx`) i stället för att skärmen nollställer
+  sitt eget state — enklare och undviker samma lintregel.
+  `screens/OnboardingProfile.test.tsx` omskrivet till `vi.useFakeTimers()`
+  och `vi.advanceTimersByTime(...)` i stället för `fireEvent.click`.
+- **`screens/Cofounder.tsx` + `app/demo/app/medgrundaren/page.tsx`:**
+  Medgrundaren visade tidigare HELA historiken (`saraBeats.slice(0,
+  beatIndex + 1)`, alla nådda moments transkript i följd) — en skärm som
+  bara växte längre för varje klick i demoraden. Visar nu bara det
+  AKTUELLA momentets transkript. Tidigare "-efter"-moments Spår-
+  sammanfattningar visas i stället som en kort "Sedan tidigare"-rad
+  (`CofounderData.context`, ny i18n-nyckel `cofounderPage.contextTitle`)
+  — kort text, inga chattbubblor, ingen scroll. `CofounderData.moments`
+  (array) ersatt av `CofounderData.moment` (singular, kan vara `null`).
+  Ingen befintlig skärmtest fanns för `Cofounder.tsx` (bara portkontrakt
+  och en stubStatus-referens), så inget att uppdatera där.
+- **Avsnitt 10 tillämpat på riktigt:** lade till Medgrundarens föreslagna
+  exempelrad från uppdraget rakt av ("Du sa i steg 06 att du hellre
+  tappar småbyråerna än sänker priset") i `07-affarsfall-korning` —
+  Medgrundaren tar nu tillbaka ett tidigare beslut i själva repliken, inte
+  bara i en textrad ovanför chatten.
+
+### Klart — Session 4: Saras steg 07–12 i djup
+- **`adapters/demo/sara.ts`:** steg 07–12 omskrivna från ett enda
+  `momentKind: "after"`-beat vardera till samma `makeStepBeats`-mönster
+  som 01–06 (`-fore`/`-korning`/`-efter`, 18 nya beats totalt). Poängen
+  ändrades INTE — samma `partsAfter`/`EvidenceItem`-poäng som innan,
+  bara ompaketerat. Verifierat med ett tillfälligt testskript (inte
+  kvarlämnat, se nedan) att totalsummorna per steg är oförändrade: 60,
+  66, 70, 77, 88, 92 — identiska med Session 3:s redan godkända
+  kalibrering (±2 mot 9.3:s 60, 66, 69, 78, 88, 91).
+- **Fasövergång rättad på riktigt under arbetet:** `makeStepBeats` kräver
+  att `phaseBefore`/`phaseAfter` matchar VILKEN fas som faktiskt låser upp
+  en dels bevis (`core/score.ts`s `PHASE_UNLOCKED_PARTS`) — en del som är
+  upplåst men saknar bevis kastar `calculateScore`s "ingen poäng utan
+  källa"-fel. Steg 07 sattes först fel till `phaseBefore: "launch"` (borde
+  vara `"tryAfterCalls"` — Produkt/Genomförbarhet låses upp först i
+  steg 07:s EGET "-efter") och steg 11 fel till `phaseBefore: "grow"`
+  (borde vara `"launch"` — Traktion låses upp först i steg 11:s EGET
+  "-efter"). Båda upptäcktes direkt av `pnpm test` mot ett tillfälligt
+  kalibreringsskript och rättades. Ett bra exempel på varför `makeStepBeats`
+  är värt att återanvända rakt av i stället för att fritt välja
+  fas per steg.
+- **Steg 07 (Affärsfall och pris) — prissättningsunderlaget gjort
+  explicit:** highlights radar nu upp alla fyra underlagen enskilt (1.5:
+  vad kunderna tål, vad jämförbara aktörer tar, vad kunderna själva sagt,
+  vad som krävs för att gå ihop), med faktiska tal för var och en, i
+  stället för en enda sammanfattande mening. Kostnadsgolvets aritmetik
+  verifierad: 8 × 1 190 kr = 9 520 kr > 8 500 kr (break-even vid 8 kunder
+  stämmer). Steg 07 fick också en egen `simulationKind: "price"` (återanvänder
+  steg 06:s prissimulering, 1 000–1 300 kr) — avsnitt 2.2 nämner
+  uttryckligen steg 03, 04, 06 OCH 07 som Hiasynth-ytor; bara 03/04/06 hade
+  en simulering kopplad innan den här sessionen.
+- **Steg 10 (Live) — Lovable-konceptet fördjupat:**
+  - `ports/BuildProvider.ts`/`adapters/demo/BuildProvider.ts`:
+    `getStatus()` returnerar nu även `creditsUsed` (avsnitt 2.3: "Visa att
+    bygget kostar credits") — 40 credits under byggfasen, 62 efter
+    publicering, `undefined` innan bygget påbörjats. `screens/Build.tsx`
+    visar talet bredvid statuspillret (`buildPage.creditsUsedLabel`, ny
+    i18n-nyckel). `types/bygg.ts`s `ByggBrief` rördes INTE (grundarens
+    regel om att den filen inte skrivs om) — credits ligger i porten, inte
+    i briefen.
+  - `cofounderScript.ts` "10-live-korning": `ToolRunCard`s steg utökade
+    till att uttryckligen spegla 2.3:s "skelett → komponenter → färdig
+    sida" i stället för de tre vagare stegen som fanns innan.
+  - `sara.ts` steg 10:s highlights nämner nu uttryckligen "Bygg drivs av
+    Lovable · Koncept · partnerskap utforskas" (avsnitt 2.3:s exakta
+    märkningstext) och credits-kostnaden.
+- **`traceSummaryAfter` tillagt för alla sex stegen** — saknades helt
+  innan (Spåret föll tillbaka på en generisk `momentLabel — title`-rad),
+  nu en egen kort retrospektiv rad per steg, som för 01–06.
+- Verifierat: `pnpm typecheck`, `pnpm lint`, `pnpm test` (227 tester, 192
+  gröna + 35 förväntat skippade — oförändrat antal, inga nya testfiler
+  behövdes) och `pnpm build` går alla igenom utan fel eller varningar.
+
+### Beslut nästa session behöver känna till
+- **`makeStepBeats`s `phaseBefore`/`phaseAfter` måste matcha exakt VILKET
+  steg som introducerar en dels FÖRSTA bevis**, inte bara vilken fas som
+  "känns rätt" för stegets nummer — se resonemanget ovan om steg 07/11.
+  Kontrollera alltid mot `core/score.ts`s `PHASE_UNLOCKED_PARTS` innan en
+  ny makeStepBeats-instans skrivs, särskilt för Jonas (nästa session).
+- **Kalibreringsverifiering:** mönstret med ett tillfälligt
+  `scratch.<namn>.test.ts` (vitest, skriver till `/tmp/...` eftersom
+  `console.log` inte alltid syns i CI-liknande körning) som körs med
+  `pnpm test scratch.<namn>` och sedan tas bort igen — INTE committat —
+  är det etablerade sättet att kontrollräkna `calculateScore`-summor
+  under utveckling. Använd samma mönster för Jonas.
+- **`CofounderData` har ett nytt skal** (`context` + `moment` i stället
+  för `moments`) — om Jonas kopplas in i Medgrundaren, bygg vidare på det
+  skalet (en `context`-rad per tidigare "-efter"-beat, ett `moment` för
+  den aktuella), inte den gamla `moments`-arrayen.
+
+### Kända problem / medvetna begränsningar
+- Inga nya. `07-affarsfall-korning`/`10-live-korning`s nya
+  `ToolRunCard`-steg är fortfarande bara text, ingen ny animation eller
+  komponent.
+
+## Session — Jonas hela resan (klar, gren `prototyp`)
+
+Uppdrag: fixa buggen att ingång B laddade Sara i stället för Jonas, bekräfta
+att idégenomlysningen inte hoppas över, och bygg Jonas hela resa (9.4) med
+pivoten i steg 06 och de tolv målpoängen. Två commits: motorn
+(`adapters/demo/jonas.ts` + `journeyEngine.ts` + wiring), sedan
+`docs/status.md`.
+
+### Klart
+- **Verifierat, inget kodfel:** `screens/OnboardingEntry.tsx` länkade redan
+  korrekt "Jag har redan en idé" till `${basePath}/ide` (idägenomlysningen)
+  före `${basePath}/profil` — samma ordning som uppdrag 2.1 beskriver
+  (genomlysning → kortare passform-samtal). Ingången hoppade alltså INTE
+  över genomlysningen i koden; den verkliga buggen var att `/demo/app`
+  ALLTID visade Saras data efter onboardingen, oavsett vald ingång — se
+  nedan.
+- **Buggen fixad:** `adapters/demo/ProfileRepository.ts`s `getProfile()`
+  returnerade alltid `saraProfile`. Läser nu `entry` ur `useDemoStore`
+  (samma mönster som övriga demoadaptrar läser `beatIndex`) och
+  returnerar `jonasProfile` i ingång B — porten `getProfile()` tar
+  medvetet inte emot `entry` som parameter (en inloggad
+  plattformsanvändare har bara en profil).
+- **`adapters/demo/jonas.ts`, nytt:** Jonas fulla scenario (9.4), byggt i
+  BREDD (ett `momentKind: "after"`-beat per kontrollpunkt — INTE samma
+  tre-momentsdjup som Saras steg 01–12 fick i tidigare sessioner, en
+  medveten avgränsning, se "Återstår" nedan). 13 beats: steg 01 (om dig,
+  redan fört i onboardingen), steg 02 (genomlysningen, ersätter
+  "Möjligheter"), steg 03–05, steg 06a (pivot — poängen sjunker 41→38 via
+  samma motsägelsemekanik som Saras steg 05b), steg 06b ("Efter nya
+  samtal", 9.4:s egen kontrollpunkt mellan 06 och 07 — byggd som ett andra
+  steg-06-beat, samma mönster som Saras 05a/05b), steg 07–12. Alla tolv
+  målpoängen (12, 22, 28, 41, 38, 52, 58, 64, 68, 76, 86, 89) träffas
+  EXAKT — verifierat med ett tillfälligt kalibreringsskript (inte
+  kvarlämnat, se mönstret i förra sessionens post). Fiktiva konkurrenter
+  (BanBokarn, Hallkalendern) och fiktiva kundsiffror (4 betalande hallar,
+  7 600 kr MRR) — inga riktiga bokningssystem namngivna.
+- **`adapters/demo/sara.ts` utökad, inte omskriven:** `källa`, `pt`,
+  `parts`, `partsBoth`, `noSinceLastTime`, `zeroSinceLastTimeBoth`,
+  `withMoment`, `makeStepBeats`, `StepBeatsInput` exporterade (var
+  privata) så `jonas.ts` kan återanvända dem rakt av i stället för att
+  duplicera — precis vad `sara.ts`s egen header-kommentar redan
+  rekommenderade. Ny `saraEngine`-export (se nedan). En liten sidoeffekt:
+  `noSinceLastTime`s platshållarkälla använde tidigare
+  `demoBar.personaLabel` som källnamn — den i18n-nyckeln togs bort (se
+  nedan), ersatt med en egen, egennamnsfri bilingual sträng lokalt i filen.
+- **`adapters/demo/journeyEngine.ts`, nytt:** ett gemensamt `JourneyEngine`-
+  skal (beats, steps, förslagskandidater, alla `get*For*`-funktionerna) och
+  `engineFor(entry)` som väljer `saraEngine` (sara.ts) eller `jonasEngine`
+  (jonas.ts). Adderat FÖRST som en typ + väljarfunktion, inte en
+  ombyggnad av sara.ts:s befintliga exportyta — `saraEngine`/`jonasEngine`
+  är bara tunna objekt som pekar på redan existerande funktioner.
+- **Sju filer gjorda ingångsmedvetna via `engineFor`/direkt `entry`-läsning:**
+  `adapters/demo/demoStore.ts` (`setEntry` nollställer nu `beatIndex` —
+  annars hade ett byte mitt i en resa lämnat kvar ett index som betyder
+  något helt annat i den andra personans kortare array; `getCurrentBeat`/
+  `getCurrentStepNumber` ingångsmedvetna), `adapters/demo/
+  JourneyRepository.ts`, `adapters/demo/EvidenceRepository.ts`,
+  `adapters/demo/MemoryRepository.ts` (Profilen-fliken OCH Spåret),
+  `adapters/demo/ProfileRepository.ts`, `components/spark/DemoBar.tsx`
+  (steg/fas-etikett, "Hoppa till steg"-popoverns lista, `atEnd`-gränsen,
+  persona-etiketten), `app/demo/app/medgrundaren/page.tsx`.
+- **`adapters/demo/jonasCofounderScript.ts`, nytt:** ett meddelande/
+  verktygskörning per Jonas-kontrollpunkt (13 nycklar), samma
+  `TranscriptItem`-form som `cofounderScript.ts` (typen importerad
+  därifrån, inte duplicerad). Medgrundaren-routen väljer skript ur
+  `entry`, precis som den redan väljer motor.
+- **Persona-etiketten avegennamnad ur i18n:** `demoBar.personaLabel`
+  ("Sara Lindqvist · Persona A", hårdkodat namn i en i18n-sträng — ett
+  brott mot Session 1:s egen regel, "Egennamn hör hemma i källdata")
+  ersatt med `personaALabel`/`personaBLabel` ("Persona A"/"Persona B",
+  inga namn) som `DemoBar.tsx` nu komponerar ihop med det verkliga
+  profilnamnet ur `sara.ts`/`jonas.ts`. Samma sak för
+  `cofounderPage.subtitle`, som hårdkodade "Sara" — generaliserad till att
+  inte nämna en persona alls. Båda var redan fel innan den här sessionen
+  (skulle ha visat "Sara" även i Jonas läge om entry-bytet fungerat) —
+  upptäckt och fixat i samma veva som huvudbuggen.
+- **Nytt test, `adapters/demo/entrySwitch.test.ts`:** bevisar att
+  `ProfileRepository`, `JourneyRepository` och `EvidenceRepository`
+  faktiskt växlar mellan Sara och Jonas när `entry` byts (inte bara att
+  Jonas eget scenario internt räknar rätt) — direkt regressionsskydd för
+  den bugg sessionen fixade. Kontrollerar bland annat att poängen träffar
+  5 → 12 → 38 (pivoten) → 89 i Jonas resa via de riktiga demoadaptrarna,
+  inte bara mot `jonas.ts` isolerat.
+- Verifierat: `pnpm typecheck`, `pnpm lint`, `pnpm test` (232 tester, 197
+  gröna + 35 förväntat skippade — fem nya gröna från `entrySwitch.test.ts`)
+  och `pnpm build` går alla igenom utan fel. `pnpm start` kolliderade med
+  en redan körande `next dev`-process i miljön (utanför den här sessionens
+  kontroll) — `curl` mot alla routes (inklusive `/demo/app/resan/6`,
+  `/demo/start/ide`) gick i stället mot den körande dev-servern: 200/307
+  som väntat, inga serverfel i loggen.
+
+### Beslut nästa session behöver känna till
+- **Jonas är byggd i BREDD, inte djup** — ett moment (`"after"`) per
+  kontrollpunkt, ingen `-fore`/`-korning`-uppdelning som Saras steg 01–12
+  har. En framtida session som vill ge Jonas samma djup kan återanvända
+  `makeStepBeats` rakt av (importerad från sara.ts, redan exporterad) —
+  se kalibreringsfällan i förra sessionens post om `phaseBefore`/
+  `phaseAfter` innan den skriver nya beats.
+- **Följande demoadaptrar/sidor är MEDVETET INTE gjorda ingångsmedvetna**
+  och visar fortfarande Saras innehåll oavsett `entry` — flaggat, inte en
+  bugg som glömdes: `PulseProvider` (Pulsen-sidan och Hem/dagens signal),
+  `OutreachProvider`/`RegistryProvider` (Kunder- och Marknad-sidornas
+  företagslistor — `saraCompanies`), `BuildProvider` (Bygg-sidans spec är
+  Kvittojaktens, inte Beläggningsprognosens), `LegalAdvisor`-demoadaptern
+  (Juridik-sidan). En session som vill göra Jonas resa fullständig bör
+  börja här, i den ordningen (Pulsen och Kunder syns oftast i en genomgång).
+  `SimulationProvider` behöver INGEN ändring — Jonas beats sätter
+  medvetet aldrig `simulationKind`, så Marknad/Kunder/Resan visar helt
+  enkelt ingen simulering för honom i stället för en påhittad.
+- **`JourneyEngine`-mönstret (`adapters/demo/journeyEngine.ts`) är tänkt
+  att återanvändas** om en tredje persona någonsin läggs till — lägg bara
+  till en `xEngine`-export i den nya scenariofilen och utöka `engineFor`.
+- **`saraEngine`/`jonasEngine` är additiva ovanpå sara.ts/jonas.ts:s
+  redan existerande fria funktioner** — de fria funktionerna
+  (`getScoreSnapshotForBeat` med flera) är fortfarande exporterade och
+  används direkt av kod som medvetet ALLTID ska vara Sara-specifik
+  (`BuildProvider.ts`, `LegalAdvisor`-demoadaptern, `Marknad`/
+  `Kunder`-sidorna via `getCurrentStepNumberFor`). Byt inte de importerna
+  till `engineFor` utan att samtidigt göra hela den modulen
+  ingångsmedveten (se listan ovan) — annars blandas Saras och Jonas
+  `beatIndex`-tolkning på ett sätt som bara råkar fungera för Sara.
+
+### Kända problem / medvetna begränsningar
+- **Ingen manuell webbläsarverifiering** av Jonas resa — samma begränsning
+  som flera tidigare sessioner (inget webbläsarverktyg anslutet).
+  Verifierat i stället med `typecheck`/`lint`/`test` (inklusive det nya
+  `entrySwitch.test.ts` som klickar igenom entry-bytet via de riktiga
+  adaptrarna, inte bara mot rådata), `pnpm build`, och `curl` mot alla
+  routes. Klicka igenom hela Jonas resa i en riktig webbläsare, båda
+  språken, särskilt pivoten i steg 06 och "Byt ingång" mitt i en pågående
+  Sara-demo, innan nästa session bygger vidare.
+- **Jonas steg 01 saknar en egen händelse i /demo/app** — passform-samtalet
+  hände redan i onboardingen (`/demo/start/profil`), så beatet är bara en
+  bekräftelse av det som redan visats, inte ett nytt klickbart moment.
+  Samma mönster som Sara hade före djupsessionen, medvetet kvar för Jonas.
+- De sju icke-ingångsmedvetna modulerna listade ovan under "Beslut nästa
+  session" — upprepas här för synlighet: en presentatör som visar hela
+  Jonas resa bör undvika Pulsen-, Kunder-, Marknad-, Bygg- och
+  Juridik-sidorna, eller förklara att de fortfarande speglar Sara.
+
+## Session 6 — Landningssida (klar, gren `prototyp-landning`, mergead in i `prototyp`)
+
+Uppdrag: bygg `/`, `/priser`, `/logga-in` och `/skapa-konto` enligt
+`docs/uppdrag.md` avsnitt 5 och 6, i Fonda-stilen, med riktiga produktkort i
+sektionerna. Fullständig motivering per sektion i `DESIGN.md` under samma
+rubrik — det här är en kort sammanfattning.
+
+### Klart
+- **`app/(marketing)/layout.tsx`, ny:** delad ram för `/` och `/priser` —
+  `components/spark/PublicHeader.tsx` (ljus, sticky: logga, Priser, Logga in,
+  SV/EN, "Starta demo") och `PublicFooter.tsx` (tagline, produkt-/
+  kontolänkar, fiktions-/ansvarsnot). `/logga-in`/`/skapa-konto` (P1, redan
+  riktiga Supabase-formulär) **återanvända oförändrade** — behöll sin egna
+  minimala `AuthLayout`-header i stället för `PublicHeader`, se `DESIGN.md`
+  för varför.
+- **`app/(marketing)/page.tsx` omskriven helt:** hero ("Din idé. *Spark* gör
+  resten.", `NextStepCard` som levande produktkort) plus alla nio sektionerna
+  i uppdrag 6 (Problemet, Datalöftet, Resan i rutnät, fyra saker
+  Medgrundaren gör, Poängen, Juridisk koll, Minnet som chattutdrag, Koncept
+  på väg — Hiasynth/Lovable tydligt märkta, Priser/FAQ/avslutning). Bygger
+  uteslutande på befintliga designsystemkomponenter
+  (`NextStepCard`/`ToolRunCard`/`ChatMessage`/`PulseCard`/`VerdictCard`/
+  `LegalMap`/`SimulationCard`/`DataFact`/`ConceptBadge`) plus en liten ny
+  lokal `FeatureCard`-hjälpare (återanvänd fem gånger, motiverar sig själv).
+  Inga konkurrenter nämnda vid namn. Nämnda datasiffror (312 byråer,
+  4,2 Mkr, 18 %) är uppdragets egna exempeltal ur avsnitt 1.1, med
+  Bolagsverket/SCB som källa via `DataFact`/`SourceTag`.
+- **`app/(marketing)/priser/page.tsx`, ny:** tre nivåer (Gratis, Grundare
+  199 kr/mån, Bygg-credits) under en gemensam "Förslag — inte fastställda
+  priser"-etikett, enligt uppdrag 6. Grundare-nivån visuellt högsta
+  prioritet ("Mest valt").
+- **i18n:** fyra nya toppnycklar i `i18n/dictionary.ts`
+  (`publicNav`/`publicFooter`/`landingPage`/`pricingPage`), fullt typade och
+  skrivna på båda språken. Egennamn (Bolagsverket m.fl.) förklaras med en
+  kort parentes vid första engelska förekomsten i stället för en ny
+  tooltip-komponent — se "Kända problem" nedan.
+- **Test:** `app/(marketing)/page.test.tsx` — SV-innehåll och EN-innehåll
+  (EN verifierad via `localStorage`-satt `spark:locale`, inte en klickad
+  `LanguageSwitch`, eftersom headern med växeln ligger i layouten och inte
+  testas här), plus `/priser`s tre nivåer.
+- **Manuell verifiering i webbläsare** (Playwright, headless Chromium,
+  tillfälligt installerat i en scratch-mapp utanför repot — inget
+  webbläsarverktyg anslutet i den här sessionen): `/` och `/priser` på båda
+  språken, alla nio sektionerna, inga konsolfel. En verklig layoutbugg
+  hittades och fixades under det: "Ett steg i taget"-kortet i "Fyra saker
+  Medgrundaren gör" var tomt jämfört med sina tre syskon i samma
+  grid-rad-par — fixad med en liten poäng-/tidsrad, se `DESIGN.md`.
+- Verifierat: `pnpm typecheck`, `pnpm lint`, `pnpm test` och `pnpm build`
+  går alla igenom utan fel eller varningar. Branchen `prototyp-landning`
+  skapad från `prototyp`, committad, pushad och mergead tillbaka in i
+  `prototyp` (ingen PR-genomgång — sessionens instruktion bad uttryckligen
+  om en sammanslagen branch, inte en öppen PR).
+
+### Beslut nästa session behöver känna till
+- **`/logga-in`/`/skapa-konto` är oförändrade sedan P1** — riktiga
+  Supabase-formulär, inte de "fejkade formulär" uppdragstextens
+  ursprungliga avsnitt 6 beskrev. `docs/sessioner.md`s egen
+  Session 6-anteckning ("återanvänd inloggningen från P1 om den finns")
+  väger tyngre här.
+- **`FeatureCard`** (lokal i `app/(marketing)/page.tsx`, inte exporterad)
+  är en enkel titel+brödtext+children-kortmall, medvetet inte flyttad till
+  `components/spark/` — används bara på den här sidan i dag. Flytta den dit
+  först om ett tredje ställe faktiskt behöver den.
+- **`VerdictCard`s `score={54}`** på landningssidan är avsiktligt samma
+  poäng som Saras riktiga steg 06 i demot (kontinuitet), inte en generisk
+  platshållarsiffra — ändra den bara om steg 06:s facit någonsin ändras.
+
+### Kända problem / medvetna begränsningar
+- **Ingen tooltip-komponent** för att förklara svenska myndighetsnamn på
+  engelska (uppdrag 4) — löst med en inline-parentes i stället
+  ("Bolagsverket and SCB, Sweden's company registry and statistics
+  agency"). En riktig tooltip-primitiv finns inte i designsystemet än.
+- **`DataFact`s `SourceTag`-pill kan radbryta** i den smalaste av
+  Datalöftet-sektionens tre rutor vid 1440 px bredd — samma komponent och
+  mönster som redan används i `screens/Market.tsx` (fast med 4 kolumner
+  där, trängre här med 3 kolumner i en halv `max-w-6xl`-bredd). Kosmetiskt,
+  ingen bruten layout.
+- **Ingen webbläsarverifiering av `/logga-in`/`/skapa-konto`** i den här
+  sessionen (de rördes inte, och var redan verifierade i P1).
+
+## Session 7 — Guidad rundtur, demo-manus (klar, gren `prototyp`)
+
+Uppdrag: bygga klart den guidade rundturen (avsnitt 9.2), skriva
+`docs/demo-manus.md` i en 5- och en 10-minutersversion, och klicka igenom
+båda personorna på båda språken och rätta det som var trasigt. Sessionen
+återupptog ett tidigare avbrott (commit `a96fd80`, "Session 7 pågående")
+som redan hade skrivit alla 20 stoppens innehåll (`adapters/demo/
+tourSteps.ts`) och satt `data-tour-id` på 8 av 15 mål — men ingen
+overlay-komponent renderade rundturen än. Två commits: overlayen +
+kvarvarande mål, sedan manuset + status.md.
+
+### Klart
+- **Verklig bugg fixad innan overlayen ens byggdes:** `demoStore.ts`s
+  `toggleTour()` navigerar till stopp 1:s route (`/demo/app`) men satte
+  inte `onboardingDone`. `app/demo/app/layout.tsx`s onboarding-koll hade
+  därför skickat tillbaka till `/demo/start` direkt så fort någon startade
+  rundturen innan de klickat sig igenom onboardingen — samma mönster som
+  `DemoBar.tsx`s redan existerande `jumpToStep` löser, nu tillämpat på
+  `toggleTour` också.
+- **De 7 kvarvarande `data-tour-id`-målen** tillagda: `journey-verdict`/
+  `journey-highlights` (`screens/JourneyStep.tsx`), `score-breakdown`/
+  `score-suggestions` (`screens/Score.tsx`), `legal-map`
+  (`screens/Legal.tsx`), `build-spec` (`screens/Build.tsx`), `pulse-list`
+  (`screens/Pulse.tsx`) — alla 15 mål som `tourSteps.ts` refererar finns
+  nu i markupen.
+- **`components/spark/TourOverlay.tsx`, ny:** hela overlay-lagret.
+  Navigerar till stoppets route och hoppar till stoppets `beatId` (sökt
+  upp i `saraBeats` — rundturen tvingar alltid entry till "noIdea", se
+  `demoStore.ts`s `toggleTour`) i två separata effekter. Spotlighten hittas
+  via `document.querySelector('[data-tour-id="…"]')` och mäts om **varje
+  animationsframe** medan ett stopp med `target` är aktivt (inte
+  engångs-scroll/resize-lyssnare) — självläkande om innehållet under
+  hinner flytta sig efter att demodatan laddat klart, utan att behöva
+  gissa en fördröjning. Spotlighteffekten är en enda osynlig ruta i målets
+  storlek vars 9999px-spridda `box-shadow` fyller resten av skärmen (`0 0
+  0 9999px rgba(...)`), inte ett separat dimmat lager ovanpå — se
+  kommentaren i filen om varför ett sådant extra lager hade täckt över
+  hålet igen (upptäcktes och fixades under bygget, aldrig committat i det
+  trasiga skedet). Kort med titel/text (båda språken), "Stopp X av 20",
+  Nästa/Hoppa över/Avsluta rundtur, en liten CSS-pilspets mellan kort och
+  spotlight, centrerat kort för de tre stoppen utan `target`. Respekterar
+  `prefers-reduced-motion` via den redan befintliga
+  `design/usePrefersReducedMotion.ts`. Monterad i `app/demo/app/layout.tsx`
+  och `app/demo/start/layout.tsx`, bredvid `<DemoBar />` — ingen skärm vet
+  att den finns.
+- **Verklig layoutbugg hittad med en riktig webbläsare, inte bara
+  jsdom:** kortets "ovanför spotlighten"-placering använde
+  `translateY(-100%)` från en okänd renderad höjd. För ett mål nära
+  toppen av skärmen (kort plats ovanför, mer plats nedanför skulle egentligen
+  väljas — men villkoret jämförde bara relativt utrymme ovanför/nedanför,
+  inte om utrymmet faktiskt räckte) kunde kortet hamna ovanför `y = 0`,
+  helt utanför viewporten och därmed **fysiskt oklickbart** — bekräftat med
+  en Playwright-klickgenomgång som fastnade med "element is outside of the
+  viewport". Fixat: ett rimligt höjdöverslag (`ESTIMATED_CARD_HEIGHT`,
+  220px) och `Math.max`/`Math.min`-clampning i stället för
+  `transform: translateY(-100%)` — kortet garanteras nu innanför skärmen i
+  båda lägena. Ett bra exempel på varför komponenttester i jsdom (som alla
+  gick gröna även med buggen kvar — jsdom mäter aldrig verkliga
+  bounding-rects) inte ersätter en riktig browser-klickgenomgång för
+  positioneringslogik.
+- **`components/spark/TourOverlay.test.tsx`, ny:** rendering av stopp 1
+  (centrerat kort), Nästa/Hoppa över, sista stoppets "Avsluta rundtur", och
+  att ett `data-tour-id`-mål hittas utan att krascha.
+- **`docs/demo-manus.md`, ny:** en 10-minutersversion som går igenom alla
+  20 rundturstopp med ett talat stycke per stopp (utöver kortens egna korta
+  UI-text), och en kurerad 5-minutersversion (10 av de 20 stoppen). Följer
+  rundturens klick rakt av, med en kort not om motsvarande "Hoppa till
+  steg"-klick för den som demar utan overlay.
+- **Verklig webbläsarverifiering** (Playwright, headless Chromium,
+  installerat i en scratch-mapp utanför repot enligt samma mönster som
+  Session 6 — inget webbläsarverktyg anslutet i den här sessionen heller):
+  `pnpm build` + `pnpm start`, ett skript som klickar igenom **hela
+  onboardingen och alla beats för både Sara (ingång A) och Jonas (ingång
+  B), på både sv och en** (fyra fulla körningar), plus rundturen från
+  stopp 1 till stopp 20 på båda språken — noll `pageerror`/`console.error`
+  i samtliga sex körningar. Detta är grundligare än tidigare sessioners
+  `curl`-baserade verifiering (som bara ser den statiska skalet före
+  klienthydrering) — se "Beslut nästa session" om att återanvända mönstret.
+- Verifierat: `pnpm typecheck`/`lint`/`test` (37 filer, 205 gröna + 35
+  förväntat skippade — fem nya gröna från `TourOverlay.test.tsx`) och
+  `pnpm build` går alla igenom utan fel eller varningar.
+
+### Beslut nästa session behöver känna till
+- **Playwright-mönstret i den här sessionen gav en verklig bugg jsdom
+  aldrig kunde hittat** (positioneringen ovan). Nästa session som bygger
+  UI med egen positionslogik (`getBoundingClientRect`, `position:
+  fixed`/`absolute` med beräknade koordinater) bör upprepa mönstret:
+  `npm install playwright@1.63.0` i en scratch-mapp utanför repot
+  (Chromium låg redan cachad under `~/.cache/ms-playwright`, ingen
+  nedladdning behövdes), `pnpm build && pnpm start -p <ledig port>` (kolla
+  `ss -ltnp` för porten först — en gammal `next start`-process kan sitta
+  kvar och svara med gammalt byggresultat, precis vad som hände en gång
+  under den här sessionen), sedan ett Playwright-skript som faktiskt
+  klickar och skärmdumpar i stället för att bara läsa DOM:en.
+- **`TourOverlay.tsx`s spotlight-mätning kör kontinuerligt via
+  `requestAnimationFrame` så länge ett stopp med `target` är aktivt** —
+  medvetet, inte en optimering som glömdes bort. Se kommentaren i filen
+  innan den byts mot engångs-lyssnare.
+- **Rundturens 20 stopp är fortfarande bara skrivna mot Saras scenario**
+  (oförändrat sedan det avbrutna skedet) — samma medvetna avgränsning som
+  `demoStore.ts`s `toggleTour` redan dokumenterar. Att bygga en egen
+  rundtur för Jonas är inte gjort och inte efterfrågat än.
+- **`docs/demo-manus.md`s talpunkter är skrivna av den här sessionen**,
+  utöver rundturkortens egna korta UI-texter — om `tourSteps.ts`s
+  titel/text ändras i en framtida session, uppdatera manuset i samma
+  commit så de inte glider isär.
+
+### Kända problem / medvetna begränsningar
+- Inga nya. Onboardingen, alla nio undersidorna och rundturen klickades
+  igenom på riktigt (se ovan) utan fel för båda personorna på båda
+  språken — de tidigare sessionernas upprepade "ingen
+  webbläsarverifiering"-anteckning gäller inte längre för just den här
+  ytan.
+- De sju icke-ingångsmedvetna modulerna (Pulsen, Kunder, Marknad, Bygg,
+  Juridik — se "Session — Jonas hela resan" ovan) är oförändrade: Jonas
+  klickgenomgång i den här sessionen bekräftar bara att sidorna inte
+  kraschar för honom, inte att de visar hans data. Redan känt, inte
+  löst här (utanför sessionens uppdrag).
+
+## Session — Fem sidor gjorda ingångsmedvetna: Pulsen, Kunder, Marknad, Bygg, Juridik (klar, gren `prototyp`)
+
+Uppdrag: grundaren bekräftade att Pulsen, Kunder, Marknad, Bygg och Juridik
+fortfarande visade Saras data i ingång B (Jonas), flaggat men lämnat utanför
+scope i "Session — Jonas hela resan". Uppdraget: hitta orsaken, gör alla fem
+ingångsmedvetna, och där Jonas saknar data — hitta inte på något, visa ett
+ärligt tomt läge. Rör inte `adapters/live/` eller poängmotorn.
+
+### Orsak
+Fem demoadaptrar läste aldrig `entry` ur `useDemoStore` — de returnerade
+alltid Saras hårdkodade data (`adapters/demo/PulseProvider.ts`,
+`OutreachProvider.ts`, `RegistryProvider.ts`, `BuildProvider.ts`,
+`LegalAdvisor.ts`), och två routefiler (`marknad/`, `kunder/page.tsx`)
+räknade aktuellt steg via `getCurrentStepNumberFor` importerad direkt från
+`sara.ts` i stället för demomotorns entry-medvetna variant. Redan
+dokumenterat i "Session — Jonas hela resan" som en medveten avgränsning, inte
+en ny bugg.
+
+### Klart
+- **Fyra adaptrar** (`OutreachProvider.getCampaign`, `LegalAdvisor.getLegalMap`,
+  `BuildProvider.getSpec`/`getStatus`, `PulseProvider.getSignals`) läser nu
+  `entry` och returnerar `[]`/`null`/`"not_started"` för Jonas — porttyperna
+  tillåter ett tomt svar här, så ändringen ligger helt i adaptern, Sara
+  oförändrad.
+- **`PulseProvider.getTodaysSignal`** och **`RegistryProvider.getMarketOverview`**
+  tillåter INTE ett tomt/null-svar i porten (delas med liveadaptern, som inte
+  fick röras) — de anropas i stället aldrig för Jonas: `app/demo/app/page.tsx`
+  hoppar över `getTodaysSignal`-anropet och sätter `pulse: null`,
+  `marknad/page.tsx` hoppar över hela `Promise.all`-blocket. `AppHomeData.pulse`
+  (`screens/AppHome.tsx`) är nu `PulseSignal | null`.
+- **Ärligt tomt läge, skilt från "låst":** ny i18n-nyckel
+  `homePage.notInThisScenario` ("Det här steget är inte genomfört i det här
+  scenariot") — skild från `unlocksAfterStepBefore`, som antyder att
+  innehållet kommer senare (fel intryck för Jonas, eftersom det aldrig
+  kommer). `screens/Market.tsx`, `Customers.tsx`, `Build.tsx`, `Legal.tsx`
+  fick en ny `notInScenario?: boolean`-prop som väljer rätt text i den redan
+  befintliga `LockedState`. `pulsePage.emptyState`s text skrevs om (tog bort
+  "de dyker upp när resan kommer igång", som bara stämde för Sara).
+- **`marknad/page.tsx` och `kunder/page.tsx`** läser nu `entry` och byter
+  `getCurrentStepNumberFor` (sara.ts) mot den entry-medvetna
+  `getCurrentStepNumber()` (`demoStore.ts`). Båda slutar också anropa
+  `demoSimulationProvider` för Jonas — de tre kanoniska simuleringarna
+  (`time`/`tolerance`/`price`) är skrivna mot Saras byråer/kvitton
+  (`adapters/demo/SimulationProvider.ts`s egen header) och hade annars läckt
+  Saras siffror på Jonas sidor även efter huvudfixet.
+- **Ingen ny Jonas-data uppfanns.** `adapters/demo/jonas.ts` har löptext om
+  marknaden (412 padelhallsbolag m.m.) och juridik (enskild firma, samma
+  bolagsform som Sara) men ingen strukturerad `RegistryCompany`/`CampaignRow`/
+  `ByggBrief`-data och ingen Kvittojakten-fri juridisk karta — att pressa in
+  den löptexten i de formaten hade krävt påhittade fält (t.ex.
+  `medianRevenueKsek`, namngivna hallar). Alla fem sidor visar därför ett
+  ärligt tomt läge för Jonas, inte påhittat innehåll.
+- **Nya tester i `adapters/demo/entrySwitch.test.ts`:** fyra nya `it`-block
+  bevisar att `OutreachProvider`/`LegalAdvisor`/`BuildProvider`/`PulseProvider`
+  ger Saras data i ingång A och ett tomt svar i ingång B, via de riktiga
+  adaptrarna (inte bara mot `jonas.ts` isolerat) — samma mönster som filens
+  befintliga tester.
+- Verifierat: `pnpm typecheck`/`lint`/`test` (213 tester totalt: 209 gröna +
+  35 förväntat skippade, fyra nya gröna) och `pnpm build` går igenom utan
+  fel. `pnpm start` + `curl` mot `/`, `/demo`, `/demo/app` och alla fem
+  ändrade routes: 200/307 som väntat. Ingen webbläsarverifiering av att
+  Jonas faktiskt ser tomma-läge-texten på skärm (inget webbläsarverktyg
+  anslutet) — bekräftat i stället via `entrySwitch.test.ts` mot de riktiga
+  adaptrarna och `curl` mot den statiska routen.
+
+### Beslut nästa session behöver känna till
+- **`homePage.notInThisScenario`** är den nya, generella nyckeln för "den
+  här personan har inget byggt innehåll här" — återanvänd den i stället för
+  att skriva en ny variant, om fler moduler görs ingångsmedvetna med samma
+  mönster.
+- **Om Jonas någon gång får riktigt innehåll i dessa fem moduler:** bygg
+  strukturerad data i en ny `jonas`-specifik sektion (motsvarande
+  `saraCompanies`/Sara-specen) och ta bort `entry === "hasIdea"`-grenarna i
+  respektive adapter — rör inte `RegistryProvider.getMarketOverview`s
+  Sara-gren, den ska fortsätta gälla oförändrad för ingång A.
+- **`RegistryProvider.searchCompanies`** rördes inte — anropas inte av någon
+  skärm/route i dag (bara kontraktstestet), så ingen ingångsmedvetenhet
+  behövdes där.
+
+### Kända problem / medvetna begränsningar
+- Ingen webbläsarverifiering den här sessionen (se ovan).
+- De fem modulerna visar nu korrekt ett tomt läge för Jonas, men har
+  fortfarande inget riktigt innehåll för honom — om grundaren vill att Jonas
+  demo ska kännas lika fullständig som Saras, är nästa steg att skriva den
+  strukturerade datan (se "Beslut nästa session" ovan), inte att öppna
+  portarnas typer.
+
 ## Dataspiken — källa för RegistryProvider (research klar, PR mot `prototyp`, gren `dataspiken`)
 
 Ren research, ingen kod. Resultat i `docs/dataspiken.md`.

@@ -15,15 +15,22 @@ import { useDemoStore } from "@/adapters/demo/demoStore";
 export default function DemoAppHomePage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
+  const entry = useDemoStore((state) => state.entry);
   const [data, setData] = useState<AppHomeData | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
+    // PulseProvider.getTodaysSignal har ingen tom/null-variant i porten
+    // (används av liveadaptern också) — för Jonas (persona B), som saknar
+    // en byggd pulssignal, anropas den därför aldrig, se
+    // adapters/demo/PulseProvider.ts.
+    const pulsePromise = entry === "hasIdea" ? Promise.resolve(null) : demoPulseProvider.getTodaysSignal(locale);
+
     Promise.all([
       demoJourneyRepository.getHomeSummary(locale),
       demoEvidenceRepository.getScoreSnapshot(locale),
-      demoPulseProvider.getTodaysSignal(locale),
+      pulsePromise,
       demoEvidenceRepository.getScoreHistory(locale),
     ]).then(([journey, score, pulse, scoreHistory]) => {
       if (cancelled) return;
@@ -40,7 +47,7 @@ export default function DemoAppHomePage() {
     return () => {
       cancelled = true;
     };
-  }, [locale, beatIndex]);
+  }, [locale, beatIndex, entry]);
 
   if (!data) return null;
 

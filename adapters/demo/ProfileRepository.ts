@@ -2,6 +2,8 @@ import type { Locale } from "@/i18n/context";
 import type { OnboardingEntry } from "@/core/domain";
 import type { ProfileRepository, OnboardingScript } from "@/ports/ProfileRepository";
 import { saraProfile } from "./sara";
+import { jonasProfile } from "./jonas";
+import { useDemoStore } from "./demoStore";
 
 // Ingång A (Sara, "Jag har ingen idé än"): samma tre frågor/svar som redan
 // finns i cofounderScript.ts under "01-om-dig" — där som ett redan avklarat
@@ -97,7 +99,13 @@ const scriptsByEntry: Record<OnboardingEntry, Record<Locale, OnboardingScript>> 
 
 export const demoProfileRepository: ProfileRepository = {
   async getProfile() {
-    return saraProfile;
+    // Bugg fixad (docs/status.md): /demo/app laddade tidigare alltid Saras
+    // profil, även i ingång B (Jonas) — `getProfile` tar inte emot `entry`
+    // i porten (en inloggad plattformsanvändare har bara en profil), så
+    // demoadaptern läser den ur demoStore i stället, precis som övriga
+    // demoadaptrar läser `beatIndex`.
+    const { entry } = useDemoStore.getState();
+    return entry === "hasIdea" ? jonasProfile : saraProfile;
   },
   async getOnboardingScript(entry, locale) {
     return scriptsByEntry[entry][locale];

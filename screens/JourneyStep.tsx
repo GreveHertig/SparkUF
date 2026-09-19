@@ -54,11 +54,13 @@ export function JourneyStepScreen({ data, backHref }: { data: JourneyStepDetail;
           )}
 
           {data.verdict && data.scoreDelta && (
-            <VerdictCard score={data.scoreDelta.total} headline={data.verdict.headline} reasoning={data.verdict.reasoning} />
+            <div data-tour-id="journey-verdict">
+              <VerdictCard score={data.scoreDelta.total} headline={data.verdict.headline} reasoning={data.verdict.reasoning} />
+            </div>
           )}
 
           {data.highlights.length > 0 && (
-            <section>
+            <section data-tour-id="journey-highlights">
               <Eyebrow>{t.journeyPage.whatHappened}</Eyebrow>
               <ul className="mt-2 flex flex-col gap-1.5">
                 {data.highlights.map((highlight) => (

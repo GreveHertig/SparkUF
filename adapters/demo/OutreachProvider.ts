@@ -87,7 +87,12 @@ export const demoOutreachProvider: OutreachProvider = {
   },
 
   async getCampaign(locale: Locale) {
-    const { beatIndex } = useDemoStore.getState();
+    const { beatIndex, entry } = useDemoStore.getState();
+    // Ingen kundlista är byggd för Jonas (persona B) — jonas.ts nämner bara
+    // "25 hallar" i löptext, ingen namngiven, strukturerad rad per hall.
+    // Hitta inte på bolagsnamn/anställda/omsättning — ärligt tomt läge i
+    // stället (screens/Customers.tsx via notInScenario-propen).
+    if (entry === "hasIdea") return [];
     const beat = getBeatAt(beatIndex);
     if (beat.stepNumber < 4) return [];
 

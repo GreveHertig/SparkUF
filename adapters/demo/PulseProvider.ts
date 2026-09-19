@@ -105,6 +105,9 @@ function isRevealed(beatId: string, beatIndex: number): boolean {
 }
 
 export const demoPulseProvider: PulseProvider = {
+  // Saras signaler bara — porten tillåter inte ett tomt/null-svar här, så
+  // Jonas-läget hanteras i stället av anroparen (app/demo/app/page.tsx),
+  // som aldrig anropar den här metoden när entry är "hasIdea".
   async getTodaysSignal(locale: Locale) {
     const { beatIndex } = useDemoStore.getState();
     if (isRevealed("06-domen-efter", beatIndex)) return segmentValidationSignal[locale];
@@ -113,7 +116,11 @@ export const demoPulseProvider: PulseProvider = {
   },
 
   async getSignals(locale: Locale) {
-    const { beatIndex } = useDemoStore.getState();
+    const { beatIndex, entry } = useDemoStore.getState();
+    // Ingen pulssignal är byggd för Jonas (persona B) — docs/status.md,
+    // "Jonas hela resan": hitta inte på signaler, visa ett ärligt tomt läge
+    // i stället (screens/Pulse.tsx renderar t.pulsePage.emptyState).
+    if (entry === "hasIdea") return [];
     const signals = [baseSignal, fundingSignal, regulationSignal];
     if (isRevealed("03-marknaden-efter", beatIndex)) signals.unshift(registryGrowthSignal);
     if (isRevealed("06-domen-efter", beatIndex)) signals.unshift(segmentValidationSignal);

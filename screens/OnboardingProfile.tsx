@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChatMessage } from "@/components/spark/ChatMessage";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { useI18n } from "@/i18n/context";
 import type { OnboardingScript } from "@/ports/ProfileRepository";
+
+/** Hur länge Medgrundarens fråga står ensam innan svaret dyker upp, och hur
+ * länge svaret står innan samtalet går vidare till nästa fråga — se
+ * "Samtalet går framåt av sig själv" nedan. */
+const REVEAL_ANSWER_DELAY_MS = 900;
+const ADVANCE_DELAY_MS = 1400;
 
 export type OnboardingProfileData = {
   script: OnboardingScript;
@@ -25,10 +31,32 @@ export function OnboardingProfile({ data }: { data: OnboardingProfileData }) {
   const { t } = useI18n();
   const { script, continueHref, onContinue } = data;
   const [answeredCount, setAnsweredCount] = useState(0);
+  // Index på den fråga vars svar redan hunnit dyka upp — jämförs mot
+  // answeredCount i stället för en egen boolean, så att effekten nedan aldrig
+  // behöver sätta state synkront i sin egen body (bara inuti setTimeout).
+  const [revealedIndex, setRevealedIndex] = useState(-1);
 
   const allAnswered = answeredCount >= script.questions.length;
   const answered = script.questions.slice(0, answeredCount);
   const current = script.questions[answeredCount];
+  const answerRevealed = revealedIndex === answeredCount;
+
+  // Samtalet går framåt av sig själv (avsnitt 9.1): Medgrundarens fråga
+  // visas, svaret dyker upp en stund senare, och samtalet går sedan vidare —
+  // ingen ska behöva klicka på pratbubblorna för att komma framåt. Ett byte
+  // av ingång (annat persona-samtal) monteras om via `key` av anropande
+  // route, så den här skärmen behöver inte nollställa sig själv.
+  useEffect(() => {
+    if (!current) return;
+    const revealTimer = setTimeout(() => setRevealedIndex(answeredCount), REVEAL_ANSWER_DELAY_MS);
+    return () => clearTimeout(revealTimer);
+  }, [current, answeredCount]);
+
+  useEffect(() => {
+    if (!current || !answerRevealed) return;
+    const advanceTimer = setTimeout(() => setAnsweredCount((count) => count + 1), ADVANCE_DELAY_MS);
+    return () => clearTimeout(advanceTimer);
+  }, [current, answerRevealed]);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-12">
@@ -51,16 +79,7 @@ export function OnboardingProfile({ data }: { data: OnboardingProfileData }) {
         {current && (
           <div className="flex flex-col gap-2">
             <ChatMessage role="cofounder" text={current.cofounderText} />
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setAnsweredCount((count) => count + 1)}
-                className="max-w-lg rounded-lg border border-dashed border-accent-300 bg-accent-50 px-3.5 py-2 text-left text-sm leading-snug text-accent-800 transition-colors hover:bg-accent-100 focus-visible:outline-2 focus-visible:outline-accent-300"
-                style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
-              >
-                {current.suggestedAnswer}
-              </button>
-            </div>
+            {answerRevealed && <ChatMessage role="founder" text={current.suggestedAnswer} />}
           </div>
         )}
 

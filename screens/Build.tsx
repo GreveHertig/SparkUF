@@ -13,6 +13,7 @@ import type { BuildStatus } from "@/ports/BuildProvider";
 export type BuildData = {
   status: BuildStatus;
   url?: string;
+  creditsUsed?: number;
   spec: ByggBrief | null;
 };
 
@@ -24,7 +25,7 @@ const statusToneClasses: Record<BuildStatus, string> = {
 
 /** Bygg (avsnitt 6, 2.3): Lovable-konceptet — spec, förhandsvisning och
  * publicering, alltid märkt som koncept. */
-export function Build({ data }: { data: BuildData }) {
+export function Build({ data, notInScenario }: { data: BuildData; notInScenario?: boolean }) {
   const { t } = useI18n();
 
   return (
@@ -41,7 +42,9 @@ export function Build({ data }: { data: BuildData }) {
       </div>
 
       {!data.spec ? (
-        <LockedState unlockHint={`${t.homePage.unlocksAfterStepBefore} 07`} />
+        <LockedState
+          unlockHint={notInScenario ? t.homePage.notInThisScenario : `${t.homePage.unlocksAfterStepBefore} 07`}
+        />
       ) : (
         <>
           <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
@@ -56,9 +59,14 @@ export function Build({ data }: { data: BuildData }) {
                 {t.buildPage.publishedUrlLabel}: {data.url}
               </a>
             )}
+            {data.creditsUsed !== undefined && (
+              <span className="ml-auto text-sm font-medium text-slate-600">
+                {t.buildPage.creditsUsedLabel}: {data.creditsUsed}
+              </span>
+            )}
           </div>
 
-          <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5">
+          <section data-tour-id="build-spec" className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5">
             <Eyebrow>{t.buildPage.specTitle}</Eyebrow>
             <p className="text-sm leading-snug text-slate-800">{data.spec.sammanfattning}</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

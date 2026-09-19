@@ -6,7 +6,9 @@ import * as Popover from "@radix-ui/react-popover";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
 import { useDemoStore } from "@/adapters/demo/demoStore";
-import { saraBeats } from "@/adapters/demo/sara";
+import { engineFor } from "@/adapters/demo/journeyEngine";
+import { saraProfile } from "@/adapters/demo/sara";
+import { jonasProfile } from "@/adapters/demo/jonas";
 
 /**
  * Demoraden (avsnitt 9.1): fast rad nederst i /demo/app, hopfällbar, med
@@ -32,13 +34,19 @@ export function DemoBar() {
   const completeOnboarding = useDemoStore((state) => state.completeOnboarding);
   const reset = useDemoStore((state) => state.reset);
 
-  // Steg/fas ur Saras beats betyder inget förrän grundaren är inne i
-  // /demo/app (avsnitt 9.1: demoraden ska fungera även under onboardingen,
-  // men "steg X av 12" hör bara hemma i appen).
+  // Steg/fas ur den aktuella personans beats betyder inget förrän
+  // grundaren är inne i /demo/app (avsnitt 9.1: demoraden ska fungera även
+  // under onboardingen, men "steg X av 12" hör bara hemma i appen).
+  // `engineFor` (journeyEngine.ts) väljer Saras eller Jonas motor ur
+  // `entry` — se docs/status.md om varför "Byt ingång" nu bygger om hela
+  // demoradens innehåll, inte bara etiketten.
   const inApp = pathname?.startsWith("/demo/app") ?? false;
-  const beat = saraBeats[beatIndex];
+  const engine = engineFor(entry);
+  const beat = engine.getBeatAt(beatIndex);
   const atStart = beatIndex === 0;
-  const atEnd = beatIndex === saraBeats.length - 1;
+  const atEnd = beatIndex >= engine.beats.length - 1;
+  const personaProfile = entry === "hasIdea" ? jonasProfile : saraProfile;
+  const personaLabel = `${personaProfile.name} · ${entry === "hasIdea" ? t.demoBar.personaBLabel : t.demoBar.personaALabel}`;
 
   function jumpToStep(index: number) {
     goTo(index);
@@ -79,7 +87,7 @@ export function DemoBar() {
           className="rounded-pill bg-slate-700 px-2.5 py-1 text-xs font-semibold uppercase text-paper-50"
           style={{ letterSpacing: "var(--tracking-label)" }}
         >
-          {t.demoBar.personaLabel}
+          {personaLabel}
         </span>
 
         {!collapsed && (
@@ -140,7 +148,7 @@ export function DemoBar() {
                 sideOffset={8}
                 className="z-50 flex max-h-[70vh] flex-col gap-1 overflow-y-auto rounded-md border border-slate-200 bg-white p-2 shadow-lg"
               >
-                {saraBeats.map((scenarioBeat, index) => (
+                {engine.beats.map((scenarioBeat, index) => (
                   <Popover.Close asChild key={scenarioBeat.id}>
                     <button
                       type="button"

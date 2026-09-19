@@ -40,19 +40,39 @@ function statusFor(currentStep: number): BuildStatus {
   return "published";
 }
 
+// Avsnitt 2.3: "Visa att bygget kostar credits." Skelett, komponenter och
+// den färdiga sidan (se cofounderScript.ts "10-live-korning") kostar
+// tillsammans 62 credits i det här scenariot — ett fiktivt, men fast, tal.
+const CREDITS_WHILE_BUILDING = 40;
+const CREDITS_PUBLISHED = 62;
+
+function creditsFor(status: BuildStatus): number | undefined {
+  if (status === "building") return CREDITS_WHILE_BUILDING;
+  if (status === "published") return CREDITS_PUBLISHED;
+  return undefined;
+}
+
 export const demoBuildProvider: BuildProvider = {
   async startBuild() {
     return { status: "building" };
   },
 
   async getStatus() {
-    const currentStep = getCurrentStepNumberFor(useDemoStore.getState().beatIndex);
+    const { beatIndex, entry } = useDemoStore.getState();
+    // Ingen byggspec finns för Jonas (persona B) — se getSpec nedan.
+    if (entry === "hasIdea") return { status: "not_started" as const };
+    const currentStep = getCurrentStepNumberFor(beatIndex);
     const status = statusFor(currentStep);
-    return { status, url: status === "published" ? PUBLISHED_URL : undefined };
+    return { status, url: status === "published" ? PUBLISHED_URL : undefined, creditsUsed: creditsFor(status) };
   },
 
   async getSpec(locale: Locale) {
-    const currentStep = getCurrentStepNumberFor(useDemoStore.getState().beatIndex);
+    const { beatIndex, entry } = useDemoStore.getState();
+    // Specen ovan är Kvittojaktens (avsnitt 2.3) — jonas.ts har bara
+    // löptext om MVP-omfånget, inte en strukturerad ByggBrief. Hitta inte
+    // på en Beläggningsprognos-spec, ärligt tomt läge i stället.
+    if (entry === "hasIdea") return null;
+    const currentStep = getCurrentStepNumberFor(beatIndex);
     if (currentStep < 8) return null;
     return spec[locale];
   },

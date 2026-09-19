@@ -3,14 +3,7 @@ import type { Locale } from "@/i18n/context";
 import type { ScoreSnapshot } from "@/core/domain";
 import { demoSimulationProvider, simulationQuestions } from "./SimulationProvider";
 import { useDemoStore } from "./demoStore";
-import {
-  getJourneySummaryForBeat,
-  getCurrentStepNumberFor,
-  getScoreSnapshotForBeat,
-  getBeatAt,
-  SARA_STEPS,
-  findLatestBeatIndexForStep,
-} from "./sara";
+import { engineFor } from "./journeyEngine";
 
 function statusFor(stepNumber: number, currentStepNumber: number): JourneyStepStatus {
   if (stepNumber < currentStepNumber) return "done";
@@ -27,15 +20,16 @@ function diffNewlyUnlocked(previous: ScoreSnapshot, current: ScoreSnapshot): str
 
 export const demoJourneyRepository: JourneyRepository = {
   async getHomeSummary(locale: Locale) {
-    const { beatIndex } = useDemoStore.getState();
-    return getJourneySummaryForBeat(beatIndex, locale);
+    const { beatIndex, entry } = useDemoStore.getState();
+    return engineFor(entry).getJourneySummaryForBeat(beatIndex, locale);
   },
 
   async getSteps(locale: Locale) {
-    const { beatIndex } = useDemoStore.getState();
-    const currentStepNumber = getCurrentStepNumberFor(beatIndex);
+    const { beatIndex, entry } = useDemoStore.getState();
+    const engine = engineFor(entry);
+    const currentStepNumber = engine.getCurrentStepNumberFor(beatIndex);
 
-    return SARA_STEPS.map(
+    return engine.steps.map(
       (step): JourneyStepView => ({
         stepNumber: step.stepNumber,
         journeyPhase: step.journeyPhase,
@@ -48,11 +42,12 @@ export const demoJourneyRepository: JourneyRepository = {
   },
 
   async getStepDetail(stepNumber: number, locale: Locale) {
-    const meta = SARA_STEPS.find((step) => step.stepNumber === stepNumber);
+    const { beatIndex, entry } = useDemoStore.getState();
+    const engine = engineFor(entry);
+    const meta = engine.steps.find((step) => step.stepNumber === stepNumber);
     if (!meta) return null;
 
-    const { beatIndex } = useDemoStore.getState();
-    const currentStepNumber = getCurrentStepNumberFor(beatIndex);
+    const currentStepNumber = engine.getCurrentStepNumberFor(beatIndex);
     const status = statusFor(stepNumber, currentStepNumber);
 
     const base: JourneyStepDetail = {
@@ -73,13 +68,13 @@ export const demoJourneyRepository: JourneyRepository = {
       simulation: null,
     };
 
-    const foundIndex = findLatestBeatIndexForStep(stepNumber, beatIndex);
+    const foundIndex = engine.findLatestBeatIndexForStep(stepNumber, beatIndex);
     if (foundIndex === undefined) return base;
-    const beat = getBeatAt(foundIndex);
+    const beat = engine.getBeatAt(foundIndex);
 
-    const snapshot = getScoreSnapshotForBeat(foundIndex, locale);
+    const snapshot = engine.getScoreSnapshotForBeat(foundIndex, locale);
     const newlyUnlockedParts =
-      foundIndex > 0 ? diffNewlyUnlocked(getScoreSnapshotForBeat(foundIndex - 1, locale), snapshot) : [];
+      foundIndex > 0 ? diffNewlyUnlocked(engine.getScoreSnapshotForBeat(foundIndex - 1, locale), snapshot) : [];
 
     const simulation = beat.simulationKind
       ? await demoSimulationProvider.simulate(simulationQuestions[beat.simulationKind][locale], locale)

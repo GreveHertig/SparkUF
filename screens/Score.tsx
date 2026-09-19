@@ -77,7 +77,7 @@ export function Score({ data }: { data: ScoreData }) {
         </div>
       </div>
 
-      <section className="flex flex-col gap-3">
+      <section data-tour-id="score-breakdown" className="flex flex-col gap-3">
         <Eyebrow>{t.scorePage.breakdownTitle}</Eyebrow>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {snapshot.parts.map((part) => (
@@ -102,7 +102,7 @@ export function Score({ data }: { data: ScoreData }) {
         </div>
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section data-tour-id="score-suggestions" className="flex flex-col gap-3">
         <Eyebrow>{t.scorePage.suggestionsTitle}</Eyebrow>
         <div className="flex flex-col gap-2">
           {suggestions.map((suggestion) => (
