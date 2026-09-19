@@ -65,7 +65,7 @@ citaten i avsnitt 4 mot originalet innan de används i något beslut.
 
 | | Bolagsverket + SCB (värdefulla datamängder) | Allabolag / UC | Ratsit |
 |---|---|---|---|
-| **Kostnad** | Gratis, inget avtal (Verifierat via EU-förordningen, Sekundärt via Bolagsverkets sidor) | Ingen publik prissättning (Verifierat). Troligen betald (Osäkert) | Styckpris per dokument, t.ex. registreringsbevis ca 119 kr inkl. moms (Sekundärt, ur sökresultat) |
+| **Kostnad** | Gratis, inget avtal (Verifierat: Bolagsverkets API-sida, läst av Erik 2026-09-19, sidans datum 2026-06-30, och EU-förordningen) | Ingen publik prissättning (Verifierat). Troligen betald (Osäkert) | Styckpris per dokument, t.ex. registreringsbevis ca 119 kr inkl. moms (Sekundärt, ur sökresultat) |
 | **Åtkomst** | Kundanmälan, nycklar via e-post/SMS (Sekundärt) | Kontaktformulär, developerportal (Verifierat) | Oklart. Ingen publik utvecklaråtkomst hittad |
 | **Licens/villkor** | Öppen licens, CC BY 4.0 eller mindre restriktiv (Verifierat i förordningen). Bolagsverkets egna villkor **ej lästa av människa**; fri användning bekräftad av två AI-sökningar (Sekundärt) | Systematisk lagring förbjuden utan skriftligt medgivande (Verifierat, se 4) | Automatiserad hämtning verkar förbjuden (Sekundärt) |
 | **Lämpar sig för MVP** | Ja | Nej, inte utan avtal | Nej |
@@ -107,8 +107,14 @@ fristående fält, län, styrelse eller firmatecknare, telefon, e-post.
   finns.
 
 ### Kostnad
-Gratis och inget avtal krävs (Sekundärt: Bolagsverket. Verifierat: EU:s
-förordning kräver avgiftsfri tillgång).
+Gratis och inget avtal krävs. **Verifierat** på Bolagsverkets egen sida
+(API för värdefulla datamängder, https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder/apiforvardefulladatamangder.5513.html,
+sidans datum 2026-06-30, läst av Erik 2026-09-19): "Det krävs inget avtal
+för att du ska få använda vårt API för värdefulla datamängder." och
+"Värdefulla datamängder är avgiftsfritt. Enligt EU-kommissionens direktiv
+ska det vara kostnadsfritt för alla att använda." Även EU:s förordning
+kräver avgiftsfri tillgång (Verifierat). Sidan tar inte upp visning eller
+lagring av namngivna företag, se nedan.
 
 ### Får vi visa och lagra namngivna företag? (frågan från Erik)
 **Bästa nuvarande svar: ja för företag, med förbehåll. Sekundärt, bekräftat av två oberoende AI-sökningar (ej primärkälla läst av människa).**
@@ -334,6 +340,7 @@ sannolikt inget.
 ## 7. Källor
 
 Verifierat (läst den här sessionen, som sammanfattat utdrag):
+- Bolagsverket, API för värdefulla datamängder (läst av Erik 2026-09-19, sidans datum 2026-06-30): https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder/apiforvardefulladatamangder.5513.html
 - Förordning (EU) 2023/138: https://eur-lex.europa.eu/legal-content/SV/TXT/?uri=CELEX:32023R0138
 - SCB, värdefulla datamängder, grundläggande företagsinformation: https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/vardefulla-datamangder--grundlaggande-foretagsinformation/
 - SCB, avgiftsfria uppgifter i företagsregistret: https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/avgiftsfria-uppgifter-i-foretagsregistret/
@@ -343,7 +350,6 @@ Verifierat (läst den här sessionen, som sammanfattat utdrag):
 - Enento/UC developerportal: https://developerportal.uc.se
 
 Sekundärt (söksammanfattning, sidan gick inte att läsa direkt):
-- Bolagsverket, API för värdefulla datamängder: https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder/apiforvardefulladatamangder.5513.html
 - Bolagsverket, kundanmälan: https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder/kundanmalantillapiforvardefulladatamangder.5528.html
 - Bolagsverket, frågor och svar om API:erna: https://bolagsverket.se/apierochoppnadata/driftochsupport/fragorochsvaromapierna.4611.html
 - Bolagsverket, nedladdningsbara filer: https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/nedladdningsbarafiler.2517.html
