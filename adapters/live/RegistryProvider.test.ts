@@ -43,7 +43,7 @@ describe("grind och indata", () => {
     expect(fetchAnnualFigures).not.toHaveBeenCalled();
   });
 
-  it.each(["", "69", "69.201; DROP", "../etc", "6.201", "abc.def", "69.201/../x"])(
+  it.each(["", "69", "69.201; DROP", "../etc", "6.201", "69.20", "abc.def", "69.201/../x"])(
     "ogiltig SNI-kod %j avvisas före transportanrop",
     async (sni) => {
       await expect(liveRegistryProvider.searchCompanies({ sniCode: sni })).rejects.toBeInstanceOf(RegistryInputError);
@@ -133,13 +133,46 @@ describe("getMarketOverview", () => {
       expect(o.companyCount).toBe(4);
       expect(o.medianRevenueKsek).toBe(4200);
       expect(o.growthSharePercent).toBe(50);
-      expect(o.regionSharePercent).toBe(67);
+      expect(o.regionSharePercent).toBe(33);
       expect(o.basis).toEqual({ medianRevenueCompanies: 3, growthCompanies: 2, regionCompanies: 3 });
       expect(o.source).toEqual({ namn: "Bolagsverket och SCB", hämtad: "2026-10-05" });
       expect((await liveRegistryProvider.getMarketOverview("en")).source.namn).toContain("Statistics Sweden");
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("tillväxt räknas bara över 10 %: +5 % räknas inte, +20 % gör det", async () => {
+    fetchCompanies.mockResolvedValue({
+      companies: [row({ orgNr: "5560000001" }), row({ orgNr: "5560000002" })],
+    });
+    fetchAnnualFigures.mockResolvedValue(figs(["5560000001", 1050, 1000], ["5560000002", 1200, 1000]));
+    const o = await liveRegistryProvider.getMarketOverview("sv");
+    expect(o.basis?.growthCompanies).toBe(2);
+    expect(o.growthSharePercent).toBe(50);
+  });
+
+  it("basis finns alltid och 0 i basis betyder att siffran är 0 (okänd)", async () => {
+    fetchCompanies.mockResolvedValue({ companies: [row({ county: null })] });
+    fetchAnnualFigures.mockResolvedValue(figs());
+    const o = await liveRegistryProvider.getMarketOverview("sv");
+    expect(o.basis).toBeDefined();
+    if (o.basis?.medianRevenueCompanies === 0) expect(o.medianRevenueKsek).toBe(0);
+    if (o.basis?.growthCompanies === 0) expect(o.growthSharePercent).toBe(0);
+    if (o.basis?.regionCompanies === 0) expect(o.regionSharePercent).toBe(0);
+  });
+
+  it("radtaket nått => fel (kan vara avkortat), inte ett för lågt antal", async () => {
+    const many = Array.from({ length: 2000 }, (_, i) => row({ orgNr: String(5560000000 + i) }));
+    fetchCompanies.mockResolvedValue({ companies: many });
+    await expect(liveRegistryProvider.getMarketOverview("sv")).rejects.toBeInstanceOf(RegistryTransportError);
+  });
+
+  it("konkurrenter utan sniCode: tom lista", async () => {
+    fetchCompanies.mockResolvedValue({ companies: [row()] });
+    fetchAnnualFigures.mockResolvedValue(figs());
+    expect((await liveRegistryProvider.getMarketOverview("sv")).competitors).toEqual([]);
+    expect((await liveRegistryProvider.getMarketOverview("sv", "69.201")).competitors).toHaveLength(1);
   });
 
   it("utan årsredovisningar: basis 0 och siffrorna 0, inte påhittade", async () => {
@@ -156,7 +189,7 @@ describe("getMarketOverview", () => {
       companies: [row({ description: long }), row({ orgNr: "5560000002", advertisingBlock: true })],
     });
     fetchAnnualFigures.mockResolvedValue(figs());
-    const o = await liveRegistryProvider.getMarketOverview("sv");
+    const o = await liveRegistryProvider.getMarketOverview("sv", "69.201");
     expect(o.competitors).toHaveLength(1);
     expect(o.competitors[0].description.length).toBeLessThanOrEqual(200);
     expect(o.competitors[0].description).not.toMatch(/[\p{Cc}\p{Cf}]/u);
@@ -170,7 +203,7 @@ describe("getMarketOverview", () => {
       ],
     });
     fetchAnnualFigures.mockResolvedValue(figs());
-    const o = await liveRegistryProvider.getMarketOverview("sv");
+    const o = await liveRegistryProvider.getMarketOverview("sv", "69.201");
     expect(o.competitors).toHaveLength(1);
     expect(Array.from(o.competitors[0].description)).toHaveLength(200);
     expect(o.competitors[0].description).not.toMatch(/[\ud800-\udbff](?![\udc00-\udfff])/);

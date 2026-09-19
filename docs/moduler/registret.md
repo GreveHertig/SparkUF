@@ -156,9 +156,11 @@ Demoadaptern är klar och används av `/demo/app/marknad` och
   omsättning per bolag och **utelämnar** bolag utan känd omsättning (aldrig 0).
   Okänt län ger `""`. Inga träffar ger `[]`.
 - **`getMarketOverview(locale, sniCode?)`:** `companyCount` över aktiva bolag,
-  `regionSharePercent` = största länets andel av bolag med känt län, median och
-  tillväxtandel över ett urval (max 100) aktiebolag med digital årsredovisning,
-  konkurrenter = de fem största namngivbara bolagen med verksamhetsbeskrivning
+  `regionSharePercent` = andel bolag i Stockholms län (som UI-etiketten lovar) av
+  bolag med känt län, `growthSharePercent` = andel med omsättning >10 % över
+  föregående år, median och tillväxt över ett deterministiskt urval (sorterat på
+  orgNr, max 100) aktiebolag med digital årsredovisning, konkurrenter (bara när
+  `sniCode` anges, annars `[]`) = de fem största namngivbara bolagen med verksamhetsbeskrivning
   (rensad, kortad till 200 tecken, aldrig instruktion). `source.hämtad` är
   anropsdagen. **`basis`** anger antal bolag bakom varje siffra; `0` betyder
   okänt och siffran får inte visas.
@@ -178,7 +180,7 @@ Demoadaptern är klar och används av `/demo/app/marknad` och
    iXBRL-taggar finns, går län att härleda, vad säger villkoren om lagring.
 2. Skriv transporten och skriv om `lib/server/registrySchemas.ts` mot det
    verkliga svaret; byt `RegistryProvider.live.test.ts` mot riktiga anrop.
-   Respektera SCB:s gränser (2 000 rader/anrop, 10 anrop/10 s).
+   Respektera SCB:s gränser (2 000 rader/anrop, 10 anrop/10 s). Adaptern kastar `RegistryTransportError` om ett svar når 2 000 rader (troligen avkortat) tills paginering finns.
 3. Läs Bolagsverkets villkor (Verifierat) och lyft licensgrinden.
 4. Portens `employees`/`revenueKsek` är icke-nullbara, så bolag med okänt värde
    utelämnas i dag. Överväg nullbara fält när en skärm ska visa dem.

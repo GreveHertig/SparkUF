@@ -29,7 +29,13 @@ import {
  * hittas på: saknas en siffra utelämnas bolaget eller basis anger 0.
  */
 
-const SNI_PATTERN = /^\d{2}\.\d{2,3}$/;
+const SNI_PATTERN = /^\d{2}\.\d{3}$/;
+/** SCB:s dokumenterade radtak per anrop (Sekundärt, dataspiken §2). Nås det är listan troligen avkortad. */
+const SCB_ROW_CAP = 2000;
+/** Etiketterna i UI:t (i18n marknad) lovar exakt detta: tillväxt över 10 % och Stockholmsregionen. */
+const GROWTH_THRESHOLD = 1.1;
+/** ANTAGANDE: länsnamnet så som registret skriver det (registrySchemas.ts). */
+const REGION_COUNTY = "Stockholms län";
 /** Tak på namngivna träffar (varje träff kostar ett årsredovisningsanrop). */
 const MAX_NAMED_RESULTS = 50;
 /** Tak på urvalet som medianen/tillväxten räknas på. */
@@ -69,6 +75,10 @@ function parseRows(raw: unknown): RegistryRow[] {
     throw new RegistryTransportError("Oväntat svar från bolagsregistret (validering misslyckades).", {
       cause: parsed.error,
     });
+  }
+  if (parsed.data.companies.length >= SCB_ROW_CAP) {
+    // Avkortad lista skulle ge felaktiga antal: hellre ett fel än ett tyst för lågt tal.
+    throw new RegistryTransportError("Registersvaret nådde radtaket och kan vara avkortat (kräver paginering).");
   }
   return parsed.data.companies;
 }
@@ -121,6 +131,7 @@ export const liveRegistryProvider: RegistryProvider = {
           (min === undefined || r.employees >= min) &&
           (max === undefined || r.employees <= max),
       )
+      .sort((a, b) => a.orgNr.localeCompare(b.orgNr))
       .slice(0, MAX_NAMED_RESULTS);
     if (hits.length === 0) return [];
 
@@ -151,16 +162,19 @@ export const liveRegistryProvider: RegistryProvider = {
     const all = parseRows(await fetchCompanies({ sniCode: sni }));
     const active = all.filter((r) => !r.deregistered && (sni === undefined || r.sniCode === sni));
 
-    // Regionandel: största länets andel av de bolag där län är känt.
-    const byCounty = new Map<string, number>();
-    for (const r of active) if (r.county) byCounty.set(r.county, (byCounty.get(r.county) ?? 0) + 1);
-    const regionCompanies = [...byCounty.values()].reduce((a, b) => a + b, 0);
+    // Regionandel: andelen bolag i Stockholmsregionen av de bolag där län är känt.
+    const withCounty = active.filter((r) => r.county);
+    const regionCompanies = withCounty.length;
     const regionSharePercent = regionCompanies
-      ? Math.round((Math.max(...byCounty.values()) / regionCompanies) * 100)
+      ? Math.round((withCounty.filter((r) => r.county === REGION_COUNTY).length / regionCompanies) * 100)
       : 0;
 
     // Årsredovisningar finns bara för aktiebolag: ett urval, aldrig hela marknaden.
-    const sample = active.filter((r) => r.legalForm === AKTIEBOLAG_FORM).slice(0, MAX_SAMPLE);
+    // Deterministiskt urval (sorterat på orgNr), inte transportens ordning.
+    const sample = active
+      .filter((r) => r.legalForm === AKTIEBOLAG_FORM)
+      .sort((a, b) => a.orgNr.localeCompare(b.orgNr))
+      .slice(0, MAX_SAMPLE);
     const figures = sample.length
       ? parseFigures(await fetchAnnualFigures(sample.map((r) => r.orgNr)))
       : new Map<string, AnnualFigures>();
@@ -173,11 +187,12 @@ export const liveRegistryProvider: RegistryProvider = {
       revenues.push(f.revenueKsek);
       if (f.previousRevenueKsek !== null && f.previousRevenueKsek > 0) {
         comparable += 1;
-        if (f.revenueKsek > f.previousRevenueKsek) grew += 1;
+        if (f.revenueKsek > f.previousRevenueKsek * GROWTH_THRESHOLD) grew += 1;
       }
     }
 
-    const competitors: Competitor[] = active
+    // Konkurrenter är bara meningsfulla inom en bransch: utan sniCode inga.
+    const competitors: Competitor[] = (sni === undefined ? [] : active)
       .filter(isNameable)
       .sort((a, b) => (b.employees ?? -1) - (a.employees ?? -1))
       .map((r) => ({

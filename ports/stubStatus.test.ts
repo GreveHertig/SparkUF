@@ -92,6 +92,11 @@ describe("Licensvakt: Registret nekar utan öppen grind", () => {
       RegistryLockedError,
     );
   });
+  it("grinden slår indatavalideringen (ogiltig SNI ger ändå RegistryLockedError)", async () => {
+    await expect(liveRegistryProvider.searchCompanies({ sniCode: "ogiltig" })).rejects.toBeInstanceOf(
+      RegistryLockedError,
+    );
+  });
   it("getMarketOverview", async () => {
     await expect(liveRegistryProvider.getMarketOverview("sv")).rejects.toBeInstanceOf(RegistryLockedError);
   });

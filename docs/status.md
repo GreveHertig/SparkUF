@@ -1296,6 +1296,7 @@ tester är okej.
 
 ### Kända problem / medvetna begränsningar
 - `employees`/`revenueKsek` är icke-nullbara i porten, så bolag med okänt värde
-  utelämnas från `searchCompanies`. `regionSharePercent` = största länets andel är
-  vår tolkning av ett tvetydigt fält.
+  utelämnas från `searchCompanies`. `regionSharePercent` (Stockholms län) och
+  `growthSharePercent` (>10 %) följer i18n-etiketterna men länsnamnet är ett
+  ANTAGANDE. Utan `sniCode` ger `getMarketOverview` inga konkurrenter.
 - Enskilda firmor/reklamspärr (§6 fråga 4) fortsatt öppet: Juridisk koll + vuxen/handledare.

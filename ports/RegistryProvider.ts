@@ -34,6 +34,8 @@ export type MarketOverview = {
    * regionandelen bara på bolag där län går att härleda. Ett antal på 0 betyder
    * att siffran är OKÄND och inte får visas (fältet är då 0, inte ett mått).
    * Valfritt: demot sätter det inte, liveadaptern alltid.
+   * Liveadaptern definierar tillväxt som >10 % över föregående år och regionandel
+   * som Stockholms län (samma påståenden som etiketterna i i18n).
    */
   basis?: {
     medianRevenueCompanies: number;
