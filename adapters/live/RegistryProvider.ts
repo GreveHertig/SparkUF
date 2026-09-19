@@ -53,10 +53,14 @@ function requireCount(value: number | undefined, label: string): number | undefi
   return value;
 }
 
-/** Extern text: ta bort styrtecken, kollapsa blanksteg, korta. */
+/**
+ * Extern text: ta bort styr-, format- (nollbredd, bidi) och radseparatortecken,
+ * kollapsa blanksteg, korta på teckenvärden (delar aldrig ett surrogatpar).
+ */
 function cleanText(text: string, max: number): string {
-  const flat = text.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
-  return flat.length > max ? `${flat.slice(0, max - 1).trimEnd()}…` : flat;
+  const flat = text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/\s+/g, " ").trim();
+  const chars = Array.from(flat);
+  return chars.length > max ? `${chars.slice(0, max - 1).join("").trimEnd()}…` : flat;
 }
 
 function parseRows(raw: unknown): RegistryRow[] {
@@ -123,11 +127,13 @@ export const liveRegistryProvider: RegistryProvider = {
     const figures = parseFigures(await fetchAnnualFigures(hits.map((r) => r.orgNr)));
     const companies: RegistryCompany[] = [];
     for (const r of hits) {
+      const name = cleanText(r.name, MAX_NAME_LENGTH);
+      if (!name) continue;
       const revenue = figures.get(r.orgNr)?.revenueKsek;
       // Ingen omsättning i en digital årsredovisning => utelämnas, aldrig 0.
       if (revenue === null || revenue === undefined || r.employees === null) continue;
       companies.push({
-        name: cleanText(r.name, MAX_NAME_LENGTH),
+        name,
         sniCode: r.sniCode,
         employees: r.employees,
         revenueKsek: revenue,
@@ -172,13 +178,15 @@ export const liveRegistryProvider: RegistryProvider = {
     }
 
     const competitors: Competitor[] = active
-      .filter((r) => isNameable(r) && r.description && r.description.trim())
+      .filter(isNameable)
       .sort((a, b) => (b.employees ?? -1) - (a.employees ?? -1))
-      .slice(0, MAX_COMPETITORS)
       .map((r) => ({
         name: cleanText(r.name, MAX_NAME_LENGTH),
         description: cleanText(r.description ?? "", MAX_DESCRIPTION_LENGTH),
-      }));
+      }))
+      // Filtrera efter rensning: en tom rensad text räknas som saknad.
+      .filter((c) => c.name && c.description)
+      .slice(0, MAX_COMPETITORS);
 
     return {
       companyCount: active.length,

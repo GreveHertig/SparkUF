@@ -119,6 +119,12 @@ Juridisk koll + vuxen/handledare) är en separat, fortfarande öppen fråga.
 
 ## Säkerhet
 
+**Regler för framtiden (security-review 2026-09-19):**
+- `competitors[].name/description` är extern text, rensad men inte neutraliserad. Om Gemini/Tavily någon gång får läsa dem: lägg dem i ett avgränsat databloc, säg i systemprompten att de är opålitliga, och aktivera inga verktygsanrop utifrån dem.
+- När transporterna skrivs: (a) de ska själva anropa `assertRegistryAccessAllowed()` eller bara importeras av `adapters/live/RegistryProvider.ts` (lägg en `no-restricted-imports`-regel), så en framtida route inte kan gå förbi grinden; (b) bas-URL bara från miljövariabel, aldrig från indata (SSRF); (c) timeout, paginering och throttle per användare (SCB: 2 000 rader/anrop, 10 anrop/10 s) — `getMarketOverview` utan `sniCode` hämtar hela registret; (d) logga aldrig `RegistryTransportError.cause` (ZodError kan innehålla registervärden), bara `issues[].path` och `code`.
+- `REGISTRY_LIVE_ENABLED` måste vara exakt `true` (`1`/`TRUE` nekas, avsiktligt).
+- Bolagsnamn kan innehålla personnamn. Aktiebolag är juridiska personer och reklamspärr respekteras, men det är en GDPR-nyans att ta upp med Juridisk koll (§6 fråga 4).
+
 Inga hemliga nycklar finns för den här modulen i dag (avtal saknas — se
 ovan); när ett avtal ger en API-nyckel eller inloggningsuppgift gäller
 samma regel som alla andra moduler: bara i serverkod, aldrig
