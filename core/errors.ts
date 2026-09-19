@@ -82,6 +82,17 @@ export class RegistryTransportError extends Error {
 }
 
 /**
+ * Kastas av Registret-liveadaptern vid ogiltig indata (t.ex. en SNI-kod med
+ * fel form) INNAN något externt anrop görs. Riktigt fel, inte platshållare.
+ */
+export class RegistryInputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RegistryInputError";
+  }
+}
+
+/**
  * Route-filer fångar "det finns inget att visa än"-felen i samma
  * catch och visar `<ComingSoon />` för båda (uppdrag 14.4) — den ena för att
  * modulen inte är byggd, den andra för att kontot är nytt. Ett fel som INTE
