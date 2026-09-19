@@ -24,7 +24,7 @@ const statusToneClasses: Record<OutreachStatus, string> = {
 };
 
 /** Kunder (avsnitt 6): kundlistan, utskick, öppningar och svar. */
-export function Customers({ data }: { data: CustomersData }) {
+export function Customers({ data, notInScenario }: { data: CustomersData; notInScenario?: boolean }) {
   const { locale, t } = useI18n();
 
   return (
@@ -38,7 +38,9 @@ export function Customers({ data }: { data: CustomersData }) {
       </div>
 
       {data.rows.length === 0 ? (
-        <LockedState unlockHint={`${t.homePage.unlocksAfterStepBefore} 03`} />
+        <LockedState
+          unlockHint={notInScenario ? t.homePage.notInThisScenario : `${t.homePage.unlocksAfterStepBefore} 03`}
+        />
       ) : (
         <div data-tour-id="customers-table" className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full text-left text-sm">

@@ -18,7 +18,7 @@ export type MarketData = {
  * simuleringen renderas alltid via `SimulationCard` (avsnitt 2.2, 8): etikett,
  * population, källa och osäkerhetsintervall syns alltid, aldrig bara en
  * färgskillnad. */
-export function Market({ data }: { data: MarketData | null }) {
+export function Market({ data, notInScenario }: { data: MarketData | null; notInScenario?: boolean }) {
   const { t } = useI18n();
 
   return (
@@ -32,7 +32,9 @@ export function Market({ data }: { data: MarketData | null }) {
       </div>
 
       {!data ? (
-        <LockedState unlockHint={`${t.homePage.unlocksAfterStepBefore} 02`} />
+        <LockedState
+          unlockHint={notInScenario ? t.homePage.notInThisScenario : `${t.homePage.unlocksAfterStepBefore} 02`}
+        />
       ) : (
         <>
           <section data-tour-id="market-register" className="flex flex-col gap-3">

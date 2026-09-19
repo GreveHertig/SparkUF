@@ -123,6 +123,7 @@ export const en = {
     scoreMovementTitle: "Score movement",
     breakdownTitle: "Score breakdown",
     unlocksAfterStepBefore: "Unlocks after step",
+    notInThisScenario: "This step hasn't been completed in this scenario.",
     recipientsUnit: "recipients",
     responsesUnit: "responses",
     todayLabel: "Today",
@@ -249,7 +250,7 @@ export const en = {
   pulsePage: {
     title: "Pulse",
     subtitle: "Signals that matter for this specific idea, with source and time.",
-    emptyState: "No signals yet — they'll show up once the journey gets going.",
+    emptyState: "No signals for this scenario.",
   },
   memoryPage: {
     title: "Memory",

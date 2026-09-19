@@ -25,7 +25,7 @@ const statusToneClasses: Record<BuildStatus, string> = {
 
 /** Bygg (avsnitt 6, 2.3): Lovable-konceptet — spec, förhandsvisning och
  * publicering, alltid märkt som koncept. */
-export function Build({ data }: { data: BuildData }) {
+export function Build({ data, notInScenario }: { data: BuildData; notInScenario?: boolean }) {
   const { t } = useI18n();
 
   return (
@@ -42,7 +42,9 @@ export function Build({ data }: { data: BuildData }) {
       </div>
 
       {!data.spec ? (
-        <LockedState unlockHint={`${t.homePage.unlocksAfterStepBefore} 07`} />
+        <LockedState
+          unlockHint={notInScenario ? t.homePage.notInThisScenario : `${t.homePage.unlocksAfterStepBefore} 07`}
+        />
       ) : (
         <>
           <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">

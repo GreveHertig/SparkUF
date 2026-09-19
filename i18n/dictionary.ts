@@ -118,6 +118,11 @@ export type Dictionary = {
     scoreMovementTitle: string;
     breakdownTitle: string;
     unlocksAfterStepBefore: string;
+    /** Ärligt tomt läge när ett steg saknar data för den aktiva personan i
+     * demot — skild från unlocksAfterStepBefore, som antyder att det kommer
+     * senare (avsnitt: flera demomoduler är fortfarande bara byggda för
+     * Sara). */
+    notInThisScenario: string;
     recipientsUnit: string;
     responsesUnit: string;
     todayLabel: string;

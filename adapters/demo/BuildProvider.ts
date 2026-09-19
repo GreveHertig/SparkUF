@@ -58,13 +58,21 @@ export const demoBuildProvider: BuildProvider = {
   },
 
   async getStatus() {
-    const currentStep = getCurrentStepNumberFor(useDemoStore.getState().beatIndex);
+    const { beatIndex, entry } = useDemoStore.getState();
+    // Ingen byggspec finns för Jonas (persona B) — se getSpec nedan.
+    if (entry === "hasIdea") return { status: "not_started" as const };
+    const currentStep = getCurrentStepNumberFor(beatIndex);
     const status = statusFor(currentStep);
     return { status, url: status === "published" ? PUBLISHED_URL : undefined, creditsUsed: creditsFor(status) };
   },
 
   async getSpec(locale: Locale) {
-    const currentStep = getCurrentStepNumberFor(useDemoStore.getState().beatIndex);
+    const { beatIndex, entry } = useDemoStore.getState();
+    // Specen ovan är Kvittojaktens (avsnitt 2.3) — jonas.ts har bara
+    // löptext om MVP-omfånget, inte en strukturerad ByggBrief. Hitta inte
+    // på en Beläggningsprognos-spec, ärligt tomt läge i stället.
+    if (entry === "hasIdea") return null;
+    const currentStep = getCurrentStepNumberFor(beatIndex);
     if (currentStep < 8) return null;
     return spec[locale];
   },

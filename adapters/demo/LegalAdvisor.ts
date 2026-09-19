@@ -32,7 +32,13 @@ function krav(
 
 export const demoLegalAdvisor: LegalAdvisor = {
   async getLegalMap() {
-    const currentStep = getCurrentStepNumberFor(useDemoStore.getState().beatIndex);
+    const { beatIndex, entry } = useDemoStore.getState();
+    // Kravtexterna nedan är skrivna mot Kvittojakten specifikt (t.ex.
+    // "kvittounderlag" i gdpr-pub-avtal) — fel för Jonas även om han också
+    // valt enskild firma (jonas.ts). Ärligt tomt läge i stället för att
+    // hitta på en padel-specifik juridisk karta.
+    if (entry === "hasIdea") return [];
+    const currentStep = getCurrentStepNumberFor(beatIndex);
     if (currentStep < 5) return [];
 
     return [

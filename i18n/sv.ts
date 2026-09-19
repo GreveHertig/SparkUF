@@ -123,6 +123,7 @@ export const sv = {
     scoreMovementTitle: "Poängrörelse",
     breakdownTitle: "Poängens nedbrytning",
     unlocksAfterStepBefore: "Låses upp efter steg",
+    notInThisScenario: "Det här steget är inte genomfört i det här scenariot.",
     recipientsUnit: "mottagare",
     responsesUnit: "svar",
     todayLabel: "Idag",
@@ -249,7 +250,7 @@ export const sv = {
   pulsePage: {
     title: "Pulsen",
     subtitle: "Signaler som spelar roll för just den här idén, med källa och tid.",
-    emptyState: "Inga signaler än — de dyker upp när resan kommer igång.",
+    emptyState: "Inga signaler för det här scenariot.",
   },
   memoryPage: {
     title: "Minnet",
