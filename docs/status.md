@@ -1216,3 +1216,33 @@ en ny bugg.
   demo ska kännas lika fullständig som Saras, är nästa steg att skriva den
   strukturerade datan (se "Beslut nästa session" ovan), inte att öppna
   portarnas typer.
+
+## Dataspiken — källa för RegistryProvider (research klar, PR mot `prototyp`, gren `dataspiken`)
+
+Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
+
+### Inga blockerare kvar för Fas 1
+1. **Licens för namngivna företag: Sekundärt, bekräftat av två oberoende AI-sökningar (ej primärkälla läst av människa).** Fritt att bygga tjänster, bearbeta och kombinera, inget avtal, ingen avgift, användningen måste följa lag inklusive GDPR. Rekommendationen står kvar: namngivna listor bara för aktiebolag utan reklamspärr. Bolagsverkets egna villkor läses av Erik när nycklarna kommer, för att nå Verifierat.
+2. **Mottagarnas kontaktuppgifter (steg 05): beslut.** Hunter.io valdes bort (gratisnivån delar 50 krediter per hela kontot/månad). Egen mejlsökning med Tavily (sök "Kontakta oss"-sidan) + Gemini (extrahera adressen). Grundaren bekräftar/redigerar alltid adressen före utskick. **Beslut för Fas 2 (`OutreachProvider`), byggs inte nu.**
+
+### Klart
+- **`docs/dataspiken.md`:** källa, kostnad, villkor och rekommendation per källa, varje uppgift märkt Verifierat / Sekundärt / Osäkert, med de två blockerarna överst.
+- **Rekommendation:** bygg `RegistryProvider` på Bolagsverkets och SCB:s "API för värdefulla datamängder" (gratis, inget avtal, öppen licens enligt förordning (EU) 2023/138). Allabolag/UC: inte i MVP, öppet avtalsbeslut. Ratsit: gå inte vidare.
+- **Årsredovisningarna** är iXBRL: taggade siffror inuti en dokumentfil per bolag och år, inte en färdig tabell. Bara aktiebolag lämnar in digitalt.
+- **`docs/moduler/registret.md`:** rättade "blockeraren är avtal" med hänvisning till dataspiken.
+
+### Var vi står / vad som är kvar innan nästa session
+- **Väntar på Bolagsverkets godkännande** av Eriks kundanmälan (nycklar).
+- **Erik:** läs Bolagsverkets användarvillkor när nycklarna kommer (blockerar inte Fas 1).
+- **Fas 2:** bygg `OutreachProvider` med Tavily + Gemini för mottagarnas e-post (punkt 2 ovan).
+- **Grundaren + partner + vuxen/handledare:** Allabolag/UC är ett öppet avtalsbeslut. Villkoren förbjuder regelbunden, systematisk lagring utan skriftligt medgivande. Ingen kontakt tas och inget formulär skickas innan dess.
+- **Först därefter:** en spik med riktiga nycklar (ordning i `dataspiken.md` avsnitt 3), sedan bygg enligt `docs/bygga-en-modul.md`.
+
+### Beslut nästa session behöver känna till
+- **Oklart om Bolagsverkets API kan söka på SNI-kod.** `searchCompanies` kan behöva SCB:s API eller filnedladdning. Avgörs i spiken.
+- **Reklamspärr och enskilda firmor:** SCB-registret innehåller fysiska personer och en reklamspärr-variabel. Förslag: namngivna listor bara för aktiebolag och utan reklamspärrade. Kräver Juridisk koll och en vuxen/handledare.
+- **Rättighetshavaren för Allabolag** står som Proff AS i villkoren men UC Affärsinformation AB i integritetspolicyn. Oklart vem som ska ge tillstånd.
+
+### Kända problem / öppna frågor
+- **Ratsit** verifierades bara via sökresultat (403 på deras sidor). En söksammanfattning antyder ett API, vilket inte bekräftades.
+- SCB:s statistikdatabas (branschaggregat) är inte undersökt. SCB byter från certifikat till API-nycklar i september 2026.
