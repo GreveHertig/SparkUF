@@ -5,13 +5,18 @@ import { Market, type MarketData } from "@/screens/Market";
 import { useI18n } from "@/i18n/context";
 import { demoRegistryProvider } from "@/adapters/demo/RegistryProvider";
 import { demoSimulationProvider, simulationQuestions } from "@/adapters/demo/SimulationProvider";
-import { useDemoStore } from "@/adapters/demo/demoStore";
-import { getCurrentStepNumberFor } from "@/adapters/demo/sara";
+import { useDemoStore, getCurrentStepNumber } from "@/adapters/demo/demoStore";
 
 export default function DemoMarketPage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
-  const unlocked = getCurrentStepNumberFor(beatIndex) >= 3;
+  const entry = useDemoStore((state) => state.entry);
+  // RegistryProvider.getMarketOverview och simulationQuestions.time är bara
+  // byggda mot Saras scenario (registerbild/konkurrenter, byrå-simuleringen)
+  // — Jonas (persona B) visar ett ärligt tomt läge i stället för påhittad
+  // padel-marknadsdata, se docs/status.md "Jonas hela resan".
+  const notInScenario = entry === "hasIdea";
+  const unlocked = !notInScenario && getCurrentStepNumber() >= 3;
   const [data, setData] = useState<MarketData | undefined>(undefined);
 
   useEffect(() => {
@@ -28,7 +33,7 @@ export default function DemoMarketPage() {
     };
   }, [unlocked, locale, beatIndex]);
 
-  if (!unlocked) return <Market data={null} />;
+  if (!unlocked) return <Market data={null} notInScenario={notInScenario} />;
   if (!data) return null;
 
   return <Market data={data} />;

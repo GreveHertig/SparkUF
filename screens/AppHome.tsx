@@ -23,7 +23,10 @@ export type AppHomeData = {
   score: ScoreSnapshot;
   nextStep: NextStep;
   sinceLastTime: SinceLastTime;
-  pulse: PulseSignal;
+  /** `null` när den aktiva demopersonan inte har någon pulssignal byggd
+   * (avsnitt: PulseProvider är bara byggd för Sara) — visas som ett ärligt
+   * tomt läge i stället för att hitta på en signal. */
+  pulse: PulseSignal | null;
   /** Totalpoängen genom resan hittills, för KPI-radens sparkline
    * (designuppdatering: high-tech dashboard). */
   scoreHistory: number[];
@@ -153,14 +156,18 @@ export function AppHome({ data }: { data: AppHomeData }) {
 
       <section className="flex flex-col gap-3">
         <Eyebrow>{t.homePage.todaysPulseTitle}</Eyebrow>
-        <PulseCard
-          category={data.pulse.category}
-          headline={data.pulse.headline}
-          whyItMatters={data.pulse.whyItMatters}
-          timestamp={data.pulse.timestamp}
-          source={data.pulse.source}
-          className="max-w-xl"
-        />
+        {data.pulse ? (
+          <PulseCard
+            category={data.pulse.category}
+            headline={data.pulse.headline}
+            whyItMatters={data.pulse.whyItMatters}
+            timestamp={data.pulse.timestamp}
+            source={data.pulse.source}
+            className="max-w-xl"
+          />
+        ) : (
+          <LockedState unlockHint={t.homePage.notInThisScenario} />
+        )}
       </section>
 
       <section className="flex flex-col gap-4">

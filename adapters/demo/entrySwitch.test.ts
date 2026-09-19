@@ -4,6 +4,10 @@ import { demoProfileRepository } from "./ProfileRepository";
 import { demoJourneyRepository } from "./JourneyRepository";
 import { demoEvidenceRepository } from "./EvidenceRepository";
 import { demoMemoryRepository } from "./MemoryRepository";
+import { demoPulseProvider } from "./PulseProvider";
+import { demoOutreachProvider } from "./OutreachProvider";
+import { demoLegalAdvisor } from "./LegalAdvisor";
+import { demoBuildProvider } from "./BuildProvider";
 import { saraProfile } from "./sara";
 import { jonasProfile } from "./jonas";
 
@@ -63,5 +67,56 @@ describe("Ingångsmedvetna demoadaptrar (avsnitt 2.1)", () => {
     useDemoStore.getState().setEntry("hasIdea");
     const summary = await demoMemoryRepository.getProfileSummary("sv");
     expect(summary.name).toBe("Jonas Berg");
+  });
+
+  // Session: fem moduler (Pulsen, Kunder, Marknad — se app/demo/app/marknad/
+  // page.tsx, Bygg, Juridik) visade fortfarande Saras data i ingång B, se
+  // docs/status.md "Session — Jonas hela resan". Ingen av dem har en byggd
+  // Jonas-motsvarighet — testerna nedan bevisar att de nu ger ett ärligt
+  // tomt svar för Jonas i stället för att läcka Saras Kvittojakten-innehåll,
+  // och att Sara är oförändrad.
+  it("PulseProvider.getSignals ger Saras signaler i ingång A, tomt i ingång B", async () => {
+    const saraSignals = await demoPulseProvider.getSignals("sv");
+    expect(saraSignals.length).toBeGreaterThanOrEqual(3);
+
+    useDemoStore.getState().setEntry("hasIdea");
+    expect(await demoPulseProvider.getSignals("sv")).toEqual([]);
+  });
+
+  // Sista beatet i Saras 38-beats-array (index 37, steg 12) — långt förbi
+  // alla dessa portars unlock-steg (4/5/8), så Sara-sidan garanterat har
+  // data oavsett hur stegtröskeln skrivs om i framtiden.
+  const LAST_SARA_BEAT = 37;
+
+  it("OutreachProvider.getCampaign ger Saras bolag i ingång A, tomt i ingång B", async () => {
+    useDemoStore.getState().goTo(LAST_SARA_BEAT);
+    const saraRows = await demoOutreachProvider.getCampaign("sv");
+    expect(saraRows.length).toBeGreaterThan(0);
+
+    useDemoStore.getState().setEntry("hasIdea");
+    useDemoStore.getState().goTo(LAST_SARA_BEAT);
+    expect(await demoOutreachProvider.getCampaign("sv")).toEqual([]);
+  });
+
+  it("LegalAdvisor.getLegalMap ger Saras krav i ingång A, tomt i ingång B", async () => {
+    useDemoStore.getState().goTo(LAST_SARA_BEAT);
+    const saraKrav = await demoLegalAdvisor.getLegalMap("enskild_firma");
+    expect(saraKrav.length).toBeGreaterThan(0);
+
+    useDemoStore.getState().setEntry("hasIdea");
+    useDemoStore.getState().goTo(LAST_SARA_BEAT);
+    expect(await demoLegalAdvisor.getLegalMap("enskild_firma")).toEqual([]);
+  });
+
+  it("BuildProvider ger Saras spec/status i ingång A, tomt/not_started i ingång B", async () => {
+    useDemoStore.getState().goTo(LAST_SARA_BEAT);
+    const saraSpec = await demoBuildProvider.getSpec("sv");
+    expect(saraSpec).not.toBeNull();
+    expect((await demoBuildProvider.getStatus()).status).not.toBe("not_started");
+
+    useDemoStore.getState().setEntry("hasIdea");
+    useDemoStore.getState().goTo(LAST_SARA_BEAT);
+    expect(await demoBuildProvider.getSpec("sv")).toBeNull();
+    expect(await demoBuildProvider.getStatus()).toEqual({ status: "not_started" });
   });
 });
