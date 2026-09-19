@@ -682,10 +682,9 @@ på Resan/[steg] och en `−0`-fix på Hem/Poäng.
 
 Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
 
-### ⚠ Blockerar bygget av RegistryProvider — Erik och Theodor måste avgöra
-**Bygg inte `adapters/live/RegistryProvider.ts` förrän båda är avgjorda.**
-1. **Bolagsverkets licensvillkor för namngivna företag är inte verifierade.** CAPTCHA blockerade både researchen och chatten, API-portalen gav 403. "Sannolikt ja" bygger på förordning (EU) 2023/138 och sammanfattningar. **Erik läser villkoren i sin egen webbläsare.**
-2. **Ingen källa ger e-postadress till en mottagare.** Bolagsverket/SCB ger inga kontaktuppgifter. Allabolag ger möjligen telefon, men det är overifierat att skarpa API-anrop returnerar det. Öppet problem för **hela steg 05**. **Erik tar det med Theodor.**
+### Inga blockerare kvar för Fas 1
+1. **Licens för namngivna företag: Sekundärt, bekräftat av två oberoende AI-sökningar (ej primärkälla läst av människa).** Fritt att bygga tjänster, bearbeta och kombinera, inget avtal, ingen avgift, användningen måste följa lag inklusive GDPR. Rekommendationen står kvar: namngivna listor bara för aktiebolag utan reklamspärr. Bolagsverkets egna villkor läses av Erik när nycklarna kommer, för att nå Verifierat.
+2. **Mottagarnas kontaktuppgifter (steg 05): beslut.** Hunter.io valdes bort (gratisnivån delar 50 krediter per hela kontot/månad). Egen mejlsökning med Tavily (sök "Kontakta oss"-sidan) + Gemini (extrahera adressen). Grundaren bekräftar/redigerar alltid adressen före utskick. **Beslut för Fas 2 (`OutreachProvider`), byggs inte nu.**
 
 ### Klart
 - **`docs/dataspiken.md`:** källa, kostnad, villkor och rekommendation per källa, varje uppgift märkt Verifierat / Sekundärt / Osäkert, med de två blockerarna överst.
@@ -695,8 +694,8 @@ Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
 
 ### Var vi står / vad som är kvar innan nästa session
 - **Väntar på Bolagsverkets godkännande** av Eriks kundanmälan (nycklar).
-- **Erik:** läs Bolagsverkets användarvillkor (punkt 1 ovan).
-- **Erik + Theodor:** lös mottagarnas kontaktuppgifter för steg 05 (punkt 2 ovan).
+- **Erik:** läs Bolagsverkets användarvillkor när nycklarna kommer (blockerar inte Fas 1).
+- **Fas 2:** bygg `OutreachProvider` med Tavily + Gemini för mottagarnas e-post (punkt 2 ovan).
 - **Grundaren + partner + vuxen/handledare:** Allabolag/UC är ett öppet avtalsbeslut. Villkoren förbjuder regelbunden, systematisk lagring utan skriftligt medgivande. Ingen kontakt tas och inget formulär skickas innan dess.
 - **Först därefter:** en spik med riktiga nycklar (ordning i `dataspiken.md` avsnitt 3), sedan bygg enligt `docs/bygga-en-modul.md`.
 

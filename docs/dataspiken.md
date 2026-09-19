@@ -4,30 +4,30 @@ Research, ingen kod. Underlag för `docs/moduler/registret.md` (porten
 `ports/RegistryProvider.ts`) och Datalöftet i `docs/uppdrag.md` 1.2.
 Skriven 2026-09-18 på branchen `dataspiken`.
 
-## ⚠ Olösta — Erik och Theodor måste titta på dessa innan RegistryProvider byggs
+## Status inför Fas 1 — inga blockerare kvar
 
-**Bygg inte `adapters/live/RegistryProvider.ts` förrän båda punkterna är
-avgjorda.** Ingen av dem går att lösa med kod eller mer research från
-Claude.
+De två punkter som tidigare stod som olösta är avgjorda nog för att gå
+vidare med `RegistryProvider` (Fas 1):
 
-1. **Licensvillkoren för Bolagsverkets värdefulla datamängder (namngivna
-   företag) är inte verifierade.** Bolagsverkets sidor blockerades av
-   CAPTCHA, både i researchen och i chatten, och API-portalen gav 403.
-   Bedömningen "sannolikt ja" i avsnitt 2 bygger på EU-förordningen och på
-   sammanfattningar av Bolagsverkets text, inte på villkoren själva. **Erik
-   läser dem i sin egen webbläsare** innan vi bygger vidare. Läs särskilt
-   vad de säger om lagring/cachning, vidareutnyttjande, källhänvisning och
-   personuppgifter.
-2. **Ingen av källorna ger en e-postadress till en mottagare.**
-   Bolagsverket/SCB ger inga kontaktuppgifter alls. Allabolag ger möjligen
-   ett telefonnummer, men det är **overifierat** att Allabolag faktiskt
-   returnerar det i ett skarpt API-anrop (vi läste bara UC:s och
-   Enentos sidor, ingen API-dokumentation eller svar). Det här är ett
-   öppet problem för **hela steg 05 (Utskick och svar)**, som skickar
-   e-post via Gmail (`docs/moduler/utskick-och-svar.md`). **Erik tar det
-   med Theodor.**
-
-Detaljer och övriga öppna frågor finns i avsnitt 6.
+1. **Licens för namngivna företag: Sekundärt, bekräftat av två oberoende
+   AI-sökningar (ej primärkälla läst av människa).** Båda svarade att det
+   är fritt att bygga tjänster och appar på datan, att bearbeta och
+   kombinera den, att inget avtal och ingen avgift krävs, och att enda
+   begränsningen är att användningen följer gällande lag, inklusive GDPR.
+   Bolagsverkets egna villkor är fortfarande inte lästa av en människa.
+   Det stoppar inte Fas 1, men de läses när kundanmälan godkänns och
+   nycklarna kommer (se avsnitt 6, fråga 1). Rekommendationen står kvar:
+   visa bara namngivna listor för **aktiebolag utan reklamspärr**, eftersom
+   det är precis vad GDPR-kravet pekar mot.
+2. **Mottagarnas kontaktuppgifter (steg 05): beslut taget.** Hunter.io
+   övervägdes och valdes bort: gratisnivån delar 50 krediter per **hela
+   kontot** och månad, inte per person, vilket inte räcker för utskick i
+   omgångar. Vi bygger en egen mejlsökning med **Tavily** (websökning efter
+   företagets "Kontakta oss"-sida) och **Gemini** (extraherar
+   mejladressen ur sidans text). Grundaren bekräftar eller redigerar alltid
+   adressen före utskick, aldrig automatiskt. Det här är ett beslut för
+   **Fas 2 (`OutreachProvider`)** och byggs inte nu. Registret ger fortfarande
+   inga kontaktuppgifter, så Fas 1 påverkas inte.
 
 ## Kort svar
 
@@ -40,13 +40,14 @@ Detaljer och övriga öppna frågor finns i avsnitt 6.
   avsnitt 4.
 - **Ratsit: vi går inte vidare.** Se avsnitt 5.
 - **Tre saker är inte lösta av den här spiken och kan ändra planen:**
-  1. De faktiska användarvillkoren för Bolagsverkets API är **inte lästa**
-     (sidorna ligger bakom CAPTCHA). Se avsnitt 2.
+  1. De faktiska användarvillkoren för Bolagsverkets API är **inte lästa av
+     en människa** (sidorna ligger bakom CAPTCHA). Licensen är dock
+     bekräftad sekundärt av två AI-sökningar. Se avsnitt 2.
   2. Det är **oklart om Bolagsverkets API går att söka på SNI-kod**.
      `searchCompanies` bygger på det. Se avsnitt 3.
   3. Registerdatan ger **inga kontaktuppgifter** (ingen e-post eller
-     telefon). Utskick och svar (steg 05) har alltså fortfarande ingen
-     källa för mottagare. Se avsnitt 6.
+     telefon). Mottagarnas e-post hämtas i Fas 2 via egen sökning
+     (Tavily + Gemini), se överst och avsnitt 6.
 
 ## Så läser du märkningarna
 
@@ -66,7 +67,7 @@ citaten i avsnitt 4 mot originalet innan de används i något beslut.
 |---|---|---|---|
 | **Kostnad** | Gratis, inget avtal (Verifierat via EU-förordningen, Sekundärt via Bolagsverkets sidor) | Ingen publik prissättning (Verifierat). Troligen betald (Osäkert) | Styckpris per dokument, t.ex. registreringsbevis ca 119 kr inkl. moms (Sekundärt, ur sökresultat) |
 | **Åtkomst** | Kundanmälan, nycklar via e-post/SMS (Sekundärt) | Kontaktformulär, developerportal (Verifierat) | Oklart. Ingen publik utvecklaråtkomst hittad |
-| **Licens/villkor** | Öppen licens, CC BY 4.0 eller mindre restriktiv (Verifierat i förordningen). Bolagsverkets egna villkor **ej lästa** | Systematisk lagring förbjuden utan skriftligt medgivande (Verifierat, se 4) | Automatiserad hämtning verkar förbjuden (Sekundärt) |
+| **Licens/villkor** | Öppen licens, CC BY 4.0 eller mindre restriktiv (Verifierat i förordningen). Bolagsverkets egna villkor **ej lästa av människa**; fri användning bekräftad av två AI-sökningar (Sekundärt) | Systematisk lagring förbjuden utan skriftligt medgivande (Verifierat, se 4) | Automatiserad hämtning verkar förbjuden (Sekundärt) |
 | **Lämpar sig för MVP** | Ja | Nej, inte utan avtal | Nej |
 
 ## 2. Bolagsverket + SCB — värdefulla datamängder
@@ -110,7 +111,7 @@ Gratis och inget avtal krävs (Sekundärt: Bolagsverket. Verifierat: EU:s
 förordning kräver avgiftsfri tillgång).
 
 ### Får vi visa och lagra namngivna företag? (frågan från Erik)
-**Bästa nuvarande svar: sannolikt ja för företag, med förbehåll.**
+**Bästa nuvarande svar: ja för företag, med förbehåll. Sekundärt, bekräftat av två oberoende AI-sökningar (ej primärkälla läst av människa).**
 
 Det som är verifierat:
 - Förordning (EU) 2023/138 artikel 4 kräver att datamängderna är
@@ -123,20 +124,23 @@ Det som är verifierat:
 - Förordningen tillåter "kompletterande villkor för återanvändning av
   personuppgifter där det är tillämpligt" (Verifierat).
 
-Det som är sekundärt (Bolagsverkets egna sidor, via söksammanfattning):
+Det som är sekundärt (Bolagsverkets egna sidor via söksammanfattning, samt
+samma svar från två oberoende AI-sökningar, Google AI-läge):
 - Datan får användas "fritt" för kommersiella och icke-kommersiella
   ändamål, t.ex. nya tjänster och produkter, och får ändras, bearbetas
   och kombineras med andra källor.
-- Förbehåll: användningen får inte strida mot lagar om skydd av
-  personuppgifter eller sekretess, och det kan finnas krav på
+- Inget avtal och ingen avgift krävs.
+- Förbehåll: användningen måste följa gällande lag, inklusive GDPR (lagar
+  om skydd av personuppgifter och sekretess), och det kan finnas krav på
   källhänvisning.
 
 Det som **inte** är löst:
-- **Bolagsverkets faktiska användarvillkor är inte lästa.** Alla deras
+- **Bolagsverkets faktiska användarvillkor är inte lästa av människa.** Alla deras
   sidor (API-sidan, kundanmälan, frågor och svar, nedladdningsbara filer)
   svarade med CAPTCHA. Villkoren visas sannolikt vid kundanmälan eller i
   API-portalen (`portal.api.bolagsverket.se`, som gav 403). **Läs dem själv
-  i webbläsaren, eller när godkännandet kommer, innan vi bygger.**
+  i webbläsaren när godkännandet kommer, för att gå från Sekundärt till
+  Verifierat. Blockerar inte Fas 1.**
 - Om **lagring och cachning** (t.ex. i Supabase) nämns särskilt: vi hittade
   inget som förbjuder det, men vi har inte sett villkoren.
 - **Personuppgifter är den verkliga risken, inte licensen.** Enskilda
@@ -318,11 +322,11 @@ sannolikt inget.
 
 | # | Fråga | Vem/hur | Blockerar |
 |---|---|---|---|
-| 1 | Bolagsverkets faktiska användarvillkor (lagring, vidareutnyttjande, källhänvisning) | Erik läser i webbläsare / vid godkännande | Bygget av cachning och kundlistor |
+| 1 | Bolagsverkets faktiska användarvillkor (lagring, vidareutnyttjande, källhänvisning). Licensen är sekundärt bekräftad av två AI-sökningar | Erik läser i webbläsare vid godkännande | Inget i Fas 1. Läses för att nå Verifierat |
 | 2 | Kan Bolagsverkets API söka på SNI, eller krävs SCB/filer? | Spik med nycklar | `searchCompanies` |
 | 3 | Vilka iXBRL-taggar finns för små bolag, och täckning | Spik med nycklar | `revenueKsek`, `growthSharePercent`, median |
 | 4 | Får namngivna aktiebolag lagras/visas, och hur hanteras enskilda firmor och reklamspärr? | Juridisk koll + vuxen/handledare | Steg 04–05 i live |
-| 5 | **Var får Utskick och svar mottagarnas e-post från?** Registret ger inga kontaktuppgifter. `docs/moduler/utskick-och-svar.md` pekar inte ut en källa. Allabolag/UC skulle kunna ge telefon, men se avsnitt 4 | Grundaren + design | Steg 05 i live. **Bör lösas före bygget av utskick** |
+| 5 | ~~Var får Utskick och svar mottagarnas e-post från?~~ **Avgjort:** egen mejlsökning med Tavily + Gemini, grundaren bekräftar alltid adressen. Hunter.io valdes bort (50 krediter per konto/månad) | Beslutat | Fas 2 (`OutreachProvider`), byggs inte nu |
 | 6 | Allabolag/UC: kontakt, villkor, pris, vem som är rättighetshavare (UC eller Proff AS) | Grundaren + partner + vuxen/handledare | Inget i MVP |
 | 7 | SCB:s statistikdatabas som källa till branschaggregat | Undersök vid spiken | `medianRevenueKsek` utan iXBRL-urval |
 | 8 | SCB:s byte från certifikat till API-nycklar (september 2026) | Kolla vid åtkomst | Autentiseringens utformning |
