@@ -54,12 +54,44 @@ export class EmptyStateError extends Error {
 }
 
 /**
- * Route-filer fångar båda "det finns inget att visa än"-felen i samma
+ * Kastas av Registret-liveadaptern när licensgrinden är stängd
+ * (lib/server/registryAccess.ts, docs/moduler/registret.md "Licensgrind").
+ * Ärver INTE NotImplementedError — då skulle kontraktstestet tyst skippa
+ * liveadaptern som "fortfarande en stub" och grinden gömma sig bakom det.
+ * Ingår i `isPlaceholderError` med flit: en framtida route som glömmer
+ * grinden ska visa ett formgivet "Kommer snart", aldrig krascha eller läcka.
+ * Meddelandet är avsiktligt neutralt (avslöjar inte vem som är tillåten).
+ */
+export class RegistryLockedError extends Error {
+  constructor() {
+    super("Registret är inte öppet för den här användaren än. Se docs/moduler/registret.md.");
+    this.name = "RegistryLockedError";
+  }
+}
+
+/**
+ * Kastas av transportklienterna (lib/server/scb.ts, bolagsverket.ts) när
+ * bas-URL eller inloggningsuppgifter saknas. Ett RIKTIGT fel, aldrig en
+ * platshållare: en omkonfigurerad transport ska aldrig se ut som en tom lista.
+ */
+export class RegistryTransportError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "RegistryTransportError";
+  }
+}
+
+/**
+ * Route-filer fångar "det finns inget att visa än"-felen i samma
  * catch och visar `<ComingSoon />` för båda (uppdrag 14.4) — den ena för att
  * modulen inte är byggd, den andra för att kontot är nytt. Ett fel som INTE
  * matchar det här (t.ex. ett nätverksfel mot Supabase) ska kastas vidare,
  * aldrig tystas till "Kommer snart".
  */
 export function isPlaceholderError(error: unknown): boolean {
-  return error instanceof NotImplementedError || error instanceof EmptyStateError;
+  return (
+    error instanceof NotImplementedError ||
+    error instanceof EmptyStateError ||
+    error instanceof RegistryLockedError
+  );
 }
