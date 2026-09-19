@@ -28,13 +28,31 @@ export type MarketOverview = {
   regionSharePercent: number;
   source: Källa;
   competitors: Competitor[];
+  /**
+   * Underlaget bakom siffrorna (Datalöftet, docs/dataspiken.md §3): medianen
+   * och tillväxtandelen kan bara räknas på bolag med digital årsredovisning,
+   * regionandelen bara på bolag där län går att härleda. Ett antal på 0 betyder
+   * att siffran är OKÄND och inte får visas (fältet är då 0, inte ett mått).
+   * Valfritt: demot sätter det inte, liveadaptern alltid.
+   */
+  basis?: {
+    medianRevenueCompanies: number;
+    growthCompanies: number;
+    regionCompanies: number;
+  };
 };
 
 /**
- * Modul: Registret (avsnitt 14.3). Liveadapter bygger på Bolagsverket och SCB
- * — stub tills dataavtal finns.
+ * Modul: Registret (avsnitt 14.3). Liveadapter bygger på Bolagsverket och SCB.
+ * Grindad tills licensen är Verifierat (docs/moduler/registret.md,
+ * "Licensgrind"); transporten är oskriven tills spiken är gjord.
  */
 export interface RegistryProvider {
   searchCompanies(query: RegistryQuery): Promise<RegistryCompany[]>;
-  getMarketOverview(locale: Locale): Promise<MarketOverview>;
+  /**
+   * `sniCode` avgränsar sammanfattningen till en bransch. Utan den gäller
+   * den hela registret. Valfri så att demot (fast Sara-bransch) och
+   * kontraktstestet är oförändrade.
+   */
+  getMarketOverview(locale: Locale, sniCode?: string): Promise<MarketOverview>;
 }
