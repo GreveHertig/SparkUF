@@ -729,4 +729,28 @@ export const en = {
     optOut: "If you'd rather not hear from us again, just reply \"no thanks\" and we won't contact you further.",
     signature: "Kind regards,\n{senderName}\n{senderCompany}",
   },
+  verdict: {
+    decision: {
+      run: "Run",
+      refine: "Refine",
+      pivot: "Pivot",
+      insufficient: "Not enough evidence",
+    },
+    reasoning: {
+      run: "{confirming} of {responded} who replied confirm the problem and the price holds. Keep going.",
+      refine: "{confirming} of {responded} who replied confirm the problem, but something needs adjusting before you run.",
+      pivot: "Only {confirming} of {responded} who replied confirm the problem. Try a different direction.",
+      insufficient: "Only {responded} have replied (of {contacted} contacted). That is not enough for a verdict yet.",
+    },
+    reason: {
+      smallSample: "Too few replies to draw a conclusion.",
+      problemRejected: "Most who replied do not confirm the problem.",
+      problemWeak: "The problem is confirmed, but not clearly enough.",
+      priceTooHigh: "{priceDeclined} of {responded} think the price is too high.",
+      priceUnproven: "Too few have explicitly accepted the price.",
+      segmentSkew: "Everyone who accepts the price has at least {minEmployees} employees. The segment is too broad.",
+    },
+    medianCounterOffer: "Median counter-offer: SEK {median} (based on {count} replies).",
+    pivotTraceEvent: "Verdict was pivot: {confirming} of {responded} confirmed the problem.",
+  },
 } satisfies Dictionary;
