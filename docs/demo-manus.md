@@ -70,7 +70,7 @@ Talmanus för de guidade genomgångarna av Spark UF-demot, i en 5- och en
 > outreachen på svenska, från Saras egen Gmail, och bevakar öppningar
 > och svar automatiskt."
 
-**10. Egen svarsdata som försvarsvall** (Kunder-sidan)
+**10. Egen svarsdata som försvarsvall** (Validering-sidan)
 > "Svaren citeras rakt av, med namn. Spark kan säga: '4 procent
 > svarsfrekvens är lågt för den här branschen, normalt ser vi 11.' Det är
 > en jämförelse ingen konkurrent har underlag att göra."

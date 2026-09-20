@@ -42,9 +42,8 @@ export function Cofounder({ data }: { data: CofounderData }) {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
-        <Eyebrow>{t.appShell.nav.cofounder}</Eyebrow>
-        <EditorialHeading as="h1" className="mt-2">
-          {t.cofounderPage.title}
+        <EditorialHeading as="h1">
+          {data.moment ? data.moment.momentLabel : t.cofounderPage.title}
         </EditorialHeading>
         <p className="mt-2 text-sm text-slate-600">{t.cofounderPage.subtitle}</p>
       </div>

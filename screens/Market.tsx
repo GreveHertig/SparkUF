@@ -26,6 +26,10 @@ export type MarketData = {
   /** `CampaignRow` bär ingen egen källa (avsnitt 14.3) — Datalöftet kräver
    * ändå en källa på svarsfrekvensen, så anroparen skickar med den. */
   outreachSource: Källa;
+  /** Branschordet för det aktiva scenariot (uppgift 2: innehållsburet
+   * sidhuvud) — ingen port för "vilken bransch" finns, så anroparen skickar
+   * med det, samma mönster som `outreachSource`. */
+  industryLabel: string;
 };
 
 type MarketPageDict = Dictionary["marketPage"];
@@ -51,6 +55,19 @@ function basedOn(t: MarketPageDict, n: number, m: number, locale: Locale): strin
   return `${t.basedOnLabel} ${formatCount(n, locale)} ${t.ofLabel} ${formatCount(m, locale)} ${t.companiesUnit}.`;
 }
 
+/** Innehållsburen rubrik (uppgift 2): branschen plus storleksspannet i
+ * urvalet, t.ex. "Redovisningsbyråer, 5–20 anställda" — hämtat ur det
+ * aktiva scenariots data, aldrig hårdkodat. */
+function marketHeadline(data: MarketData, m: MarketPageDict): string {
+  const { companies, industryLabel } = data;
+  if (companies.length === 0) return industryLabel;
+  const employeeCounts = companies.map((company) => company.employees);
+  const min = Math.min(...employeeCounts);
+  const max = Math.max(...employeeCounts);
+  const range = min === max ? `${min}` : `${min}–${max}`;
+  return `${industryLabel}, ${range} ${m.distribution.employeesUnit}`;
+}
+
 function computeOutreachStats(campaign: CampaignRow[]) {
   if (campaign.length === 0) return null;
   const contacted = campaign.filter((row) => row.status !== "draft").length;
@@ -70,10 +87,7 @@ export function Market({ data, notInScenario }: { data: MarketData | null; notIn
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-8">
       <div>
-        <Eyebrow>{t.appShell.nav.market}</Eyebrow>
-        <EditorialHeading as="h1" className="mt-2">
-          {m.title}
-        </EditorialHeading>
+        <EditorialHeading as="h1">{data ? marketHeadline(data, m) : m.title}</EditorialHeading>
         <p className="mt-2 text-sm text-slate-600">{m.subtitle}</p>
       </div>
 

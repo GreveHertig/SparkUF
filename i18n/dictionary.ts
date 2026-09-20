@@ -22,6 +22,15 @@ export type Dictionary = {
     simulationPopulationLabel: string;
     upToPointsBefore: string;
     upToPointsAfter: string;
+    /** Generiska bolagsformsnamn (uppgift 2: Juridik-sidans innehållsburna
+     * rubrik) — inte scenarioinnehåll, samma fyra värden som `Bolagsform`
+     * i core/domain.ts. */
+    bolagsformLabels: {
+      enskild_firma: string;
+      aktiebolag: string;
+      handelsbolag: string;
+      ekonomisk_forening: string;
+    };
   };
   /** KPI-raden (designuppdatering: high-tech dashboard) — täta nyckeltal högst
    * upp på Hem och Poäng, se screens/AppHome.tsx och screens/Score.tsx. */
@@ -100,7 +109,7 @@ export type Dictionary = {
       journey: string;
       score: string;
       market: string;
-      customers: string;
+      validation: string;
       pulse: string;
       memory: string;
       legal: string;
@@ -255,6 +264,7 @@ export type Dictionary = {
       title: string;
       sniLabel: string;
       mostCommonLabel: string;
+      employeesUnit: string;
       sizeBuckets: {
         oneToFour: string;
         fiveToNine: string;
@@ -272,9 +282,20 @@ export type Dictionary = {
       notSentYet: string;
     };
   };
-  customersPage: {
+  /** Valideringen (uppgift 3): Kunder + valideringsinnehållet ur steg 04–06
+   * slagna ihop till en sida — allt som prövats mot verkliga kunder. */
+  validationPage: {
     title: string;
     subtitle: string;
+    kpiTitle: string;
+    contactedLabel: string;
+    respondedLabel: string;
+    responseRateLabel: string;
+    openRateLabel: string;
+    confidencePrefix: string;
+    confidenceContactedUnit: string;
+    confidenceRateSuffix: string;
+    tableTitle: string;
     tableCompany: string;
     tableSni: string;
     tableEmployees: string;
@@ -286,7 +307,19 @@ export type Dictionary = {
       opened: string;
       responded: string;
     };
+    assumptionsTitle: string;
+    assumptionVerdict: {
+      confirmed: string;
+      contradicted: string;
+    };
+    responsesTitle: string;
     responseQuoteLabel: string;
+    responseVerdict: {
+      confirms: string;
+      partial: string;
+    };
+    priceTestedLabel: string;
+    verdictTitle: string;
     /** Simulering av betalningstolerans per byråstorlek (uppdrag 2.2, steg 04). */
     simulationTitle: string;
   };

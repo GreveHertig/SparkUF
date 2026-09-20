@@ -9,10 +9,12 @@ import { TourOverlay } from "@/components/spark/TourOverlay";
 import { useI18n } from "@/i18n/context";
 import { demoProfileRepository } from "@/adapters/demo/ProfileRepository";
 import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
+import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { useDemoStore } from "@/adapters/demo/demoStore";
-import type { Profile } from "@/core/domain";
+import type { AppShellCurrentStep } from "@/screens/AppShell";
+import type { Profile, ScoreSnapshot } from "@/core/domain";
 
-type ShellData = { profile: Profile; score: number };
+type ShellData = { profile: Profile; scoreSnapshot: ScoreSnapshot; currentStep: AppShellCurrentStep | null };
 
 // Demot har ingen backend, så adaptrarna kan anropas direkt från klienten
 // (avsnitt 3). `use()` visade sig krascha med "async Client Component" när
@@ -40,11 +42,19 @@ export default function DemoAppShellLayout({ children }: { children: ReactNode }
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([demoProfileRepository.getProfile(), demoEvidenceRepository.getScoreSnapshot(locale)]).then(
-      ([profile, scoreSnapshot]) => {
-        if (!cancelled) setData({ profile, score: scoreSnapshot.total });
-      },
-    );
+    Promise.all([
+      demoProfileRepository.getProfile(),
+      demoEvidenceRepository.getScoreSnapshot(locale),
+      demoJourneyRepository.getSteps(locale),
+    ]).then(([profile, scoreSnapshot, steps]) => {
+      if (cancelled) return;
+      const current = steps.find((step) => step.status === "current");
+      setData({
+        profile,
+        scoreSnapshot,
+        currentStep: current ? { number: current.stepNumber, title: current.title, total: steps.length } : null,
+      });
+    });
 
     return () => {
       cancelled = true;
@@ -59,7 +69,8 @@ export default function DemoAppShellLayout({ children }: { children: ReactNode }
       homeHref="/demo/app"
       navBasePath="/demo/app"
       profile={data.profile}
-      score={data.score}
+      scoreSnapshot={data.scoreSnapshot}
+      currentStep={data.currentStep}
       headerLeft={<DemoDataBadge />}
       bottomBar={<DemoBar />}
     >

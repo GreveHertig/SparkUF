@@ -24,15 +24,30 @@ const statusToneClasses: Record<JourneyStepStatus, string> = {
  * hämtad, redan språkvald data — den vet inte att den kom från demot. */
 export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (stepNumber: number) => string }) {
   const { t } = useI18n();
+  // Rubriken beskriver var resan faktiskt står i stället för att bara
+  // upprepa "Resan" (uppgift 2) — det aktuella steget om det finns ett,
+  // annars det senast klara (resan färdig) eller första steget (inget
+  // gjort än).
+  const highlightedStep =
+    data.steps.find((step) => step.status === "current") ??
+    [...data.steps].reverse().find((step) => step.status === "done") ??
+    data.steps[0];
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8">
       <div>
-        <Eyebrow>{t.appShell.nav.journey}</Eyebrow>
+        {highlightedStep && (
+          <Eyebrow>
+            <span className="font-numeric">
+              {t.journeyPage.stepLabel} {String(highlightedStep.stepNumber).padStart(2, "0")}
+            </span>{" "}
+            · {t.journeyPage.status[highlightedStep.status]}
+          </Eyebrow>
+        )}
         <EditorialHeading as="h1" className="mt-2">
-          {t.journeyPage.title}
+          {highlightedStep?.title ?? t.journeyPage.title}
         </EditorialHeading>
-        <p className="mt-2 text-sm text-slate-600">{t.journeyPage.subtitle}</p>
+        <p className="mt-2 text-sm text-slate-600">{highlightedStep?.oneLiner ?? t.journeyPage.subtitle}</p>
       </div>
 
       <div className="flex flex-col gap-6">

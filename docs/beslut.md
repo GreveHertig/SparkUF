@@ -29,5 +29,31 @@ uppdrag.md 11.1 och 11.7.
 Code-session arbetar. Det svepte med halvfärdiga filer i kväll.
 
 **Nästa sessioner, i ordning.**
-1. Tokenbyte enligt TOKENS.md.
-2. Marknaden — den sidan Emma kommer att titta på.
+1. Tokenbyte enligt TOKENS.md. — klart, se docs/status.md.
+2. Marknaden — den sidan Emma kommer att titta på. — klart, se docs/status.md.
+
+## 2026-09-20
+
+**Gemensamt skal + innehållsburna rubriker, genomfört.**
+Brödsmula och en klickbar poängvisning (poäng, nivå, rörelse) på alla
+`/app`-sidor i både demo- och liveläget, och sidhuvuden som beskriver
+innehållet i stället för menyvalet. Se docs/status.md för detaljer och
+vilka fält som är genuint hämtade ur aktivt case.
+
+**Sidhopslagning: Kunder + Valideringen, genomfört — separat från den
+uppskjutna åttasidesplanen ovan.** Grundaren bad specifikt om att slå
+ihop Kunder med valideringsinnehållet ur steg 04–06 till en sida,
+"Valideringen" (route `/demo/app/validering`). Det är INTE samma sak
+som den uppskjutna planen ovan (poängen in i Hem, juridiken som en
+Medgrundaren-förmåga) — den planen väntar fortfarande på Erik efter
+Emma-mötet, oförändrad. `adapters/demo/tourSteps.ts` uppdaterat i
+samma commit, enligt regeln ovan.
+
+**Luckor i demodatan, rapporterade (inte tysta avvikelser).** Inga
+namngivna kontaktpersoner eller roller finns för de nio kundsvaren
+(bara bolagsnamn och citat) — svarskorten saknar därför namn/roll.
+Ingen av de nio svarar med ett fullt "avvisar" (alla bekräftar
+problemet, tre är bara oense om priset) — kategorin har inget exempel
+i det här scenariot. Inget verkligt branschsnitt ("jämförelsetal")
+finns som strukturerad data — öppningsfrekvensen (38 %, redan
+källbelagd) används i stället. Se docs/status.md för fullständig lucklista.

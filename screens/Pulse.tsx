@@ -13,15 +13,18 @@ export type PulseData = {
 /** Pulsen (avsnitt 6, 9.5): signalflödet, nyast först. */
 export function Pulse({ data }: { data: PulseData }) {
   const { t } = useI18n();
+  // Rubriken beskriver den senaste, mest relevanta signalen (avsnitt 9.5:
+  // "nyast först") i stället för att upprepa "Pulsen" (uppgift 2).
+  const latest = data.signals[0];
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <div>
-        <Eyebrow>{t.appShell.nav.pulse}</Eyebrow>
-        <EditorialHeading as="h1" className="mt-2">
-          {t.pulsePage.title}
+        {latest && <Eyebrow>{latest.category}</Eyebrow>}
+        <EditorialHeading as="h1" className={latest ? "mt-2" : undefined}>
+          {latest?.headline ?? t.pulsePage.title}
         </EditorialHeading>
-        <p className="mt-2 text-sm text-slate-600">{t.pulsePage.subtitle}</p>
+        <p className="mt-2 text-sm text-slate-600">{latest?.whyItMatters ?? t.pulsePage.subtitle}</p>
       </div>
 
       {data.signals.length === 0 ? (

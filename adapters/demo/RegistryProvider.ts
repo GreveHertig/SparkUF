@@ -33,6 +33,14 @@ export const saraCompanies: RegistryCompany[] = [
  * storleksfördelning) läser den härifrån i stället för att upprepa strängen. */
 export const SARA_MARKET_SNI_CODE = "69.201";
 
+/** Samma bransch-ord som redan används i `sara.ts`s steg 02/03-highlights
+ * ("redovisningsbyråer, SNI 69.201") — återanvänt här som ett innehållsburet
+ * sidhuvud (uppgift 2) i stället för en ny, påhittad etikett. */
+export const SARA_INDUSTRY_LABEL: Record<Locale, string> = {
+  sv: "Redovisningsbyråer",
+  en: "Accounting firms",
+};
+
 const registerSource: Källa = { namn: "Bolagsverket och SCB", hämtad: "2026-01-09" };
 const registerSourceEn: Källa = { namn: "Bolagsverket and Statistics Sweden (SCB)", hämtad: "2026-01-09" };
 
