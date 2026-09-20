@@ -51,11 +51,7 @@ describe("Sändvakt", () => {
   });
 
   it("liveOutreachProvider.send avvisar alltid med OutreachSendDisabledError", async () => {
-    const attempt = liveOutreachProvider.send(
-      [{ companyName: "Testbolaget AB", email: "test@example.com" }],
-      "Hej",
-      "Hi",
-    );
+    const attempt = liveOutreachProvider.send([]);
     await expect(attempt).rejects.toBeInstanceOf(OutreachSendDisabledError);
     await expect(attempt).rejects.toBeInstanceOf(NotImplementedError);
     await expect(liveOutreachProvider.getStatuses()).rejects.toBeInstanceOf(OutreachSendDisabledError);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ConfirmedOutreach } from "./outreachConfirmation";
-import type { EmailSuggestion } from "./OutreachPrep";
+import type { EmailSuggestion, OutreachDraft } from "./OutreachPrep";
+import type { OutreachProvider } from "./OutreachProvider";
 import { sourceFiles } from "@/test/repoFiles";
 
 /**
@@ -48,5 +49,15 @@ describe("Bekräftelsevakt", () => {
       confirmedAt: "2026-01-01",
     };
     expect([a, b]).toHaveLength(2);
+  });
+
+  it("typsystemet: send() tar varken adressförslag eller utkast", () => {
+    const send = (provider: OutreachProvider, suggestion: EmailSuggestion, draft: OutreachDraft) => {
+      // @ts-expect-error: ett adressförslag är inte bekräftat
+      void provider.send([suggestion]);
+      // @ts-expect-error: ett utkast är inte bekräftat
+      void provider.send([draft]);
+    };
+    expect(typeof send).toBe("function");
   });
 });
