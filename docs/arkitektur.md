@@ -64,7 +64,8 @@ kommande sessioner.
 | Webbresearch | `ResearchProvider` | Tavily | stub | `docs/moduler/webbresearch-och-pulsen.md` |
 | Pulsen | `PulseProvider` | Tavily | stub | `docs/moduler/webbresearch-och-pulsen.md` |
 | Simuleringar | `SimulationProvider` | Hiasynth (koncept, alltid stub) | stub | `docs/moduler/simuleringar.md` |
-| Utskick och svar | `OutreachProvider` | Gmail (stub) | stub | `docs/moduler/utskick-och-svar.md` |
+| Utskick och svar | `OutreachProvider` | Gmail. **Sändning avstängd** (kräver uttryckligt ja från Theodor och grundaren) | stub, avsiktligt | `docs/moduler/utskick-och-svar.md` |
+| Utskick, förberedelse | `OutreachPrep` (mejlsökning, utkast) | Tavily + Gemini (`lib/server/tavily.ts`; grindad via `lib/server/outreachAccess.ts`) | byggd, grindad | `docs/moduler/utskick-och-svar.md` |
 | Juridisk koll | `LegalAdvisor` | Gemini + kuraterade källor | klar (ej sakgranskad) | `docs/moduler/juridisk-koll.md` |
 | Bygg | `BuildProvider` | Lovable (koncept, alltid stub) | stub | `docs/moduler/bygg.md` |
 

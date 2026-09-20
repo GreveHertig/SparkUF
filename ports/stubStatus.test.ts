@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { NotImplementedError, RegistryLockedError } from "@/core/errors";
+import { NotImplementedError, OutreachLockedError, RegistryLockedError } from "@/core/errors";
 import { liveProfileRepository } from "@/adapters/live/ProfileRepository";
 import { liveProjectRepository } from "@/adapters/live/ProjectRepository";
 import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
@@ -8,6 +8,7 @@ import { liveRegistryProvider } from "@/adapters/live/RegistryProvider";
 import { liveResearchProvider } from "@/adapters/live/ResearchProvider";
 import { livePulseProvider } from "@/adapters/live/PulseProvider";
 import { liveSimulationProvider } from "@/adapters/live/SimulationProvider";
+import { liveOutreachPrep } from "@/adapters/live/OutreachPrep";
 import { liveOutreachProvider } from "@/adapters/live/OutreachProvider";
 import { liveBuildProvider } from "@/adapters/live/BuildProvider";
 
@@ -99,5 +100,43 @@ describe("Licensvakt: Registret nekar utan öppen grind", () => {
   });
   it("getMarketOverview", async () => {
     await expect(liveRegistryProvider.getMarketOverview("sv")).rejects.toBeInstanceOf(RegistryLockedError);
+  });
+});
+
+/**
+ * G1, grindvakt för Utskick-förberedelsen (docs/moduler/utskick-och-svar.md,
+ * "Grind"): mejlsökning och utkast rör riktiga externa företag. Utan
+ * OUTREACH_LIVE_ENABLED och allowlist ska varje metod neka med
+ * OutreachLockedError, även vid ogiltig indata (grinden slår valideringen).
+ * Går det här testet sönder har grinden tagits bort eller försvagats.
+ */
+describe("Grindvakt: Utskick-förberedelsen nekar utan öppen grind", () => {
+  const saved = { ...process.env };
+  beforeEach(() => {
+    delete process.env.OUTREACH_LIVE_ENABLED;
+    delete process.env.OUTREACH_ALLOWED_USER_IDS;
+  });
+  afterEach(() => {
+    process.env = { ...saved };
+  });
+
+  it("suggestEmail", async () => {
+    await expect(liveOutreachPrep.suggestEmail("Ekbacka Redovisning AB")).rejects.toBeInstanceOf(
+      OutreachLockedError,
+    );
+  });
+  it("grinden slår indatavalideringen (tomt namn ger ändå OutreachLockedError)", async () => {
+    await expect(liveOutreachPrep.suggestEmail("")).rejects.toBeInstanceOf(OutreachLockedError);
+  });
+  it("draftMessage", async () => {
+    await expect(
+      liveOutreachPrep.draftMessage({ companyName: "", problem: "", senderName: "", senderCompany: "" }),
+    ).rejects.toBeInstanceOf(OutreachLockedError);
+  });
+  it("flaggan ensam räcker inte (allowlist saknas)", async () => {
+    process.env.OUTREACH_LIVE_ENABLED = "true";
+    await expect(liveOutreachPrep.suggestEmail("Ekbacka Redovisning AB")).rejects.toBeInstanceOf(
+      OutreachLockedError,
+    );
   });
 });

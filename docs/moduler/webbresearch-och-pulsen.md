@@ -39,7 +39,7 @@ timestamp, source: Källa }`.
 ## Datakällor och vad som krävs
 
 - **Tavily search API**, `TAVILY_API_KEY` — server-only, via den nya
-  `lib/server/tavily.ts` (skelett, se nedan; ingen riktig sökrutin än).
+  `lib/server/tavily.ts` (klienten är byggd sedan mejlsökningen i steg 05; adaptrarna här är fortfarande stubbar).
   Samma mönster som `lib/server/gemini.ts`: tunn klient, ingen domänlogik.
 - **Kostnad per sökning.** Pulsen är tänkt att köras dagligen per grundare
   (avsnitt 1.4) — utan cachning/kvot blir det en sökning per grundare per
@@ -92,6 +92,6 @@ visas för användaren.
 stub — `adapters/live/ResearchProvider.ts` och `adapters/live/PulseProvider.ts`
 kastar båda `NotImplementedError`, med hänvisning hit. Demoadaptrarna är
 klara; Pulsen används av `/demo/app` och `/demo/app/pulsen`, Webbresearch av
-ingen skärm än. `lib/server/tavily.ts` finns som skelett (ingen riktig
-sökning) — bygg cachningsstrategin innan liveadaptrarna anropar Tavily på
+ingen skärm än. `lib/server/tavily.ts` är en riktig, tunn klient (används av mejlsökningen i steg 05;
+Research/Pulse-adaptrarna anropar den inte än) — bygg cachningsstrategin innan liveadaptrarna anropar Tavily på
 riktigt.

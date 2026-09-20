@@ -1,16 +1,20 @@
 import type { OutreachProvider } from "@/ports/OutreachProvider";
-import { NotImplementedError } from "@/core/errors";
+import { OutreachSendDisabledError } from "@/core/errors";
 
-const DOC = "docs/moduler/utskick-och-svar.md";
-
+/**
+ * SÄNDNING ÄR AVSTÄNGD (docs/moduler/utskick-och-svar.md, "Sändspärr").
+ * Ingen Gmail-koppling, inga sända mejl, ingen öppningsspårning, inga
+ * automatiska påminnelser — inte förrän Theodor och grundaren uttryckligen
+ * sagt ja. Mejlsökning och utkast ligger i adapters/live/OutreachPrep.ts.
+ */
 export const liveOutreachProvider: OutreachProvider = {
   async send() {
-    throw new NotImplementedError("Utskick och svar", DOC);
+    throw new OutreachSendDisabledError();
   },
   async getStatuses() {
-    throw new NotImplementedError("Utskick och svar", DOC);
+    throw new OutreachSendDisabledError();
   },
   async getCampaign() {
-    throw new NotImplementedError("Utskick och svar", DOC);
+    throw new OutreachSendDisabledError();
   },
 };

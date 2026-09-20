@@ -93,6 +93,73 @@ export class RegistryInputError extends Error {
 }
 
 /**
+ * Kastas av Utskick-förberedelsen (adapters/live/OutreachPrep.ts) när
+ * grinden är stängd (lib/server/outreachAccess.ts, docs/moduler/utskick-och-svar.md,
+ * "Grind"). Ärver INTE NotImplementedError — grinden ska inte se ut som en
+ * stub. Ingår i `isPlaceholderError` med flit (samma skäl som RegistryLockedError).
+ * Meddelandet är avsiktligt neutralt (avslöjar inte vem som är tillåten).
+ */
+export class OutreachLockedError extends Error {
+  constructor() {
+    super("Utskick är inte öppet för den här användaren än. Se docs/moduler/utskick-och-svar.md.");
+    this.name = "OutreachLockedError";
+  }
+}
+
+/** Ogiltig indata till Utskick-förberedelsen. Kastas efter grinden, före externa anrop. */
+export class OutreachInputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OutreachInputError";
+  }
+}
+
+/**
+ * Tavily/Gemini-transportfel (HTTP, timeout, saknad nyckel). Logga aldrig
+ * `cause`: den kan bära innehåll från en extern sida.
+ */
+export class OutreachTransportError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "OutreachTransportError";
+  }
+}
+
+/** För många uppslag per användare (lib/server/rateLimit.ts). Riktigt fel, inte platshållare. */
+export class OutreachRateLimitError extends Error {
+  constructor() {
+    super("För många mejlsökningar på kort tid. Vänta en stund och försök igen.");
+    this.name = "OutreachRateLimitError";
+  }
+}
+
+/** Gemini bröt det strikta schemat eller svarade med ogiltig JSON. */
+export class OutreachExtractionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OutreachExtractionError";
+  }
+}
+
+/**
+ * Kastas av liveOutreachProvider (send/getStatuses/getCampaign): SÄNDNING ÄR
+ * AVSTÄNGD, inte "ej byggd än". Ingen riktig e-post får skickas förrän Theodor
+ * och grundaren uttryckligen sagt ja (docs/moduler/utskick-och-svar.md,
+ * "Sändspärr"). Att ta bort det här felet är INTE en koduppgift.
+ *
+ * Ärver NotImplementedError enbart så att contractIt och ports/stubStatus.test.ts
+ * fortsätter fungera; meddelandet säger något annat än "bygg mig".
+ */
+export class OutreachSendDisabledError extends NotImplementedError {
+  constructor() {
+    super("Utskick och svar", "docs/moduler/utskick-och-svar.md");
+    this.message =
+      "Sändning är avstängd. Den får inte byggas utan uttryckligt ja från Theodor och grundaren — se docs/moduler/utskick-och-svar.md, avsnitt Sändspärr.";
+    this.name = "OutreachSendDisabledError";
+  }
+}
+
+/**
  * Route-filer fångar "det finns inget att visa än"-felen i samma
  * catch och visar `<ComingSoon />` för båda (uppdrag 14.4) — den ena för att
  * modulen inte är byggd, den andra för att kontot är nytt. Ett fel som INTE
@@ -103,6 +170,7 @@ export function isPlaceholderError(error: unknown): boolean {
   return (
     error instanceof NotImplementedError ||
     error instanceof EmptyStateError ||
-    error instanceof RegistryLockedError
+    error instanceof RegistryLockedError ||
+    error instanceof OutreachLockedError
   );
 }

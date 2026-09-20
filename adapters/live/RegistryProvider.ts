@@ -7,6 +7,7 @@ import type {
   RegistryQuery,
 } from "@/ports/RegistryProvider";
 import { RegistryInputError, RegistryTransportError } from "@/core/errors";
+import { cleanText } from "@/core/text";
 import { assertRegistryAccessAllowed } from "@/lib/server/registryAccess";
 import { fetchCompanies } from "@/lib/server/scb";
 import { fetchAnnualFigures } from "@/lib/server/bolagsverket";
@@ -57,16 +58,6 @@ function requireCount(value: number | undefined, label: string): number | undefi
     throw new RegistryInputError(`${label} måste vara ett heltal >= 0.`);
   }
   return value;
-}
-
-/**
- * Extern text: ta bort styr-, format- (nollbredd, bidi) och radseparatortecken,
- * kollapsa blanksteg, korta på teckenvärden (delar aldrig ett surrogatpar).
- */
-function cleanText(text: string, max: number): string {
-  const flat = text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/\s+/g, " ").trim();
-  const chars = Array.from(flat);
-  return chars.length > max ? `${chars.slice(0, max - 1).join("").trimEnd()}…` : flat;
 }
 
 function parseRows(raw: unknown): RegistryRow[] {

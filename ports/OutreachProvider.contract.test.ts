@@ -10,12 +10,8 @@ describeContract<OutreachProvider>(
   "OutreachProvider",
   { demo: demoOutreachProvider, live: liveOutreachProvider },
   (outreach) => {
-    contractIt("send tar emot en mottagarlista utan att kasta", async () => {
-      await outreach.send(
-        [{ companyName: "Testbolaget AB", email: "test@example.com" }],
-        "Hej, ...",
-        "Hi, ...",
-      );
+    contractIt("send tar emot en tom lista utan att kasta (en ConfirmedOutreach kan inte skapas i testkod)", async () => {
+      await outreach.send([]);
     });
 
     contractIt("getStatuses returnerar en uppslagsbar tabell", async () => {

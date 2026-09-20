@@ -720,4 +720,17 @@ export const sv = {
     },
     signOutCta: "Logga ut",
   },
+  outreachDraft: {
+    subject: "Fråga till {companyName} om {problem}",
+    greeting: "Hej!",
+    intro:
+      "Jag heter {senderName} och driver {senderCompany}, ett UF-företag (Ung Företagsamhet). Jag skriver till er för att jag undersöker ett problem och vill höra hur det ser ut hos er.",
+    ask: "Vi undersöker: {problem}. Känner ni igen problemet hos {companyName}, och hur löser ni det i dag?",
+    priceLine: "Vi tänker oss ett pris på cirka {price} kr per månad. Skulle det vara rimligt för er?",
+    sourceLine: "Jag hittade den här adressen på {sourceUrl}.",
+    gdprNotice:
+      "Jag använder ditt svar bara för att förstå om vår idé löser ett verkligt problem.",
+    optOut: "Vill ni inte höra av oss igen räcker det att svara \"nej tack\", så hör vi inte av oss mer.",
+    signature: "Vänliga hälsningar,\n{senderName}\n{senderCompany}",
+  },
 } satisfies Dictionary;
