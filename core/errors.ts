@@ -125,6 +125,14 @@ export class OutreachTransportError extends Error {
   }
 }
 
+/** För många uppslag per användare (lib/server/rateLimit.ts). Riktigt fel, inte platshållare. */
+export class OutreachRateLimitError extends Error {
+  constructor() {
+    super("För många mejlsökningar på kort tid. Vänta en stund och försök igen.");
+    this.name = "OutreachRateLimitError";
+  }
+}
+
 /** Gemini bröt det strikta schemat eller svarade med ogiltig JSON. */
 export class OutreachExtractionError extends Error {
   constructor(message: string) {
