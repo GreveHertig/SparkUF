@@ -64,6 +64,21 @@ const RESPONDED_INDICES = [...FIRST_WAVE_INDICES, ...SECOND_WAVE_INDICES];
 // Öppnat men inte svarat än, synligt redan under utskicksmomentets körning.
 const OPENED_BEFORE_RESPONSES = [0, 2, 5, 8, 9, 10, 13, 15];
 
+// Uppgift 3 (Valideringen) — dom per svar, läst ur citatens faktiska
+// innehåll, inte bara vilken våg svaret kom i: index 13 kom in i första
+// vågen (räknas som bekräftande i poängmotorn) men häckar själv på priset
+// i citatet ("innan vi bestämmer pris") — där följer domen citatet, inte
+// vågen. Ingen av de nio avvisar problemet helt (även de tre som säger nej
+// till priset bekräftar att problemet är verkligt) — så "avvisar" har inget
+// exempel i det här scenariot, se docs/status.md.
+const PARTIAL_VERDICT_INDICES = [13, 0, 2, 9];
+const FIRST_WAVE_DATE_ISO = "2026-01-19";
+const SECOND_WAVE_DATE_ISO = "2026-01-20";
+/** Priset som testades med samtliga nio — steg 05:s enda prispunkt
+ * (9.3: "priset 2 000 kr"). Motbud (t.ex. index 2:s "~900 kr") syns i
+ * citatet, inte som ett eget fält. */
+const PRICE_TESTED_KR = 2000;
+
 type OutreachStage = "notSent" | "sending" | "firstWave" | "secondWave";
 
 /** Vilket skede utskicket är i, härlett ur den aktuella beatens moment
@@ -100,7 +115,7 @@ export const demoOutreachProvider: OutreachProvider = {
     // Ingen kundlista är byggd för Jonas (persona B) — jonas.ts nämner bara
     // "25 hallar" i löptext, ingen namngiven, strukturerad rad per hall.
     // Hitta inte på bolagsnamn/anställda/omsättning — ärligt tomt läge i
-    // stället (screens/Customers.tsx via notInScenario-propen).
+    // stället (screens/Validation.tsx via notInScenario-propen).
     if (entry === "hasIdea") return [];
     const beat = getBeatAt(beatIndex);
     if (beat.stepNumber < 4) return [];
@@ -119,3 +134,113 @@ export const demoOutreachProvider: OutreachProvider = {
     });
   },
 };
+
+/** Utskicksperioden (steg 05, 9.3): 14 jan (utskicket) till 20 jan (sista
+ * vågen med svar) — samma datum som `sara.ts`s 05a/05b-beats. */
+export const outreachDateRange = { startIso: "2026-01-14", endIso: SECOND_WAVE_DATE_ISO };
+
+/** Öppningsfrekvensen (samma tal som `sara.ts`s `SinceLastTime.openRate`
+ * för steg 05) — Valideringens fjärde nyckeltal (uppgift 3): ett verkligt,
+ * källbelagt jämförelsetal, i stället för ett påhittat branschsnitt som
+ * inte finns som strukturerad data någonstans i demot. */
+export const outreachOpenRate = 38;
+export const outreachOpenRateSource: Record<Locale, Källa> = {
+  sv: { namn: "Utskicket, steg 05", hämtad: "2026-01-16" },
+  en: { namn: "The outreach, step 05", hämtad: "2026-01-16" },
+};
+
+export type ResponseVerdict = "confirms" | "partial";
+
+export type ResponseCard = {
+  companyName: string;
+  county: string;
+  employees: number;
+  dateIso: string;
+  quote: string;
+  verdict: ResponseVerdict;
+  priceTestedKr: number;
+};
+
+/** Ett kort per namngiven svarare (uppgift 3, del 3) — bolag, län, anställda,
+ * datum, citat och en dom. Inget namn eller roll: ingen namngiven
+ * kontaktperson finns i demodatan, bara bolagsnamn och citat (se
+ * docs/status.md, rapporterat som en lucka). */
+export async function getResponseCards(locale: Locale): Promise<ResponseCard[]> {
+  const { beatIndex, entry } = useDemoStore.getState();
+  if (entry === "hasIdea") return [];
+  const beat = getBeatAt(beatIndex);
+  const stage = stageFor(beat);
+  if (stage !== "firstWave" && stage !== "secondWave") return [];
+
+  const visibleIndices = stage === "firstWave" ? FIRST_WAVE_INDICES : RESPONDED_INDICES;
+  return visibleIndices
+    .slice()
+    .sort((a, b) => a - b)
+    .map((index): ResponseCard => {
+      const company = saraCompanies[index];
+      return {
+        companyName: company.name,
+        county: company.county,
+        employees: company.employees,
+        dateIso: FIRST_WAVE_INDICES.includes(index) ? FIRST_WAVE_DATE_ISO : SECOND_WAVE_DATE_ISO,
+        quote: responses[index][locale],
+        verdict: PARTIAL_VERDICT_INDICES.includes(index) ? "partial" : "confirms",
+        priceTestedKr: PRICE_TESTED_KR,
+      };
+    });
+}
+
+export type AssumptionVerdict = "confirmed" | "contradicted";
+
+export type ValidationAssumption = {
+  id: string;
+  text: string;
+  verdict: AssumptionVerdict;
+  basis: string;
+  source: Källa;
+};
+
+/** "Antagandena som prövades" (uppgift 3, del 2) — tre antaganden, var och
+ * en med en motivering som är en ordagrann mening ur `sara.ts`s steg
+ * 06-text (step06NextStep.why), inte nyskriven prosa. Källan är samma
+ * `källa("Kundsamtal, steg 05–06", "2026-01-23")` som redan används i
+ * `BuildProvider.ts`s underlag. */
+const validationAssumptionsSource: Record<Locale, Källa> = {
+  sv: { namn: "Kundsamtal, steg 05–06", hämtad: "2026-01-23" },
+  en: { namn: "Customer calls, steps 05–06", hämtad: "2026-01-23" },
+};
+
+export async function getValidationAssumptions(locale: Locale): Promise<ValidationAssumption[]> {
+  const { beatIndex, entry } = useDemoStore.getState();
+  if (entry === "hasIdea") return [];
+  const beat = getBeatAt(beatIndex);
+  if (beat.stepNumber < 6) return [];
+
+  const source = validationAssumptionsSource[locale];
+  const texts: Record<Locale, string>[] = [
+    { sv: "Byråerna har ett verkligt kvittoproblem.", en: "The firms have a real receipt problem." },
+    { sv: "Byråerna betalar 2 000 kr/mån.", en: "The firms pay SEK 2,000/month." },
+    { sv: "Segmentet 5–20 anställda passar.", en: "The 5–20 employee segment fits." },
+  ];
+  const bases: Record<Locale, string>[] = [
+    { sv: "7 av 9 bekräftar problemet.", en: "7 of 9 confirm the problem." },
+    {
+      sv: "6 av 9 tycker att 2 000 kr är för dyrt, median 900 kr.",
+      en: "6 of 9 think SEK 2,000 is too expensive, median SEK 900.",
+    },
+    {
+      sv: "Alla som sa ja har 10 eller fler anställda — segmentet snävades till 10–20 anställda.",
+      en: "Everyone who said yes has 10 or more employees — the segment was narrowed to 10–20 employees.",
+    },
+  ];
+  const verdicts: AssumptionVerdict[] = ["confirmed", "contradicted", "contradicted"];
+  const ids = ["problemet", "priset", "segmentet"];
+
+  return ids.map((id, index) => ({
+    id,
+    text: texts[index][locale],
+    verdict: verdicts[index],
+    basis: bases[index][locale],
+    source,
+  }));
+}

@@ -12,7 +12,7 @@ export type TourRoute =
   | "/demo/app"
   | "/demo/app/medgrundaren"
   | "/demo/app/marknad"
-  | "/demo/app/kunder"
+  | "/demo/app/validering"
   | "/demo/app/poang"
   | "/demo/app/resan/6"
   | "/demo/app/resan/7"
@@ -120,9 +120,9 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "spark-skickar-mejlen",
-    route: "/demo/app/kunder",
+    route: "/demo/app/validering",
     beatId: "05a-utskicket-efter",
-    target: "customers-table",
+    target: "validation-kpi",
     title: { sv: "Spark skickar mejlen själv", en: "Spark sends the emails itself" },
     body: {
       sv: "Inte bara tips — Spark skriver och skickar den svenska outreachen från Saras egen Gmail, och bevakar öppningar och svar automatiskt.",
@@ -131,9 +131,9 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "svarsdata-forsvarsvall",
-    route: "/demo/app/kunder",
+    route: "/demo/app/validering",
     beatId: "05b-svaren-efter",
-    target: "customers-table",
+    target: "validation-responses",
     title: { sv: "Egen svarsdata som försvarsvall", en: "Own response data as a defense" },
     body: {
       sv: "Svaren citeras rakt av, med namn. Spark kan säga \"4 % svarsfrekvens är lågt för den här branschen, normalt ser vi 11 %\" — en jämförelse ingen konkurrent har underlag för.",

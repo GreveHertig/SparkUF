@@ -109,7 +109,7 @@ export type Dictionary = {
       journey: string;
       score: string;
       market: string;
-      customers: string;
+      validation: string;
       pulse: string;
       memory: string;
       legal: string;
@@ -282,9 +282,20 @@ export type Dictionary = {
       notSentYet: string;
     };
   };
-  customersPage: {
+  /** Valideringen (uppgift 3): Kunder + valideringsinnehållet ur steg 04–06
+   * slagna ihop till en sida — allt som prövats mot verkliga kunder. */
+  validationPage: {
     title: string;
     subtitle: string;
+    kpiTitle: string;
+    contactedLabel: string;
+    respondedLabel: string;
+    responseRateLabel: string;
+    openRateLabel: string;
+    confidencePrefix: string;
+    confidenceContactedUnit: string;
+    confidenceRateSuffix: string;
+    tableTitle: string;
     tableCompany: string;
     tableSni: string;
     tableEmployees: string;
@@ -296,7 +307,19 @@ export type Dictionary = {
       opened: string;
       responded: string;
     };
+    assumptionsTitle: string;
+    assumptionVerdict: {
+      confirmed: string;
+      contradicted: string;
+    };
+    responsesTitle: string;
     responseQuoteLabel: string;
+    responseVerdict: {
+      confirms: string;
+      partial: string;
+    };
+    priceTestedLabel: string;
+    verdictTitle: string;
     /** Simulering av betalningstolerans per byråstorlek (uppdrag 2.2, steg 04). */
     simulationTitle: string;
   };

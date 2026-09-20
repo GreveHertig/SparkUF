@@ -67,7 +67,7 @@ export function AppShell({
     { slug: "resan", label: t.appShell.nav.journey },
     { slug: "poang", label: t.appShell.nav.score },
     { slug: "marknad", label: t.appShell.nav.market },
-    { slug: "kunder", label: t.appShell.nav.customers },
+    { slug: "validering", label: t.appShell.nav.validation },
     { slug: "pulsen", label: t.appShell.nav.pulse },
     { slug: "minnet", label: t.appShell.nav.memory },
     { slug: "juridik", label: t.appShell.nav.legal },
