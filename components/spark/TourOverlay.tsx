@@ -186,14 +186,14 @@ export function TourOverlay() {
             left: effectiveSpotlight.left,
             width: effectiveSpotlight.width,
             height: effectiveSpotlight.height,
-            boxShadow: "0 0 0 9999px rgba(15, 23, 42, 0.72)",
+            boxShadow: "0 0 0 9999px var(--scrim)",
             transitionProperty: reducedMotion ? "none" : "top, left, width, height",
             transitionDuration: "var(--motion-fast)",
             transitionTimingFunction: "var(--ease-standard)",
           }}
         />
       ) : (
-        <div className="absolute inset-0" style={{ backgroundColor: "rgba(15, 23, 42, 0.72)" }} />
+        <div className="absolute inset-0" style={{ backgroundColor: "var(--scrim)" }} />
       )}
 
       {arrowStyle && (

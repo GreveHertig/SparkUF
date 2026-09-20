@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { sans, serifItalic, mono } from "@/design/fonts";
+import { sans, serifItalic, dataSans } from "@/design/fonts";
 import { LocaleProvider } from "@/i18n/context";
 import "./globals.css";
 
@@ -12,7 +12,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="sv"
-      className={`${sans.variable} ${serifItalic.variable} ${mono.variable} h-full antialiased`}
+      className={`${sans.variable} ${serifItalic.variable} ${dataSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <LocaleProvider>{children}</LocaleProvider>

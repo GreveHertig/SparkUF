@@ -16,7 +16,7 @@ export function PromptBox({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-[0_4px_24px_-4px_rgba(38,43,49,0.12)]",
+        "mx-auto w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-[var(--shadow-soft)]",
         className,
       )}
     >

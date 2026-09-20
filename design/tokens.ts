@@ -1,34 +1,36 @@
 /**
- * Samma värden som design/tokens.css, typade för bruk i JS/SVG (t.ex. Recharts
- * eller inline-SVG som inte kan läsa CSS-variabler). Håll de två filerna i synk
- * för hand — det finns bara en handfull värden.
+ * Samma värden som design/tokens.css, typade för bruk i JS/SVG (t.ex.
+ * inline-SVG som inte kan läsa CSS-variabler — se components/ui/Sparkline.tsx).
+ * Håll de två filerna i synk för hand — det finns bara en handfull värden.
+ * Källa: design-referens/artefakt/TOKENS.md (tokenbyte 2026-09-20), se
+ * DESIGN.md och kommentarerna i tokens.css för uträkningen.
  */
 
 export const slate = {
-  50: "#f1f2f6",
-  100: "#e6e8ee",
-  200: "#d3d7e0",
-  300: "#b3b9c8",
-  400: "#8b93a8",
-  500: "#6b7387",
-  600: "#545b6e",
-  700: "#414759",
-  800: "#262b31",
-  900: "#1b1f23",
-  950: "#121417",
+  50: "#f4f6f8",
+  100: "#ecf0f3",
+  200: "#e4e9ee",
+  300: "#c5ccd4",
+  400: "#a6b0ba",
+  500: "#8693a0",
+  600: "#677686",
+  700: "#4a5c6e",
+  800: "#143253",
+  900: "#0e2033",
+  950: "#080e13",
 } as const;
 
 export const accent = {
-  50: "#f2f8ff",
-  100: "#e2eefe",
-  200: "#cfe3ff",
-  300: "#a9cbfd",
-  400: "#7eaefa",
-  500: "#4f8bf0",
-  600: "#366ad6",
-  700: "#2952ab",
-  800: "#203f83",
-  900: "#1a3266",
+  50: "#f0f6fc",
+  100: "#dfecf9",
+  200: "#c4dbf5",
+  300: "#99c0ed",
+  400: "#5999e2",
+  500: "#2d7eda",
+  600: "#0b69d4",
+  700: "#0956ae",
+  800: "#074388",
+  900: "#053266",
 } as const;
 
 export const paper50 = slate[50];

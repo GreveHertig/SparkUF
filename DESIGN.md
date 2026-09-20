@@ -121,3 +121,53 @@ Fyra nya toppnycklar (`publicNav`, `publicFooter`, `landingPage`, `pricingPage`)
 ### Kända problem / medvetna begränsningar
 - **Ingen tooltip-komponent** för engenamn på engelska (uppdrag 4) — löst med inline-parentes i stället, se ovan. Bygg en riktig tooltip-primitiv i en framtida session om fler ytor behöver samma sak.
 - **`DataFact`s `SourceTag`-pill kan radbryta** i den smalaste av de tre Datalöftet-rutorna ("Bolagsverket · 14 september" på två rader) vid 1440 px — samma komponent och mönster som redan används i `screens/Market.tsx` (4 kolumner), inte en ny regression, men trängre här på grund av 3 kolumner i en halv `max-w-6xl`-bredd. Kosmetiskt, ingen överlappning eller bruten layout. Åtgärda vid en framtida poleringssession om det stör i en riktig genomgång.
+
+## Tokenbyte — design-referens/artefakt/TOKENS.md (gren `prototyp`)
+
+Uppdrag (`docs/beslut.md`, 2026-09-19/20): byt tokenlagrets *värden* mot artefaktens, utan att röra layout, komponentstruktur eller innehåll — "referens, inte inklistring… bara tokens byts, så följer allt med automatiskt" (TOKENS.md själv). Sessionens huvuduppgift var att hitta hårdkodade färger/typsnitt/radier/skuggor som går förbi tokenlagret och routa dem genom det.
+
+### Färgmappning — namn behållna, värden bytta
+Artefakten ger sex gråtoner (ground/hair/ink-3/ink-2/navy/ink) och en accent, inte en fullständig 50–950-skala. Kartlagt mot den befintliga skalan efter faktisk användning i kodbasen (kontrollerat med grep innan bytet):
+- `--slate-50`/`--paper-50` → `--ground` (#F4F6F8)
+- `--slate-200` → `--hair` (#E4E9EE) — redan den dominerande kantfärgen (`border-slate-200`)
+- `--slate-600` → `--ink-3` (#677686)
+- `--slate-700` → `--ink-2` (#4A5C6E)
+- `--slate-800`/`--ink-800` → `--navy` (#143253) — verifierat att `ink-800` uteslutande används som mörk ytfyllnad (sidomeny, hero, demorad, `/designsystem`-headern), aldrig som text, vilket matchar artefaktens "navy = marinblå sekundär" rakt av
+- `--slate-900`/`--ink-900` → `--ink` (#0E2033) — verifierat att `slate-900` uteslutande används som stark text (~30 träffar `text-slate-900`), matchar artefaktens "ink = primär text"
+- `--slate-100/300/400/500/950`: ingen artefaktmotsvarighet — linjärt interpolerade mellan grannarna i sRGB (samma metod som color-mix "in srgb" använder) för en jämn skala utan hack. Uträkningen ligger i `design/tokens.css`s kommentarer.
+- `--accent`/`--accent-600` → artefaktens `--accent` (#0B69D4), samma position i skalan som tidigare. `--accent-50…900` ombyggda som en ny ramp runt den ankaren (ingen skala gavs i referensen).
+- **Inte rörda** (ingen motsvarighet i TOKENS.md): `--score-red/orange/yellow/green/strong`, `--data-simulation`, `--data-customer`. `--data-register`/`--data-register-bg` följer automatiskt med (de var redan alias för `--slate-700`/`--slate-100`).
+- **Nya tokens** utan tidigare namn: `--ok`/`--warn`/`--bad` (statusfärger, oanvända i UI:t hittills — etablerar bara ordförrådet, t.ex. inför Marknaden-sessionen), `--sunk`, `--hair-2`, `--navy-soft`, `--accent-soft`, `--ok-soft`, `--warn-soft`, `--bad-soft` (samtliga `color-mix(in srgb, …)`, rakt av från artefakten), `--scrim` (se TourOverlay nedan).
+- **Inte tillagda**: `--maxw`/`--border-width` — layout, uttryckligen utanför uppdraget.
+
+### Skuggor — nytt tokenpar, men omdöpt för att undvika en dold krock
+Artefaktens `--shadow`/`--shadow-lift` lades först in med de namnen rakt av — men Tailwind v4 har redan en egen temavariabel `--shadow` (styr `.shadow`-utilityn), så ett eget `:root`-värde med samma namn hade tyst skuggat den, exakt den krock som `--r-*` (i stället för `--radius-*`) redan medvetet undviker för radier. Döpte om till `--shadow-soft` innan commit. `--shadow-lift` krockar inte (Tailwind saknar den nyckeln) och behöll sitt namn.
+
+Wire-in: `app/globals.css`s `@theme inline` sätter `--shadow-lg: var(--shadow-soft)` och `--shadow-xl: var(--shadow-lift)` — de enda två `shadow-*`-klasserna som faktiskt användes i kodbasen (`SourceTag`, `TourOverlay`, `DemoBar`, `priser`-sidan, landningssidan), nu tokeniserade utan att röra någon komponentfil.
+
+### Hårdkodade värden hittade och rättade (sessionens huvuduppgift)
+Sökte igenom hela kodbasen (hex, `rgba()`/`rgb()`, `style={{...}}`, Tailwind-godtyckliga `-[...]`-klasser, `fontFamily`). Ett första svep missade en träff på grund av en regex-egenhet (en lång alternationsgrupp före `-\[[^]]+\]` matchade inte, medan samma mönster isolerat gjorde det) — sveptes om med enklare mönster per prefix för att vara säker:
+- **`components/spark/TourOverlay.tsx`** (två ställen): `rgba(15, 23, 42, 0.72)` hårdkodad i både spotlightens `boxShadow` och den vanliga overlay-dimningens `backgroundColor` — bytt mot `var(--scrim)` (`color-mix(in srgb, var(--ink-900) 72%, transparent)`).
+- **`components/spark/PromptBox.tsx`**: `shadow-[0_4px_24px_-4px_rgba(38,43,49,0.12)]` (en godtycklig Tailwind-klass med inbränd gammal `slate-800`-hex) — bytt mot `shadow-[var(--shadow-soft)]`.
+- **Inga andra hårdkodade färger, radier eller skuggor hittades.** Ingen Tailwind-standardpalett (`red-*`/`green-*`/`blue-*` osv.) används någonstans — bara `bg-white`/`text-white`, som redan matchar artefaktens `--paper` (#FFFFFF) rakt av och inte rördes.
+- **Recharts är inte en dependency och importeras ingenstans** — punkt 3 i uppdraget ("Recharts-diagrammen ska hämta sina färger från tokens") gäller alltså inte den här kodbasen. Den enda grafkomponenten, `components/ui/Sparkline.tsx`, är egen inline-SVG och hämtade redan sina färger från `design/tokens.ts` (`dataTypeColors`/`scoreColors`) — ärver de nya värdena automatiskt, ingen kodändring behövdes där.
+- **"Haisynth" förekommer inte i kodbasen** — redan korrekt stavat "Hiasynth" överallt (bara `docs/beslut.md` nämner felstavningen som ett skäl till rättelsen). Inget att rätta.
+
+### Typsnitt: Castoro in, JetBrains Mono ut, Funnel Display får ny roll
+- **`--font-sans` (brödtext/rubriker):** Funnel Display → **Castoro**, självhostad `.woff2` (`@fontsource/castoro`, OFL-1.1, samma licensmönster som tidigare typsnitt — bara filen kopierad in, inget nytt npm-beroende). Löser artefaktens huvudkrav rakt av.
+- **`--font-data` (ny token, tabeller/diagramaxlar/nyckeltal):** återanvänder de redan självhostade Funnel Display-filerna i stället för att hämta ett nytt typsnitt — löser `docs/beslut.md`s öppna fråga ("neutral sans för data ska provas innan det låses") pragmatiskt: samma neutrala, geometriska sans som redan fanns i repot, bara en ny roll. `.font-numeric`-utilityn (`app/globals.css`) pekar nu på `var(--font-data)` i stället för `var(--font-mono)` — samma klassnamn i alla anropande komponenter, noll komponentfiler ändrade.
+- **`--font-serif-italic` (Instrument Serif Italic):** oförändrad — "kursiva serif-ord i rubriker behålls" (TOKENS.md, `docs/beslut.md`).
+- **JetBrains Mono borttagen**, eftersom `--font-data` tog över dess enda roll (siffror). `design/fonts.ts`s `mono`-export och `--font-mono`-wiringen i `app/layout.tsx` är borttagna. **Känt problem:** `design/fonts/jetbrains-mono/`-mappen kunde inte tas bort — sandboxens auto-läge-klassificerare blockerade både `rm -rf` och `git rm` som "Irreversible Local Destruction". Mappen ligger kvar oanvänd i repot; ta bort den manuellt (`git rm -r design/fonts/jetbrains-mono`) när du har tillfälle.
+- **Känd begränsning:** Castoro (`@fontsource/castoro`) finns bara i vikt 400 (normal + kursiv). Befintliga `font-bold`/`font-extrabold`-klasser på rubriker (byggda för den varibla Funnel Display) renderas nu som webbläsarens syntetiska fetstil, inte ett riktigt snitt — vanligt för seriffer, men inte kontrollerat i en riktig webbläsare den här sessionen (se nedan).
+
+### WCAG AA-kontroll (rapporterat, paletten oförändrad enligt uppdrag)
+Beräknat direkt på de nya hexvärdena (relativ luminans, WCAG 2.x-formeln), inte ögonmått:
+- **Godkänt:** `ink-3`/paper 4.65:1, `ink-2`/paper 6.89:1, `ink`/paper 16.5:1, `navy`/paper 13.04:1, vit text på `accent` 5.27:1, `accent` som icke-text-yta mot `ground` 4.86:1, `accent` på `accent-soft` 4.58:1, `navy` (score-strong) på sin `accent-100`-bakgrund 10.87:1 (kontrollerat efter tokenbytet, en följdeffekt av att `--score-strong` pekar på `slate-800`).
+- **Klarar INTE 4.5:1 för normal text** (klarar väl 3:1, dvs. stor/fet text eller UI-komponenter): text i **`ok`** på **`ok-soft`** = 3.74:1, **`warn`** på **`warn-soft`** = 3.92:1, **`bad`** på **`bad-soft`** = 4.34:1. Ingen av dessa tre par används i något UI än (etablerade som ordförråd för framtiden, se ovan) — flaggat här så att den som först bygger en badge/pill med dem vet att den mjuka bakgrundstonen inte räcker för liten brödtext, bara för stor/fet text. Paletten är inte ändrad för att fixa detta, enligt uppdrag.
+- Inte kontrollerat: fokusringar (`focus-visible:outline-accent-300` i `TextField`) — utanför uppdragets "text på mjuka bakgrundstoner"-fråga, och inte en regression (samma mönster fanns redan mot den gamla paletten).
+
+### Radier
+`--r-md` motsvarade redan artefaktens `--radius:10px` oförändrat, av en slump. `--r-sm` bytt från ett eget fast värde (6px) till `calc(var(--r-md) * .7)` (≈7px), samma relation som artefaktens `--r-sm:calc(var(--radius) * .7)`. `--r-lg`/`--r-pill` har ingen artefaktmotsvarighet och lämnades.
+
+### Verifiering
+`pnpm typecheck`/`lint`/`test` (252 gröna, 31 skippade som väntat) och `pnpm build` gröna. Kontrollerat i den kompilerade CSS:n att `--shadow-soft`/`--shadow-lift` löser ut till rätt `#hex`-värden, att `--shadow`-namnkrocken inte uppstår (Tailwinds `.shadow`-klass genereras inte ens, ingen av kodbasens komponenter använder den bara `shadow`), att Castoro-filen bäddas in i byggresultatet, och att inga `fonts.googleapis`/`fonts.gstatic`-anrop finns (demot fungerar fortfarande offline). **Ingen manuell webbläsarverifiering** den här sessionen (inget webbläsarverktyg anslutet) — särskilt Castoros syntetiska fetstil på rubriker och den nya paletten i en riktig renderad sida är inte sedda med ögon, bara verifierade via beräknad kontrast och kompilerad CSS.
