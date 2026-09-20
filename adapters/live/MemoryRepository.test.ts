@@ -128,3 +128,51 @@ describe("liveMemoryRepository.getTraceEvents", () => {
     expect(events[0]).toEqual({ id: "e1", timestampIso: "2026-09-01T00:00:00Z", description: "Konto skapat" });
   });
 });
+
+describe("liveMemoryRepository.recordTraceEvent", () => {
+  beforeEach(() => {
+    requireSupabaseUserMock.mockReset();
+  });
+
+  const event = { module: "Domen", description: "Domen blev pivot.", occurredAtIso: "2026-01-20" };
+
+  it("sparar en post som sedan syns i getTraceEvents, med användaren ur sessionen", async () => {
+    const supabase = makeSupabaseFake({});
+    requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    await liveMemoryRepository.recordTraceEvent(event);
+    const events = await liveMemoryRepository.getTraceEvents("sv");
+    expect(events).toHaveLength(1);
+    expect(events[0].description).toBe("Domen blev pivot.");
+    expect(events[0].timestampIso).toBe("2026-01-20T00:00:00.000Z");
+  });
+
+  it("är idempotent: samma händelse sparas inte två gånger", async () => {
+    const supabase = makeSupabaseFake({});
+    requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    await liveMemoryRepository.recordTraceEvent(event);
+    await liveMemoryRepository.recordTraceEvent(event);
+    expect(await liveMemoryRepository.getTraceEvents("sv")).toHaveLength(1);
+  });
+
+  it("rensar styr-/nollbreddstecken och kortar beskrivningen", async () => {
+    const supabase = makeSupabaseFake({});
+    requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    await liveMemoryRepository.recordTraceEvent({ ...event, description: `A\u200b\u0000B${"x".repeat(600)}` });
+    const [saved] = await liveMemoryRepository.getTraceEvents("sv");
+    expect(saved.description.startsWith("A B")).toBe(true);
+    expect(Array.from(saved.description).length).toBeLessThanOrEqual(500);
+  });
+
+  it("kastar vid tom modul/beskrivning eller ogiltig tid, utan att spara något", async () => {
+    const supabase = makeSupabaseFake({});
+    requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    await expect(liveMemoryRepository.recordTraceEvent({ ...event, module: " " })).rejects.toThrow();
+    await expect(liveMemoryRepository.recordTraceEvent({ ...event, description: "" })).rejects.toThrow();
+    await expect(liveMemoryRepository.recordTraceEvent({ ...event, occurredAtIso: "inte ett datum" })).rejects.toThrow();
+    expect(await liveMemoryRepository.getTraceEvents("sv")).toEqual([]);
+  });
+});
