@@ -1222,7 +1222,7 @@ en ny bugg.
 Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
 
 ### Inga blockerare kvar för Fas 1
-1. **Licens för namngivna företag: Sekundärt, bekräftat av två oberoende AI-sökningar (ej primärkälla läst av människa).** Fritt att bygga tjänster, bearbeta och kombinera, inget avtal, ingen avgift, användningen måste följa lag inklusive GDPR. Rekommendationen står kvar: namngivna listor bara för aktiebolag utan reklamspärr. Bolagsverkets egna villkor läses av Erik när nycklarna kommer, för att nå Verifierat.
+1. **Licens för namngivna företag: Verifierat (Erik läste https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder.5294.html 2026-09-20).** Lagring, visning och vidaredistribution av bolagsdata tillåtet; enskilda firmors personuppgifter (GDPR) får inte profileras/samköras och reklamspärr ska respekteras. Rekommendationen står kvar: namngivna listor bara för aktiebolag utan reklamspärr. Uppdaterad i `docs/dataspiken.md` (status, kort svar, avsnitt 1, 2, 6, 7).
 2. **Mottagarnas kontaktuppgifter (steg 05): beslut.** Hunter.io valdes bort (gratisnivån delar 50 krediter per hela kontot/månad). Egen mejlsökning med Tavily (sök "Kontakta oss"-sidan) + Gemini (extrahera adressen). Grundaren bekräftar/redigerar alltid adressen före utskick. **Beslut för Fas 2 (`OutreachProvider`), byggs inte nu.**
 
 ### Klart
@@ -1233,7 +1233,7 @@ Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
 
 ### Var vi står / vad som är kvar innan nästa session
 - **Kundanmälan till Bolagsverket är inte skickad än** (Erik 2026-09-19; tidigare stod här felaktigt att den väntade på godkännande).
-- **Erik:** läs Bolagsverkets användarvillkor när nycklarna kommer (blockerar inte Fas 1).
+- **Erik:** kontrollera detaljer (t.ex. källhänvisning) när nycklarna kommer (blockerar inte Fas 1). Licensfrågan är Verifierad 2026-09-20.
 - **Fas 2:** bygg `OutreachProvider` med Tavily + Gemini för mottagarnas e-post (punkt 2 ovan).
 - **Grundaren + partner + vuxen/handledare:** Allabolag/UC är ett öppet avtalsbeslut. Villkoren förbjuder regelbunden, systematisk lagring utan skriftligt medgivande. Ingen kontakt tas och inget formulär skickas innan dess.
 - **Först därefter:** en spik med riktiga nycklar (ordning i `dataspiken.md` avsnitt 3), sedan bygg enligt `docs/bygga-en-modul.md`.
@@ -1254,8 +1254,7 @@ Byggd enligt `docs/bygga-en-modul.md`, plan godkänd 2026-09-19 (beslut D1–D7)
 **Villkor (blockerande för exponering):** ingen annan än Erik och Theodor får se
 eller använda liveregisterdata (ingen demo för lärare, investerare eller andra
 UF-företag) förrän `docs/dataspiken.md` §6 fråga 1 är uppgraderad från
-Sekundärt till Verifierat, dvs. en människa har läst Bolagsverkets egna villkor
-för visning/återanvändning av namngivna uppgifter. Internt utvecklingsarbete och
+Sekundärt till Verifierat. **Uppfyllt 2026-09-20** (Erik läste Bolagsverkets sida); licensgrinden i koden ligger kvar tills Erik öppnar den, och juridisk koll av fråga 4 (aktiebolag/reklamspärr) återstår. Internt utvecklingsarbete och
 tester är okej.
 
 ### Klart
