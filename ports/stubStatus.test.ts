@@ -11,9 +11,10 @@ import { liveSimulationProvider } from "@/adapters/live/SimulationProvider";
 import { liveOutreachPrep } from "@/adapters/live/OutreachPrep";
 import { liveOutreachProvider } from "@/adapters/live/OutreachProvider";
 import { liveBuildProvider } from "@/adapters/live/BuildProvider";
+import { liveVerdictProvider } from "@/adapters/live/VerdictProvider";
 
 /**
- * Vakt, inte kontrakt: de 11 moduler som enligt docs/moduler/*.md fortfarande
+ * Vakt, inte kontrakt: de 12 moduler som enligt docs/moduler/*.md fortfarande
  * har status "stub" ska fortsätta kasta NotImplementedError. Så fort en
  * modulsession bygger en av dem klart går den här listan sönder av sig
  * själv — ta bort raden HÄR bara samtidigt som du sätter status "klar" i
@@ -27,6 +28,7 @@ const STILL_STUBS: { module: string; call: () => Promise<unknown> }[] = [
   { module: "Simuleringar", call: () => liveSimulationProvider.simulate("test", "sv") },
   { module: "Utskick och svar", call: () => liveOutreachProvider.getStatuses() },
   { module: "Bygg", call: () => liveBuildProvider.getStatus() },
+  { module: "Domen", call: () => liveVerdictProvider.getVerdictReport("sv") },
 ];
 
 describe("Stub-vakt: obyggda liveadaptrar kastar fortfarande NotImplementedError", () => {

@@ -733,4 +733,28 @@ export const sv = {
     optOut: "Vill ni inte höra av oss igen räcker det att svara \"nej tack\", så hör vi inte av oss mer.",
     signature: "Vänliga hälsningar,\n{senderName}\n{senderCompany}",
   },
+  verdict: {
+    decision: {
+      run: "Kör",
+      refine: "Förfina",
+      pivot: "Pivotera",
+      insufficient: "För litet underlag",
+    },
+    reasoning: {
+      run: "{confirming} av {responded} som svarade bekräftar problemet och priset håller. Kör vidare.",
+      refine: "{confirming} av {responded} som svarade bekräftar problemet, men något behöver justeras innan ni kör.",
+      pivot: "Bara {confirming} av {responded} som svarade bekräftar problemet. Pröva en annan riktning.",
+      insufficient: "Bara {responded} har svarat (av {contacted} kontaktade). Det räcker inte för en dom än.",
+    },
+    reason: {
+      smallSample: "För få svar för att dra en slutsats.",
+      problemRejected: "De flesta som svarade bekräftar inte problemet.",
+      problemWeak: "Problemet bekräftas, men inte tydligt nog.",
+      priceTooHigh: "{priceDeclined} av {responded} tycker att priset är för högt.",
+      priceUnproven: "För få har uttryckligen accepterat priset.",
+      segmentSkew: "Alla som accepterar priset har minst {minEmployees} anställda. Segmentet är för brett.",
+    },
+    medianCounterOffer: "Median av motbud: {median} kr (baserat på {count} svar).",
+    pivotTraceEvent: "Domen blev pivot: {confirming} av {responded} bekräftade problemet.",
+  },
 } satisfies Dictionary;

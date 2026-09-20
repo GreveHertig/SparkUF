@@ -240,8 +240,8 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
   "06-domen-efter": [
     msg(
       "cofounder",
-      "Domen: förfina, inte kör och inte pivotera. 7 av 9 bekräftar problemet, men 6 av 9 tycker 2 000 kr är för dyrt. Alla som sa ja har 10 eller fler anställda.",
-      "The verdict: refine, not go and not pivot. 7 of 9 confirm the problem, but 6 of 9 think SEK 2,000 is too expensive. Everyone who said yes has 10 or more employees.",
+      "Domen: förfina, inte kör och inte pivotera. 7 av 9 bekräftar problemet, men 3 av 9 tycker 2 000 kr är för dyrt. Alla som sa ja har 10 eller fler anställda.",
+      "The verdict: refine, not go and not pivot. 7 of 9 confirm the problem, but 3 of 9 think SEK 2,000 is too expensive. Everyone who said yes has 10 or more employees.",
     ),
     msg("founder", "Så vi smalnar segmentet?", "So we narrow the segment?"),
     msg(

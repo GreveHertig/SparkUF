@@ -34,6 +34,11 @@ export const demoMemoryRepository: MemoryRepository = {
     // Demot har ingen backend — riktig lagring landar med Supabase (P1).
   },
 
+  async recordTraceEvent() {
+    // Demot har ingen backend — Spåret härleds ur beats (getTraceEvents), så
+    // det finns inget att spara till.
+  },
+
   async getTraceEvents(locale: Locale) {
     const { beatIndex, entry } = useDemoStore.getState();
     const engine = engineFor(entry);

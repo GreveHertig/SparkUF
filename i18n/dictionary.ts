@@ -677,4 +677,24 @@ export type Dictionary = {
     optOut: string;
     signature: string;
   };
+  /** Domen (steg 06, docs/moduler/domen.md). Platshållare: {responded} {contacted} {confirming} {priceDeclined} {median} {count} {minEmployees}. */
+  verdict: {
+    decision: { run: string; refine: string; pivot: string; insufficient: string };
+    reasoning: {
+      run: string;
+      refine: string;
+      pivot: string;
+      insufficient: string;
+    };
+    reason: {
+      smallSample: string;
+      problemRejected: string;
+      problemWeak: string;
+      priceTooHigh: string;
+      priceUnproven: string;
+      segmentSkew: string;
+    };
+    medianCounterOffer: string;
+    pivotTraceEvent: string;
+  };
 };

@@ -56,6 +56,10 @@ describeContract<MemoryRepository>(
       await memory.setBrainNotes("En testanteckning.");
     });
 
+    contractIt("recordTraceEvent tar emot en giltig post utan att kasta", async () => {
+      await memory.recordTraceEvent({ module: "Domen", description: "Testhändelse.", occurredAtIso: "2026-01-20" });
+    });
+
     contractIt("getTraceEvents ger kronologiska händelser med beskrivning", async () => {
       const events = await memory.getTraceEvents("sv");
       expect(Array.isArray(events)).toBe(true);
