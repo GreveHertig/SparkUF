@@ -22,6 +22,15 @@ export type Dictionary = {
     simulationPopulationLabel: string;
     upToPointsBefore: string;
     upToPointsAfter: string;
+    /** Generiska bolagsformsnamn (uppgift 2: Juridik-sidans innehållsburna
+     * rubrik) — inte scenarioinnehåll, samma fyra värden som `Bolagsform`
+     * i core/domain.ts. */
+    bolagsformLabels: {
+      enskild_firma: string;
+      aktiebolag: string;
+      handelsbolag: string;
+      ekonomisk_forening: string;
+    };
   };
   /** KPI-raden (designuppdatering: high-tech dashboard) — täta nyckeltal högst
    * upp på Hem och Poäng, se screens/AppHome.tsx och screens/Score.tsx. */
@@ -255,6 +264,7 @@ export type Dictionary = {
       title: string;
       sniLabel: string;
       mostCommonLabel: string;
+      employeesUnit: string;
       sizeBuckets: {
         oneToFour: string;
         fiveToNine: string;

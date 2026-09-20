@@ -20,6 +20,12 @@ export const en = {
     simulationPopulationLabel: "Simulated population",
     upToPointsBefore: "Can earn up to",
     upToPointsAfter: "points",
+    bolagsformLabels: {
+      enskild_firma: "Sole proprietorship",
+      aktiebolag: "Limited company",
+      handelsbolag: "Trading partnership",
+      ekonomisk_forening: "Economic association",
+    },
   },
   kpi: {
     scoreLabel: "Score",
@@ -247,6 +253,7 @@ export const en = {
       title: "Size distribution",
       sniLabel: "SNI",
       mostCommonLabel: "Most common in the sample:",
+      employeesUnit: "employees",
       sizeBuckets: {
         oneToFour: "1–4 employees",
         fiveToNine: "5–9 employees",

@@ -8,6 +8,7 @@ import { KpiRow } from "@/components/spark/KpiRow";
 import { KpiTile } from "@/components/spark/KpiTile";
 import { ScoreBadge } from "@/components/spark/ScoreBadge";
 import { cn } from "@/design/cn";
+import { getScoreLevel } from "@/score/levels";
 import { useI18n } from "@/i18n/context";
 import type { ScoreSnapshot } from "@/core/domain";
 import type { ScoreSuggestion } from "@/core/score";
@@ -29,15 +30,13 @@ export function Score({ data }: { data: ScoreData }) {
   const totalPartsCount = unlockedCount + snapshot.lockedParts.length;
   const bestSuggestion = suggestions[0];
   const deltaLabel = `${snapshot.delta > 0 ? "+" : "−"}${Math.abs(snapshot.delta)}`;
+  const level = getScoreLevel(snapshot.total);
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-8">
       <div>
-        <Eyebrow>{t.appShell.nav.score}</Eyebrow>
-        <EditorialHeading as="h1" className="mt-2">
-          {t.scorePage.title}
-        </EditorialHeading>
-        <p className="mt-2 text-sm text-slate-600">{t.scorePage.subtitle}</p>
+        <EditorialHeading as="h1">{t.score.levels[level.key].name}</EditorialHeading>
+        <p className="mt-2 text-sm text-slate-600">{t.score.levels[level.key].message}</p>
       </div>
 
       <KpiRow>

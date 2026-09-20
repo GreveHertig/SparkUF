@@ -20,6 +20,12 @@ export const sv = {
     simulationPopulationLabel: "Simulerad population",
     upToPointsBefore: "Kan ge upp till",
     upToPointsAfter: "poäng",
+    bolagsformLabels: {
+      enskild_firma: "Enskild firma",
+      aktiebolag: "Aktiebolag",
+      handelsbolag: "Handelsbolag",
+      ekonomisk_forening: "Ekonomisk förening",
+    },
   },
   kpi: {
     scoreLabel: "Poäng",
@@ -247,6 +253,7 @@ export const sv = {
       title: "Storleksfördelning",
       sniLabel: "SNI",
       mostCommonLabel: "Vanligast i urvalet:",
+      employeesUnit: "anställda",
       sizeBuckets: {
         oneToFour: "1–4 anställda",
         fiveToNine: "5–9 anställda",

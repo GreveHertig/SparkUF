@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Market, type MarketData } from "@/screens/Market";
 import { useI18n } from "@/i18n/context";
-import { demoRegistryProvider, SARA_MARKET_SNI_CODE } from "@/adapters/demo/RegistryProvider";
+import { demoRegistryProvider, SARA_MARKET_SNI_CODE, SARA_INDUSTRY_LABEL } from "@/adapters/demo/RegistryProvider";
 import { demoOutreachProvider, outreachSource } from "@/adapters/demo/OutreachProvider";
 import { demoSimulationProvider, simulationQuestions } from "@/adapters/demo/SimulationProvider";
 import { useDemoStore, getCurrentStepNumber } from "@/adapters/demo/demoStore";
@@ -29,7 +29,16 @@ export default function DemoMarketPage() {
       demoRegistryProvider.searchCompanies({ sniCode: SARA_MARKET_SNI_CODE }),
       demoOutreachProvider.getCampaign(locale),
     ]).then(([overview, simulation, companies, campaign]) => {
-      if (!cancelled) setData({ overview, simulation, companies, campaign, outreachSource: outreachSource[locale] });
+      if (!cancelled) {
+        setData({
+          overview,
+          simulation,
+          companies,
+          campaign,
+          outreachSource: outreachSource[locale],
+          industryLabel: SARA_INDUSTRY_LABEL[locale],
+        });
+      }
     });
     return () => {
       cancelled = true;

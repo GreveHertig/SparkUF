@@ -1,7 +1,6 @@
 "use client";
 
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
-import { Eyebrow } from "@/components/ui/Eyebrow";
 import { LockedState } from "@/components/ui/LockedState";
 import { LegalMap } from "@/components/spark/LegalMap";
 import { useI18n } from "@/i18n/context";
@@ -15,13 +14,15 @@ export type LegalData = {
  * (CLAUDE.md: en ansvarsbegränsning på juridiska ytor). */
 export function Legal({ data, notInScenario }: { data: LegalData; notInScenario?: boolean }) {
   const { t } = useI18n();
+  // Rubriken beskriver den faktiska bolagsformen i stället för att upprepa
+  // "Juridik" (uppgift 2) — hämtad ur det första kravets `gällerFör`.
+  const bolagsform = data.krav[0]?.gällerFör[0];
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
-        <Eyebrow>{t.appShell.nav.legal}</Eyebrow>
-        <EditorialHeading as="h1" className="mt-2">
-          {t.legalPage.title}
+        <EditorialHeading as="h1">
+          {bolagsform ? t.common.bolagsformLabels[bolagsform] : t.legalPage.title}
         </EditorialHeading>
         <p className="mt-2 text-sm text-slate-600">{t.legalPage.subtitle}</p>
       </div>

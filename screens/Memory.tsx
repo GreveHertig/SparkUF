@@ -24,11 +24,12 @@ export function Memory({ data, onSaveBrainNotes }: { data: MemoryData; onSaveBra
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
-        <Eyebrow>{t.appShell.nav.memory}</Eyebrow>
+        <Eyebrow>
+          {data.profile.name} · {data.profile.role}
+        </Eyebrow>
         <EditorialHeading as="h1" className="mt-2">
-          {t.memoryPage.title}
+          {data.profile.bio}
         </EditorialHeading>
-        <p className="mt-2 text-sm text-slate-600">{t.memoryPage.subtitle}</p>
       </div>
 
       <Tabs.Root defaultValue="profile">

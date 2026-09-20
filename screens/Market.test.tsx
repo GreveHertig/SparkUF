@@ -47,7 +47,7 @@ function campaignOf(statuses: CampaignRow["status"][]): CampaignRow[] {
 }
 
 function baseData(campaign: CampaignRow[]): MarketData {
-  return { overview, simulation, companies, campaign, outreachSource };
+  return { overview, simulation, companies, campaign, outreachSource, industryLabel: "Testbranschen" };
 }
 
 afterEach(() => {

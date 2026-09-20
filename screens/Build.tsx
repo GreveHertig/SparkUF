@@ -32,10 +32,7 @@ export function Build({ data, notInScenario }: { data: BuildData; notInScenario?
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Eyebrow>{t.appShell.nav.build}</Eyebrow>
-          <EditorialHeading as="h1" className="mt-2">
-            {t.buildPage.title}
-          </EditorialHeading>
+          <EditorialHeading as="h1">{data.spec ? data.spec.sammanfattning : t.buildPage.title}</EditorialHeading>
           <p className="mt-2 text-sm text-slate-600">{t.buildPage.subtitle}</p>
         </div>
         <ConceptBadge className="mt-1" />
@@ -68,7 +65,6 @@ export function Build({ data, notInScenario }: { data: BuildData; notInScenario?
 
           <section data-tour-id="build-spec" className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5">
             <Eyebrow>{t.buildPage.specTitle}</Eyebrow>
-            <p className="text-sm leading-snug text-slate-800">{data.spec.sammanfattning}</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-xs font-semibold uppercase text-slate-500" style={{ letterSpacing: "var(--tracking-label)" }}>
