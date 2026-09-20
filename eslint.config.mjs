@@ -3,7 +3,8 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
 // Sändspärr (docs/moduler/utskick-och-svar.md): inga mejlpaket i repot.
-// Komplement till lib/server/noMailer.guard.test.ts.
+// Komplement till lib/server/noMailer.guard.test.ts. Täcker bara statiska imports;
+// dynamisk import() och fetch mot mejl-API:er fångas av vakttestet.
 const mailPattern = {
   group: [
     "nodemailer",

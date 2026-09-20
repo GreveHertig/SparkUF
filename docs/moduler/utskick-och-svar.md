@@ -105,13 +105,19 @@ Ingen route eller skärm använder porten, och ingenting lagras.
 2. **Ett** Tavily-anrop (`"<namn> kontakta oss"`, `lib/server/tavily.ts`, fast URL).
    Sidor utan `@` kastas bort; en sida vars värd bär bolagets namn föredras.
    Ingen sida med `@` ger tom lista utan Gemini-anrop.
-3. **Ett** Gemini-anrop med sidtexten (rensad, max 12 000 tecken) i ett
-   avgränsat databloc med en slumpad avgränsare per anrop. Schemat är
+3. **Ett** Gemini-anrop med företagsnamnet och sidtexten (rensad, max 12 000
+   tecken) i avgränsade databloc med en slumpad avgränsare per anrop. Schemat är
    `.strict()` och har **inget** url-/källfält.
 4. **Koden verifierar varje kandidat** (`core/emailVerification.ts`): ren
-   syntax (NFKC, inga dolda tecken), står **ordagrant** i texten som skickades
-   (som egen adress, inte del av en längre), och domänen hör till träffsidan
-   eller bär ett namntoken ur företagsnamnet. Domänmismatch avvisas **hårt**
+   syntax (NFKC, inga dolda tecken, strikta etiketter), står **ordagrant** i
+   texten som skickades (som egen adress, inte del av en längre; sidans egen
+   stavning returneras), och **adressens domän bär bolagets namn**: strikt
+   likhet (bindestreck bortsedda) mot bolagets särskiljande ord, dessa ord ihop
+   eller hela namnet utan bolagsform, aldrig "innehåller". Sidans domän räknas
+   inte: en katalog- eller konkurrentsida kan inte göra sin egen adress till
+   bolagets. Tvådelade suffix (`co.uk`), delade värdar (`vercel.app`,
+   `github.io` …) och fria mejltjänster (`gmail.com` …) avvisas. Namn som bara
+   består av branschord ("Svenska Bygg") ger alltid avslag. Avslag är **hårda**
    (färre men pålitliga förslag). Rollbaserade adresser (`info@`, `kontakt@` …)
    sorteras först; personliga returneras flaggade.
 5. Källan (`url`, värdnamn, datum) injiceras i kod ur Tavily-träffen. Avvisade
@@ -122,7 +128,7 @@ Ingen route eller skärm använder porten, och ingenting lagras.
 Mallbaserat ur i18n (`outreachDraft`, sv + en) via `core/outreachDraft.ts`, inte
 modellskrivet: avsändare, var adressen hittades, personuppgiftsnotis och
 avregistreringsmening får inte kunna parafraseras bort. Alla variabler rensas
-(företagsnamnet är extern text). Ett Gemini-formulerat utkast är avsiktligt
+(företagsnamnet är extern text); käll-URL:en måste vara `https`, utan userinfo och högst 300 tecken. Ett Gemini-formulerat utkast är avsiktligt
 utanför scope.
 
 ## Grind
@@ -171,17 +177,33 @@ nu eller i framtiden. Tre lager:
    skriver ett `status: "confirmed"`-literal.
 
 ## Kända begränsningar
-- En kontaktsida som använder en helt annan domän för mejl avvisas (hård
-  avvisning); grundaren söker då manuellt.
-- `registrableDomain` tar de två sista domänetiketterna (ingen publik
-  suffixlista). Den är förenklad, och det ska åtgärdas innan andra länders
-  domäner (t.ex. `.co.uk`) blir aktuella.
+- **Bolag vars domän inte bär namnet avvisas** (hård avvisning), t.ex. en byrå
+  med en varumärkesdomän. Grundaren söker då manuellt. Det är priset för att
+  aldrig föreslå fel bolags adress.
+- Listan över tvådelade suffix, delade värdar och fria mejltjänster i
+  `core/emailVerification.ts` är förenklad, inte en publik suffixlista.
+- **`ConfirmedOutreach` är ett kompileringstidsbrand.** `any`, `as never` eller
+  `JSON.parse(...)` kan kringgå typen; G4 fångar bara vanliga casts. Den dag
+  `send` byggs måste den **även kontrollera bekräftelsen vid körning**
+  (t.ex. att bekräftelsen skapats av den enda tillåtna funktionen och att
+  användaren är allowlistad). Typen ersätter inte den kontrollen.
+- Typskydden i G4 körs av `tsc` inuti testet (vitest tar bort typer), så
+  `pnpm test` kräver att `node_modules/.bin/tsc` finns.
+- G2–G4 läser källtext, inte AST. ESLint-regeln mot mejlpaket täcker bara
+  statiska imports; dynamisk `import()` och `fetch` mot mejl-API:er fångas av
+  vakttestet.
 - Namnkrock i Tavily: `searchedUrl` returneras alltid så att grundaren ser
   sidan före bekräftelse.
 - Throttlen är i minnet och överlever inte flera serverinstanser. Allowlisten
   på två personer är det riktiga taket.
-- Personliga adresser kan returneras (flaggade). GDPR-frågan för mottagarnas
-  adresser ligger kvar hos Juridisk koll.
+- Personliga adresser kan returneras (flaggade), och upp till 12 000 tecken
+  sidtext går till Gemini. **Öppen fråga till Theodor/Juridisk koll:**
+  mottagarnas personuppgifter (artikel 14: information om källa och rättslig
+  grund) och om utkastets `gdprNotice` räcker. Formuleringen är medvetet
+  återhållen ("jag använder ditt svar bara för att …") och lovar inte att inget
+  sparas.
+- Felmeddelandena är på svenska direkt i koden, som Registrets fel. De visas
+  aldrig för användare rakt av (samma regel som `LegalAdvisorError`).
 - Adaptern är inte körd mot riktiga Tavily/Gemini än (bara mockat). Opt-in-testet
   `adapters/live/OutreachPrep.live.test.ts` prövar bara Tavily-klienten.
 

@@ -697,7 +697,7 @@ export const en = {
     priceLine: "We are thinking of a price of about SEK {price} per month. Would that be reasonable for you?",
     sourceLine: "I found this address at {sourceUrl}.",
     gdprNotice:
-      "I store no personal data about you beyond your reply, and only to understand whether our idea solves a real problem.",
+      "I will use your reply only to understand whether our idea solves a real problem.",
     optOut: "If you'd rather not hear from us again, just reply \"no thanks\" and we won't contact you further.",
     signature: "Kind regards,\n{senderName}\n{senderCompany}",
   },

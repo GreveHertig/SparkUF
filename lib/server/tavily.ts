@@ -1,6 +1,6 @@
 import "server-only";
 import { OutreachTransportError } from "@/core/errors";
-import { TavilyResponseSchema } from "@/lib/server/tavilySchemas";
+import { TavilyResponseSchema, TavilyResultSchema } from "@/lib/server/tavilySchemas";
 
 /**
  * Tunn klient för Tavilys search-API (server-only, samma mönster som
@@ -68,8 +68,9 @@ export async function search(input: TavilySearchInput): Promise<TavilySearchResu
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-  } catch (cause) {
-    throw new OutreachTransportError("Tavily-anropet misslyckades (nätverk eller timeout).", { cause });
+  } catch {
+    // Ingen `cause` i felen: den kan bära innehåll från en extern sida.
+    throw new OutreachTransportError("Tavily-anropet misslyckades (nätverk eller timeout).");
   }
   if (!response.ok) {
     throw new OutreachTransportError(`Tavily svarade med HTTP ${response.status}.`);
@@ -78,15 +79,21 @@ export async function search(input: TavilySearchInput): Promise<TavilySearchResu
   let json: unknown;
   try {
     json = await response.json();
-  } catch (cause) {
-    throw new OutreachTransportError("Tavily svarade med ogiltig JSON.", { cause });
+  } catch {
+    throw new OutreachTransportError("Tavily svarade med ogiltig JSON.");
   }
   const parsed = TavilyResponseSchema.safeParse(json);
   if (!parsed.success) {
     throw new OutreachTransportError("Oväntat svar från Tavily (validering misslyckades).");
   }
 
-  return parsed.data.results.slice(0, maxResults).map((r) => ({
+  // Ogiltiga resultat (t.ex. http:, javascript:, userinfo i URL:en) kastas bort ett i taget.
+  const valid = parsed.data.results.flatMap((raw) => {
+    const item = TavilyResultSchema.safeParse(raw);
+    return item.success ? [item.data] : [];
+  });
+
+  return valid.slice(0, maxResults).map((r) => ({
     title: r.title,
     url: r.url,
     content: truncate(r.content, MAX_RAW_CHARS),

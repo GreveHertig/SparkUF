@@ -56,9 +56,30 @@ describe("search", () => {
   it("kastar OutreachTransportError vid HTTP-fel, ogiltigt svar och nätverksfel", async () => {
     reply({}, 500);
     await expect(search({ query: "x" })).rejects.toBeInstanceOf(OutreachTransportError);
-    reply({ results: [{ url: "inte en url" }] });
+    reply({ results: "inte en lista" });
     await expect(search({ query: "x" })).rejects.toBeInstanceOf(OutreachTransportError);
     fetchMock.mockRejectedValue(new Error("timeout"));
     await expect(search({ query: "x" })).rejects.toBeInstanceOf(OutreachTransportError);
+  });
+
+  it("kastar bort resultat med osäker URL (http, javascript, userinfo) men behåller övriga", async () => {
+    reply({
+      results: [
+        { url: "http://acme.se/kontakt", content: "a" },
+        { url: "javascript:alert(1)", content: "b" },
+        { url: "https://acme.se@evil.com/", content: "c" },
+        { url: "inte en url", content: "d" },
+        { url: "https://acme.se/kontakt", content: "e" },
+      ],
+    });
+    const results = await search({ query: "x" });
+    expect(results.map((r) => r.url)).toEqual(["https://acme.se/kontakt"]);
+  });
+
+  it("bär ingen cause i transportfel", async () => {
+    fetchMock.mockRejectedValue(new Error("hemlig sidtext"));
+    const error = await search({ query: "x" }).catch((e) => e);
+    expect(error).toBeInstanceOf(OutreachTransportError);
+    expect(error.cause).toBeUndefined();
   });
 });

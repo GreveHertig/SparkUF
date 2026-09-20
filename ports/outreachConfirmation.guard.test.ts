@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import type { ConfirmedOutreach } from "./outreachConfirmation";
 import type { EmailSuggestion, OutreachDraft } from "./OutreachPrep";
@@ -15,6 +16,18 @@ const OWNER = "ports/outreachConfirmation.ts";
 const SELF = "ports/outreachConfirmation.guard.test.ts";
 
 describe("Bekräftelsevakt", () => {
+  // Vitest tar bort typer, så @ts-expect-error nedan skulle annars aldrig prövas i `pnpm test`.
+  // Här körs tsc på just den här filen: ett oanvänt @ts-expect-error (t.ex. om ConfirmedOutreach
+  // blivit `any`) eller ett typfel ger rött.
+  it("tsc bekräftar typskydden i den här filen", { timeout: 120_000 }, () => {
+    expect(() =>
+      execFileSync("node_modules/.bin/tsc", ["-p", "test/tsconfig.confirmation.json"], {
+        stdio: "pipe",
+        encoding: "utf8",
+      }),
+    ).not.toThrow();
+  });
+
   it("brandsymbolen nämns bara i sin egen fil", () => {
     const offenders = sourceFiles()
       .filter(({ path, text }) => path !== OWNER && path !== SELF && text.includes("CONFIRMED_BY_HUMAN"))

@@ -701,7 +701,7 @@ export const sv = {
     priceLine: "Vi tänker oss ett pris på cirka {price} kr per månad. Skulle det vara rimligt för er?",
     sourceLine: "Jag hittade den här adressen på {sourceUrl}.",
     gdprNotice:
-      "Jag sparar inga personuppgifter om dig utöver ditt svar, och bara för att förstå om vår idé löser ett verkligt problem.",
+      "Jag använder ditt svar bara för att förstå om vår idé löser ett verkligt problem.",
     optOut: "Vill ni inte höra av oss igen räcker det att svara \"nej tack\", så hör vi inte av oss mer.",
     signature: "Vänliga hälsningar,\n{senderName}\n{senderCompany}",
   },

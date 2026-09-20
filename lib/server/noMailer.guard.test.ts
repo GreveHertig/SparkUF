@@ -18,8 +18,26 @@ const PACKAGES = [
   "postmark",
   "mailgun",
   "@aws-sdk/client-ses",
+  "@getbrevo/",
+  "@sparkpost",
+  "emailjs",
+  "mandrill",
+  "sendgrid",
 ];
-const ENDPOINTS = ["gmail.googleapis.com", "users.messages.send", "createTransport", "smtp://", "smtps://"];
+const ENDPOINTS = [
+  "gmail.googleapis.com",
+  "googleapis.com/gmail",
+  "users.messages.send",
+  "createTransport",
+  "smtp://",
+  "smtps://",
+  "api.sendgrid.com",
+  "api.resend.com",
+  "postmarkapp.com",
+  "api.mailgun.net",
+  "api.brevo.com",
+  "mandrillapp.com",
+];
 
 // Filer som nämner namnen för att FÖRBJUDA dem.
 const ALLOWED_MENTIONS = new Set(["eslint.config.mjs", "lib/server/noMailer.guard.test.ts"]);
@@ -27,13 +45,16 @@ const ALLOWED_MENTIONS = new Set(["eslint.config.mjs", "lib/server/noMailer.guar
 describe("Sändvakt", () => {
   it("package.json har inget mejlpaket", () => {
     const pkg = JSON.parse(readFileSync("package.json", "utf8"));
-    const deps = Object.keys({
+    const all: Record<string, string> = {
       ...pkg.dependencies,
       ...pkg.devDependencies,
       ...pkg.optionalDependencies,
       ...pkg.peerDependencies,
-    });
-    const hits = deps.filter((d) => PACKAGES.some((p) => d === p || d.startsWith(p) || d.startsWith(`${p}-`)));
+    };
+    // Både nyckel och värde: ett npm-alias ("x": "npm:nodemailer@6") döljer namnet i nyckeln.
+    const hits = Object.entries(all)
+      .filter(([name, spec]) => PACKAGES.some((p) => name.startsWith(p) || String(spec).includes(p)))
+      .map(([name]) => name);
     expect(hits).toEqual([]);
   });
 
