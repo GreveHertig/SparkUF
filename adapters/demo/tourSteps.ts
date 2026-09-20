@@ -91,7 +91,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "dataloftet",
     route: "/demo/app/marknad",
     beatId: "03-marknaden-efter",
-    target: "market-register",
+    target: "market-kpi",
     title: { sv: "Datalöftet: källa och datum på varje siffra", en: "The data promise: a source and a date on every number" },
     body: {
       sv: "312 byråer, 4,2 Mkr i medianomsättning, 18 % tillväxt — varje tal bär en källpill man kan klicka på. Ingen siffra i Spark är gissad.",

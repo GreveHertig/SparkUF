@@ -1,8 +1,17 @@
 import type { Locale } from "@/i18n/context";
+import type { Källa } from "@/core/domain";
 import type { OutreachProvider, CampaignRow, OutreachStatus } from "@/ports/OutreachProvider";
 import { saraCompanies } from "./RegistryProvider";
 import { useDemoStore } from "./demoStore";
 import { getBeatAt } from "./sara";
+
+/** Källa för svarsfrekvensen på Marknad-sidan (Datalöftet: även Sparks egen
+ * utskicksdata bär en källa och ett datum) — samma datum som 05a:s "efter"
+ * i sara.ts, då de sex första svaren kommit in. */
+export const outreachSource: Record<Locale, Källa> = {
+  sv: { namn: "Sparks utskick (Gmail)", hämtad: "2026-01-19" },
+  en: { namn: "Spark's outreach (Gmail)", hämtad: "2026-01-19" },
+};
 
 /** De nio svaren (9.3 steg 05–06) — index i saraCompanies. Tre säger nej
  * till priset 2 000 kr (samtliga under 10 anställda), sex bekräftar

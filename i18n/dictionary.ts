@@ -229,13 +229,48 @@ export type Dictionary = {
   marketPage: {
     title: string;
     subtitle: string;
-    registerTitle: string;
+    kpiTitle: string;
     competitorsTitle: string;
     simulationTitle: string;
     companyCountLabel: string;
+    companyCountUnit: string;
+    companyCountDescription: string;
     medianRevenueLabel: string;
     growthShareLabel: string;
     regionShareLabel: string;
+    /** "Baserat på" — kombineras i kod med N/M/enhet till "Baserat på 194 av 312 bolag." */
+    basedOnLabel: string;
+    ofLabel: string;
+    companiesUnit: string;
+    dataLayers: {
+      title: string;
+      registerName: string;
+      registerNote: string;
+      annualReportName: string;
+      annualReportNote: string;
+      simulationName: string;
+      simulationNote: string;
+    };
+    distribution: {
+      title: string;
+      sniLabel: string;
+      mostCommonLabel: string;
+      sizeBuckets: {
+        oneToFour: string;
+        fiveToNine: string;
+        tenToNineteen: string;
+        twentyToFortyNine: string;
+        fiftyPlus: string;
+      };
+    };
+    outreach: {
+      title: string;
+      contactedLabel: string;
+      respondedLabel: string;
+      responseRateLabel: string;
+      notBuiltYet: string;
+      notSentYet: string;
+    };
   };
   customersPage: {
     title: string;

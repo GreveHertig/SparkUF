@@ -23,6 +23,9 @@ type KpiTileProps = {
    * härledda mätetal som inte har en egen källa (t.ex. "antal upplåsta delar",
    * som redan är sourced via de underliggande delarna på samma sida). */
   source?: Källa;
+  /** Kort förklarande mening under talet, t.ex. urvalet bakom ett medianvärde
+   * ("Baserat på 194 av 312 bolag"). Utelämnad om talet inte behöver den. */
+  description?: string;
   dataType?: DataType;
   icon?: ReactNode;
   className?: string;
@@ -36,7 +39,17 @@ const deltaToneClasses = {
 
 /** Tät KPI-ruta för instrumentpanelsraden (designuppdatering: high-tech
  * dashboard). Se DESIGN.md för varför bara vissa mätetal har en sparkline. */
-export function KpiTile({ label, value, unit, delta, trend, source, dataType = "register", className }: KpiTileProps) {
+export function KpiTile({
+  label,
+  value,
+  unit,
+  delta,
+  trend,
+  source,
+  description,
+  dataType = "register",
+  className,
+}: KpiTileProps) {
   const { locale } = useI18n();
   const displayValue = typeof value === "number" ? formatCount(value, locale) : value;
 
@@ -59,6 +72,7 @@ export function KpiTile({ label, value, unit, delta, trend, source, dataType = "
           </span>
         )}
       </div>
+      {description && <p className="text-xs leading-snug text-slate-600">{description}</p>}
       {source && (
         <div className="mt-0.5">
           <SourceTag source={source} dataType={dataType} />

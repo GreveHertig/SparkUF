@@ -28,8 +28,26 @@ export const saraCompanies: RegistryCompany[] = [
   { name: "Överblick Ekonomikonsult AB", sniCode: "69.201", employees: 17, revenueKsek: 10100, county: "Stockholms län" },
 ];
 
+/** SNI-koden Saras scenario är byggt kring (samma kod på alla `saraCompanies`)
+ * — exporterad så att skärmar/routes som behöver den (t.ex. Marknad-sidans
+ * storleksfördelning) läser den härifrån i stället för att upprepa strängen. */
+export const SARA_MARKET_SNI_CODE = "69.201";
+
 const registerSource: Källa = { namn: "Bolagsverket och SCB", hämtad: "2026-01-09" };
 const registerSourceEn: Källa = { namn: "Bolagsverket and Statistics Sweden (SCB)", hämtad: "2026-01-09" };
+
+/**
+ * Urvalet bakom medianen/tillväxtandelen/regionandelen (Datalöftet,
+ * docs/dataspiken.md §3): bara aktiebolag med digital årsredovisning ger
+ * omsättning och tillväxt, och regionen kräver att länet går att härleda ur
+ * postadressen. 312 bolag totalt i SNI 69.201 — ingen siffra här låtsas
+ * gälla alla 312.
+ */
+const registerBasis = {
+  medianRevenueCompanies: 194,
+  growthCompanies: 171,
+  regionCompanies: 308,
+};
 
 const competitors: Record<Locale, Competitor[]> = {
   sv: [
@@ -62,6 +80,7 @@ export const demoRegistryProvider: RegistryProvider = {
       regionSharePercent: 31,
       source: locale === "sv" ? registerSource : registerSourceEn,
       competitors: competitors[locale],
+      basis: registerBasis,
     };
   },
 };

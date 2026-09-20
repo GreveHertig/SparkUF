@@ -1,34 +1,80 @@
 "use client";
 
-import { DataFact } from "@/components/ui/DataFact";
-import { EditorialHeading } from "@/components/ui/EditorialHeading";
+import { BarChart } from "@/components/ui/BarChart";
 import { Eyebrow } from "@/components/ui/Eyebrow";
+import { EditorialHeading } from "@/components/ui/EditorialHeading";
 import { LockedState } from "@/components/ui/LockedState";
+import { SourceTag } from "@/components/ui/SourceTag";
+import { KpiRow } from "@/components/spark/KpiRow";
+import { KpiTile } from "@/components/spark/KpiTile";
 import { SimulationCard } from "@/components/spark/SimulationCard";
-import { useI18n } from "@/i18n/context";
-import type { MarketOverview } from "@/ports/RegistryProvider";
+import { useI18n, type Locale } from "@/i18n/context";
+import type { Dictionary } from "@/i18n/dictionary";
+import { formatCount, formatSek } from "@/i18n/format";
+import type { Källa } from "@/types/evidence";
+import type { MarketOverview, RegistryCompany } from "@/ports/RegistryProvider";
+import type { CampaignRow } from "@/ports/OutreachProvider";
 import type { Simulation } from "@/ports/SimulationProvider";
 
 export type MarketData = {
   overview: MarketOverview;
   simulation: Simulation;
+  /** Registrets urval (avsnitt 6): 20 av 312 byråer, för storleksfördelningen. */
+  companies: RegistryCompany[];
+  /** [] innan kontaktlistan är byggd (steg 04) — se `computeOutreachStats`. */
+  campaign: CampaignRow[];
+  /** `CampaignRow` bär ingen egen källa (avsnitt 14.3) — Datalöftet kräver
+   * ändå en källa på svarsfrekvensen, så anroparen skickar med den. */
+  outreachSource: Källa;
 };
 
-/** Marknad (avsnitt 6): registerbilden och simuleringar, tydligt åtskilda —
- * simuleringen renderas alltid via `SimulationCard` (avsnitt 2.2, 8): etikett,
- * population, källa och osäkerhetsintervall syns alltid, aldrig bara en
- * färgskillnad. */
+type MarketPageDict = Dictionary["marketPage"];
+
+const SIZE_BUCKETS = [
+  { key: "oneToFour", min: 1, max: 4 },
+  { key: "fiveToNine", min: 5, max: 9 },
+  { key: "tenToNineteen", min: 10, max: 19 },
+  { key: "twentyToFortyNine", min: 20, max: 49 },
+  { key: "fiftyPlus", min: 50, max: Infinity },
+] as const;
+
+/** Storleksklasser, aldrig exakta tal (docs/dataspiken.md: "SCB ger klasser,
+ * inte siffror") — bucketar det demot råkar ha exakta tal för internt. */
+function computeSizeDistribution(companies: RegistryCompany[], buckets: MarketPageDict["distribution"]["sizeBuckets"]) {
+  return SIZE_BUCKETS.map((bucket) => ({
+    label: buckets[bucket.key],
+    count: companies.filter((company) => company.employees >= bucket.min && company.employees <= bucket.max).length,
+  }));
+}
+
+function basedOn(t: MarketPageDict, n: number, m: number, locale: Locale): string {
+  return `${t.basedOnLabel} ${formatCount(n, locale)} ${t.ofLabel} ${formatCount(m, locale)} ${t.companiesUnit}.`;
+}
+
+function computeOutreachStats(campaign: CampaignRow[]) {
+  if (campaign.length === 0) return null;
+  const contacted = campaign.filter((row) => row.status !== "draft").length;
+  const responded = campaign.filter((row) => row.status === "responded").length;
+  return { total: campaign.length, contacted, responded };
+}
+
+/** Marknad (avsnitt 6, Datalöftet uppdrag 1.2): nyckeltal, datalagren bakom
+ * dem, storleksfördelningen och utskickets svarsfrekvens — allt med källa och
+ * urval, aldrig ett tal som ser ut att gälla hela marknaden när det gäller ett
+ * urval. Simuleringen (Hiasynth) hålls alltid visuellt och textuellt åtskild
+ * från registerfakta, via `SimulationCard`. */
 export function Market({ data, notInScenario }: { data: MarketData | null; notInScenario?: boolean }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const m = t.marketPage;
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-8">
       <div>
         <Eyebrow>{t.appShell.nav.market}</Eyebrow>
         <EditorialHeading as="h1" className="mt-2">
-          {t.marketPage.title}
+          {m.title}
         </EditorialHeading>
-        <p className="mt-2 text-sm text-slate-600">{t.marketPage.subtitle}</p>
+        <p className="mt-2 text-sm text-slate-600">{m.subtitle}</p>
       </div>
 
       {!data ? (
@@ -36,53 +82,163 @@ export function Market({ data, notInScenario }: { data: MarketData | null; notIn
           unlockHint={notInScenario ? t.homePage.notInThisScenario : `${t.homePage.unlocksAfterStepBefore} 02`}
         />
       ) : (
-        <>
-          <section data-tour-id="market-register" className="flex flex-col gap-3">
-            <Eyebrow>{t.marketPage.registerTitle}</Eyebrow>
-            <div className="grid grid-cols-2 gap-4 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-4">
-              <DataFact
-                label={t.marketPage.companyCountLabel}
-                value={data.overview.companyCount}
-                source={data.overview.source}
-              />
-              <DataFact
-                label={t.marketPage.medianRevenueLabel}
-                value={`${(data.overview.medianRevenueKsek / 1000).toFixed(1).replace(".", ",")} Mkr`}
-                source={data.overview.source}
-              />
-              <DataFact
-                label={t.marketPage.growthShareLabel}
-                value={data.overview.growthSharePercent}
-                unit="%"
-                source={data.overview.source}
-              />
-              <DataFact
-                label={t.marketPage.regionShareLabel}
-                value={data.overview.regionSharePercent}
-                unit="%"
-                source={data.overview.source}
-              />
-            </div>
-          </section>
-
-          <section data-tour-id="market-competitors" className="flex flex-col gap-3">
-            <Eyebrow>{t.marketPage.competitorsTitle}</Eyebrow>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {data.overview.competitors.map((competitor) => (
-                <div key={competitor.name} className="rounded-lg border border-slate-200 bg-white p-3.5">
-                  <p className="text-sm font-semibold text-slate-900">{competitor.name}</p>
-                  <p className="mt-1 text-sm leading-snug text-slate-600">{competitor.description}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section data-tour-id="market-simulation" className="flex flex-col gap-2.5">
-            <Eyebrow>{t.marketPage.simulationTitle}</Eyebrow>
-            <SimulationCard simulation={data.simulation} />
-          </section>
-        </>
+        <MarketBody data={data} m={m} locale={locale} />
       )}
+    </div>
+  );
+}
+
+function MarketBody({ data, m, locale }: { data: MarketData; m: MarketPageDict; locale: Locale }) {
+  const { overview, simulation, companies, campaign, outreachSource } = data;
+  const sniCode = companies[0]?.sniCode ?? "";
+  const distribution = computeSizeDistribution(companies, m.distribution.sizeBuckets);
+  const dominant = distribution.reduce((best, bucket) => (bucket.count > best.count ? bucket : best), distribution[0]);
+  const dominantPercent = companies.length > 0 ? Math.round((dominant.count / companies.length) * 100) : 0;
+  const outreachStats = computeOutreachStats(campaign);
+
+  return (
+    <>
+      <section data-tour-id="market-kpi" className="flex flex-col gap-3">
+        <Eyebrow>{m.kpiTitle}</Eyebrow>
+        <KpiRow>
+          <KpiTile
+            label={m.companyCountLabel}
+            value={overview.companyCount}
+            unit={m.companyCountUnit}
+            description={m.companyCountDescription}
+            source={overview.source}
+          />
+          <KpiTile
+            label={m.medianRevenueLabel}
+            value={formatSek(overview.medianRevenueKsek * 1000, locale)}
+            description={overview.basis ? basedOn(m, overview.basis.medianRevenueCompanies, overview.companyCount, locale) : undefined}
+            source={overview.source}
+          />
+          <KpiTile
+            label={m.growthShareLabel}
+            value={overview.growthSharePercent}
+            unit="%"
+            description={overview.basis ? basedOn(m, overview.basis.growthCompanies, overview.companyCount, locale) : undefined}
+            source={overview.source}
+          />
+          <KpiTile
+            label={m.regionShareLabel}
+            value={overview.regionSharePercent}
+            unit="%"
+            description={overview.basis ? basedOn(m, overview.basis.regionCompanies, overview.companyCount, locale) : undefined}
+            source={overview.source}
+          />
+        </KpiRow>
+      </section>
+
+      <section data-tour-id="market-datalayers" className="flex flex-col gap-3">
+        <Eyebrow>{m.dataLayers.title}</Eyebrow>
+        <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4">
+          <DataLayerRow name={m.dataLayers.registerName} note={m.dataLayers.registerNote} source={overview.source} />
+          <DataLayerRow
+            name={m.dataLayers.annualReportName}
+            note={m.dataLayers.annualReportNote}
+            source={overview.source}
+          />
+          <DataLayerRow
+            name={m.dataLayers.simulationName}
+            note={m.dataLayers.simulationNote}
+            source={simulation.source}
+            dataType="simulation"
+          />
+        </div>
+      </section>
+
+      <section data-tour-id="market-distribution" className="flex flex-col gap-2.5">
+        <div className="flex items-baseline justify-between gap-2">
+          <Eyebrow>{m.distribution.title}</Eyebrow>
+          <span className="font-numeric text-xs text-slate-500">
+            {m.distribution.sniLabel} {sniCode}
+          </span>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <BarChart bars={distribution.map((bucket) => ({ label: bucket.label, value: bucket.count }))} />
+        </div>
+        {companies.length > 0 && (
+          <p className="text-sm text-slate-600">
+            {m.distribution.mostCommonLabel} {dominant.label} — {formatCount(dominant.count, locale)} {m.companiesUnit}{" "}
+            {m.ofLabel} {formatCount(companies.length, locale)} ({dominantPercent} %).{" "}
+            {basedOn(m, companies.length, overview.companyCount, locale)}
+          </p>
+        )}
+        <SourceTag source={overview.source} />
+      </section>
+
+      <section data-tour-id="market-outreach" className="flex flex-col gap-2.5">
+        <Eyebrow>{m.outreach.title}</Eyebrow>
+        {!outreachStats ? (
+          <LockedState unlockHint={m.outreach.notBuiltYet} />
+        ) : outreachStats.contacted === 0 ? (
+          <LockedState unlockHint={m.outreach.notSentYet} />
+        ) : (
+          <KpiRow>
+            <KpiTile
+              label={m.outreach.contactedLabel}
+              value={outreachStats.contacted}
+              unit={`/ ${formatCount(outreachStats.total, locale)}`}
+              source={outreachSource}
+              dataType="customer"
+            />
+            <KpiTile
+              label={m.outreach.respondedLabel}
+              value={outreachStats.responded}
+              source={outreachSource}
+              dataType="customer"
+            />
+            <KpiTile
+              label={m.outreach.responseRateLabel}
+              value={Math.round((outreachStats.responded / outreachStats.contacted) * 100)}
+              unit="%"
+              source={outreachSource}
+              dataType="customer"
+            />
+          </KpiRow>
+        )}
+      </section>
+
+      <section data-tour-id="market-competitors" className="flex flex-col gap-3">
+        <Eyebrow>{m.competitorsTitle}</Eyebrow>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {overview.competitors.map((competitor) => (
+            <div key={competitor.name} className="rounded-lg border border-slate-200 bg-white p-3.5">
+              <p className="text-sm font-semibold text-slate-900">{competitor.name}</p>
+              <p className="mt-1 text-sm leading-snug text-slate-600">{competitor.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section data-tour-id="market-simulation" className="flex flex-col gap-2.5">
+        <Eyebrow>{m.simulationTitle}</Eyebrow>
+        <SimulationCard simulation={simulation} />
+      </section>
+    </>
+  );
+}
+
+function DataLayerRow({
+  name,
+  note,
+  source,
+  dataType = "register",
+}: {
+  name: string;
+  note: string;
+  source: MarketOverview["source"];
+  dataType?: "register" | "simulation";
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <p className="text-sm font-semibold text-slate-900">{name}</p>
+        <p className="text-xs text-slate-600">{note}</p>
+      </div>
+      <SourceTag source={source} dataType={dataType} />
     </div>
   );
 }
