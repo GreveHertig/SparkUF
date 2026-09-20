@@ -688,4 +688,17 @@ export const en = {
     },
     signOutCta: "Log out",
   },
+  outreachDraft: {
+    subject: "A question for {companyName} about {problem}",
+    greeting: "Hello,",
+    intro:
+      "My name is {senderName} and I run {senderCompany}, a student company (Junior Achievement / UF). I'm writing because I'm researching a problem and would like to hear how it looks at your end.",
+    ask: "We are looking into: {problem}. Do you recognise the problem at {companyName}, and how do you handle it today?",
+    priceLine: "We are thinking of a price of about SEK {price} per month. Would that be reasonable for you?",
+    sourceLine: "I found this address at {sourceUrl}.",
+    gdprNotice:
+      "I store no personal data about you beyond your reply, and only to understand whether our idea solves a real problem.",
+    optOut: "If you'd rather not hear from us again, just reply \"no thanks\" and we won't contact you further.",
+    signature: "Kind regards,\n{senderName}\n{senderCompany}",
+  },
 } satisfies Dictionary;

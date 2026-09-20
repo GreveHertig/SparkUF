@@ -632,4 +632,16 @@ export type Dictionary = {
     };
     signOutCta: string;
   };
+  /** Mall för outreach-utkast (steg 05). Platshållare: {companyName} {problem} {price} {senderName} {senderCompany} {sourceUrl}. */
+  outreachDraft: {
+    subject: string;
+    greeting: string;
+    intro: string;
+    ask: string;
+    priceLine: string;
+    sourceLine: string;
+    gdprNotice: string;
+    optOut: string;
+    signature: string;
+  };
 };
