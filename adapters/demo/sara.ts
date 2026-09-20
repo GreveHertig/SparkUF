@@ -783,7 +783,7 @@ const step06NextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 06 · DOMEN",
     title: "Förfina: snäva segmentet till 10–20 anställda",
-    why: "7 av 9 bekräftar problemet. 6 av 9 tycker att 2 000 kr är för dyrt, median 900 kr. Alla som sa ja har 10+ anställda.",
+    why: "7 av 9 bekräftar problemet. 3 av 9 tycker att 2 000 kr är för dyrt, median 900 kr. Alla som sa ja har 10+ anställda.",
     maxPoints: 18,
     estimatedTime: "~15 min",
     doneItems: [
@@ -798,7 +798,7 @@ const step06NextStep: Record<Locale, NextStep> = {
   en: {
     eyebrow: "STEP 06 · THE VERDICT",
     title: "Refine: narrow the segment to 10–20 employees",
-    why: "7 of 9 confirm the problem. 6 of 9 think SEK 2,000 is too expensive, median SEK 900. Everyone who said yes has 10+ employees.",
+    why: "7 of 9 confirm the problem. 3 of 9 think SEK 2,000 is too expensive, median SEK 900. Everyone who said yes has 10+ employees.",
     maxPoints: 18,
     estimatedTime: "~15 min",
     doneItems: ["Profile chat done", "Idea chosen", "Market picture done", "Customer list done", "Outreach and responses done"],
@@ -886,12 +886,12 @@ const [step06Fore, step06Korning, step06Efter] = makeStepBeats({
     sv: {
       headline: "Förfina · snäva segmentet",
       reasoning:
-        "7 av 9 bekräftar problemet, men 6 av 9 tycker 2 000 kr är för dyrt — median 900 kr. Alla som sa ja har 10 eller fler anställda. En ny simulering stöder 1 000–1 300 kr i det smalare segmentet.",
+        "7 av 9 bekräftar problemet, men 3 av 9 tycker 2 000 kr är för dyrt — median 900 kr. Alla som sa ja har 10 eller fler anställda. En ny simulering stöder 1 000–1 300 kr i det smalare segmentet.",
     },
     en: {
       headline: "Refine · narrow the segment",
       reasoning:
-        "7 of 9 confirm the problem, but 6 of 9 think SEK 2,000 is too expensive — median SEK 900. Everyone who said yes has 10 or more employees. A new simulation supports SEK 1,000–1,300 in the narrower segment.",
+        "7 of 9 confirm the problem, but 3 of 9 think SEK 2,000 is too expensive — median SEK 900. Everyone who said yes has 10 or more employees. A new simulation supports SEK 1,000–1,300 in the narrower segment.",
     },
   },
   simulationKindAfter: "price",

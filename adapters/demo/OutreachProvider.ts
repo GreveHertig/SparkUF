@@ -225,8 +225,8 @@ export async function getValidationAssumptions(locale: Locale): Promise<Validati
   const bases: Record<Locale, string>[] = [
     { sv: "7 av 9 bekräftar problemet.", en: "7 of 9 confirm the problem." },
     {
-      sv: "6 av 9 tycker att 2 000 kr är för dyrt, median 900 kr.",
-      en: "6 of 9 think SEK 2,000 is too expensive, median SEK 900.",
+      sv: "3 av 9 tycker att 2 000 kr är för dyrt, median 900 kr.",
+      en: "3 of 9 think SEK 2,000 is too expensive, median SEK 900.",
     },
     {
       sv: "Alla som sa ja har 10 eller fler anställda — segmentet snävades till 10–20 anställda.",
