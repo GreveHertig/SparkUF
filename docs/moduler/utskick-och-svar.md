@@ -18,12 +18,14 @@ modells bedömning", avsnitt 1.2).
 `ports/OutreachProvider.ts`:
 
 ```ts
-send(recipients: OutreachRecipient[], messageSv: string, messageEn: string): Promise<void>
+send(confirmed: ConfirmedOutreach[]): Promise<void>   // AVSTÄNGD, se "Sändspärr"
 getStatuses(): Promise<Record<string, OutreachStatus>>
 getCampaign(locale: Locale): Promise<CampaignRow[]>
 ```
 
-- `OutreachRecipient`: `{ companyName, email }`.
+- `ConfirmedOutreach` (`ports/outreachConfirmation.ts`): adress + ämne + text som
+  grundaren manuellt bekräftat. **Kan inte skapas av någon kod i repot**, se
+  "Bekräftelse". (Ersätter det tidigare `OutreachRecipient`.)
 - `OutreachStatus`: `"draft" | "sent" | "opened" | "responded"`.
 - `CampaignRow`: `{ companyName, sniCode, employees, revenueKsek, status,
   quote? }` — en rad i Kunder-tabellen (`/app/kunder`, 04–06).
@@ -81,6 +83,108 @@ getCampaign(locale: Locale): Promise<CampaignRow[]>
   (`docs/status.md`, Session 3, "Poängkalibrering"). `quote` visas aldrig i
   sändmomentet, bara från och med att svaren kommit in.
 
+## Förberedelsen: mejlsökning och utkast (byggd, grindad)
+
+Beslut i `docs/dataspiken.md` (rad 21–29, §6 fråga 5): egen mejlsökning med
+Tavily och Gemini i stället för Hunter.io. Den ligger i en **separat port**,
+`ports/OutreachPrep.ts`, som strukturellt saknar `send` och därför aldrig kan bli
+en sändväg. Modulen har alltså två portar men ett dokument.
+
+```ts
+suggestEmail(companyName: string): Promise<EmailLookupResult>
+draftMessage(input: DraftInput): Promise<Record<Locale, OutreachDraft>>
+```
+
+Implementation: `adapters/live/OutreachPrep.ts` (live), `adapters/demo/OutreachPrep.ts`
+(demo: fiktiva adresser på `.example`, RFC 2606, kan aldrig nå en brevlåda).
+Ingen route eller skärm använder porten, och ingenting lagras.
+
+### Så fungerar `suggestEmail`
+1. Grinden (första satsen), throttle (10/timme, 30/dygn per användare, i minnet,
+   best-effort), validering av namnet.
+2. **Ett** Tavily-anrop (`"<namn> kontakta oss"`, `lib/server/tavily.ts`, fast URL).
+   Sidor utan `@` kastas bort; en sida vars värd bär bolagets namn föredras.
+   Ingen sida med `@` ger tom lista utan Gemini-anrop.
+3. **Ett** Gemini-anrop med sidtexten (rensad, max 12 000 tecken) i ett
+   avgränsat databloc med en slumpad avgränsare per anrop. Schemat är
+   `.strict()` och har **inget** url-/källfält.
+4. **Koden verifierar varje kandidat** (`core/emailVerification.ts`): ren
+   syntax (NFKC, inga dolda tecken), står **ordagrant** i texten som skickades
+   (som egen adress, inte del av en längre), och domänen hör till träffsidan
+   eller bär ett namntoken ur företagsnamnet. Domänmismatch avvisas **hårt**
+   (färre men pålitliga förslag). Rollbaserade adresser (`info@`, `kontakt@` …)
+   sorteras först; personliga returneras flaggade.
+5. Källan (`url`, värdnamn, datum) injiceras i kod ur Tavily-träffen. Avvisade
+   kandidater räknas i `rejectedCount` men returneras aldrig. Ingen träff är
+   `suggestions: []`, inget fel.
+
+### Utkastet
+Mallbaserat ur i18n (`outreachDraft`, sv + en) via `core/outreachDraft.ts`, inte
+modellskrivet: avsändare, var adressen hittades, personuppgiftsnotis och
+avregistreringsmening får inte kunna parafraseras bort. Alla variabler rensas
+(företagsnamnet är extern text). Ett Gemini-formulerat utkast är avsiktligt
+utanför scope.
+
+## Grind
+
+`lib/server/outreachAccess.ts`: `OUTREACH_LIVE_ENABLED` måste vara exakt `true`
+**och** inloggad `user.id` måste finnas i `OUTREACH_ALLOWED_USER_IDS`
+(kommaseparerad, bara i `.env.local`: Erik och Theodor). Nekat som standard,
+anropas som **första sats** i båda metoderna, före validering och externa anrop.
+Nekat ger `OutreachLockedError` (visas som `ComingSoon`, avslöjar inte
+allowlisten). Samma mönster som Registrets licensgrind.
+
+CI-vakter (alla blir röda om grinden tas bort eller försvagas; verifierat
+genom att försvaga dem en i taget):
+- **G1** `ports/stubStatus.test.ts`: med rensad env nekar varje metod, även vid ogiltig indata.
+- **G2** `adapters/live/outreachGate.guard.test.ts`: varje portmetod börjar med grinden, och adaptern har inga metoder utöver portens.
+- **G3** `lib/server/noMailer.guard.test.ts` (+ ESLint `no-restricted-imports`): inga mejlpaket, Gmail-sändningsändpunkter eller SMTP.
+- **G4** `ports/outreachConfirmation.guard.test.ts`: ingen kod skapar eller casta:r till `ConfirmedOutreach`.
+
+G2–G4 läser källtext, inte AST, och kan kringgås av en tillräckligt kreativ
+omskrivning. De är lager, inte det enda skyddet.
+
+## Sändspärr
+
+**Ingen riktig e-post får någonsin skickas automatiskt.** Gmail-koppling, sända
+mejl, öppningsspårning och automatiska påminnelser är en egen, separat uppgift
+som **inte påbörjas förrän Theodor och grundaren uttryckligen sagt ja**, eftersom
+den påverkar riktiga företag utanför Spark. Tills dess kastar `send`,
+`getStatuses` och `getCampaign` i `adapters/live/OutreachProvider.ts`
+`OutreachSendDisabledError`. Den ärver `NotImplementedError` enbart så att
+`contractIt` och `ports/stubStatus.test.ts` fortsätter fungera; den betyder
+**inte** "bygg mig". Att ta bort spärren är inte en koduppgift.
+
+## Bekräftelse
+
+Ingenting får skickas till en riktig mottagare utan att grundaren manuellt
+bekräftat **adressen och texten**. Ingen automatisk logik får hoppa över det,
+nu eller i framtiden. Tre lager:
+1. **Typ:** `EmailSuggestion.status` och `OutreachDraft.status` är literaler
+   (`"suggested"`, `"draft"`). `send()` tar bara `ConfirmedOutreach`, en typ med
+   `unique symbol`-brand som ingen kod kan skapa. Att mata `send` med ett förslag
+   eller utkast är ett **kompileringsfel** (typtest i G4).
+2. **Ingen konstruktör finns.** Den byggs först när Theodor och grundaren sagt ja
+   till sändning: exakt en funktion, i `ports/outreachConfirmation.ts`, som tar
+   redigerad adress **och** redigerad text från en människohandling.
+3. **G4** blir röd om någon annan fil nämner brandet, casta:r till typen eller
+   skriver ett `status: "confirmed"`-literal.
+
+## Kända begränsningar
+- En kontaktsida som använder en helt annan domän för mejl avvisas (hård
+  avvisning); grundaren söker då manuellt.
+- `registrableDomain` tar de två sista domänetiketterna (ingen publik
+  suffixlista). Den är förenklad, och det ska åtgärdas innan andra länders
+  domäner (t.ex. `.co.uk`) blir aktuella.
+- Namnkrock i Tavily: `searchedUrl` returneras alltid så att grundaren ser
+  sidan före bekräftelse.
+- Throttlen är i minnet och överlever inte flera serverinstanser. Allowlisten
+  på två personer är det riktiga taket.
+- Personliga adresser kan returneras (flaggade). GDPR-frågan för mottagarnas
+  adresser ligger kvar hos Juridisk koll.
+- Adaptern är inte körd mot riktiga Tavily/Gemini än (bara mockat). Opt-in-testet
+  `adapters/live/OutreachPrep.live.test.ts` prövar bara Tavily-klienten.
+
 ## Acceptanskriterier
 
 - `getCampaign(locale)` returnerar en rad per mottagare med en giltig
@@ -109,9 +213,10 @@ steg 05.
 
 ## Status
 
-stub — `adapters/live/OutreachProvider.ts` kastar `NotImplementedError` för
-alla tre metoderna. Kräver Gmail OAuth-uppsättning (klient-id/hemlighet,
-Google-appgranskning) innan bygget kan börja — se öppna frågor ovan,
-särskilt beslutet om `opened`-statusen. Demoadaptern är klar och används av
-`/demo/app/kunder`. Bygg enligt `docs/bygga-en-modul.md` när
-OAuth-uppsättningen finns.
+**stub för sändning, byggd men grindad för förberedelsen.**
+- `OutreachProvider` (`send`/`getStatuses`/`getCampaign`): avsiktligt avstängd,
+  se "Sändspärr". Kräver dessutom Gmail OAuth och beslutet om `opened` (öppna
+  frågor ovan) innan den ens får övervägas.
+- `OutreachPrep` (mejlsökning och utkast): byggd, grindad, ingen liveyta, testad
+  mot mockade tjänster. Exponering är spärrad till allowlisten.
+- Demoadapterna är klara; `/demo/app/kunder` använder `OutreachProvider`.
