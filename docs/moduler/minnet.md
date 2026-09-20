@@ -18,10 +18,12 @@ getProfileSummary(locale: Locale): Promise<ProfileSummary>
 getBrainNotes(): Promise<string>
 setBrainNotes(notes: string): Promise<void>
 getTraceEvents(locale: Locale): Promise<TraceEvent[]>
+recordTraceEvent(event: RecordTraceEventInput): Promise<void>   // tillagd med Domen
 ```
 
 - `ProfileSummary`: `{ name, role, bio, time, money, risk }` — Profilen-fliken.
 - `TraceEvent`: `{ id, timestampIso, description }` — en rad i Spåret.
+- `RecordTraceEventInput`: `{ module, description, occurredAtIso }` — vad en annan modul skriver till Spåret. Användaren tas alltid ur sessionen, aldrig ur indata.
 - `getBrainNotes`/`setBrainNotes` har medvetet ingen `locale` — Hjärnan är
   grundarens egna ord på det språk hen faktiskt skrev dem, den översätts
   aldrig automatiskt (se demoadaptern nedan).
@@ -110,3 +112,9 @@ tills en skrivande modul, t.ex. Utskick och svar, finns).
   kriteriet demoadaptern inte kan uppfylla (se ovan).
 - `getTraceEvents`: kronologisk ordning, äldst först, tom lista tills
   någon modul faktiskt skriver händelser.
+- `recordTraceEvent` (tillagd med Domen, ändrad port enligt
+  `docs/bygga-en-modul.md` §4): rensar `module`/`description` med
+  `cleanText` (≤ 60/500 tecken), kräver giltig tid, är idempotent (samma
+  modul + beskrivning + tid sparas en gång) och infogar en rad i
+  `trace_events` för sessionens användare (RLS "insert egen" är den bindande
+  spärren). `project_id` lämnas null (kontonivå). Demoadaptern är en no-op.

@@ -50,7 +50,7 @@ kommande sessioner.
 | Demoroute | `app/demo/app/layout.tsx`, `app/demo/app/page.tsx`, `app/demo/app/loading.tsx` | Monterar `AppShell`/`AppHome` med demoadaptrarna på `/demo/app`. |
 | Plattformsroute | `app/(app)/layout.tsx`, `app/(app)/app/page.tsx` | Monterar samma skärmar med liveadaptrarna på `/app`. |
 
-## 3. De 12 modulerna (avsnitt 14.3)
+## 3. Modulerna (avsnitt 14.3)
 
 | Modul | Port | Liveadapter bygger på | Status | Moduldokument |
 |---|---|---|---|---|
@@ -66,6 +66,7 @@ kommande sessioner.
 | Simuleringar | `SimulationProvider` | Hiasynth (koncept, alltid stub) | stub | `docs/moduler/simuleringar.md` |
 | Utskick och svar | `OutreachProvider` | Gmail. **Sändning avstängd** (kräver uttryckligt ja från Theodor och grundaren) | stub, avsiktligt | `docs/moduler/utskick-och-svar.md` |
 | Utskick, förberedelse | `OutreachPrep` (mejlsökning, utkast) | Tavily + Gemini (`lib/server/tavily.ts`; grindad via `lib/server/outreachAccess.ts`) | byggd, grindad | `docs/moduler/utskick-och-svar.md` |
+| Domen | `VerdictProvider` | Ren logik i `core/verdict.ts` (Utskick + Registret som indata, inte live) | påbörjad (logik + demo klara, live stub) | `docs/moduler/domen.md` |
 | Juridisk koll | `LegalAdvisor` | Gemini + kuraterade källor | klar (ej sakgranskad) | `docs/moduler/juridisk-koll.md` |
 | Bygg | `BuildProvider` | Lovable (koncept, alltid stub) | stub | `docs/moduler/bygg.md` |
 
