@@ -1,5 +1,6 @@
 "use client";
 
+import { Card } from "@/components/ui/Card";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { LockedState } from "@/components/ui/LockedState";
@@ -124,9 +125,9 @@ export function Validation({ data, notInScenario }: { data: ValidationData; notI
           </section>
 
           {data.assumptions.length > 0 && (
-            <section data-tour-id="validation-assumptions" className="flex flex-col gap-2">
-              <Eyebrow>{v.assumptionsTitle}</Eyebrow>
-              <div className="flex flex-col gap-2">
+            <section data-tour-id="validation-assumptions">
+              <Card title={v.assumptionsTitle}>
+                <div className="flex flex-col gap-2">
                 {data.assumptions.map((assumption) => (
                   <div
                     key={assumption.id}
@@ -152,7 +153,8 @@ export function Validation({ data, notInScenario }: { data: ValidationData; notI
                     </span>
                   </div>
                 ))}
-              </div>
+                </div>
+              </Card>
             </section>
           )}
 
@@ -191,9 +193,9 @@ export function Validation({ data, notInScenario }: { data: ValidationData; notI
             </section>
           )}
 
-          <section data-tour-id="validation-table" className="flex flex-col gap-2.5">
-            <Eyebrow>{v.tableTitle}</Eyebrow>
-            <div className="overflow-x-auto rounded-md border border-slate-200 bg-white shadow-lg">
+          <section data-tour-id="validation-table">
+            <Card title={v.tableTitle}>
+            <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-xs font-semibold uppercase text-slate-500">
@@ -229,6 +231,7 @@ export function Validation({ data, notInScenario }: { data: ValidationData; notI
                 </tbody>
               </table>
             </div>
+            </Card>
           </section>
 
           {data.verdict && data.verdictScoreTotal !== null && (
