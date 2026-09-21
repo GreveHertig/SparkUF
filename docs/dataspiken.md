@@ -197,8 +197,104 @@ Det som **inte** är löst:
 uppslagstjänst per organisation och dokument (Sekundärt, Context7). Att
 **lista alla bolag på en SNI-kod** görs sannolikt via SCB:s API eller via
 de nedladdningsbara filerna, inte via Bolagsverkets uppslag. Det avgör hur
-adaptern byggs. Kontrolleras i API-specifikationen (Swagger) när nycklarna
-kommer.
+adaptern byggs. Avgjort 2026-09-21: Bolagsverkets API kan inte söka på SNI, se
+"Spik med nycklar" ovan.
+
+### Spik med nycklar (2026-09-21)
+
+Kört av Erik lokalt med `scratchpad/bv-test.mjs` (gitignorad). Claude Codes
+miljö når inte `portal.api.bolagsverket.se` (timeout), så resultaten nedan
+är Eriks rapport, inte egna anrop.
+
+**Verifierat (Erik körde det):**
+- OAuth 2 client credentials fungerar mot
+  `https://portal.api.bolagsverket.se/oauth2/token` med `client_id`,
+  `client_secret` och `scope=vardefulla-datamangder:read`. Uppgifterna
+  ligger i `.env.local` som `BOLAGSVERKET_CLIENT_ID` och
+  `BOLAGSVERKET_CLIENT_SECRET`. Det gäller alltså inte en enskild API-nyckel
+  i en header.
+- **Uppslag på organisationsnummer fungerar och ger riktig data**
+  (Volvo, 5560125790).
+- `dokumentlista` för samma organisationsnummer kom **tom**. Orsak okänd:
+  kan vara fel anrop, ingen digital årsredovisning för just det bolaget,
+  eller att `[TEST]`-åtkomsten inte omfattar dokument. Ej utrett.
+
+**Skarp data, trots `[TEST]` i bekräftelsemailet (Erik, från Volvo-svaret):**
+det verkar vara skarp, inte syntetisk, data. Vad `[TEST]` betyder är
+**inte klarlagt**: om det finns en separat produktionsmiljö med annan
+bas-URL eller andra gränser vet vi inte. Fråga Bolagsverket eller läs
+Developer Portal innan vi bygger på antagandet.
+
+### Bolagsverkets API — sökning/listning på SNI-kod: definitivt inte möjligt
+
+**Status: bekräftat** (Erik läste Swagger-specen i Developer Portal,
+portal.api.bolagsverket.se, API:et "VärdefullaDatamängder"; Claude Code når
+inte portalen och har inte läst specen själv). Specen visar samtliga
+endpoints, och det finns bara fyra:
+
+| Metod | Endpoint | Syfte |
+|---|---|---|
+| GET | `/isalive` | Hälsokontroll. Kräver scope `vardefulla-datamangder:ping`, ett annat än `:read`, vilket förklarar 403 vid tidigare test |
+| POST | `/organisationer` | Slå upp ett bolag via `identitetsbeteckning` (känt organisationsnummer). Inget SNI-filter, inget sökfält |
+| POST | `/dokumentlista` | Lista årsredovisningar för ett känt organisationsnummer |
+| GET | `/dokument/{dokumentId}` | Hämta en specifik årsredovisning (zip) |
+
+Det finns ingen sök- eller listningsendpoint. API:et stöder bara uppslag på
+ett organisationsnummer man redan känner till.
+
+**Konsekvens för `searchCompanies`:** kan inte byggas på Bolagsverkets API
+ensamt. Måste luta sig mot SCB:s statistikdatabas eller nedladdningsbara
+filer, enligt reservplanen redan skisserad nedan.
+
+**Övrigt specen bekräftar:**
+- Ingen omsättning eller antal anställda i grunddatan från
+  `/organisationer`. Det måste hämtas ur iXBRL-dokumenten via
+  `/dokumentlista` + `/dokument/{dokumentId}`.
+- Inget eget länsfält, bara postnummer i adressen. Län måste härledas ur
+  postnumret.
+
+**Kvar att utreda:** `/dokumentlista` gav tom lista för Volvo
+(5560125790). Kan bero på fel anrop, på att bolaget saknar digital
+årsredovisning i materialet, eller på `[TEST]`-åtkomsten. Bas-URL:en
+`https://gw.api.bolagsverket.se/vardefulla-datamangder/v1` användes i
+skriptet från minnet, och Erik har sedan fått uppslaget att fungera, men
+den är ännu inte skriven in här från specen.
+
+### Svarsformat, POST /organisationer
+
+Struktur enligt Swagger-specen, **inte verifierad mot ett faktiskt
+testanrop.** Verifiera fälten mot ett riktigt svar innan strukturen låses i
+adaptern.
+
+```json
+{
+  "organisationer": [
+    {
+      "identitetsbeteckning": "5560000000",
+      "organisationsnamn": {
+        "organisationsnamnLista": [
+          { "namn": "Exempel AB", "typ": "REGISTRERAT_NAMN" }
+        ]
+      },
+      "naringsgrenOrganisation": {
+        "sni": [
+          { "kod": "62010", "beskrivning": "Dataprogrammering" }
+        ]
+      },
+      "postadressOrganisation": {
+        "postadress": {
+          "coAdress": null,
+          "utdelningsadress": "Exempelgatan 1",
+          "postnummer": "11122",
+          "postort": "Stockholm",
+          "land": "SE"
+        }
+      },
+      "reklamsparr": false
+    }
+  ]
+}
+```
 
 ## 3. Rekommenderad arkitektur för MVP
 
@@ -334,13 +430,13 @@ sannolikt inget.
 | # | Fråga | Vem/hur | Blockerar |
 |---|---|---|---|
 | 1 | ~~Bolagsverkets faktiska användarvillkor (lagring, vidareutnyttjande)~~ **Avgjort, Verifierat 2026-09-20** (Erik läste Bolagsverkets sida om värdefulla datamängder): lagring, visning och vidaredistribution tillåtet; enskilda firmors personuppgifter får inte profileras/samköras; reklamspärr ska respekteras. Kvar: detaljer som källhänvisning | Erik vid godkänd kundanmälan | **Inte längre ett hinder för exponering på licensgrunden.** Licensgrinden (`docs/moduler/registret.md`) ligger kvar tills Erik själv öppnar den. Fråga 4 nedan gäller fortfarande |
-| 2 | Kan Bolagsverkets API söka på SNI, eller krävs SCB/filer? | Spik med nycklar | `searchCompanies` |
+| 2 | ~~Kan Bolagsverkets API söka på SNI, eller krävs SCB/filer?~~ **Avgjort, bekräftat 2026-09-21:** nej. Bara fyra endpoints, ingen sökning eller listning. `searchCompanies` måste bygga på SCB:s statistikdatabas eller nedladdningsbara filer. Nästa steg: undersök SCB-spåret (fråga 7) | Undersök SCB:s databas och filer | `searchCompanies` |
 | 3 | Vilka iXBRL-taggar finns för små bolag, och täckning | Spik med nycklar | `revenueKsek`, `growthSharePercent`, median |
 | 4 | Får namngivna aktiebolag lagras/visas, och hur hanteras enskilda firmor och reklamspärr? | Juridisk koll + vuxen/handledare | Steg 04–05 i live |
 | 5 | ~~Var får Utskick och svar mottagarnas e-post från?~~ **Avgjort:** egen mejlsökning med Tavily + Gemini, grundaren bekräftar alltid adressen. Hunter.io valdes bort (50 krediter per konto/månad) | Beslutat | Fas 2 (`OutreachProvider`), byggs inte nu |
 | 6 | Allabolag/UC: kontakt, villkor, pris, vem som är rättighetshavare (UC eller Proff AS) | Grundaren + partner + vuxen/handledare | Inget i MVP |
 | 7 | SCB:s statistikdatabas som källa till branschaggregat | Undersök vid spiken | `medianRevenueKsek` utan iXBRL-urval |
-| 8 | SCB:s byte från certifikat till API-nycklar (september 2026) | Kolla vid åtkomst | Autentiseringens utformning |
+| 8 | ~~SCB:s byte från certifikat till API-nycklar~~ Gemensamma API:et använder OAuth 2 client credentials (**Verifierat** 2026-09-21). Oklart om SCB:s separata företagsregister-API gör det | Kolla vid behov | Autentiseringens utformning |
 
 ## 7. Källor
 
