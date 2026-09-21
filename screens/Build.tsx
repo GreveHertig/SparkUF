@@ -1,5 +1,6 @@
 "use client";
 
+import { Card } from "@/components/ui/Card";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ConceptBadge } from "@/components/ui/ConceptBadge";
@@ -23,6 +24,14 @@ const statusToneClasses: Record<BuildStatus, string> = {
   published: "bg-score-green-bg text-score-green",
 };
 
+/** Grindraden (artefaktens `gatebar`) — samma tre lägen som statuspillen,
+ * bara som en färgad banner i stället för en neutral rad. */
+const gateToneClasses: Record<BuildStatus, string> = {
+  not_started: "border-slate-200 bg-slate-50",
+  building: "border-score-yellow bg-score-yellow-bg",
+  published: "border-score-green bg-score-green-bg",
+};
+
 /** Bygg (avsnitt 6, 2.3): Lovable-konceptet — spec, förhandsvisning och
  * publicering, alltid märkt som koncept. */
 export function Build({ data, notInScenario }: { data: BuildData; notInScenario?: boolean }) {
@@ -44,7 +53,10 @@ export function Build({ data, notInScenario }: { data: BuildData; notInScenario?
         />
       ) : (
         <>
-          <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-lg">
+          <div
+            data-tour-id="build-gate"
+            className={cn("flex items-center gap-3 rounded-md border p-4 shadow-lg", gateToneClasses[data.status])}
+          >
             <span
               className={cn("rounded-pill px-2.5 py-1 text-xs font-semibold uppercase", statusToneClasses[data.status])}
               style={{ letterSpacing: "var(--tracking-label)" }}
@@ -63,38 +75,59 @@ export function Build({ data, notInScenario }: { data: BuildData; notInScenario?
             )}
           </div>
 
-          <section data-tour-id="build-spec" className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-5 shadow-lg">
-            <Eyebrow>{t.buildPage.specTitle}</Eyebrow>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-xs font-semibold uppercase text-slate-500" style={{ letterSpacing: "var(--tracking-label)" }}>
-                  {data.spec.målgrupp}
-                </p>
-              </div>
-            </div>
-            <ul className="flex flex-wrap gap-2">
-              {data.spec.sidor.map((sida) => (
-                <li key={sida} className="rounded-pill bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  {sida}
-                </li>
-              ))}
-            </ul>
-            <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
-              {data.spec.underlag.map((bevis, index) => (
-                <div key={index} className="flex flex-col gap-1">
-                  <p className="text-sm text-slate-700">{bevis.påstående}</p>
-                  <SourceTag source={bevis.källa} />
-                </div>
-              ))}
-            </div>
-          </section>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_2fr]">
+            <Card title={t.buildPage.specTitle}>
+              <p
+                className="text-xs font-semibold uppercase text-slate-500"
+                style={{ letterSpacing: "var(--tracking-label)" }}
+              >
+                {data.spec.målgrupp}
+              </p>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {data.spec.sidor.map((sida) => (
+                  <li key={sida} className="rounded-pill bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                    {sida}
+                  </li>
+                ))}
+              </ul>
+            </Card>
 
-          {data.status === "published" && (
-            <section className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-5">
-              <Eyebrow>{t.buildPage.previewTitle}</Eyebrow>
-              <p className="mt-2 text-sm leading-snug text-slate-600">{data.spec.sammanfattning}</p>
+            <section
+              data-tour-id="build-spec"
+              className="flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg"
+            >
+              <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-2.5">
+                <span className="flex gap-1.5" aria-hidden="true">
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+                </span>
+                <span className="font-numeric text-xs text-slate-500">
+                  {data.url ?? "lovable.dev/projects/spark"}
+                </span>
+                <ConceptBadge className="ml-auto" />
+              </div>
+
+              <div className="flex flex-col gap-4 p-5">
+                {data.status === "published" ? (
+                  <div>
+                    <Eyebrow>{t.buildPage.previewTitle}</Eyebrow>
+                    <p className="mt-2 text-sm leading-snug text-slate-600">{data.spec.sammanfattning}</p>
+                  </div>
+                ) : (
+                  <Eyebrow>{t.buildPage.specTitle}</Eyebrow>
+                )}
+                <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
+                  {data.spec.underlag.map((bevis, index) => (
+                    <div key={index} className="flex flex-col gap-1">
+                      <p className="text-sm text-slate-700">{bevis.påstående}</p>
+                      <SourceTag source={bevis.källa} />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </section>
-          )}
+          </div>
         </>
       )}
     </div>
