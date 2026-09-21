@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart } from "@/components/ui/BarChart";
+import { Card } from "@/components/ui/Card";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
 import { LockedState } from "@/components/ui/LockedState";
@@ -145,75 +146,82 @@ function MarketBody({ data, m, locale }: { data: MarketData; m: MarketPageDict; 
         </KpiRow>
       </section>
 
-      <section data-tour-id="market-datalayers" className="flex flex-col gap-3">
-        <Eyebrow>{m.dataLayers.title}</Eyebrow>
-        <div className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-lg">
-          <DataLayerRow name={m.dataLayers.registerName} note={m.dataLayers.registerNote} source={overview.source} />
-          <DataLayerRow
-            name={m.dataLayers.annualReportName}
-            note={m.dataLayers.annualReportNote}
-            source={overview.source}
-          />
-          <DataLayerRow
-            name={m.dataLayers.simulationName}
-            note={m.dataLayers.simulationNote}
-            source={simulation.source}
-            dataType="simulation"
-          />
-        </div>
-      </section>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
+        <section data-tour-id="market-distribution" className="flex flex-col gap-2.5">
+          <div className="flex items-baseline justify-between gap-2">
+            <Eyebrow>{m.distribution.title}</Eyebrow>
+            <span className="font-numeric text-xs text-slate-500">
+              {m.distribution.sniLabel} {sniCode}
+            </span>
+          </div>
+          <div className="rounded-md border border-slate-200 bg-white p-4 shadow-lg">
+            <BarChart bars={distribution.map((bucket) => ({ label: bucket.label, value: bucket.count }))} />
+          </div>
+          {companies.length > 0 && (
+            <p className="text-sm text-slate-600">
+              {m.distribution.mostCommonLabel} {dominant.label} — {formatCount(dominant.count, locale)} {m.companiesUnit}{" "}
+              {m.ofLabel} {formatCount(companies.length, locale)} ({dominantPercent} %).{" "}
+              {basedOn(m, companies.length, overview.companyCount, locale)}
+            </p>
+          )}
+          <SourceTag source={overview.source} />
+        </section>
 
-      <section data-tour-id="market-distribution" className="flex flex-col gap-2.5">
-        <div className="flex items-baseline justify-between gap-2">
-          <Eyebrow>{m.distribution.title}</Eyebrow>
-          <span className="font-numeric text-xs text-slate-500">
-            {m.distribution.sniLabel} {sniCode}
-          </span>
-        </div>
-        <div className="rounded-md border border-slate-200 bg-white p-4 shadow-lg">
-          <BarChart bars={distribution.map((bucket) => ({ label: bucket.label, value: bucket.count }))} />
-        </div>
-        {companies.length > 0 && (
-          <p className="text-sm text-slate-600">
-            {m.distribution.mostCommonLabel} {dominant.label} — {formatCount(dominant.count, locale)} {m.companiesUnit}{" "}
-            {m.ofLabel} {formatCount(companies.length, locale)} ({dominantPercent} %).{" "}
-            {basedOn(m, companies.length, overview.companyCount, locale)}
-          </p>
-        )}
-        <SourceTag source={overview.source} />
-      </section>
+        <div className="flex flex-col gap-6">
+          <section data-tour-id="market-outreach">
+            <Card title={m.outreach.title}>
+              {!outreachStats ? (
+                <LockedState unlockHint={m.outreach.notBuiltYet} />
+              ) : outreachStats.contacted === 0 ? (
+                <LockedState unlockHint={m.outreach.notSentYet} />
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <dl className="flex flex-col gap-2 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-slate-600">{m.outreach.contactedLabel}</dt>
+                      <dd className="font-numeric font-semibold text-slate-900">
+                        {formatCount(outreachStats.contacted, locale)} / {formatCount(outreachStats.total, locale)}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-slate-600">{m.outreach.respondedLabel}</dt>
+                      <dd className="font-numeric font-semibold text-slate-900">
+                        {formatCount(outreachStats.responded, locale)}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-slate-600">{m.outreach.responseRateLabel}</dt>
+                      <dd className="font-numeric font-semibold text-slate-900">
+                        {Math.round((outreachStats.responded / outreachStats.contacted) * 100)}%
+                      </dd>
+                    </div>
+                  </dl>
+                  <SourceTag source={outreachSource} dataType="customer" />
+                </div>
+              )}
+            </Card>
+          </section>
 
-      <section data-tour-id="market-outreach" className="flex flex-col gap-2.5">
-        <Eyebrow>{m.outreach.title}</Eyebrow>
-        {!outreachStats ? (
-          <LockedState unlockHint={m.outreach.notBuiltYet} />
-        ) : outreachStats.contacted === 0 ? (
-          <LockedState unlockHint={m.outreach.notSentYet} />
-        ) : (
-          <KpiRow>
-            <KpiTile
-              label={m.outreach.contactedLabel}
-              value={outreachStats.contacted}
-              unit={`/ ${formatCount(outreachStats.total, locale)}`}
-              source={outreachSource}
-              dataType="customer"
-            />
-            <KpiTile
-              label={m.outreach.respondedLabel}
-              value={outreachStats.responded}
-              source={outreachSource}
-              dataType="customer"
-            />
-            <KpiTile
-              label={m.outreach.responseRateLabel}
-              value={Math.round((outreachStats.responded / outreachStats.contacted) * 100)}
-              unit="%"
-              source={outreachSource}
-              dataType="customer"
-            />
-          </KpiRow>
-        )}
-      </section>
+          <section data-tour-id="market-datalayers">
+            <Card title={m.dataLayers.title}>
+              <div className="flex flex-col gap-3">
+                <DataLayerRow name={m.dataLayers.registerName} note={m.dataLayers.registerNote} source={overview.source} />
+                <DataLayerRow
+                  name={m.dataLayers.annualReportName}
+                  note={m.dataLayers.annualReportNote}
+                  source={overview.source}
+                />
+                <DataLayerRow
+                  name={m.dataLayers.simulationName}
+                  note={m.dataLayers.simulationNote}
+                  source={simulation.source}
+                  dataType="simulation"
+                />
+              </div>
+            </Card>
+          </section>
+        </div>
+      </div>
 
       <section data-tour-id="market-competitors" className="flex flex-col gap-3">
         <Eyebrow>{m.competitorsTitle}</Eyebrow>

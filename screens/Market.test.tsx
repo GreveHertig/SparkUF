@@ -158,7 +158,7 @@ describe("Market", () => {
     );
     // 4 kontaktade (allt utom draft) av 5 byggda, 2 svarade, 50 % svarsfrekvens.
     const outreachSection = container.querySelector('[data-tour-id="market-outreach"]');
-    expect(outreachSection?.textContent).toContain("4/ 5");
+    expect(outreachSection?.textContent).toContain("4 / 5");
     expect(outreachSection?.textContent).toContain("Testutskick (Gmail)");
     expect(outreachSection?.textContent).toContain("2");
     expect(outreachSection?.textContent).toContain("50%");
