@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import { Logo } from "@/components/ui/Logo";
-import { ScoreBadge } from "@/components/spark/ScoreBadge";
+import { ScoreRing } from "@/components/spark/ScoreRing";
 import { cn } from "@/design/cn";
 import { getScoreLevel } from "@/score/levels";
 import { useI18n } from "@/i18n/context";
@@ -82,16 +82,16 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-60 shrink-0 flex-col gap-6 border-r border-slate-200 bg-sidebar-bg p-5">
-        <Logo height={18} />
+      <aside className="flex w-60 shrink-0 flex-col gap-6 bg-sidebar-bg p-5">
+        <Logo tone="light" height={18} />
         <nav className="flex flex-col gap-0.5" aria-label={t.appShell.nav.home}>
           <Link
             href={homeHref}
             className={cn(
               "rounded-md px-2.5 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-300",
               pathname === homeHref
-                ? "bg-white text-slate-900 shadow-lg"
-                : "text-slate-700 hover:bg-slate-800/[0.06] hover:text-slate-900",
+                ? "bg-accent-600 text-white shadow-lg"
+                : "text-slate-200 hover:bg-white/[0.08] hover:text-white",
             )}
             style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
           >
@@ -105,15 +105,15 @@ export function AppShell({
                 className={cn(
                   "rounded-md px-2.5 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent-300",
                   pathname?.startsWith(`${navBasePath}/${slug}`)
-                    ? "bg-white text-slate-900 shadow-lg"
-                    : "text-slate-700 hover:bg-slate-800/[0.06] hover:text-slate-900",
+                    ? "bg-accent-600 text-white shadow-lg"
+                    : "text-slate-200 hover:bg-white/[0.08] hover:text-white",
                 )}
                 style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
               >
                 {label}
               </Link>
             ) : (
-              <span key={slug} className="rounded-md px-2.5 py-2 text-sm font-medium text-slate-500">
+              <span key={slug} className="rounded-md px-2.5 py-2 text-sm font-medium text-slate-400">
                 {label}
               </span>
             ),
@@ -146,7 +146,7 @@ export function AppShell({
                 className="flex items-center gap-2 rounded-pill border border-slate-200 py-1 pl-1 pr-3 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-accent-300"
                 style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
               >
-                <ScoreBadge score={scoreSnapshot.total} />
+                <ScoreRing score={scoreSnapshot.total} />
                 <span className="text-xs font-semibold text-slate-700">
                   {t.score.levels[getScoreLevel(scoreSnapshot.total).key].name}
                 </span>

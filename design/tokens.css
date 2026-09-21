@@ -31,6 +31,10 @@
   --paper-50: var(--slate-50);
   --ink-800: var(--slate-800);
   --ink-900: var(--slate-900);
+  /* --navy ur artefakten är samma ton som slate-800 (se kommentaren på den
+     raden) — ett eget namn så att mörka ytor (sidomenyn) refererar till
+     paletten under dess eget namn i stället för ett generiskt skiffersteg. */
+  --navy: var(--slate-800);
 
   /* Blå accentskala, ombyggd runt artefaktens --accent:#0B69D4 som accent-600
      (samma position som tidigare, se motiveringen nedan). 50–500 och 700–900
@@ -67,11 +71,12 @@
   --warn-soft: color-mix(in srgb, var(--warn) 14%, white);
   --bad-soft: color-mix(in srgb, var(--bad) 11%, white);
 
-  /* Sidomenyns yta (formgivningssession, artefaktens .side): en ljus, bara
-     lätt mörknad flik av ground — INTE en mörk yta. Samma color-mix-formel
-     som artefaktens app.css rad 85 (ground 80% / ink 20%), bara skriven mot
-     våra tokennamn. */
-  --sidebar-bg: color-mix(in srgb, var(--slate-50) 80%, var(--slate-900));
+  /* Sidomenyns yta: mörk igen (formgivningssession, sidornas komposition mot
+     artefakten), --navy rakt av — inte ett eget värde. Kontrast mot navy
+     (#143253), uträknat, inte ögonmått: slate-200 10.67:1, slate-400 5.92:1,
+     vit text på accent-600 (aktiv länk) 5.27:1 — alla godkända mot WCAG AA:s
+     4.5:1. Se DESIGN.md. */
+  --sidebar-bg: var(--navy);
 
   /* Djup — två nivåer, från artefakten. rgba-värdena är redan uttryckta mot
      --ink (14, 32, 51) i referensen, inte omräknade här. Namngiven --shadow-soft

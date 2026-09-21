@@ -261,3 +261,40 @@ Profilfliken bytte från ett enda blandat kort till två `Card`-kort i ett grid 
 
 ### Verifiering
 `pnpm typecheck`/`lint`/`test` (373 gröna, 36 skippade som väntat, genom hela sessionen) och `pnpm build` gröna före varje commit — tio commits, en per sida.
+
+## Hem, fyra kvarstående punkter mot artefakten (gren `prototyp`)
+
+Uppdrag: fyra specifika avvikelser från `design-referens/artefakt/app.js`/`app.css` som blev kvar efter förra sessionens omtag — poängvisningen, poängdelarna, handlingskortet och sidomenyn. `core/score.ts`, `adapters/live/`, `lib/server/`, `ports/` och demodatan rördes inte. Inga nya beroenden.
+
+### 1. Poängvisningen
+- **Sidhuvudet:** ny `components/spark/ScoreRing.tsx` — en tunn SVG-ring (stroke, ingen fylld yta) med talet i mitten, tonfärgad efter `getScoreLevel`. Ersätter `ScoreBadge` i `screens/AppShell.tsx`s sidhuvud. `ScoreBadge` självt rördes inte — det används fortfarande som en kompakt pill i `VerdictCard` och i `/designsystem`, utanför den här uppgiften.
+- **`ScorePanel.tsx`s topp:** `ScoreBadge size="large"` (en tonfärgad, fylld pill — vid låga/mellanhöga poäng `score-yellow-bg`/`score-orange-bg`, det beigea grundaren pekade ut) ersatt av vanlig text: stort tal, `/100` mindre bredvid, nivåns namn under, rörelsen under den, sedan en tunn skala (bar + 1/100-etiketter).
+- **Grundarens uttryckliga undantag:** det stora talet är medvetet INTE `.font-numeric` (Funnel Display, regeln sedan Tokenbyte-sessionen för "alla siffror") utan ärver body-typsnittet Castoro genom att sakna klassen — ett skriftligt, efterfrågat undantag, inte ett förbiseende. Dokumenterat här så nästa session inte "rättar" det.
+- **Känd, flaggad lucka: ingen taköverst-markör på skalan.** Artefaktens `CAP_NOW`-markör kräver den aktuella `PhaseId` ur `core/score.ts` (fem värden: `discover`/`tryBeforeCalls`/`tryAfterCalls`/`launch`/`grow`), men `JourneyStepView.journeyPhase` (redan hämtad av både Hem och Poäng) har bara fyra — ingen tillförlitlig väg att skilja `tryBeforeCalls` från `tryAfterCalls` utan att röra poängmotorn eller gissa. Skalan visas utan taket i stället för att chansa.
+
+### 2. Poängdelarna (`ScorePanel.tsx`)
+Varje rad: namn till vänster, poäng högerställt på samma rad, en tunn och kortare stapel under (inte artefaktens fasta 54px-inline-stapel — grundarens skrivna instruktion vägde tyngre än den bokstavliga CSS-layouten här, samma avvägning som talets typsnitt ovan). Ny lokal `useState<string | null>` för vilken del som är utfälld; `SourceTag` renderas bara i den utfällda delens innehåll, inte på varje rad. De låsta delarna (befintlig `LockIcon`-pill-rad) rördes inte — de var inte del av den här punkten.
+
+### 3. Handlingskortet (`NextStepCard.tsx`)
+- **Skäl som pilpunkter:** `nextStep.why` (en enda skriven mening per beat i `adapters/demo/sara.ts`) delas vid meningsgränser (`splitIntoReasons`, regex på `. `/`! `/`? `) till punkter — ingen ny text, bara omformaterad befintlig text. Kontrollerat mot alla `why`-strängar i `sara.ts`: inga förkortningar med punkt (`t.ex.`, `m.fl.`) som hade delat fel. När `why` bara har en mening (flera steg har det) visas den fortfarande som en vanlig rad, inte en ensam pilpunkt som bara upprepar rubriken — annars hade rubrik och "skäl" sagt exakt samma sak två gånger på steg med kort `why`.
+- **Tre val i stället för ett:** huvudhandlingen (oförändrad), en ny "Senare"-knapp (lokalt UI-state, växlar till "Skjutet till i morgon" och inaktiveras — precis som artefaktens `S.deferred`, ingen egen data eftersom demot inte har ett verkligt uppskjutningsläge) och en ny "Visa/Dölj underlaget"-knapp som fäller ut `doneItems` (flyttad från alltid synlig till bakom togglen).
+- **Poängen högerställd:** `+{maxPoints} {t.common.upToPointsAfter}` i handlingsraden, återanvänder den redan befintliga "poäng"-ordet i stället för en ny i18n-nyckel.
+- **Kravlistan med bockar och räknare:** byggd helt av redan existerande data, ingen bespoke kravtext hittades på (samma gräns som förra sessionens `DESIGN.md`-notering om `UNLOCK.krit` drog upp). Räknaren (`unlockedPartsCount`/`totalPartsCount`, nya valfria props) är `ScoreSnapshot.parts.length` / `+ lockedParts.length` — äkta upplåst/totalt. Varje rad i `remainingParts` är en tom kryssruta (alla är per definition olåsta ännu, så ingen rad kan visa en bock) + namn + samma "låses upp efter steg N"-text som redan fanns.
+- **Nya i18n-nycklar** (`common.laterLabel`/`deferredLabel`/`showEvidenceLabel`/`hideEvidenceLabel`, sv+en): allt annat återanvänder befintliga nycklar (`common.doneItemsLabel`, `journeyPage.whatsNext`, `common.upToPointsAfter`).
+
+### 4. Sidomenyn
+`design/tokens.css`: nytt namngivet alias `--navy: var(--slate-800)` (samma ton som redan fanns, bara ett eget namn), och `--sidebar-bg: var(--navy)` i stället för den ljusa `color-mix`-tonen från förra designuppdateringen. Kontrast räknad ut (WCAG-formeln, inte ögonmått — se Session 1:s lärdom i `docs/status.md`), mot `#143253`:
+
+| Text | Hex | Kontrast mot navy |
+|---|---|---|
+| `slate-200` (huvudtext, aktiv/inaktiv navlänk) | `#e4e9ee` | 10.67:1 |
+| `slate-400` (sekundärtext, inert nav-etikett) | `#a6b0ba` | 5.92:1 |
+| vit på `accent-600` (aktiv länks bakgrund) | — | 5.27:1 (redan verifierad tidigare session) |
+
+Alla tre klarar WCAG AA (4.5:1 normal text). **Inget föll under gränsen** — det fanns ingen kombination i den slutliga sidomenyn som behövde bytas ut igen efter uträkningen.
+
+### Manuell webbläsarverifiering — genomförd
+`pnpm dev` + en cachad `npx`-installation av Playwright (från en tidigare session, `~/.npm/_npx/*/node_modules/playwright`, Chromium redan i `~/.cache/ms-playwright`) — inget nytt beroende i projektet. Skärmdumpar av `/demo/app` (steg 05 och steg 06) och `/demo/app/poang`, samt klickade interaktioner (expandera en poängdel, "Visa underlaget", "Senare") — alla renderade och togglade korrekt, `console --errors` tomt i alla körningar. **Upptäckte under tiden:** en `next start`-process från tidigare i sessionen/miljön låg kvar på port 3000 och gav 500:or (samma `.next`-mismatch-mönster som noterat i en tidigare sessions `DESIGN.md`-post) — testat mot `pnpm dev`s egen port (3001) i stället, sedan avslutat båda processerna vid sessionens slut.
+
+### Verifiering
+`pnpm typecheck`/`lint`/`test` (373 gröna, 36 skippade som väntat) och `pnpm build` gröna.

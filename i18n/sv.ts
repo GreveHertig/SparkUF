@@ -20,6 +20,10 @@ export const sv = {
     simulationPopulationLabel: "Simulerad population",
     upToPointsBefore: "Kan ge upp till",
     upToPointsAfter: "poäng",
+    laterLabel: "Senare",
+    deferredLabel: "Skjutet till i morgon",
+    showEvidenceLabel: "Visa underlaget",
+    hideEvidenceLabel: "Dölj underlaget",
     bolagsformLabels: {
       enskild_firma: "Enskild firma",
       aktiebolag: "Aktiebolag",

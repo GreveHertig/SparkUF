@@ -20,6 +20,10 @@ export const en = {
     simulationPopulationLabel: "Simulated population",
     upToPointsBefore: "Can earn up to",
     upToPointsAfter: "points",
+    laterLabel: "Later",
+    deferredLabel: "Deferred to tomorrow",
+    showEvidenceLabel: "Show the basis",
+    hideEvidenceLabel: "Hide the basis",
     bolagsformLabels: {
       enskild_firma: "Sole proprietorship",
       aktiebolag: "Limited company",

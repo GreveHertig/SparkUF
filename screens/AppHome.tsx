@@ -54,6 +54,8 @@ export function AppHome({
   const { locale, t } = useI18n();
 
   const remainingParts = [...data.score.lockedParts].sort((a, b) => a.unlocksAfterStep - b.unlocksAfterStep);
+  const unlockedPartsCount = data.score.parts.length;
+  const totalPartsCount = unlockedPartsCount + data.score.lockedParts.length;
 
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col gap-[18px]">
@@ -81,6 +83,8 @@ export function AppHome({
               doneItems={data.nextStep.doneItems}
               actionLabel={data.nextStep.actionLabel}
               remainingParts={remainingParts}
+              unlockedPartsCount={unlockedPartsCount}
+              totalPartsCount={totalPartsCount}
             />
           </div>
           <JourneyRail steps={data.journeySteps} stepHref={journeyStepHref} />

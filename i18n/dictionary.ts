@@ -22,6 +22,13 @@ export type Dictionary = {
     simulationPopulationLabel: string;
     upToPointsBefore: string;
     upToPointsAfter: string;
+    /** NextStepCard (sidornas komposition mot artefakten, uppgift 3): tre
+     * val i stället för ett — huvudhandlingen, "Senare" (rent kosmetisk
+     * UI-state, ingen egen data) och togglen för underlaget. */
+    laterLabel: string;
+    deferredLabel: string;
+    showEvidenceLabel: string;
+    hideEvidenceLabel: string;
     /** Generiska bolagsformsnamn (uppgift 2: Juridik-sidans innehållsburna
      * rubrik) — inte scenarioinnehåll, samma fyra värden som `Bolagsform`
      * i core/domain.ts. */

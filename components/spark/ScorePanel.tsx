@@ -1,11 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { SourceTag } from "@/components/ui/SourceTag";
 import { Sparkline } from "@/components/ui/Sparkline";
-import { ScoreBadge } from "@/components/spark/ScoreBadge";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
+import { getScoreLevel } from "@/score/levels";
 import type { ScoreSnapshot } from "@/core/domain";
 
 function toneClass(share: number): string {
@@ -14,12 +15,20 @@ function toneClass(share: number): string {
   return "bg-score-red";
 }
 
+const levelBarToneClasses = {
+  red: "bg-score-red",
+  orange: "bg-score-orange",
+  yellow: "bg-score-yellow",
+  green: "bg-score-green",
+  strong: "bg-score-strong",
+} as const;
+
 /**
  * Poängen som en egen kolumn (artefaktens `scorePanelHTML`): totalen med
  * nivå och rörelse överst, sedan alla åtta delar som staplar med källa, och
  * de låsta delarna sist. En del bär bara en `Källa` (inte flera
- * underlagsrader) — `SourceTag` visar det underlaget, ScorePanel hittar
- * inte på fler bevisrader per del.
+ * underlagsrader) — `SourceTag` visar det underlaget bara på den utfällda
+ * delen, inte på varje rad (grundarens uttryckliga instruktion).
  */
 export function ScorePanel({
   snapshot,
@@ -33,47 +42,79 @@ export function ScorePanel({
   history?: number[];
 }) {
   const { t } = useI18n();
+  const [expandedPart, setExpandedPart] = useState<string | null>(null);
+  const level = getScoreLevel(snapshot.total);
+  const clamped = Math.min(100, Math.max(1, snapshot.total));
 
   return (
-    <Card title={title} right={<span className="font-numeric text-xs text-slate-500">/100</span>}>
-      <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
-        <div className="flex items-center gap-3">
-          <ScoreBadge score={snapshot.total} size="large" />
-          {history.length >= 2 && <Sparkline points={history} tone="accent" />}
+    <Card title={title}>
+      <div className="flex flex-col items-center gap-1 border-b border-slate-100 pb-4 text-center">
+        {/* Stort serif-tal — grundarens uttryckliga undantag från "alla
+         * siffror är .font-numeric" (se DESIGN.md, "Poängvisningen"). Ärver
+         * body-typsnittet (Castoro) genom att medvetet INTE bära
+         * .font-numeric, i stället för att peka ut ett eget typsnitt. */}
+        <div className="flex items-baseline gap-1">
+          <span className="text-5xl leading-none text-slate-900">{snapshot.total}</span>
+          <span className="font-numeric text-sm text-slate-400">/100</span>
         </div>
+        <p className="text-sm text-slate-900">{t.score.levels[level.key].name}</p>
         {snapshot.delta !== 0 && (
-          <p className="mt-1 text-sm font-semibold text-slate-900">
-            <span className="font-numeric">
-              {snapshot.delta > 0 ? "+" : "−"}
-              {Math.abs(snapshot.delta)}
-            </span>{" "}
-            {snapshot.deltaReason}
+          <p className="font-numeric text-xs text-score-green">
+            {snapshot.delta > 0 ? "+" : "−"}
+            {Math.abs(snapshot.delta)} {snapshot.deltaReason}
           </p>
         )}
-        <p className="font-numeric text-xs text-slate-500">
-          {snapshot.previousTotal} → {snapshot.total}
-        </p>
+        {history.length >= 2 && (
+          <div className="mt-1">
+            <Sparkline points={history} tone="accent" />
+          </div>
+        )}
+        <div className="mt-3 w-full">
+          <div className="h-1.5 w-full overflow-hidden rounded-pill bg-slate-100">
+            <div
+              className={cn("h-full rounded-pill", levelBarToneClasses[level.tone])}
+              style={{ width: `${clamped}%` }}
+            />
+          </div>
+          <div className="font-numeric mt-1 flex justify-between text-[10px] text-slate-400">
+            <span>1</span>
+            <span>100</span>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-3 flex flex-col gap-2.5">
+      <div className="mt-3 flex flex-col">
         {snapshot.parts.map((part) => {
           const share = part.weight > 0 ? part.points / part.weight : 0;
+          const expanded = expandedPart === part.name;
           return (
-            <div key={part.name} className="flex flex-col gap-1">
-              <div className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-slate-700">{part.name}</span>
-                <span className="font-numeric text-slate-900">
-                  {part.points}
-                  <span className="text-slate-400">/{part.weight}</span>
+            <div key={part.name} className="border-b border-slate-100 py-1.5 last:border-b-0">
+              <button
+                type="button"
+                aria-expanded={expanded}
+                onClick={() => setExpandedPart(expanded ? null : part.name)}
+                className="flex w-full flex-col gap-1.5 rounded-md px-1 py-1 text-left transition-colors hover:bg-slate-50"
+                style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
+              >
+                <span className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-slate-700">{part.name}</span>
+                  <span className="font-numeric text-slate-900">
+                    {part.points}
+                    <span className="text-slate-400">/{part.weight}</span>
+                  </span>
                 </span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-pill bg-slate-100">
-                <div
-                  className={cn("h-full rounded-pill", toneClass(share))}
-                  style={{ width: `${Math.min(100, Math.round(share * 100))}%` }}
-                />
-              </div>
-              <SourceTag source={part.source} dataType={part.dataType} />
+                <span className="h-1 w-16 overflow-hidden rounded-pill bg-slate-100">
+                  <span
+                    className={cn("block h-full rounded-pill", toneClass(share))}
+                    style={{ width: `${Math.min(100, Math.round(share * 100))}%` }}
+                  />
+                </span>
+              </button>
+              {expanded && (
+                <div className="px-1 pt-1">
+                  <SourceTag source={part.source} dataType={part.dataType} />
+                </div>
+              )}
             </div>
           );
         })}
