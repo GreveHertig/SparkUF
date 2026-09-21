@@ -44,8 +44,11 @@ vidare med `RegistryProvider` (Fas 1):
      datamängder. Licensen för namngivna företag är **Verifierat**, med
      undantag för enskilda firmors personuppgifter och reklamspärr. Se
      avsnitt 2. Kvarstår som två olösta frågor:
-  1. Det är **oklart om Bolagsverkets API går att söka på SNI-kod**.
-     `searchCompanies` bygger på det. Se avsnitt 3.
+  1. ~~Det är oklart om Bolagsverkets API går att söka på SNI-kod.~~
+     **Avgjort 2026-09-21:** det går inte. API:et har bara fyra endpoints
+     och stöder bara uppslag på känt organisationsnummer. `searchCompanies`
+     måste bygga på SCB. Se avsnitt 2 ("Bolagsverkets API — sökning/listning
+     på SNI-kod") och fråga 2 i avsnitt 6.
   2. Registerdatan ger **inga kontaktuppgifter** (ingen e-post eller
      telefon). Mottagarnas e-post hämtas i Fas 2 via egen sökning
      (Tavily + Gemini), se överst och avsnitt 6.
@@ -182,7 +185,7 @@ Det som **inte** är löst:
 
 | Portfält | Möjlig källa | Status |
 |---|---|---|
-| `RegistryQuery.sniCode` | SCB SNI-koder | Verifierat att fältet finns. **Osäkert** om Bolagsverkets API kan söka på det (se nedan) |
+| `RegistryQuery.sniCode` | SCB SNI-koder | Verifierat att fältet finns. Bolagsverkets API kan **inte** söka på det (avgjort 2026-09-21), listning måste komma från SCB |
 | `RegistryCompany.name`, `sniCode` | Register | Verifierat |
 | `RegistryCompany.employees` | SCB storleksklass (inte exakt tal), eller medelantal anställda ur iXBRL | Osäkert. Portens `min/maxEmployees` kräver ett tal, klasserna ger intervall |
 | `RegistryCompany.revenueKsek` | iXBRL, nettoomsättning | Osäkert. Bara aktiebolag, kräver en fil per bolag |
@@ -193,12 +196,12 @@ Det som **inte** är löst:
 | `MarketOverview.regionSharePercent` | Fördelning över län | Rimligt om län går att härleda |
 | `MarketOverview.competitors` | Bolag per SNI + verksamhetsbeskrivning | Rimligt |
 
-**Största tekniska osäkerheten:** Bolagsverkets API beskrivs som en
-uppslagstjänst per organisation och dokument (Sekundärt, Context7). Att
-**lista alla bolag på en SNI-kod** görs sannolikt via SCB:s API eller via
-de nedladdningsbara filerna, inte via Bolagsverkets uppslag. Det avgör hur
-adaptern byggs. Avgjort 2026-09-21: Bolagsverkets API kan inte söka på SNI, se
-"Spik med nycklar" ovan.
+**Avgjort 2026-09-21:** Bolagsverkets API är en ren uppslagstjänst per
+organisationsnummer och dokument. Det kan **inte** lista bolag på SNI-kod
+(bekräftat mot Swagger-specen, se "Bolagsverkets API — sökning/listning på
+SNI-kod" ovan). Listning per SNI och storleksklass måste därför komma från
+SCB (statistikdatabas, nedladdningsbara filer eller företagsregister-API).
+Vilket av dem som håller är nästa spik, se fråga 7 i avsnitt 6.
 
 ### Spik med nycklar (2026-09-21)
 
@@ -295,6 +298,23 @@ adaptern.
   ]
 }
 ```
+
+### TODO — öppna punkter från Bolagsverket-spiken
+
+Noterade 2026-09-21, medvetet inte lösta än:
+
+- [ ] **Svarsformatet för `POST /organisationer` är rekonstruerat från
+  Swagger-specen, inte verifierat mot ett riktigt testanrop.** Kör ett
+  anrop och jämför fält för fält innan strukturen låses i adaptern.
+- [ ] **`/dokumentlista` gav tom lista för Volvo (5560125790).** Orsak
+  okänd (fel anrop, ingen digital årsredovisning i materialet, eller
+  `[TEST]`-åtkomst). Prova fler organisationsnummer och kontrollera
+  anropets utformning mot specen.
+- [ ] **Bas-URL:en är inte inskriven från specen.** Skriptet använde
+  `https://gw.api.bolagsverket.se/vardefulla-datamangder/v1` från minnet.
+  Läs den ur Swagger-specen och skriv in den här.
+- [ ] Vad `[TEST]` i bekräftelsemailet betyder (separat produktionsmiljö
+  eller ej), se "Spik med nycklar".
 
 ## 3. Rekommenderad arkitektur för MVP
 
