@@ -458,6 +458,123 @@ sannolikt inget.
 | 7 | SCB:s statistikdatabas som källa till branschaggregat | Undersök vid spiken | `medianRevenueKsek` utan iXBRL-urval |
 | 8 | ~~SCB:s byte från certifikat till API-nycklar~~ Gemensamma API:et använder OAuth 2 client credentials (**Verifierat** 2026-09-21). Oklart om SCB:s separata företagsregister-API gör det | Kolla vid behov | Autentiseringens utformning |
 
+## Förslag: SCB-spåret (UTKAST, väntar på godkännande)
+
+> **Status:** förslag skrivet 2026-09-21, godkänt av Erik samma dag. Underlag: SCB:s egna sidor och söksammanfattningar. Inget
+> anrop mot SCB är gjort, och Claude Codes miljö har inte nycklar.
+> Märkningarna följer avsnittet "Så läser du märkningarna".
+
+### Frågan
+
+Kan vi **lista bolag per SNI-kod och storleksklass** (antal anställda,
+omsättning)? Det är vad `searchCompanies` behöver, eftersom Bolagsverkets
+API inte kan det (se avsnitt 2). Tre kandidater hos SCB och Bolagsverket:
+
+### Jämförelse
+
+| | A. SCB Företagsregister-API (avgiftsfritt) | B. SCB Statistikdatabas (PxWeb) | C. Nedladdningsbara filer (värdefulla datamängder) |
+|---|---|---|---|
+| **Vad du får** | Enskilda företag och arbetsställen | Aggregat (antal, nyckeltal), **inga bolagsnamn** | Bolagsdata i filer, per bolag |
+| **Lista per SNI** | **Ja** (Sekundärt: SCB:s sida säger att man kan söka på fasta koder som SNI) | Nej, bara antal per SNI | Ja, filtrera lokalt. SNI finns i de 15 variablerna (Verifierat, se avsnitt 2) |
+| **Storleksklass anställda** | **Ja**, som klass, inte exakt tal (Sekundärt) | Ja, som filter/dimension: nio klasser, 0 till 500+ anställda (Sekundärt, tabell FDBR07N) | **Nej**, finns inte bland de 15 variablerna (Verifierat, avsnitt 2) |
+| **Storleksklass omsättning** | **Osäkert.** Variabeln finns i registrets variabelbeskrivning (Sekundärt), men sidan om de avgiftsfria uppgifterna nämner den inte | Delvis: "Företagens ekonomi" (nettoomsättning per SNI och storleksklass, 2022–2024) och branschnyckeltal med kvartiler (Sekundärt, tabellnamn ur sökresultat, innehåll ej granskat) | Nej, bara iXBRL per bolag, en fil per bolag och år |
+| **Kontaktuppgifter** | Troligen inte i den avgiftsfria delen (Sekundärt). Registret har telefon/e-post/reklam som variabler, men det gäller inte nödvändigtvis det gratis utsnittet | Nej | Nej |
+| **Kostnad** | Avgiftsfritt sedan 2025-06-26 (Sekundärt) | Avgiftsfritt (Osäkert, inte kontrollerat mot sidan) | Avgiftsfritt |
+| **Åtkomst** | Godkänna villkor och få certifikat via scbforetag@scb.se. Byter till API-nycklar i september 2026 (Sekundärt: alltså nu, kolla vad som gäller) | Öppet API, ingen inloggning (Osäkert, inte prövat) | Ingen inloggning känd, se Bolagsverkets sida om nedladdningsbara filer (Sekundärt) |
+| **Gränser** | Max 2 000 rader per anrop, 10 anrop per 10 sekunder och användare, bara aktuell data, ingen historik (Sekundärt) | Inte kontrollerade | Stora filer, tung bearbetning |
+| **Format** | REST, JSON eller XML (Sekundärt) | JSON via PxWeb (Sekundärt) | Filer (Osäkert vilket format) |
+
+**Storleksklasserna (Sekundärt, registrets variabelbeskrivning):**
+1 = 0 anställda, 2 = 1–4, 3 = 5–9, 4 = 10–19, 5 = 20–49, 6 = 50–99,
+7 = 100–199, 8 = 200–499, och därefter större. Klasserna 2–6 stämmer med
+de fem klasser demot redan visar (1–4, 5–9, 10–19, 20–49, 50+). Portens
+`minEmployees`/`maxEmployees` måste alltså översättas till klasser och
+`RegistryCompany.employees` visas som intervall, aldrig som exakt tal.
+
+### Rekommendation
+
+**Bygg listningen på A och aggregaten på B, och berika med Bolagsverket.**
+
+1. **`searchCompanies` (lista + org.nr) via A.** Det är den enda
+   kandidaten som listar enskilda bolag på SNI *och* storleksklass i ett
+   anrop. Filen (C) klarar SNI men saknar storleksklass, och B har inga
+   namn.
+2. **Berika med Bolagsverkets `/organisationer`** för de träffar vi visar:
+   juridisk form, reklamspärr och verksamhetsbeskrivning. Det ger också
+   filtret "bara aktiebolag utan reklamspärr" (avsnitt 2) även om A inte
+   har juridisk form i det gratis utsnittet.
+3. **`getMarketOverview` via B** för `companyCount` per SNI och
+   storleksklass, och (om tabellerna visar sig innehålla det) omsättning
+   per storleksklass. Det är billigare och ärligare än en median över ett
+   iXBRL-urval, och rätt sätt att uppfylla Datalöftet: ett tal med källa
+   för hela marknaden i stället för "baserat på N bolag".
+4. **Omsättning per bolag** kommer bara via iXBRL för aktiebolag, som
+   tidigare. Om A har omsättningsklass räcker det för filtrering, och då
+   behövs iXBRL bara för de bolag vi visar upp.
+5. **C (filer) som reserv**, inte första val: om A:s access dröjer eller
+   villkoren blockerar. Då listar vi på SNI ur filen och tappar
+   storleksfiltret.
+
+### Spik, i ordning
+
+1. **B först (inget att vänta på).** Slå upp `FDBR07N` och tabellerna för
+   Företagens ekonomi och branschnyckeltal i PxWeb. Kontrollera: SNI-djup
+   (2–5 siffror), storleksklasser, senaste år, om nettoomsättning finns,
+   om API:et är öppet. Testa med en verklig SNI-kod från demot.
+2. **A: begär åtkomst hos SCB** (mejl till scbforetag@scb.se) och ställ
+   frågorna nedan. **Det är ett utåtriktat steg och görs av Erik, inte av
+   Claude.** Kolla först om nya API-nycklar redan ersatt certifikaten.
+3. Kör riktiga anrop och **uppdatera det här dokumentet** med det som
+   visade sig, precis som Bolagsverket-spiken.
+
+**Frågor till SCB / att kontrollera i A:**
+- Går det att filtrera på SNI **och** storleksklass anställda i samma anrop?
+- Finns storleksklass omsättning i det avgiftsfria utsnittet?
+- Finns juridisk form och län/kommun som sökfilter? (Behövs för "bara
+  aktiebolag" och `county`.)
+- Finns reklamspärr (variabeln "Reklam") med, och kan vi filtrera bort
+  spärrade?
+- Hur fungerar pagineringen nu när 2 000 rader/anrop är taket, och gäller
+  gränsen 10 anrop/10 s även med API-nyckel?
+- Får vi lagra svaren (Supabase-cache), och vilken källhänvisning krävs?
+- Får enskilda firmor listas, eller bara aggregeras? (Samma GDPR-fråga som
+  i avsnitt 2.)
+
+### TODO / nästa steg
+
+- [ ] **Erik mejlar scbforetag@scb.se** för åtkomst till API:et (A) och
+  ställer frågorna ovan. Inget mejl är skickat. Claude skickar inget.
+- [ ] **Läs variabelbeskrivnings-PDF:en för API:et**
+  (`variabelbeskrivning-api-sni-2025.pdf`, länk under Källor). Den kunde
+  inte läsas i den här sessionen (saknat PDF-verktyg), så uppgifterna om
+  vilka variabler det gratis utsnittet har och vilka som går att filtrera
+  på är oläst i original. Kontrollera särskilt omsättningsklass,
+  juridisk form, län/kommun, reklam.
+- [ ] Spik B (statistikdatabasen), se "Spik, i ordning".
+
+### Risker och luckor
+
+- **Allt om A är Sekundärt** tills Erik eller någon med åtkomst kört ett
+  anrop. Särskilt omsättningsklass och juridisk form är osäkra i det
+  gratis utsnittet.
+- **Enskilda firmor** ingår i SCB:s register. Samma förslag som i avsnitt
+  2: namngivna listor bara för aktiebolag utan reklamspärr.
+- **Datafärskhet:** A uppdateras nattligen, de flesta variabler veckovis
+  (Sekundärt). B har årsdata med eftersläpning. Visa alltid
+  `Källa.hämtad` och statistikår.
+- **Två register kan säga olika saker** (SCB:s och Bolagsverkets SNI-kod
+  kan skilja). Visa källan per uppgift, blanda inte tyst.
+
+Källor (Sekundärt, hämtade 2026-09-21 som sammanfattat utdrag):
+- SCB, avgiftsfria uppgifter i företagsregistret: https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/avgiftsfria-uppgifter-i-foretagsregistret/
+- SCB, variabelbeskrivning för företagsregistret: https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/variabelbeskrivning/
+- SCB, variabelbeskrivning API (PDF, kunde inte läsas i den här sessionen): https://www.scb.se/contentassets/8a8eb5c3d45f461ea93482f8e8d4de4f/variabelbeskrivning-api-sni-2025.pdf
+- SCB, värdefulla datamängder: https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/vardefulla-datamangder--grundlaggande-foretagsinformation/ (hänvisar vidare till Bolagsverket för API och filer, ger inga detaljer om filter)
+- SCB Statistikdatabasen, Företag (FDB) efter SNI 2007 och storleksklass 2008–2025: https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__NV__NV0101/FDBR07N/
+- SCB Statistikdatabasen, Företagens ekonomi, basfakta efter SNI och storleksklass: https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__NV__NV0109__NV0109P/NSEBasStklFEngs07/
+- SCB Statistikdatabasen, branschnyckeltal: https://www.statistikdatabasen.scb.se/pxweb/en/ssd/START__NV__NV0109__NV0109O/BNTT01/
+- CRMdata, om det avgiftsfria API:et (tredjepart): https://www.crmdata.se/scbs-avgiftsfria-api-for-foretagsregistret-nar-racker-det/
+
 ## 7. Källor
 
 Verifierat (läst den här sessionen, som sammanfattat utdrag):
