@@ -1,6 +1,7 @@
 "use client";
 
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 import { LockedState } from "@/components/ui/LockedState";
 import { LegalMap } from "@/components/spark/LegalMap";
 import { useI18n } from "@/i18n/context";
@@ -33,9 +34,10 @@ export function Legal({ data, notInScenario }: { data: LegalData; notInScenario?
         />
       ) : (
         <>
-          <div data-tour-id="legal-map">
+          <section data-tour-id="legal-map" className="flex flex-col gap-2.5">
+            <Eyebrow>{t.legalPage.title}</Eyebrow>
             <LegalMap krav={data.krav} />
-          </div>
+          </section>
           <p className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-3.5 text-xs leading-snug text-slate-600">
             {t.legalPage.disclaimer}
           </p>
