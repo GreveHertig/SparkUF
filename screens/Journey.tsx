@@ -55,9 +55,16 @@ export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (step
           const stepsInPhase = data.steps.filter((step) => step.journeyPhase === phase);
           if (stepsInPhase.length === 0) return null;
 
+          const doneInPhase = stepsInPhase.filter((step) => step.status === "done").length;
+
           return (
             <section key={phase} className="flex flex-col gap-2.5">
-              <Eyebrow>{t.journeyPage.phaseNames[phase]}</Eyebrow>
+              <div className="flex items-center justify-between gap-2">
+                <Eyebrow>{t.journeyPage.phaseNames[phase]}</Eyebrow>
+                <span className="font-numeric text-xs text-slate-500">
+                  {doneInPhase}/{stepsInPhase.length}
+                </span>
+              </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {stepsInPhase.map((step) => (
                   <Link
