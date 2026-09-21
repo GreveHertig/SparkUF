@@ -15,41 +15,38 @@ import { useDemoStore } from "@/adapters/demo/demoStore";
 export default function DemoAppHomePage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
-  const entry = useDemoStore((state) => state.entry);
   const [data, setData] = useState<AppHomeData | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    // PulseProvider.getTodaysSignal har ingen tom/null-variant i porten
-    // (används av liveadaptern också) — för Jonas (persona B), som saknar
-    // en byggd pulssignal, anropas den därför aldrig, se
-    // adapters/demo/PulseProvider.ts.
-    const pulsePromise = entry === "hasIdea" ? Promise.resolve(null) : demoPulseProvider.getTodaysSignal(locale);
-
     Promise.all([
       demoJourneyRepository.getHomeSummary(locale),
       demoEvidenceRepository.getScoreSnapshot(locale),
-      pulsePromise,
+      demoPulseProvider.getSignals(locale),
       demoEvidenceRepository.getScoreHistory(locale),
-    ]).then(([journey, score, pulse, scoreHistory]) => {
+      demoEvidenceRepository.getSuggestions(locale),
+      demoJourneyRepository.getSteps(locale),
+    ]).then(([journey, score, pulseSignals, scoreHistory, suggestions, journeySteps]) => {
       if (cancelled) return;
       setData({
         todayIso: journey.todayIso,
         score,
         nextStep: journey.nextStep,
         sinceLastTime: journey.sinceLastTime,
-        pulse,
+        pulseSignals,
         scoreHistory,
+        suggestions,
+        journeySteps,
       });
     });
 
     return () => {
       cancelled = true;
     };
-  }, [locale, beatIndex, entry]);
+  }, [locale, beatIndex]);
 
   if (!data) return null;
 
-  return <AppHome data={data} />;
+  return <AppHome data={data} journeyStepHref={(stepNumber) => `/demo/app/resan/${stepNumber}`} />;
 }

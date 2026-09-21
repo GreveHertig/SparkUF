@@ -120,6 +120,7 @@ export const sv = {
     profileMenuLabel: "Profil",
   },
   homePage: {
+    actNowLabel: "Gör det här nu",
     sinceLastTimeTitle: "Vad som hänt sedan sist",
     emailSentLabel: "Utskick skickat",
     openRateLabel: "Öppningsfrekvens",

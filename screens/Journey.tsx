@@ -13,7 +13,7 @@ export type JourneyData = {
 
 const PHASE_ORDER = ["discover", "tryPhase", "launch", "grow"] as const;
 
-const statusToneClasses: Record<JourneyStepStatus, string> = {
+export const journeyStatusToneClasses: Record<JourneyStepStatus, string> = {
   done: "border-score-green bg-score-green-bg text-score-green",
   current: "border-accent-600 bg-accent-100 text-accent-700",
   locked: "border-dashed border-slate-300 bg-slate-50 text-slate-500",
@@ -75,7 +75,7 @@ export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (step
                       <span
                         className={cn(
                           "rounded-pill border px-2 py-0.5 text-xs font-semibold uppercase",
-                          statusToneClasses[step.status],
+                          journeyStatusToneClasses[step.status],
                         )}
                         style={{ letterSpacing: "var(--tracking-label)" }}
                       >

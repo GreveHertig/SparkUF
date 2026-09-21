@@ -120,6 +120,7 @@ export const en = {
     profileMenuLabel: "Profile",
   },
   homePage: {
+    actNowLabel: "Do this now",
     sinceLastTimeTitle: "What's happened since last time",
     emailSentLabel: "Outreach sent",
     openRateLabel: "Open rate",

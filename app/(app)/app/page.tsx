@@ -15,19 +15,23 @@ export default async function LiveAppHomePage() {
   let data: AppHomeData | null = null;
 
   try {
-    const [journey, score, pulse, scoreHistory] = await Promise.all([
+    const [journey, score, pulseSignals, scoreHistory, suggestions, journeySteps] = await Promise.all([
       liveJourneyRepository.getHomeSummary("sv"),
       liveEvidenceRepository.getScoreSnapshot("sv"),
-      livePulseProvider.getTodaysSignal("sv"),
+      livePulseProvider.getSignals("sv"),
       liveEvidenceRepository.getScoreHistory("sv"),
+      liveEvidenceRepository.getSuggestions("sv"),
+      liveJourneyRepository.getSteps("sv"),
     ]);
     data = {
       todayIso: journey.todayIso,
       score,
       nextStep: journey.nextStep,
       sinceLastTime: journey.sinceLastTime,
-      pulse,
+      pulseSignals,
       scoreHistory,
+      suggestions,
+      journeySteps,
     };
   } catch (error) {
     if (!isPlaceholderError(error)) throw error;
@@ -37,5 +41,5 @@ export default async function LiveAppHomePage() {
     return <ComingSoon />;
   }
 
-  return <AppHome data={data} />;
+  return <AppHome data={data} journeyStepHref={(stepNumber) => `/app/resan/${stepNumber}`} />;
 }

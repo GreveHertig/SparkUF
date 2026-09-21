@@ -15,6 +15,14 @@ type NextStepCardProps = {
   doneItems: string[];
   actionLabel: string;
   onAction?: () => void;
+  /** Pillen ovanför eyebrowen (artefaktens `actHTML`: "Gör det här nu") —
+   * valfri så att andra bruk av kortet (t.ex. designsystemet) inte behöver
+   * ange den. */
+  actionPillLabel?: string;
+  /** Kravlistan för vad som fortfarande är låst (artefaktens `UNLOCK.krit`)
+   * — byggd av anroparen ur `ScoreSnapshot.lockedParts`, aldrig påhittad
+   * här. Utelämnad eller [] döljer sektionen helt. */
+  remainingParts?: { name: string; unlocksAfterStep: number }[];
   className?: string;
 };
 
@@ -28,14 +36,26 @@ export function NextStepCard({
   doneItems,
   actionLabel,
   onAction,
+  actionPillLabel,
+  remainingParts = [],
   className,
 }: NextStepCardProps) {
   const { t } = useI18n();
 
   return (
     <div className={cn("rounded-md border border-slate-200 bg-white p-5 shadow-lg", className)}>
-      <Eyebrow>{eyebrow}</Eyebrow>
-      <p className="mt-2 text-xl font-bold text-slate-900">{title}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        {actionPillLabel && (
+          <span
+            className="rounded-pill bg-accent-100 px-2.5 py-1 text-xs font-semibold uppercase text-accent-700"
+            style={{ letterSpacing: "var(--tracking-label)" }}
+          >
+            {actionPillLabel}
+          </span>
+        )}
+        <Eyebrow>{eyebrow}</Eyebrow>
+      </div>
+      <p className="mt-2 text-2xl font-extrabold text-slate-900">{title}</p>
       <p className="mt-2 text-sm leading-snug text-slate-600">{why}</p>
       <p className="mt-2 text-sm font-medium text-accent-700">
         {t.common.upToPointsBefore} <span className="font-numeric">{maxPoints}</span> {t.common.upToPointsAfter} ·{" "}
@@ -67,7 +87,39 @@ export function NextStepCard({
       >
         {actionLabel}
       </button>
+      {remainingParts.length > 0 && (
+        <div className="mt-5 rounded-md border border-dashed border-slate-300 bg-slate-50 p-3.5">
+          <p
+            className="text-xs font-semibold uppercase text-slate-600"
+            style={{ letterSpacing: "var(--tracking-label)" }}
+          >
+            {t.journeyPage.whatsNext}
+          </p>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {remainingParts.map((part) => (
+              <li key={part.name} className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                <span className="flex items-center gap-2">
+                  <LockIcon />
+                  {part.name}
+                </span>
+                <span className="text-xs text-slate-500">
+                  {t.homePage.unlocksAfterStepBefore} {part.unlocksAfterStep}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0 text-slate-400">
+      <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="2" />
+    </svg>
   );
 }
 

@@ -118,6 +118,8 @@ export type Dictionary = {
     profileMenuLabel: string;
   };
   homePage: {
+    /** Pillen ovanpå handlingskortet (artefaktens `actHTML`: "Gör det här nu"). */
+    actNowLabel: string;
     sinceLastTimeTitle: string;
     emailSentLabel: string;
     openRateLabel: string;

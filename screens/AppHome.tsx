@@ -1,17 +1,20 @@
 "use client";
 
+import { Card } from "@/components/ui/Card";
 import { DataFact } from "@/components/ui/DataFact";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { LockedState } from "@/components/ui/LockedState";
-import { KpiRow } from "@/components/spark/KpiRow";
-import { KpiTile } from "@/components/spark/KpiTile";
+import { JourneyRail } from "@/components/spark/JourneyRail";
 import { NextStepCard } from "@/components/spark/NextStepCard";
 import { PulseCard } from "@/components/spark/PulseCard";
-import { ScoreBadge } from "@/components/spark/ScoreBadge";
+import { ScorePanel } from "@/components/spark/ScorePanel";
+import { SuggestionList } from "@/components/spark/SuggestionList";
 import { useI18n } from "@/i18n/context";
 import { formatDate } from "@/i18n/format";
+import type { ScoreSuggestion } from "@/core/score";
 import type { NextStep, PulseSignal, ScoreSnapshot, SinceLastTime } from "@/core/domain";
+import type { JourneyStepView } from "@/ports/JourneyRepository";
 
 /**
  * Datan skärmen behöver, redan hämtad och språkvald av den monterande routen
@@ -23,24 +26,37 @@ export type AppHomeData = {
   score: ScoreSnapshot;
   nextStep: NextStep;
   sinceLastTime: SinceLastTime;
-  /** `null` när den aktiva demopersonan inte har någon pulssignal byggd
+  /** [] när den aktiva demopersonan inte har någon pulssignal byggd
    * (avsnitt: PulseProvider är bara byggd för Sara) — visas som ett ärligt
    * tomt läge i stället för att hitta på en signal. */
-  pulse: PulseSignal | null;
-  /** Totalpoängen genom resan hittills, för KPI-radens sparkline
-   * (designuppdatering: high-tech dashboard). */
+  pulseSignals: PulseSignal[];
+  /** Totalpoängen genom resan hittills, för poängpanelens historik. */
   scoreHistory: number[];
+  /** "Höj din poäng" (7.6) — samma data Poäng-sidan visar. */
+  suggestions: ScoreSuggestion[];
+  /** Resan i sin helhet, för den kompakta rail-widgeten (artefaktens
+   * `railHTML`) — full Resan-sida visar samma steg som ett fullständigt kortgrid. */
+  journeySteps: JourneyStepView[];
 };
 
-export function AppHome({ data }: { data: AppHomeData }) {
+/**
+ * Hem (artefaktens `vyHem`): ett stort handlingskort med Resan under sig i
+ * huvudspalten, hela poängen som en egen spalt till höger, och två fulla
+ * rader längst ner — "Höj din poäng" och Pulsen.
+ */
+export function AppHome({
+  data,
+  journeyStepHref,
+}: {
+  data: AppHomeData;
+  journeyStepHref: (stepNumber: number) => string;
+}) {
   const { locale, t } = useI18n();
 
-  const { score, sinceLastTime } = data;
-  const unlockedCount = score.parts.length;
-  const totalPartsCount = unlockedCount + score.lockedParts.length;
+  const remainingParts = [...data.score.lockedParts].sort((a, b) => a.unlocksAfterStep - b.unlocksAfterStep);
 
   return (
-    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
+    <div className="mx-auto flex max-w-[1200px] flex-col gap-[18px]">
       <div>
         <Eyebrow>
           {t.homePage.todayLabel} · {formatDate(data.todayIso, locale)}
@@ -52,147 +68,82 @@ export function AppHome({ data }: { data: AppHomeData }) {
         </EditorialHeading>
       </div>
 
-      <div data-tour-id="hem-kpi">
-        <KpiRow>
-          <KpiTile
-            label={t.kpi.scoreLabel}
-            value={score.total}
-            unit="/ 100"
-            trend={data.scoreHistory}
-            delta={
-              score.delta !== 0
-                ? { value: `${score.delta > 0 ? "+" : "−"}${Math.abs(score.delta)}`, direction: score.delta > 0 ? "up" : "down" }
-                : undefined
-            }
-          />
-          <KpiTile
-            label={t.kpi.unlockedPartsLabel}
-            value={`${unlockedCount}/${totalPartsCount}`}
-          />
-          <KpiTile
-            label={t.homePage.emailSentLabel}
-            value={sinceLastTime.recipientCount}
-            unit={t.homePage.recipientsUnit}
-            source={sinceLastTime.emailSentSource}
-            dataType="register"
-          />
-          <KpiTile
-            label={t.homePage.openRateLabel}
-            value={sinceLastTime.openRate}
-            unit="%"
-            source={sinceLastTime.openRateSource}
-            dataType="register"
-          />
-          <KpiTile
-            label={t.homePage.responsesReceivedLabel}
-            value={sinceLastTime.responsesReceived}
-            unit={t.homePage.responsesUnit}
-            source={sinceLastTime.responsesSource}
-            dataType="customer"
-          />
-        </KpiRow>
-      </div>
-
-      <NextStepCard
-        eyebrow={data.nextStep.eyebrow}
-        title={data.nextStep.title}
-        why={data.nextStep.why}
-        maxPoints={data.nextStep.maxPoints}
-        estimatedTime={data.nextStep.estimatedTime}
-        doneItems={data.nextStep.doneItems}
-        actionLabel={data.nextStep.actionLabel}
-      />
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <section className="flex flex-col gap-4 rounded-md border border-slate-200 bg-white p-4 leading-snug shadow-lg lg:col-span-2">
-          <Eyebrow>{t.homePage.sinceLastTimeTitle}</Eyebrow>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <DataFact
-              label={t.homePage.emailSentLabel}
-              value={data.sinceLastTime.recipientCount}
-              unit={t.homePage.recipientsUnit}
-              source={data.sinceLastTime.emailSentSource}
-              dataType="register"
-            />
-            <DataFact
-              label={t.homePage.openRateLabel}
-              value={data.sinceLastTime.openRate}
-              unit="%"
-              source={data.sinceLastTime.openRateSource}
-              dataType="register"
-            />
-            <DataFact
-              label={t.homePage.responsesReceivedLabel}
-              value={data.sinceLastTime.responsesReceived}
-              unit={t.homePage.responsesUnit}
-              source={data.sinceLastTime.responsesSource}
-              dataType="customer"
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
+        <div className="flex flex-col gap-6">
+          <div data-tour-id="hem-act">
+            <NextStepCard
+              actionPillLabel={t.homePage.actNowLabel}
+              eyebrow={data.nextStep.eyebrow}
+              title={data.nextStep.title}
+              why={data.nextStep.why}
+              maxPoints={data.nextStep.maxPoints}
+              estimatedTime={data.nextStep.estimatedTime}
+              doneItems={data.nextStep.doneItems}
+              actionLabel={data.nextStep.actionLabel}
+              remainingParts={remainingParts}
             />
           </div>
-          <p className="border-t border-slate-100 pt-3 text-sm text-slate-600">
-            {t.homePage.reminderSentLabel} · {formatDate(data.sinceLastTime.reminderSentDateIso, locale)}
-          </p>
-        </section>
-
-        <section data-tour-id="hem-score-movement" className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-lg">
-          <Eyebrow>{t.homePage.scoreMovementTitle}</Eyebrow>
-          <div className="flex items-center gap-4">
-            <ScoreBadge score={data.score.total} size="large" />
-          </div>
-          {data.score.delta !== 0 && (
-            <p className="text-sm font-semibold text-score-red">
-              <span className="font-numeric">
-                {data.score.delta > 0 ? "+" : "−"}
-                {Math.abs(data.score.delta)}
-              </span>{" "}
-              {data.score.deltaReason}
-            </p>
-          )}
-          <p className="font-numeric text-xs text-slate-600">
-            {data.score.previousTotal} → {data.score.total}
-          </p>
-        </section>
-      </div>
-
-      <section className="flex flex-col gap-3">
-        <Eyebrow>{t.homePage.todaysPulseTitle}</Eyebrow>
-        {data.pulse ? (
-          <PulseCard
-            category={data.pulse.category}
-            headline={data.pulse.headline}
-            whyItMatters={data.pulse.whyItMatters}
-            timestamp={data.pulse.timestamp}
-            source={data.pulse.source}
-            className="max-w-xl"
-          />
-        ) : (
-          <LockedState unlockHint={t.homePage.notInThisScenario} />
-        )}
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <Eyebrow>{t.homePage.breakdownTitle}</Eyebrow>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {data.score.parts.map((part) => (
-            <DataFact
-              key={part.name}
-              label={part.name}
-              value={part.points}
-              unit={`/ ${part.weight} ${t.common.upToPointsAfter}`}
-              source={part.source}
-              dataType={part.dataType}
-            />
-          ))}
-          {data.score.lockedParts.map((part) => (
-            <LockedState
-              key={part.name}
-              unlockHint={`${t.homePage.unlocksAfterStepBefore} ${part.unlocksAfterStep}`}
-            >
-              <p className="text-sm font-medium">{part.name}</p>
-            </LockedState>
-          ))}
+          <JourneyRail steps={data.journeySteps} stepHref={journeyStepHref} />
         </div>
-      </section>
+
+        <div className="flex flex-col gap-6">
+          <div data-tour-id="hem-score">
+            <ScorePanel snapshot={data.score} title={t.appShell.nav.score} history={data.scoreHistory} />
+          </div>
+
+          <Card title={t.homePage.sinceLastTimeTitle}>
+            <div className="flex flex-col gap-3">
+              <DataFact
+                label={t.homePage.emailSentLabel}
+                value={data.sinceLastTime.recipientCount}
+                unit={t.homePage.recipientsUnit}
+                source={data.sinceLastTime.emailSentSource}
+                dataType="register"
+              />
+              <DataFact
+                label={t.homePage.openRateLabel}
+                value={data.sinceLastTime.openRate}
+                unit="%"
+                source={data.sinceLastTime.openRateSource}
+                dataType="register"
+              />
+              <DataFact
+                label={t.homePage.responsesReceivedLabel}
+                value={data.sinceLastTime.responsesReceived}
+                unit={t.homePage.responsesUnit}
+                source={data.sinceLastTime.responsesSource}
+                dataType="customer"
+              />
+              <p className="border-t border-slate-100 pt-3 text-sm text-slate-600">
+                {t.homePage.reminderSentLabel} · {formatDate(data.sinceLastTime.reminderSentDateIso, locale)}
+              </p>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      <Card title={t.scorePage.suggestionsTitle}>
+        <SuggestionList suggestions={data.suggestions} />
+      </Card>
+
+      <Card title={t.appShell.nav.pulse}>
+        {data.pulseSignals.length === 0 ? (
+          <LockedState unlockHint={t.homePage.notInThisScenario} />
+        ) : (
+          <div data-tour-id="hem-pulse" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {data.pulseSignals.map((signal, index) => (
+              <PulseCard
+                key={`${signal.headline}-${index}`}
+                category={signal.category}
+                headline={signal.headline}
+                whyItMatters={signal.whyItMatters}
+                timestamp={signal.timestamp}
+                source={signal.source}
+              />
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

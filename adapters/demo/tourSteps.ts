@@ -72,7 +72,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "poangen-mater-bevis",
     route: "/demo/app",
     beatId: "01-om-dig-efter",
-    target: "hem-kpi",
+    target: "hem-score",
     title: { sv: "Poängen mäter bevis, inte optimism", en: "The score measures proof, not optimism" },
     body: {
       sv: "1–100, alltid synlig. Sara har precis svarat på profilfrågorna — poängen är låg (6) för att nästan inget är bevisat än, inte för att idén är dålig.",
@@ -83,7 +83,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "taket-pa-30",
     route: "/demo/app",
     beatId: "04-kunden-efter",
-    target: "hem-kpi",
+    target: "hem-score",
     title: { sv: "Taket på 30 utan kundsamtal", en: "The cap at 30 without customer calls" },
     body: {
       sv: "Sara har nu register- och kundunderlag, men poängen (27) kan ändå inte gå över 30 — Spark tillåter inte betyget \"bevisat\" förrän ett enda riktigt kundsvar finns.",
@@ -147,7 +147,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "poangen-kan-sjunka",
     route: "/demo/app",
     beatId: "05b-svaren-efter",
-    target: "hem-score-movement",
+    target: "hem-score",
     title: { sv: "Poängen kan sjunka", en: "The score can fall" },
     body: {
       sv: "Tre av nio svar sa nej till priset — poängen faller från 47 till 43. Spark mjukar aldrig till en motsägelse för att hålla siffran uppe.",
