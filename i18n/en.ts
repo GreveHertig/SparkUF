@@ -371,6 +371,8 @@ export const en = {
     jumpToStep: "Jump to step",
     tourOn: "Tour on",
     tourOff: "Tour off",
+    tourLocked: "Tour (locked)",
+    tourLockedHint: "The tour only covers Sara's scenario. Switch entry to Sara to use it.",
     entryNoIdea: "No idea",
     entryHasIdea: "Has idea",
     switchEntry: "Switch entry",

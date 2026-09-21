@@ -352,6 +352,35 @@ Grundaren bad specifikt om onboardingen (val av ingång, profilsamtalet, idégen
 - **Jonas resurssiffror** (kvällar/helger, 50 000 kr) är påhittade av den här sessionen — 9.4 angav inga. Ändra fritt om grundaren vill ha andra tal.
 - **`/start`s Server Component-mönster** (try/catch innan JSX, `locale` hårdkodad) är tänkt att återanvändas rakt av när fler `/start`-undersidor byggs — se `docs/arkitektur.md` avsnitt 4–5.
 
+## Formgivningspass mot artefakten + rundturen låst för Sara (klar, gren `prototyp`)
+
+Två uppgifter från grundaren: (1) matcha originalets formgivning (`design-referens/artefakt/`) — sidomeny, kort, nyckeltal, källchips, avstånd/maxbredd — utan att röra innehåll eller sidstruktur; (2) rundtursknappen ska vara låst/dold för Jonas, aldrig starta Saras rundtur ovanpå hans sidor. Full motivering i `DESIGN.md` under samma rubrik — den här posten sammanfattar.
+
+### Klart
+- **Sidomenyn ljus**, ny token `--sidebar-bg` (`design/tokens.css`/`app/globals.css`, artefaktens `color-mix(ground 80%, ink)`). Aktiv sida: vit pill + skugga (`bg-white text-slate-900 shadow-lg`) i stället för `bg-accent-600 text-white`. Hover: `hover:bg-slate-800/[0.06]` (artefaktens navy-vid-6%-wash). `Logo` bytt till default `tone="dark"`. `border-r border-slate-200` tillagd, bredd `w-56`→`w-60`. **Demoraden rördes inte** (ingen motsvarighet i artefakten, avsiktligt kvar mörk).
+- **Korten:** ~30 ställen i `screens/*.tsx` och `components/{ui,spark}/*.tsx` — vita kortytor `rounded-lg`(16px)→`rounded-md`(10px) + `shadow-lg` tillagd (artefaktens `.card`); streckade/sunkna ytor (`LockedState`, `ToolRunCard`, `SimulationCard`, låsta rutor) bara radien fixad, ingen skugga (matchar att artefaktens inset-rutor aldrig har `box-shadow`). Medveten förenkling: en enda radie rakt igenom i stället för artefaktens två (`--radius`/`--r-sm`) — se DESIGN.md.
+- **Nyckeltalen:** `KpiTile`s tal `text-2xl`→`text-3xl` (närmare artefaktens 29px), padding `p-3`→`p-4`. `ScoreBadge`/`VerdictCard`s poängpill rördes inte (annan komponentform än artefaktens ring, utanför uppdragets "nyckeltal"-punkt).
+- **Källchipsen** (`SourceTag.tsx`): `rounded-pill`→`rounded-sm` (artefaktens rundade rektangel, inte piller), `border border-black/5` tillagd, `font-numeric` (mono-roll). Padding redan nära artefaktens. **Färgkodningen per datatyp behölls** (egen innehållsdistinktion, inte dekoration) — bara form/kant/typsnitt matchat, inte hela färgsystemet.
+- **Maxbredd/avstånd:** alla elva `/demo/app`-sidor (under `AppShell`) satta till samma `max-w-[1080px] gap-[18px]` (artefaktens enda `--maxw:1080px`/`.stack{gap:18px}`), i stället för elva olika `max-w-2xl`…`max-w-5xl`. Onboardingskärmarna (`/demo/start/*`) rördes inte — utanför `AppShell`, ingen artefaktmotsvarighet.
+- **Rundturen låst för Jonas** (`adapters/demo/demoStore.ts`): `toggleTour` är nu no-op om `entry === "hasIdea"` (går bara att slå PÅ i Sara-läget) i stället för att tyst tvinga om `entry` till "noIdea". `setEntry` slår alltid av en pågående rundtur. Säkerheten ligger i storen — tangentbordsgenvägen `T` skyddas automatiskt utan egen kod i `DemoBar.tsx`. `DemoBar.tsx`: knappen är en riktig `disabled`-knapp med `title`-förklaring (ny i18n `demoBar.tourLocked`/`tourLockedHint`) när Jonas är vald, inte en klickbar som gör ingenting.
+- **Manuell webbläsarverifiering genomförd** (Playwright via `npx --yes -p playwright`, Chromium-binären fanns redan cachad — `chromium-cli` fanns inte i miljön). Skärmdumpar av Hem/Marknad/Resan och den låsta rundtursknappen bekräftade med ögon: ljus sidomeny, vit aktiv-pill, kortskuggor, större KPI-tal, rundade-rektangel-chips. Bekräftat att den låsta knappen faktiskt är `disabled` (Playwright vägrar klicka), har rätt `title`, och att varken klick eller `T`-tangenten sätter `tourOn` i Jonas-läge.
+- **Ett fel hittat och fixat under verifieringen:** ett första försök satte `aria-label` på den låsta knappen till hela förklaringstexten, vilket bytte knappens tillgängliga namn — fixat till bara `title` (hover), aria-namnet kommer nu från den synliga knapptexten.
+- Verifierat: `pnpm typecheck`/`lint`/`test` (373 gröna, 36 skippade som väntat) och `pnpm build` gröna, både före och efter aria-fixet.
+
+### Vad som inte kunde föras över (rapporterat till grundaren)
+Se `DESIGN.md` för full motivering. Fem delar av originalet, alla utanför uppdragets fem punkter eller för att de hade krävt strukturändringar: (1) sidomenyns sidfot (avatar + "Börja om"-länk — bor hos oss i sidhuvud/demorad), (2) topbarens ringformade poängindikator + blurrad bakgrund (annan komponentform än vår `ScoreBadge`-pill), (3) hela Medgrundarens chattspråk (`.bubble`/`.citat`/`.tool`/`.thinking` — inte nämnt i uppdragets fem punkter), (4) tabellens interna mono/versal-typografi i Valideringen (bara ytterwrappern fick radie/skugga), (5) mobilanpassningen (`.side{display:none}` + pill-meny — en interaktionsfunktion, inte ren omstyling).
+
+### Beslut nästa session behöver känna till
+- **`--sidebar-bg`** är en ny, komponentspecifik token (samma mönster som `--scrim`) — bara sidomenyn använder den.
+- **Enhetlig kortradie (`rounded-md`, 10px)** är nu standard för alla vita/streckade "kort"-ytor i `/demo/app` — nya kort ska följa samma mönster (`rounded-md border border-slate-200 bg-white shadow-lg` för elevated, samma utan `shadow-lg` för sunkna/streckade ytor), inte `rounded-lg`.
+- **`max-w-[1080px] gap-[18px]`** är nu den enhetliga sidwrappern för alla `AppShell`-sidor under `/demo/app` — nya sidor ska återanvända den, inte hitta på en egen maxbredd.
+- **Källchipsens färgkodning per datatyp är en medveten avvikelse från artefakten** (se DESIGN.md) — ändra den inte till en enda neutral ton utan att fråga, den bär riktig information (källans typ).
+- **Rundturens säkerhet ligger i `demoStore.ts`s `toggleTour`/`setEntry`**, inte bara i `DemoBar.tsx`s UI — framtida anrop till `toggleTour()` någon annanstans i kodbasen är redan skyddade, ingen egen guard behövs vid varje anropsställe.
+- **Port 3000 kan vara upptagen av en gammal `next start`-process** i den här miljön (kvar sedan tidigare) — `pnpm dev` startar då tyst om till 3001. Kolla `pnpm dev`s egen loggrad ("using available port …") om en manuell webbläsarkörning ger 500:or som inte går att förklara av kodändringar.
+
+### Kända problem / medvetna begränsningar
+- Inga nya. De fem "inte överförda"-punkterna ovan är avsiktliga avgränsningar, inte kända buggar.
+
 ### Kända problem / medvetna begränsningar
 - **Jonas fulla 12-stegsresa är inte byggd** — bara idégenomlysningen och det kortare passform-samtalet. Efter entry B:s onboarding fortsätter demot ändå in i Saras `/demo/app`-scenario (det enda som finns), vilket är sakligt fel (profilen pratar om padelhallar, appen visar Kvittojakten). En riktig demo bör inte visa entry B ännu utan att förklara det här, förrän Jonas resa är byggd.
 - **"Byt ingång" i demoraden är fortfarande bara delvis kosmetiskt** — den styr nu vilket onboarding-flöde som visas (fungerande), men inget i `/demo/app` bryr sig om `entry` (samma begränsning som sedan Session 2).

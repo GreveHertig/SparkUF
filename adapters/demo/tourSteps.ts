@@ -1,10 +1,13 @@
 // Den guidade rundturen (avsnitt 9.2): 20 stopp skrivna för investerare,
-// bundna till Saras scenario (adapters/demo/sara.ts) — rundturen tvingar
-// `entry` till "noIdea" när den startas (se demoStore.ts:s `toggleTour`)
-// eftersom stoppens `beatId` pekar in i Saras beats, inte Jonas kortare
-// array. Innehållet hör hemma här, inte i i18n/sv.ts/en.ts, av samma skäl
-// som cofounderScript.ts och sara.ts: det är scenarioinnehåll (skrivet för
-// en specifik investerarpitch), inte generell gränssnittstext.
+// bundna till Saras scenario (adapters/demo/sara.ts) — stoppens `beatId`
+// pekar in i Saras beats, inte Jonas kortare array. Rundturen finns därför
+// bara för Sara: den går inte att slå på medan entry är "hasIdea" (Jonas)
+// (se demoStore.ts:s `toggleTour`, no-op i det läget) och ett byte av ingång
+// slår alltid av en pågående rundtur (demoStore.ts:s `setEntry`) — se
+// docs/beslut.md, uppgift 2. Innehållet hör hemma här, inte i
+// i18n/sv.ts/en.ts, av samma skäl som cofounderScript.ts och sara.ts: det är
+// scenarioinnehåll (skrivet för en specifik investerarpitch), inte generell
+// gränssnittstext.
 import type { Locale } from "@/i18n/context";
 
 export type TourRoute =

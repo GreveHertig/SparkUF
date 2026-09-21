@@ -390,6 +390,12 @@ export type Dictionary = {
     jumpToStep: string;
     tourOn: string;
     tourOff: string;
+    /** Rundturens etikett när den är låst (uppgift 2: rundturen finns bara
+     * för Sara-scenariot). Visas på en riktig `disabled`-knapp, inte en
+     * klickbar som gör ingenting. */
+    tourLocked: string;
+    /** Förklaringen bakom den låsta knappen (title-attribut). */
+    tourLockedHint: string;
     entryNoIdea: string;
     entryHasIdea: string;
     switchEntry: string;

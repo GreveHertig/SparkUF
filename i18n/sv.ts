@@ -371,6 +371,8 @@ export const sv = {
     jumpToStep: "Hoppa till steg",
     tourOn: "Rundtur på",
     tourOff: "Rundtur av",
+    tourLocked: "Rundtur (låst)",
+    tourLockedHint: "Rundturen finns bara för Sara. Byt ingång till Sara för att använda den.",
     entryNoIdea: "Ingen idé",
     entryHasIdea: "Har idé",
     switchEntry: "Byt ingång",

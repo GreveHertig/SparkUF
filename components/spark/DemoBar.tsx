@@ -166,14 +166,28 @@ export function DemoBar() {
             </Popover.Portal>
           </Popover.Root>
 
-          <button
-            type="button"
-            aria-pressed={tourOn}
-            onClick={toggleTour}
-            className="rounded-md px-3 py-1.5 text-sm font-medium text-paper-50 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-accent-300"
-          >
-            {tourOn ? t.demoBar.tourOn : t.demoBar.tourOff}
-          </button>
+          {entry === "hasIdea" ? (
+            // Rundturen finns bara för Sara (uppgift 2, docs/beslut.md) — en
+            // riktig `disabled`-knapp (inte en klickbar som gör ingenting)
+            // med en title-förklaring, i stället för att döljas helt.
+            <button
+              type="button"
+              disabled
+              title={t.demoBar.tourLockedHint}
+              className="cursor-not-allowed rounded-md px-3 py-1.5 text-sm font-medium text-slate-500 opacity-60"
+            >
+              {t.demoBar.tourLocked}
+            </button>
+          ) : (
+            <button
+              type="button"
+              aria-pressed={tourOn}
+              onClick={toggleTour}
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-paper-50 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-accent-300"
+            >
+              {tourOn ? t.demoBar.tourOn : t.demoBar.tourOff}
+            </button>
+          )}
 
           <button
             type="button"
