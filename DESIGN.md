@@ -214,3 +214,50 @@ Fem delar av originalets formgivning fördes medvetet INTE över, alla utanför 
 
 ### Verifiering
 `pnpm typecheck`/`lint`/`test` (373 gröna, 36 skippade som väntat) och `pnpm build` gröna, både före och efter fixet av `aria-label`-buggen ovan.
+
+## Sidornas komposition mot artefaktens vyer (gren `prototyp`)
+
+Uppdrag: `design-referens/artefakt/app.js` lästes för STRUKTUR — vilka byggstenar varje vy (`vyHem`, `vyMedgrundaren`, `vyMarknaden`, `vyValideringen`, `vyBygget`, `vyProfilen`) sätter ihop, i vilken kolumnordning — aldrig för innehåll (artefaktens Elin/Kvittojakten-scenario är påhittat och ska aldrig in i kodbasen). Till skillnad från förra sessionen (ren `className`-formgivning, "rör inte sidstruktur") fick JSX-strukturen och komponentindelningen ändras den här gången. Alla tio `/demo/app`-sidor gjorda, en commit per sida. Inget innehåll, ingen siffra, ingen text eller funktion togs bort — bara omplacerad in i artefaktens komposition.
+
+### Nytt delat byggblock: `components/ui/Card.tsx`
+Motsvarar artefaktens `card(head, body)`/`chead(titel, höger)`: vit yta, kant, skugga (samma klasser som redan låg upprepade på över tio ställen) plus en valfri rubrikrad (`Eyebrow` + högerjusterat `note`-innehåll). Regeln för när något wrappas i `Card` kontra lämnas som en bar `Eyebrow` + grid: **artefakten avgör.** En sektion som artefaktens egen `card()`-funktion bygger (t.ex. `scorePanelHTML`, `railHTML`, Marknads `Datalagret`/`utskick`, Valideringens `antaganden`) blir `Card`-wrappad hos oss också. En sektion som artefakten bara sätter som en bar `<div class="stats">`/`.replies`-grid under en rubrik (nyckeltalsrader, svarskort, konkurrentkort) förblir en bar `Eyebrow` + grid — att lägga en extra `Card` runt en grid av redan egna-bordade `KpiTile`/kort hade dubblat kantlinjen. **Känd, avsiktlig avvikelse från den regeln:** Hems "Höj din poäng"/"Pulsen" är `Card`-wrappade eftersom artefakten själv wrappar dem (`const sugg = card(...)`), trots att våra `SuggestionList`-rader och `PulseCard` redan har egen kant+skugga (artefaktens motsvarande rader har det inte) — ett litet dubbelt-kant-avdrag, inte en bugg, se "Kända problem" nedan.
+
+### Hem (`vyHem`) — det största omtaget
+Den gamla femkorts-KPI-raden togs bort helt (grundarens uttryckliga instruktion). Ny komposition, tvåkolumns hero (`lg:grid-cols-[2fr_1fr]`):
+- **Huvudspalt:** `NextStepCard` (utökad, se nedan) följt av en ny `components/spark/JourneyRail.tsx` — en kompakt "Resan"-widget (fasrubriker, klickbara stegprickar, en detaljruta för det valda steget med länk till `/resan/[steg]`), byggd av samma `getSteps()`-data Resan-sidan redan hämtar.
+- **Sidospalt:** en ny `components/spark/ScorePanel.tsx` (totalen med nivå, rörelse och sparkline överst, sedan alla åtta delarna som staplar med källa, låsta delar sist) — den gamla "Poängrörelse"-kortets innehåll flyttade hit i stället för att försvinna. Under den: "Vad som hänt sedan sist" som ett kompakt `DataFact`-kort.
+- **Botten, full bredd:** "Höj din poäng" (ny `components/spark/SuggestionList.tsx`, utbruten ur `Score.tsx` för att återanvändas på båda sidorna) och Pulsen — nu 3–5 signaler (`getSignals`) i ett grid i stället för bara dagens enda signal (`getTodaysSignal`), som artefaktens `pulse3`.
+
+**`NextStepCard` utökad, inte ersatt:** två nya valfria props. `actionPillLabel` (ny i18n `homePage.actNowLabel`, "Gör det här nu") lägger artefaktens pill ovanpå den befintliga eyebrowen. `remainingParts` (byggd av anroparen ur `ScoreSnapshot.lockedParts`, sorterad efter `unlocksAfterStep`) återger artefaktens `UNLOCK.krit`-kravlista **ärligt** — vi har ingen separat, bespoke kravtext per krav som artefakten (`"Tio svar från målgruppen"` etc.), bara vilka delar som fortfarande är låsta och efter vilket steg de låses upp. Ingen ny text hittades på för att fylla den luckan.
+
+### Medgrundaren (`vyMedgrundaren`)
+Samma tvåkolumns "cog"-grid som originalet: chatten i huvudspalten (oförändrad, nu `Card`-wrappad), och den redan befintliga "Sedan tidigare"-kontextlistan flyttad till sidospalten. **Medveten avvikelse, godkänd:** artefaktens sidospalt är Hjärnan — vi har redan en Hjärnan-flik på Minnet och skulle inte duplicera den datan här. "Sedan tidigare" fyller samma *platsroll* (kort kontext bredvid chatten) utan att vara samma innehåll.
+
+### Marknad (`vyMarknaden`)
+KPI-raden, Kundlistan, Konkurrenterna och Simuleringen låg redan i artefaktens ordning och rördes inte. Ny split (`lg:grid-cols-[2fr_1fr]`): Storleksfördelningen i huvudspalten, "Dina utskick" och "Datalagret" staplade i en sidospalt bredvid — exakt artefaktens `dist`/`[utskick, lager]`-uppdelning. "Dina utskick" bytte från tre `KpiTile`-kort till kompakta `dl`-rader (samma tal, samma källa) för att passa sidospaltens bredd utan att tre kort skulle klämmas ihop av en `grid-cols-3` som bara svarar på viewportbredd, inte containerbredd.
+
+### Validering (`vyValideringen`)
+Låg redan i artefaktens exakta sektionsordning (nyckeltal → antaganden → svar → domen) sedan en tidigare session — minst omtag av de tio. Antagandena och den fullständiga kontaktlistan (tabellen) fick `Card`-skal, eftersom artefakten wrappar just de två i `card()`. Nyckeltalen, svaren och domen var redan bara `Eyebrow` + bar grid/`VerdictCard`, som artefaktens motsvarande sektioner — orörda.
+
+### Bygg (`vyBygget`)
+Statusraden blev en färgad grindbanner (`gateToneClasses`, ny konstant — samma tre lägen som den befintliga statuspillen, bara som bakgrundsfärg på hela raden i stället för en neutral rad). Ny split: "Omfånget" i sidospalten (målgrupp + sidorna specen omfattar — `ByggBrief` har ingen inkludera/exkludera-lista som artefaktens `SCOPE`, så bara det vi faktiskt har visas, inget hittat på), och ett webbläsarchrome-styrt "fönster" i huvudspalten (tre prickar + en url-rad + `ConceptBadge`) som visar specens sammanfattning och underlag. Ingen Lovable-interaktivitet lades till — bygget är och förblir statiskt koncept.
+
+### Minnet (`vyProfilen`)
+Profilfliken bytte från ett enda blandat kort till två `Card`-kort i ett grid (Bakgrund, Resurser) — samma "profgrid"-idé som artefakten, byggt av `ProfileSummary`s faktiska sex fält. **Artefaktens "Härifrån kom idén"-kedjekort infördes INTE:** ingen strukturerad data för en sådan kedja (bakgrund → hjärnananteckning → idé) finns i kodbasen, sökt igenom innan beslutet togs. Grundaren godkände uttryckligen att avvikelsen är okej *under förutsättning att ingenting som redan fanns i prototypen försvinner* — eftersom kedjan aldrig fanns här, är villkoret trivialt uppfyllt, inte kringgått. Hjärnan- och Spåret-flikarna oförändrade i innehåll, Hjärnan fick samma `Card`-skal.
+
+### Resan, Poäng, Pulsen, Juridik — samma byggstenar, inget eget original
+- **Resan:** oförändrad kortgrid (matchade redan systemet), bara en ny "klara/totalt"-not per fasrubrik, samma mönster som `JourneyRail` nu visar på Hem.
+- **Poäng:** nedbrytningen och den gamla "Poängrörelse"-rutan ersatta av samma `ScorePanel` som Hems sidospalt, och "Höj din poäng" bytt till samma utbrutna `SuggestionList` — två sidor, en komponent, i stället för varsin uppfinning av samma sak. KPI-raden överst rördes inte (bad bara om att tas bort från Hem).
+- **Pulsen:** samma 1/2/3-kolumnsgrid som Hems nya Pulsen-sektion, i stället för en staplad lista — bättre yta för 3–5 kort på en egen sida.
+- **Juridik:** en `Eyebrow`-rubrik ovanför kartan, konsekvent med Marknads/Valideringens bara-lista-mönster. Ingen `Card`-wrap (samma resonemang som `LegalMap`s redan självbordade rader).
+
+### Rundturen
+`adapters/demo/tourSteps.ts`: tre stopp som pekade på Hems borttagna KPI-rad/"Poängrörelse"-kort (`hem-kpi` × 2, `hem-score-movement`) omriktade till den nya poängpanelen (`hem-score`). Alla andra 12 mål verifierade oförändrade och fortfarande matchande efter hela omgörningen (`comm` mellan `tourSteps.ts`s mål och samtliga `data-tour-id` i kodbasen — inget saknas).
+
+### Kända problem / medvetna begränsningar
+- **Ingen manuell webbläsarverifiering.** Inget webbläsartillägg var anslutet, och den här sessionen hade inte heller en cachad Playwright/Chromium-installation tillgänglig (till skillnad från förra sessionen) — att installera Playwright hade krävt ett nytt beroende, vilket uppdraget uttryckligen förbjöd. Verifierat i stället med `typecheck`/`lint`/`test` (samma 373 gröna, 36 skippade genom hela sessionen) och `build` före varje commit, plus `curl` (200) mot `/demo/app`. Gör en klickgenomgång (båda språken) i nästa session som har ett webbläsarverktyg — särskilt Hems nya tvåkolumnslayout vid smalare bredder, JourneyRails stegprickar, och det dubbla kant-avdraget i Hems "Höj din poäng"/Pulsen (se ovan).
+- **Dubbel kantlinje i Hems "Höj din poäng"/Pulsen** (`Card` runt redan egna-bordade `SuggestionList`/`PulseCard`-rader) — avsiktlig, dokumenterad ovan, inte en bugg.
+- **`Market.test.tsx`** hade ett hårdkodat mellanslagsberoende test-assert (`"4/ 5"`, ett artefakt av `KpiTile`s tidigare rendering) uppdaterat till `"4 / 5"` för den nya `dl`-radens formatering — samma tal, bara annan mellanslagsplacering i texten.
+
+### Verifiering
+`pnpm typecheck`/`lint`/`test` (373 gröna, 36 skippade som väntat, genom hela sessionen) och `pnpm build` gröna före varje commit — tio commits, en per sida.
