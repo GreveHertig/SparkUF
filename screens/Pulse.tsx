@@ -30,7 +30,7 @@ export function Pulse({ data }: { data: PulseData }) {
       {data.signals.length === 0 ? (
         <p className="text-sm text-slate-600">{t.pulsePage.emptyState}</p>
       ) : (
-        <div data-tour-id="pulse-list" className="flex flex-col gap-3">
+        <div data-tour-id="pulse-list" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {data.signals.map((signal, index) => (
             <PulseCard
               key={`${signal.headline}-${index}`}
