@@ -33,7 +33,7 @@ export function Score({ data }: { data: ScoreData }) {
   const level = getScoreLevel(snapshot.total);
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8">
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
         <EditorialHeading as="h1">{t.score.levels[level.key].name}</EditorialHeading>
         <p className="mt-2 text-sm text-slate-600">{t.score.levels[level.key].message}</p>
@@ -58,7 +58,7 @@ export function Score({ data }: { data: ScoreData }) {
         )}
       </KpiRow>
 
-      <div className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex items-center gap-4 rounded-md border border-slate-200 bg-white p-4 shadow-lg">
         <ScoreBadge score={snapshot.total} size="large" />
         <div>
           {snapshot.delta !== 0 && (
@@ -80,7 +80,7 @@ export function Score({ data }: { data: ScoreData }) {
         <Eyebrow>{t.scorePage.breakdownTitle}</Eyebrow>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {snapshot.parts.map((part) => (
-            <div key={part.name} className="rounded-lg border border-slate-200 bg-white p-4">
+            <div key={part.name} className="rounded-md border border-slate-200 bg-white p-4 shadow-lg">
               <DataFact
                 label={part.name}
                 value={part.points}
@@ -107,7 +107,7 @@ export function Score({ data }: { data: ScoreData }) {
           {suggestions.map((suggestion) => (
             <div
               key={suggestion.partId}
-              className={cn("flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4 leading-snug sm:flex-row sm:items-center sm:justify-between")}
+              className={cn("flex flex-col gap-2 rounded-md border border-slate-200 bg-white p-4 leading-snug shadow-lg sm:flex-row sm:items-center sm:justify-between")}
             >
               <div>
                 <div className="flex items-center gap-2">

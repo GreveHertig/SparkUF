@@ -14,7 +14,7 @@ export function ComingSoon() {
   const { t } = useI18n();
 
   return (
-    <div className="flex flex-col items-start gap-3 rounded-lg border border-slate-200 bg-white p-8">
+    <div className="flex flex-col items-start gap-3 rounded-md border border-slate-200 bg-white p-8 shadow-lg">
       <Eyebrow>{t.comingSoon.eyebrow}</Eyebrow>
       <EditorialHeading as="h2">{t.comingSoon.title}</EditorialHeading>
       <p className="max-w-md text-sm text-slate-600">{t.comingSoon.body}</p>

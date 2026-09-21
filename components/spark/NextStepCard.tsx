@@ -33,7 +33,7 @@ export function NextStepCard({
   const { t } = useI18n();
 
   return (
-    <div className={cn("rounded-lg border border-slate-200 bg-white p-5", className)}>
+    <div className={cn("rounded-md border border-slate-200 bg-white p-5 shadow-lg", className)}>
       <Eyebrow>{eyebrow}</Eyebrow>
       <p className="mt-2 text-xl font-bold text-slate-900">{title}</p>
       <p className="mt-2 text-sm leading-snug text-slate-600">{why}</p>

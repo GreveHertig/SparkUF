@@ -30,7 +30,7 @@ export function PulseCard({
   const { t } = useI18n();
 
   return (
-    <div className={cn("rounded-lg border border-slate-200 bg-white p-4", className)}>
+    <div className={cn("rounded-md border border-slate-200 bg-white p-4 shadow-lg", className)}>
       <div className="flex items-center justify-between">
         <Eyebrow>{category}</Eyebrow>
         <span className="text-xs text-slate-600">{timestamp}</span>

@@ -85,7 +85,7 @@ export function Market({ data, notInScenario }: { data: MarketData | null; notIn
   const m = t.marketPage;
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8">
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
         <EditorialHeading as="h1">{data ? marketHeadline(data, m) : m.title}</EditorialHeading>
         <p className="mt-2 text-sm text-slate-600">{m.subtitle}</p>
@@ -147,7 +147,7 @@ function MarketBody({ data, m, locale }: { data: MarketData; m: MarketPageDict; 
 
       <section data-tour-id="market-datalayers" className="flex flex-col gap-3">
         <Eyebrow>{m.dataLayers.title}</Eyebrow>
-        <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-lg">
           <DataLayerRow name={m.dataLayers.registerName} note={m.dataLayers.registerNote} source={overview.source} />
           <DataLayerRow
             name={m.dataLayers.annualReportName}
@@ -170,7 +170,7 @@ function MarketBody({ data, m, locale }: { data: MarketData; m: MarketPageDict; 
             {m.distribution.sniLabel} {sniCode}
           </span>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="rounded-md border border-slate-200 bg-white p-4 shadow-lg">
           <BarChart bars={distribution.map((bucket) => ({ label: bucket.label, value: bucket.count }))} />
         </div>
         {companies.length > 0 && (
@@ -219,7 +219,7 @@ function MarketBody({ data, m, locale }: { data: MarketData; m: MarketPageDict; 
         <Eyebrow>{m.competitorsTitle}</Eyebrow>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {overview.competitors.map((competitor) => (
-            <div key={competitor.name} className="rounded-lg border border-slate-200 bg-white p-3.5">
+            <div key={competitor.name} className="rounded-md border border-slate-200 bg-white p-3.5 shadow-lg">
               <p className="text-sm font-semibold text-slate-900">{competitor.name}</p>
               <p className="mt-1 text-sm leading-snug text-slate-600">{competitor.description}</p>
             </div>

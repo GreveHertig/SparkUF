@@ -67,6 +67,12 @@
   --warn-soft: color-mix(in srgb, var(--warn) 14%, white);
   --bad-soft: color-mix(in srgb, var(--bad) 11%, white);
 
+  /* Sidomenyns yta (formgivningssession, artefaktens .side): en ljus, bara
+     lätt mörknad flik av ground — INTE en mörk yta. Samma color-mix-formel
+     som artefaktens app.css rad 85 (ground 80% / ink 20%), bara skriven mot
+     våra tokennamn. */
+  --sidebar-bg: color-mix(in srgb, var(--slate-50) 80%, var(--slate-900));
+
   /* Djup — två nivåer, från artefakten. rgba-värdena är redan uttryckta mot
      --ink (14, 32, 51) i referensen, inte omräknade här. Namngiven --shadow-soft
      (inte bara --shadow) av samma skäl som --r-* ovan: Tailwind har redan en

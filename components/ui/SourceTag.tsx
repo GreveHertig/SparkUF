@@ -41,7 +41,7 @@ export function SourceTag({
           type="button"
           aria-label={t.common.sourceTag.openDetails}
           className={cn(
-            "inline-flex w-fit shrink-0 items-center gap-1 self-start rounded-pill px-2 py-0.5 text-xs font-medium tabular-nums transition-colors",
+            "font-numeric inline-flex w-fit shrink-0 items-center gap-1 self-start rounded-sm border border-black/5 px-2 py-0.5 text-xs font-medium tabular-nums transition-colors",
             "hover:opacity-80 focus-visible:outline-2 focus-visible:outline-accent",
             toneClasses[dataType],
             className,
@@ -62,7 +62,7 @@ export function SourceTag({
       <Popover.Portal>
         <Popover.Content
           sideOffset={6}
-          className="z-50 max-w-xs rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-lg"
+          className="z-50 max-w-xs rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-lg"
         >
           <p className="font-semibold text-slate-900">{source.namn}</p>
           <p className="mt-0.5 text-slate-600">{formatDate(source.hämtad, locale)}</p>

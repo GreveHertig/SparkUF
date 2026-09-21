@@ -34,7 +34,7 @@ export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (step
     data.steps[0];
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-8">
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
         {highlightedStep && (
           <Eyebrow>
@@ -64,7 +64,7 @@ export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (step
                     key={step.stepNumber}
                     href={stepHref(step.stepNumber)}
                     className={cn(
-                      "flex flex-col gap-1.5 rounded-lg border bg-white p-4 transition-colors hover:border-accent-400 focus-visible:outline-2 focus-visible:outline-accent-300",
+                      "flex flex-col gap-1.5 rounded-md border bg-white p-4 shadow-lg transition-colors hover:border-accent-400 focus-visible:outline-2 focus-visible:outline-accent-300",
                     )}
                     style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
                   >

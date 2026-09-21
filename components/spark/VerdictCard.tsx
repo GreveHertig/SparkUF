@@ -20,7 +20,7 @@ export function VerdictCard({ score, headline, reasoning, className }: VerdictCa
   const level = getScoreLevel(score);
 
   return (
-    <div className={cn("rounded-lg border border-slate-200 bg-white p-5", className)}>
+    <div className={cn("rounded-md border border-slate-200 bg-white p-5 shadow-lg", className)}>
       <Eyebrow>{t.score.levels[level.key].name}</Eyebrow>
       <div className="mt-3">
         <ScoreBadge score={score} size="large" />

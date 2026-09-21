@@ -74,7 +74,7 @@ export function Validation({ data, notInScenario }: { data: ValidationData; notI
   const responseRate = contacted > 0 ? Math.round((responded / contacted) * 100) : null;
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8">
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
         <EditorialHeading as="h1">{v.title}</EditorialHeading>
         <p className="mt-2 text-sm text-slate-600">{v.subtitle}</p>
@@ -130,7 +130,7 @@ export function Validation({ data, notInScenario }: { data: ValidationData; notI
                 {data.assumptions.map((assumption) => (
                   <div
                     key={assumption.id}
-                    className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+                    className="flex flex-col gap-1 rounded-md border border-slate-200 bg-white p-4 shadow-lg sm:flex-row sm:items-start sm:justify-between sm:gap-4"
                   >
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{assumption.text}</p>
@@ -161,7 +161,7 @@ export function Validation({ data, notInScenario }: { data: ValidationData; notI
               <Eyebrow>{v.responsesTitle}</Eyebrow>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {data.responses.map((response) => (
-                  <div key={response.companyName} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4">
+                  <div key={response.companyName} className="flex flex-col gap-2 rounded-md border border-slate-200 bg-white p-4 shadow-lg">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{response.companyName}</p>
@@ -193,7 +193,7 @@ export function Validation({ data, notInScenario }: { data: ValidationData; notI
 
           <section data-tour-id="validation-table" className="flex flex-col gap-2.5">
             <Eyebrow>{v.tableTitle}</Eyebrow>
-            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <div className="overflow-x-auto rounded-md border border-slate-200 bg-white shadow-lg">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-xs font-semibold uppercase text-slate-500">

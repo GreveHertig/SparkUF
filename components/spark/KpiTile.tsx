@@ -54,13 +54,13 @@ export function KpiTile({
   const displayValue = typeof value === "number" ? formatCount(value, locale) : value;
 
   return (
-    <div className={cn("flex flex-col gap-1.5 rounded-md border border-slate-200 bg-white p-3", className)}>
+    <div className={cn("flex flex-col gap-1.5 rounded-md border border-slate-200 bg-white p-4 shadow-lg", className)}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-medium text-slate-500">{label}</p>
         {trend && trend.length >= 2 && <Sparkline points={trend} tone="accent" />}
       </div>
       <div className="flex items-baseline gap-1.5">
-        <p className="font-numeric text-2xl font-semibold text-slate-900">
+        <p className="font-numeric text-3xl font-semibold text-slate-900">
           {displayValue}
           {unit && <span className="ml-1 text-sm font-medium text-slate-500">{unit}</span>}
         </p>

@@ -19,7 +19,7 @@ export function Legal({ data, notInScenario }: { data: LegalData; notInScenario?
   const bolagsform = data.krav[0]?.gällerFör[0];
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
         <EditorialHeading as="h1">
           {bolagsform ? t.common.bolagsformLabels[bolagsform] : t.legalPage.title}
@@ -36,7 +36,7 @@ export function Legal({ data, notInScenario }: { data: LegalData; notInScenario?
           <div data-tour-id="legal-map">
             <LegalMap krav={data.krav} />
           </div>
-          <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3.5 text-xs leading-snug text-slate-600">
+          <p className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-3.5 text-xs leading-snug text-slate-600">
             {t.legalPage.disclaimer}
           </p>
         </>

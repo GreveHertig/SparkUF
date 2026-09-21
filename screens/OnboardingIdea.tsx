@@ -47,7 +47,7 @@ export function OnboardingIdea({ data }: { data: OnboardingIdeaData }) {
           {screening.assumptions.map((assumption) => (
             <li
               key={assumption.text}
-              className="flex items-start justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3.5"
+              className="flex items-start justify-between gap-3 rounded-md border border-slate-200 bg-white p-3.5 shadow-lg"
             >
               <span className="text-sm leading-snug text-slate-800">{assumption.text}</span>
               <span
@@ -82,7 +82,7 @@ export function OnboardingIdea({ data }: { data: OnboardingIdeaData }) {
 
       <section>
         <Eyebrow>{t.onboarding.idea.sharperTitle}</Eyebrow>
-        <div className="mt-2 rounded-lg border border-slate-200 bg-white p-5">
+        <div className="mt-2 rounded-md border border-slate-200 bg-white p-5 shadow-lg">
           <p className="text-xl font-bold text-slate-900">{screening.sharperIdea.name}</p>
           <p className="mt-1 text-sm leading-snug text-slate-700">{screening.sharperIdea.oneLiner}</p>
           <p className="mt-3 text-sm leading-snug text-slate-600">

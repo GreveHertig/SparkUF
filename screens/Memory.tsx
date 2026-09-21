@@ -22,7 +22,7 @@ export function Memory({ data, onSaveBrainNotes }: { data: MemoryData; onSaveBra
   const [notes, setNotes] = useState(data.brainNotes);
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
         <Eyebrow>
           {data.profile.name} · {data.profile.role}
@@ -49,7 +49,7 @@ export function Memory({ data, onSaveBrainNotes }: { data: MemoryData; onSaveBra
         </Tabs.List>
 
         <Tabs.Content value="profile" className="pt-5">
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="rounded-md border border-slate-200 bg-white p-4 shadow-lg">
             <p className="text-lg font-bold text-slate-900">{data.profile.name}</p>
             <p className="text-sm text-slate-600">{data.profile.role}</p>
             <div className="mt-3">
@@ -84,7 +84,7 @@ export function Memory({ data, onSaveBrainNotes }: { data: MemoryData; onSaveBra
           ) : (
             <ol className="flex flex-col gap-2">
               {data.trace.map((event) => (
-                <li key={event.id} className="flex gap-4 rounded-lg border border-slate-200 bg-white p-3.5">
+                <li key={event.id} className="flex gap-4 rounded-md border border-slate-200 bg-white p-3.5 shadow-lg">
                   <span className="w-24 shrink-0 text-xs text-slate-500">{formatDate(event.timestampIso, locale)}</span>
                   <span className="text-sm leading-snug text-slate-800">{event.description}</span>
                 </li>

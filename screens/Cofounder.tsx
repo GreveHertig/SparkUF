@@ -40,7 +40,7 @@ export function Cofounder({ data }: { data: CofounderData }) {
   const { locale, t } = useI18n();
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
         <EditorialHeading as="h1">
           {data.moment ? data.moment.momentLabel : t.cofounderPage.title}
@@ -49,7 +49,7 @@ export function Cofounder({ data }: { data: CofounderData }) {
       </div>
 
       {data.context.length > 0 && (
-        <section className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <section className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-4">
           <Eyebrow>{t.cofounderPage.contextTitle}</Eyebrow>
           <ul className="flex flex-col gap-1">
             {data.context.map((item) => (

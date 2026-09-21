@@ -18,7 +18,7 @@ export function Pulse({ data }: { data: PulseData }) {
   const latest = data.signals[0];
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
         {latest && <Eyebrow>{latest.category}</Eyebrow>}
         <EditorialHeading as="h1" className={latest ? "mt-2" : undefined}>

@@ -87,7 +87,7 @@ export function OnboardingProfile({ data }: { data: OnboardingProfileData }) {
       </div>
 
       {answered.length > 0 && (
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
+        <div className="rounded-md border border-slate-200 bg-white p-5 shadow-lg">
           <Eyebrow>{t.onboarding.profile.buildingTitle}</Eyebrow>
           <ul className="mt-3 flex flex-col gap-1.5">
             {answered.map((question) => (

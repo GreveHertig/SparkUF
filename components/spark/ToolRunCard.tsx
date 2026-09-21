@@ -17,7 +17,7 @@ export function ToolRunCard({ label, steps, className }: ToolRunCardProps) {
   const { t } = useI18n();
 
   return (
-    <div className={cn("rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3.5", className)}>
+    <div className={cn("rounded-md border border-dashed border-slate-300 bg-slate-50 p-3.5", className)}>
       <Eyebrow>
         {t.cofounderPage.toolRunningLabel}: {label}
       </Eyebrow>

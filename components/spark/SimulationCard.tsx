@@ -20,7 +20,7 @@ export function SimulationCard({ simulation, className }: { simulation: Simulati
   return (
     <div
       className={cn(
-        "rounded-lg border border-dashed border-data-simulation bg-data-simulation-bg/30 p-4",
+        "rounded-md border border-dashed border-data-simulation bg-data-simulation-bg/30 p-4",
         className,
       )}
     >

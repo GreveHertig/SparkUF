@@ -29,7 +29,7 @@ export function Build({ data, notInScenario }: { data: BuildData; notInScenario?
   const { t } = useI18n();
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div className="flex items-start justify-between gap-4">
         <div>
           <EditorialHeading as="h1">{data.spec ? data.spec.sammanfattning : t.buildPage.title}</EditorialHeading>
@@ -44,7 +44,7 @@ export function Build({ data, notInScenario }: { data: BuildData; notInScenario?
         />
       ) : (
         <>
-          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-lg">
             <span
               className={cn("rounded-pill px-2.5 py-1 text-xs font-semibold uppercase", statusToneClasses[data.status])}
               style={{ letterSpacing: "var(--tracking-label)" }}
@@ -63,7 +63,7 @@ export function Build({ data, notInScenario }: { data: BuildData; notInScenario?
             )}
           </div>
 
-          <section data-tour-id="build-spec" className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5">
+          <section data-tour-id="build-spec" className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-5 shadow-lg">
             <Eyebrow>{t.buildPage.specTitle}</Eyebrow>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
@@ -90,7 +90,7 @@ export function Build({ data, notInScenario }: { data: BuildData; notInScenario?
           </section>
 
           {data.status === "published" && (
-            <section className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5">
+            <section className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-5">
               <Eyebrow>{t.buildPage.previewTitle}</Eyebrow>
               <p className="mt-2 text-sm leading-snug text-slate-600">{data.spec.sammanfattning}</p>
             </section>

@@ -16,7 +16,7 @@ export function JourneyStepScreen({ data, backHref }: { data: JourneyStepDetail;
   const { t } = useI18n();
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
         <Link href={backHref} className="text-sm font-medium text-accent-700 hover:underline">
           ← {t.journeyPage.backToJourney}
@@ -40,7 +40,7 @@ export function JourneyStepScreen({ data, backHref }: { data: JourneyStepDetail;
           <p className="text-sm">{data.oneLiner}</p>
         </LockedState>
       ) : (
-        <div className={cn("flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-5")}>
+        <div className={cn("flex flex-col gap-5 rounded-md border border-slate-200 bg-white p-5 shadow-lg")}>
           {data.why && (
             <section>
               <Eyebrow>{data.status === "current" ? t.journeyPage.whatsNext : t.journeyPage.whatHappened}</Eyebrow>

@@ -19,7 +19,7 @@ export function LegalMap({ krav }: { krav: JuridisktKrav[] }) {
   return (
     <div className="flex flex-col gap-3">
       {krav.map((item) => (
-        <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4">
+        <div key={item.id} className="flex flex-col gap-2 rounded-md border border-slate-200 bg-white p-4 shadow-lg">
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm font-semibold text-slate-900">{item.rubrik}</p>
             <span

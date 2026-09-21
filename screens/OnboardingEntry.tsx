@@ -71,7 +71,7 @@ function EntryCard({
       href={href}
       onClick={onClick}
       className={cn(
-        "flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-6 text-left transition-colors hover:border-accent-300 hover:bg-accent-50 focus-visible:outline-2 focus-visible:outline-accent-300",
+        "flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-6 text-left shadow-lg transition-colors hover:border-accent-300 hover:bg-accent-50 focus-visible:outline-2 focus-visible:outline-accent-300",
       )}
       style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
     >

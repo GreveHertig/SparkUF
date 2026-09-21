@@ -40,7 +40,7 @@ export function AppHome({ data }: { data: AppHomeData }) {
   const totalPartsCount = unlockedCount + score.lockedParts.length;
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8">
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
         <Eyebrow>
           {t.homePage.todayLabel} · {formatDate(data.todayIso, locale)}
@@ -104,7 +104,7 @@ export function AppHome({ data }: { data: AppHomeData }) {
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <section className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 leading-snug lg:col-span-2">
+        <section className="flex flex-col gap-4 rounded-md border border-slate-200 bg-white p-4 leading-snug shadow-lg lg:col-span-2">
           <Eyebrow>{t.homePage.sinceLastTimeTitle}</Eyebrow>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <DataFact
@@ -134,7 +134,7 @@ export function AppHome({ data }: { data: AppHomeData }) {
           </p>
         </section>
 
-        <section data-tour-id="hem-score-movement" className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4">
+        <section data-tour-id="hem-score-movement" className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-lg">
           <Eyebrow>{t.homePage.scoreMovementTitle}</Eyebrow>
           <div className="flex items-center gap-4">
             <ScoreBadge score={data.score.total} size="large" />

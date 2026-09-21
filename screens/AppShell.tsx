@@ -82,14 +82,16 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-56 shrink-0 flex-col gap-6 bg-ink-800 p-5">
-        <Logo tone="light" height={18} />
+      <aside className="flex w-60 shrink-0 flex-col gap-6 border-r border-slate-200 bg-sidebar-bg p-5">
+        <Logo height={18} />
         <nav className="flex flex-col gap-0.5" aria-label={t.appShell.nav.home}>
           <Link
             href={homeHref}
             className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-300",
-              pathname === homeHref ? "bg-accent-600 text-white" : "text-slate-400 hover:text-paper-50",
+              "rounded-md px-2.5 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-300",
+              pathname === homeHref
+                ? "bg-white text-slate-900 shadow-lg"
+                : "text-slate-700 hover:bg-slate-800/[0.06] hover:text-slate-900",
             )}
             style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
           >
@@ -101,17 +103,17 @@ export function AppShell({
                 key={slug}
                 href={`${navBasePath}/${slug}`}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent-300",
+                  "rounded-md px-2.5 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent-300",
                   pathname?.startsWith(`${navBasePath}/${slug}`)
-                    ? "bg-accent-600 text-white"
-                    : "text-slate-400 hover:text-paper-50",
+                    ? "bg-white text-slate-900 shadow-lg"
+                    : "text-slate-700 hover:bg-slate-800/[0.06] hover:text-slate-900",
                 )}
                 style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
               >
                 {label}
               </Link>
             ) : (
-              <span key={slug} className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-400">
+              <span key={slug} className="rounded-md px-2.5 py-2 text-sm font-medium text-slate-500">
                 {label}
               </span>
             ),
