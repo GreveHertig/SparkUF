@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
+import { Card } from "@/components/ui/Card";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { cn } from "@/design/cn";
@@ -49,33 +50,33 @@ export function Memory({ data, onSaveBrainNotes }: { data: MemoryData; onSaveBra
         </Tabs.List>
 
         <Tabs.Content value="profile" className="pt-5">
-          <div className="rounded-md border border-slate-200 bg-white p-4 shadow-lg">
-            <p className="text-lg font-bold text-slate-900">{data.profile.name}</p>
-            <p className="text-sm text-slate-600">{data.profile.role}</p>
-            <div className="mt-3">
-              <Eyebrow>{t.memoryPage.profileBackgroundLabel}</Eyebrow>
-              <p className="mt-1 text-sm leading-snug text-slate-700">{data.profile.bio}</p>
-            </div>
-            <div className="mt-3">
-              <Eyebrow>{t.memoryPage.profileResourcesLabel}</Eyebrow>
-              <ul className="mt-1 flex flex-col gap-1 text-sm text-slate-700">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Card title={t.memoryPage.profileBackgroundLabel}>
+              <p className="text-lg font-bold text-slate-900">{data.profile.name}</p>
+              <p className="text-sm text-slate-600">{data.profile.role}</p>
+              <p className="mt-3 text-sm leading-snug text-slate-700">{data.profile.bio}</p>
+            </Card>
+            <Card title={t.memoryPage.profileResourcesLabel}>
+              <ul className="flex flex-col gap-1.5 text-sm text-slate-700">
                 <li>{data.profile.time}</li>
                 <li>{data.profile.money}</li>
                 <li>{data.profile.risk}</li>
               </ul>
-            </div>
+            </Card>
           </div>
         </Tabs.Content>
 
         <Tabs.Content value="brain" className="pt-5">
-          <p className="mb-2 text-xs text-slate-500">{t.memoryPage.brainHint}</p>
-          <textarea
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            onBlur={() => onSaveBrainNotes(notes)}
-            rows={6}
-            className="w-full rounded-lg border border-slate-200 bg-white p-3.5 text-sm text-slate-900 focus-visible:outline-2 focus-visible:outline-accent-300"
-          />
+          <Card>
+            <p className="mb-2 text-xs text-slate-500">{t.memoryPage.brainHint}</p>
+            <textarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              onBlur={() => onSaveBrainNotes(notes)}
+              rows={6}
+              className="w-full rounded-lg border border-slate-200 bg-white p-3.5 text-sm text-slate-900 focus-visible:outline-2 focus-visible:outline-accent-300"
+            />
+          </Card>
         </Tabs.Content>
 
         <Tabs.Content value="trace" className="pt-5">
