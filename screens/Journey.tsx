@@ -50,7 +50,7 @@ export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (step
         <p className="mt-2 text-sm text-slate-600">{highlightedStep?.oneLiner ?? t.journeyPage.subtitle}</p>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-[18px]">
         {PHASE_ORDER.map((phase) => {
           const stepsInPhase = data.steps.filter((step) => step.journeyPhase === phase);
           if (stepsInPhase.length === 0) return null;

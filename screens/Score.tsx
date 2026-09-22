@@ -61,7 +61,10 @@ export function Score({ data }: { data: ScoreData }) {
       </div>
 
       <div data-tour-id="score-suggestions">
-        <Card title={t.scorePage.suggestionsTitle}>
+        <Card
+          title={t.scorePage.suggestionsTitle}
+          right={<span className="text-xs text-slate-500">{t.scorePage.suggestionsSortNote}</span>}
+        >
           <SuggestionList suggestions={suggestions} />
         </Card>
       </div>
