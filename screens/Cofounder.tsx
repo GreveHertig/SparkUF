@@ -42,15 +42,16 @@ export function Cofounder({ data }: { data: CofounderData }) {
   const { locale, t } = useI18n();
 
   return (
-    <div className="mx-auto flex max-w-[1200px] flex-col gap-[18px]">
+    // Artefaktens vyMedgrundaren har en statisk pagehead ("Medgrundaren" +
+    // en generell beskrivning) — det aktuella momentets etikett hör hemma
+    // på chattkortets egen rubrik (nedan), inte på sidans h1.
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
-        <EditorialHeading as="h1">
-          {data.moment ? data.moment.momentLabel : t.cofounderPage.title}
-        </EditorialHeading>
+        <EditorialHeading as="h1">{t.cofounderPage.title}</EditorialHeading>
         <p className="mt-2 text-sm text-slate-600">{t.cofounderPage.subtitle}</p>
       </div>
 
-      <div className={data.context.length > 0 ? "grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]" : undefined}>
+      <div className={data.context.length > 0 ? "grid grid-cols-1 gap-[18px] lg:grid-cols-[2fr_316px]" : undefined}>
         <Card title={data.moment ? data.moment.momentLabel : t.cofounderPage.title}>
           {!data.moment && <p className="text-sm text-slate-600">{t.cofounderPage.emptyStateBody}</p>}
 
