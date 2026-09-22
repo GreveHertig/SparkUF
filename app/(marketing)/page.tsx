@@ -35,7 +35,7 @@ function FeatureCard({ title, body, children }: { title: string; body: string; c
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-6">
       <div>
-        <p className="text-lg font-bold text-slate-900">{title}</p>
+        <p className="text-xl text-slate-900">{title}</p>
         <p className="mt-1 text-sm leading-snug text-slate-600">{body}</p>
       </div>
       {children}

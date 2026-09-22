@@ -49,7 +49,7 @@ export function ScoreBadge({ score, size = "compact", className }: ScoreBadgePro
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 rounded-pill font-bold",
+        "inline-flex items-center gap-2 rounded-pill",
         toneClasses[level.tone],
         size === "large" ? "px-4 py-2 text-4xl" : "px-2.5 py-1 text-sm",
         className,

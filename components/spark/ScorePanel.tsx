@@ -49,12 +49,8 @@ export function ScorePanel({
   return (
     <Card title={title}>
       <div className="flex flex-col items-center gap-1 border-b border-slate-100 pb-4 text-center">
-        {/* Stort serif-tal — grundarens uttryckliga undantag från "alla
-         * siffror är .font-numeric" (se DESIGN.md, "Poängvisningen"). Ärver
-         * body-typsnittet (Castoro) genom att medvetet INTE bära
-         * .font-numeric, i stället för att peka ut ett eget typsnitt. */}
         <div className="flex items-baseline gap-1">
-          <span className="text-5xl leading-none text-slate-900">{snapshot.total}</span>
+          <span className="font-numeric text-5xl leading-none text-slate-900">{snapshot.total}</span>
           <span className="font-numeric text-sm text-slate-400">/100</span>
         </div>
         <p className="text-sm text-slate-900">{t.score.levels[level.key].name}</p>

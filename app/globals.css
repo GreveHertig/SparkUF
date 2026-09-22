@@ -67,22 +67,20 @@
   --shadow-xl: var(--shadow-lift);
 }
 
-/* --font-sans, --font-serif-italic och --font-data sätts av next/font/local
+/* --font-sans och --font-serif-italic sätts av next/font/local
    (design/fonts.ts) via klasser på <html> och används direkt som
    var(--font-sans) i CSS/JSX — de mappas medvetet INTE in i @theme här, för
    att undvika att Tailwinds :root-emission (samma variabelnamn) skuggar
-   next/fonts klass-scopade värde. Av samma anledning heter siffrornas
-   utility-klass nedan `.font-numeric`, inte `.font-mono` eller `.font-data` —
-   Tailwind genererar redan en `.font-mono`-utility, och en egen regel med
-   samma namn skulle tävla med den i stället för att komplettera den. */
+   next/fonts klass-scopade värde. */
 
-/* Tokenbyte (artefakten): siffror — poäng, belopp, procent, antal — i en
-   neutral sans (--font-data, se design/fonts.ts) i stället för Castoro, som
-   är för svårläst i en tät sifferkolumn (docs/beslut.md, "Öppet — typsnitt
-   för data"). `tabular-nums` sätts redan globalt på body nedan, så den här
-   klassen bara byter typsnittsfamilj. */
+/* Formgivningspass mot artefakten: artefaktens --mono är samma typsnitt som
+   --sans (Castoro) — siffror får ingen egen font, bara artefaktens `.num`-
+   behandling (tight tracking ovanpå `tabular-nums`, som redan sätts globalt
+   på body nedan). Klassen heter fortfarande `.font-numeric` (inte `.num`,
+   för att inte krocka med något annat) — samma anropsställen som innan,
+   bara omdefinierad efter att --font-data togs bort (se DESIGN.md). */
 .font-numeric {
-  font-family: var(--font-data);
+  letter-spacing: -0.005em;
 }
 
 /* Temat är ljust — arbetsytorna har ljus botten. Mörka ytor (sidomeny, hero,

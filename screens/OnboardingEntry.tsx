@@ -75,7 +75,7 @@ function EntryCard({
       )}
       style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
     >
-      <p className="text-xl font-bold text-slate-900">{title}</p>
+      <p className="text-2xl text-slate-900">{title}</p>
       <p className="text-sm leading-snug text-slate-600">{body}</p>
       <span className="mt-2 inline-flex w-fit items-center gap-1 text-sm font-semibold text-accent-700">
         {cta} →

@@ -28,7 +28,7 @@ export function SimulationCard({ simulation, className }: { simulation: Simulati
         <Eyebrow>{simulation.question}</Eyebrow>
         <ConceptBadge />
       </div>
-      <p className="font-numeric mt-2 text-lg font-bold text-slate-900">{simulation.result}</p>
+      <p className="font-numeric mt-2 text-xl text-slate-900">{simulation.result}</p>
       <p className="mt-1 text-sm text-slate-600">{simulation.uncertaintyRangeLabel}</p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <p className="font-numeric text-sm text-slate-700">

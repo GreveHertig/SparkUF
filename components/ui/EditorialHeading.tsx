@@ -19,7 +19,7 @@ export function EditorialHeading({
 }: EditorialHeadingProps) {
   return (
     <Component
-      className={cn("text-4xl font-extrabold tracking-tight", className)}
+      className={cn("text-3xl leading-[1.15] tracking-tight", className)}
     >
       {children}
     </Component>

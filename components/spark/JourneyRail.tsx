@@ -107,7 +107,7 @@ export function JourneyRail({
               {t.journeyPage.status[selected.status]}
             </span>
           </div>
-          <p className="text-sm font-bold text-slate-900">{selected.title}</p>
+          <p className="text-base text-slate-900">{selected.title}</p>
           <p className="text-sm leading-snug text-slate-600">{selected.oneLiner}</p>
           <div className="mt-1 flex items-center justify-between gap-2">
             <p className="text-xs font-medium text-accent-700">

@@ -83,7 +83,7 @@ export function OnboardingIdea({ data }: { data: OnboardingIdeaData }) {
       <section>
         <Eyebrow>{t.onboarding.idea.sharperTitle}</Eyebrow>
         <div className="mt-2 rounded-md border border-slate-200 bg-white p-5 shadow-lg">
-          <p className="text-xl font-bold text-slate-900">{screening.sharperIdea.name}</p>
+          <p className="text-2xl text-slate-900">{screening.sharperIdea.name}</p>
           <p className="mt-1 text-sm leading-snug text-slate-700">{screening.sharperIdea.oneLiner}</p>
           <p className="mt-3 text-sm leading-snug text-slate-600">
             <span className="font-semibold text-slate-700">{t.onboarding.idea.sharperWhyLabel}: </span>

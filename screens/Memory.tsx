@@ -52,7 +52,7 @@ export function Memory({ data, onSaveBrainNotes }: { data: MemoryData; onSaveBra
         <Tabs.Content value="profile" className="pt-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Card title={t.memoryPage.profileBackgroundLabel}>
-              <p className="text-lg font-bold text-slate-900">{data.profile.name}</p>
+              <p className="text-xl text-slate-900">{data.profile.name}</p>
               <p className="text-sm text-slate-600">{data.profile.role}</p>
               <p className="mt-3 text-sm leading-snug text-slate-700">{data.profile.bio}</p>
             </Card>

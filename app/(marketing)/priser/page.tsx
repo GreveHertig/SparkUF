@@ -32,7 +32,7 @@ function TierCard({ tier, href, highlighted }: { tier: Tier; href: string; highl
           {tier.badge}
         </span>
       )}
-      <p className="text-lg font-bold text-slate-900">{tier.name}</p>
+      <p className="text-xl text-slate-900">{tier.name}</p>
       <p className="mt-2 flex items-baseline gap-1">
         <span className="font-numeric text-3xl font-semibold text-slate-900">{tier.price}</span>
         {tier.priceUnit && <span className="text-sm text-slate-500">{tier.priceUnit}</span>}

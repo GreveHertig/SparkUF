@@ -78,7 +78,7 @@ export function NextStepCard({
         <Eyebrow>{eyebrow}</Eyebrow>
         <span className="font-numeric ml-auto text-xs text-slate-500">{estimatedTime}</span>
       </div>
-      <p className="mt-2 text-2xl font-extrabold text-slate-900">{title}</p>
+      <p className="mt-2 text-3xl leading-tight text-slate-900">{title}</p>
       {reasons.length > 1 ? (
         // `why` är en enda skriven mening per beat (adapters/demo/sara.ts) —
         // när den delar sig i fler än en meningsgräns blir bullets en

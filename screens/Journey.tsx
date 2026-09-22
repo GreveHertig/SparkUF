@@ -89,7 +89,7 @@ export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (step
                         {t.journeyPage.status[step.status]}
                       </span>
                     </div>
-                    <p className="text-base font-bold text-slate-900">{step.title}</p>
+                    <p className="text-lg text-slate-900">{step.title}</p>
                     <p className="text-sm leading-snug text-slate-600">{step.oneLiner}</p>
                     <p className="mt-1 text-xs font-medium text-accent-700">
                       {t.common.upToPointsBefore} <span className="font-numeric">{step.maxPoints}</span> {t.common.upToPointsAfter}

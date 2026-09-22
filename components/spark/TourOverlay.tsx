@@ -216,7 +216,7 @@ export function TourOverlay() {
         >
           {t.tour.stopLabel} {tourStepIndex + 1} {t.tour.ofLabel} {TOUR_STEPS.length}
         </span>
-        <h2 className="text-lg font-bold text-slate-900">{step.title[locale]}</h2>
+        <h2 className="text-xl text-slate-900">{step.title[locale]}</h2>
         <p className="text-sm leading-snug text-slate-700">{step.body[locale]}</p>
         <div className="mt-1 flex items-center justify-between gap-3">
           <button
