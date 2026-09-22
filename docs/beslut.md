@@ -57,3 +57,34 @@ problemet, tre är bara oense om priset) — kategorin har inget exempel
 i det här scenariot. Inget verkligt branschsnitt ("jämförelsetal")
 finns som strukturerad data — öppningsfrekvensen (38 %, redan
 källbelagd) används i stället. Se docs/status.md för fullständig lucklista.
+
+## 2026-09-22
+
+**Affärsplanen, byggd — se docs/status.md för fullständig detalj.**
+Ny funktion enligt grundarens uppdrag: en plan som sätts samman i kod
+(`core/businessPlan.ts`, samma "ren funktion"-mönster som `core/score.ts`)
+ur redan befintliga portsnapshots — ingen ny port, ingen ny datakälla,
+ingen språkmodell inblandad. Specen ligger i `docs/uppdrag.md` avsnitt 15.
+
+**Bekräftat under bygget: två demoadaptrar är hårdkodade mot en enda
+persona vardera, utan egen entry-vakt.** `RegistryProvider` (registret,
+alltid Saras 312-byrå-data) och `ProjectRepository.getIdeaScreening`
+(alltid Jonas idégenomlysning) hade ingen `entry === "hasIdea"`-koll,
+till skillnad från övriga demoadaptrar (OutreachProvider, VerdictProvider,
+BuildProvider, PulseProvider, LegalAdvisor har alla redan en). Åtgärdat
+genom att gardera anropen i den NYA hopsamlingskoden
+(`adapters/demo/businessPlan.ts`), inte genom att ändra de befintliga
+adaptrarna — de rördes inte, i linje med "rör inte befintlig demodata".
+Flaggat här eftersom det är samma klass av fel som redan bitit en gång
+(`SimulationProvider.ts`s regex-bugg, poleringssessionen ovan): en
+adapter som ser persona-medveten ut men inte är det, tyst visar fel
+persons siffror. En framtida session kan överväga att lägga samma vakt
+direkt i `RegistryProvider`/`ProjectRepository` själva — inte gjort här,
+eftersom uppdraget uttryckligen bad om att inte röra befintlig demodata.
+
+**Resultatet är avsiktligt asymmetriskt, som uppdraget bad om.** Sara:
+8 av 9 avsnitt håller (bara Beviset tunt — hon gjorde aldrig en
+idégenomlysning, så "antagandena med utfall" saknas för henne). Jonas:
+4 håller, 3 tunt, 2 saknas (Kunden och problemet, Konkurrensen) — en
+direkt konsekvens av att hans resa är byggd i bredd och att Registret/
+Utskicket/Domen aldrig byggdes ut för hans persona.
