@@ -122,6 +122,8 @@ export const sv = {
       build: "Bygg",
     },
     profileMenuLabel: "Profil",
+    tagline: "AI-medgrundare",
+    restartDemo: "Börja om demonstrationen",
   },
   homePage: {
     actNowLabel: "Gör det här nu",

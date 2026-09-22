@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/screens/AppShell";
 import { DemoDataBadge } from "@/components/ui/DemoDataBadge";
 import { DemoBar } from "@/components/spark/DemoBar";
+import { SidebarRestart } from "@/components/spark/SidebarRestart";
 import { TourOverlay } from "@/components/spark/TourOverlay";
 import { useI18n } from "@/i18n/context";
 import { demoProfileRepository } from "@/adapters/demo/ProfileRepository";
@@ -73,6 +74,7 @@ export default function DemoAppShellLayout({ children }: { children: ReactNode }
       currentStep={data.currentStep}
       headerLeft={<DemoDataBadge />}
       bottomBar={<DemoBar />}
+      sidebarFooterAction={<SidebarRestart />}
     >
       {children}
       <TourOverlay />

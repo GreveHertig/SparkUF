@@ -123,6 +123,12 @@ export type Dictionary = {
       build: string;
     };
     profileMenuLabel: string;
+    /** Undertext under ordmärket i sidomenyn (artefaktens `.brand small`). */
+    tagline: string;
+    /** Sidomenyns sidfot (artefaktens `.side-foot .restart`) — bara i demot,
+     * se `components/spark/SidebarRestart.tsx`. Skild från `demoBar.reset`/
+     * `resetConfirm`, som är kortare ord för samma knapp i demoraden. */
+    restartDemo: string;
   };
   homePage: {
     /** Pillen ovanpå handlingskortet (artefaktens `actHTML`: "Gör det här nu"). */

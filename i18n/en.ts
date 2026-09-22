@@ -122,6 +122,8 @@ export const en = {
       build: "Build",
     },
     profileMenuLabel: "Profile",
+    tagline: "AI co-founder",
+    restartDemo: "Restart the demonstration",
   },
   homePage: {
     actNowLabel: "Do this now",
