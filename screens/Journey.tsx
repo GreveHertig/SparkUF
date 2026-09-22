@@ -91,7 +91,7 @@ export function Journey({ data, stepHref }: { data: JourneyData; stepHref: (step
                     </div>
                     <p className="text-lg text-slate-900">{step.title}</p>
                     <p className="text-sm leading-snug text-slate-600">{step.oneLiner}</p>
-                    <p className="mt-1 text-xs font-medium text-accent-700">
+                    <p className="mt-1 text-xs font-medium text-slate-600">
                       {t.common.upToPointsBefore} <span className="font-numeric">{step.maxPoints}</span> {t.common.upToPointsAfter}
                     </p>
                   </Link>

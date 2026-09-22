@@ -110,10 +110,10 @@ export function JourneyRail({
           <p className="text-base text-slate-900">{selected.title}</p>
           <p className="text-sm leading-snug text-slate-600">{selected.oneLiner}</p>
           <div className="mt-1 flex items-center justify-between gap-2">
-            <p className="text-xs font-medium text-accent-700">
+            <p className="text-xs font-medium text-slate-600">
               {t.common.upToPointsBefore} <span className="font-numeric">{selected.maxPoints}</span> {t.common.upToPointsAfter}
             </p>
-            <Link href={stepHref(selected.stepNumber)} className="text-xs font-semibold text-accent-700 hover:underline">
+            <Link href={stepHref(selected.stepNumber)} className="text-xs font-semibold text-slate-700 hover:text-slate-900 hover:underline">
               {t.journeyPage.openStep} →
             </Link>
           </div>

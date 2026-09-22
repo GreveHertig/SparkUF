@@ -204,8 +204,8 @@ export function Validation({ data, notInScenario }: { data: ValidationData; notI
                   <tr className="border-b border-slate-200 text-xs font-semibold uppercase text-slate-500">
                     <th className="px-3 py-2">{v.tableCompany}</th>
                     <th className="px-3 py-2">{v.tableSni}</th>
-                    <th className="px-3 py-2">{v.tableEmployees}</th>
-                    <th className="px-3 py-2">{v.tableRevenue}</th>
+                    <th className="px-3 py-2 text-right">{v.tableEmployees}</th>
+                    <th className="px-3 py-2 text-right">{v.tableRevenue}</th>
                     <th className="px-3 py-2">{v.tableStatus}</th>
                   </tr>
                 </thead>
@@ -214,8 +214,8 @@ export function Validation({ data, notInScenario }: { data: ValidationData; notI
                     <tr key={row.companyName} className="border-b border-slate-100 last:border-0 align-top">
                       <td className="px-3 py-2 font-medium text-slate-900">{row.companyName}</td>
                       <td className="font-numeric px-3 py-2 text-slate-600">{row.sniCode}</td>
-                      <td className="font-numeric px-3 py-2 text-slate-600">{row.employees}</td>
-                      <td className="font-numeric px-3 py-2 text-slate-600">
+                      <td className="font-numeric px-3 py-2 text-right text-slate-600">{row.employees}</td>
+                      <td className="font-numeric px-3 py-2 text-right text-slate-600">
                         {formatCount(row.revenueKsek, locale)} tkr
                       </td>
                       <td className="px-3 py-2">

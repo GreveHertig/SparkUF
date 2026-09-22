@@ -30,7 +30,7 @@ export function OnboardingEntry({ data }: { data: OnboardingEntryData }) {
         <EditorialHeading as="h1" className="mt-2">
           {t.onboarding.entry.title}
         </EditorialHeading>
-        <p className="mt-3 text-sm text-slate-600">{t.onboarding.entry.subtitle}</p>
+        <p className="mt-2 text-sm text-slate-600">{t.onboarding.entry.subtitle}</p>
       </div>
 
       <div data-tour-id="entry-cards" className="grid grid-cols-1 gap-4 sm:grid-cols-2">

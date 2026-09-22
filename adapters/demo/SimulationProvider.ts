@@ -52,9 +52,23 @@ const simulations: Record<"time" | "tolerance" | "price", Record<Locale, Omit<Si
   },
 };
 
+/**
+ * Läst mot de tre kanoniska frågornas faktiska strängar (`simulationQuestions`
+ * nedan), inte en fri regex mot frågetexten — en tidigare regex
+ * (`/betal|willingness|tolerance/i`) matchade den svenska toleransfrågan
+ * ("... kunna tänkas BETALa?") men inte den engelska ("... willing to pay?",
+ * som varken innehåller "betal", "willingness" eller "tolerance"), vilket
+ * tyst föll igenom till "time"-simuleringen på engelska — fel resultat under
+ * rätt rubrik. En sträng-mot-sträng-uppslagning mot de sex kända frågorna
+ * kan inte glida isär mellan språken på samma sätt.
+ */
 function kindFor(question: string): "time" | "tolerance" | "price" {
-  if (/pris|price/i.test(question)) return "price";
-  if (/betal|willingness|tolerance/i.test(question)) return "tolerance";
+  const kinds = Object.keys(simulationQuestions) as (keyof typeof simulationQuestions)[];
+  for (const kind of kinds) {
+    if (simulationQuestions[kind].sv === question || simulationQuestions[kind].en === question) {
+      return kind;
+    }
+  }
   return "time";
 }
 

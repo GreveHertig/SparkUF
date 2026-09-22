@@ -18,7 +18,7 @@ export function JourneyStepScreen({ data, backHref }: { data: JourneyStepDetail;
   return (
     <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
-        <Link href={backHref} className="text-sm font-medium text-accent-700 hover:underline">
+        <Link href={backHref} className="text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline">
           ← {t.journeyPage.backToJourney}
         </Link>
         <Eyebrow className="mt-4">
@@ -30,7 +30,7 @@ export function JourneyStepScreen({ data, backHref }: { data: JourneyStepDetail;
           {data.title}
         </EditorialHeading>
         <p className="mt-2 text-sm leading-snug text-slate-600">{data.oneLiner}</p>
-        <p className="mt-2 text-sm font-medium text-accent-700">
+        <p className="mt-2 text-sm font-medium text-slate-600">
           {t.common.upToPointsBefore} <span className="font-numeric">{data.maxPoints}</span> {t.common.upToPointsAfter}
         </p>
       </div>

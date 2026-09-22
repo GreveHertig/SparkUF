@@ -1,12 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { cn } from "@/design/cn";
-import { motion as motionTokens } from "@/design/tokens";
 import { getScoreLevel } from "@/score/levels";
 import { useI18n } from "@/i18n/context";
-import { usePrefersReducedMotion } from "@/design/usePrefersReducedMotion";
 
 type ScoreBadgeProps = {
   score: number;
@@ -23,28 +19,21 @@ const toneClasses = {
     "bg-score-strong-bg text-score-strong ring-1 ring-inset ring-score-strong-glow",
 } as const;
 
-/** Poäng med nivåfärg. Kompakt i sidhuvud, stor på Hem och Poäng. Animerad räkning. */
+/**
+ * Poäng med nivåfärg. Kompakt i sidhuvud, stor på Hem och Poäng.
+ *
+ * Renderar talet direkt utan en egen räkneanimation: en tidigare
+ * count-up-animation (Framer Motion, `count.set(1)` → `animate(...)` vid
+ * varje montering) kunde visa ett annat tal än en samtidigt monterad,
+ * icke-animerade `ScoreRing` i sidhuvudet under de ~900 ms animationen
+ * pågick — en produkt vars löfte är att siffror är sanna får aldrig visa
+ * två olika tal för samma poäng samtidigt (docs/status.md). Borttaget i
+ * stället för att bygga delad state mellan instanser.
+ */
 export function ScoreBadge({ score, size = "compact", className }: ScoreBadgeProps) {
   const { t } = useI18n();
-  const reducedMotion = usePrefersReducedMotion();
   const level = getScoreLevel(score);
   const clamped = Math.min(100, Math.max(1, score));
-
-  const count = useMotionValue(clamped);
-  const rounded = useTransform(count, (latest) => Math.round(latest));
-
-  useEffect(() => {
-    if (reducedMotion) {
-      count.set(clamped);
-      return;
-    }
-    count.set(1);
-    const controls = animate(count, clamped, {
-      duration: motionTokens.count / 1000,
-      ease: motionTokens.easeStandard,
-    });
-    return () => controls.stop();
-  }, [clamped, reducedMotion, count]);
 
   return (
     <span
@@ -56,7 +45,7 @@ export function ScoreBadge({ score, size = "compact", className }: ScoreBadgePro
       )}
     >
       <span className="font-numeric inline-flex items-baseline gap-2">
-        <motion.span>{rounded}</motion.span>
+        <span>{clamped}</span>
         <span
           className={cn("font-medium opacity-70", size === "large" ? "text-lg" : "text-xs")}
         >

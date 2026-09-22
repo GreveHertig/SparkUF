@@ -346,3 +346,49 @@ Playwright (cachad `npx`-installation, `~/.npm/_npx/*/node_modules/playwright`, 
 
 ### Verifiering
 `pnpm typecheck`/`lint`/`test` (373 gröna, 36 skippade som väntat) och `pnpm build` gröna vid varje commit.
+
+## Poleringssession — visuell disciplin + datakonsekvens (gren `prototyp`)
+
+Uppdrag: två uppgifter. (1) Gå igenom `/demo/app` mot åtta konkreta visuella regler (färg, accent, vertikal rytm, skuggor, siffror, rörelse, källchips, maxbredd) och ta bort det som inte höll. (2) Kontrollera att varje siffra, datum och källa i demodatan hänger ihop inbördes, rätta det entydigt fel, rapportera det tveksamma. Ingen layout byggd om, inget innehåll ändrat, `core/score.ts`/`adapters/live/`/`lib/server/`/`ports/` orörda, inga nya beroenden.
+
+### Metod
+Kodbasen hade redan gått igenom sex tidigare designpass (token-byte, formgivningspass mot artefakten x2, sidornas komposition, m.fl.) — förväntningen var därför att hitta det som blivit kvar, inte att bygga om. Gick igenom alla elva `/demo/app`-skärmar och deras delade komponenter (`NextStepCard`, `ScorePanel`, `JourneyRail`, `SourceTag`, `KpiTile`, `Sparkline`, `BarChart` m.fl.) fil för fil, med `grep` som stöd för att hitta alla `accent-`/`shadow-`/`text-score-`-träffar och avgöra vilka som bar betydelse och vilka som bara dekorerade.
+
+### a) Färg — inget att rätta
+Alla `bg-score-*`/`text-score-*`/`stroke-score-*`-användningar är redan kopplade till en verklig status (poängnivå, domslut, delta, juridisk uppfyllnad, "klar"-markering i Resan) — ingen genomgående grön stapel/mätare oavsett värde hittades. `ScorePanel`s delstaplar (`toneClass(share)`) är redan gradvis röd→gul→grön efter faktisk andel, inte en fast färg. `BarChart` (Marknads storleksfördelning) använder redan `--accent-600`/`--slate-100`, ingen egen grön ton.
+
+### b) Accenten — fem ställen neutraliserade
+"Kan ge upp till X poäng"-raden (en informativ, icke-handlingsbar textrad, inte en knapp) var `text-accent-700` på tre ställen samtidigt som en riktig primär handling (`NextStepCard`s knapp) också är accent — på Resan-sidan upprepades den dessutom en gång per stegkort (upp till 12 gånger på en sida). Neutraliserad till `text-slate-600` i `screens/Journey.tsx`, `screens/JourneyStep.tsx` och `components/spark/JourneyRail.tsx`. `JourneyRail`s "Öppna steg →"-länk (en sekundär navigering på Hem, som redan har sin primära handling i `NextStepCard`s knapp precis ovanför) neutraliserad till `text-slate-700`. `JourneyStep`s "← Tillbaka till resan"-länk neutraliserad till `text-slate-600` — sidans enda kvarvarande accent-element är nu "Nyupplåst"-listan (en verklig belöningsrevel, inte dekoration).
+
+**Lämnat oförändrat, med motivering:** `NextStepCard`s handlingspill + primärknapp (den faktiska primära handlingen), `Journey.tsx`/`JourneyRail`s "aktuellt steg"-status (`border-accent-600 bg-accent-100`, ett tredje färgkodat tillstånd bredvid grönt "klar" och grått "låst" — bär betydelse, inte dekoration, och finns bara en gång per sida), `Memory.tsx`s flikväljare (standardmönster för aktiv flik), `ChatMessage`s avsändarbubblor (accent för Grundaren, vitt för Medgrundaren — särskiljer talare, ett etablerat chattmönster), `OnboardingEntry`s två symmetriska valkorts-CTA:er (ett medvetet binärt val, inte konkurrerande handlingar), `OnboardingIdea`s "testbar nu"-etikett (en riktig tvåvärdesstatus). Sidomenyns aktiva länk, ikonmärket och fokusringarna är delad skalkomponent (`AppShell`), inte sidinnehåll, och lämnades utanför uppgiftens "per sida"-ram.
+
+### c) Vertikal rytm — en avvikelse
+Rubrik→ingress-avståndet är `mt-2` på alla tio sidor utom `screens/OnboardingEntry.tsx`, som hade `mt-3`. Rättad till `mt-2`. Kort-till-kort/sektion-till-sektion-gapen (`gap-[18px]` på sidnivå, `gap-2`/`gap-2.5`/`gap-3` inom kort beroende på nästlingsdjup) är redan konsekventa — olika gap-värden på olika djup är avsedd hierarki, inte drift.
+
+### d) Skuggor — redan rent
+Bara `shadow-lg`/`shadow-xl` används någonstans i kodbasen, båda routade genom `--shadow-soft`/`--shadow-lift` via `app/globals.css`s `@theme inline` sedan Tokenbyte-sessionen. `PromptBox.tsx`s `shadow-[var(--shadow-soft)]` refererar redan token, inte ett eget värde. `TourOverlay.tsx`s spotlight-`boxShadow` (`0 0 0 9999px var(--scrim)`) är en funktionell hål-i-overlay-teknik, inte ett dekorativt kortskugga — lämnad oförändrad.
+
+### e) Siffror — en tabell högerställd
+`tabular-nums` är redan globalt satt på `body` sedan Session 1. `screens/Validation.tsx`s kontaktlista hade `Anställda`/`Omsättning` (riktiga storleksvärden) vänsterjusterade trots `font-numeric` — högerställda nu (`text-right` på både `<th>` och `<td>`). SNI-koden lämnad vänsterjusterad (en klassificeringskod, inte en storlek att jämföra radvis).
+
+### f) Rörelse — en verklig bugg fixad
+Alla övergångar i kodbasen är Tailwinds standard (150 ms) eller uttryckligen `var(--motion-fast)`/`--motion-base` (120/200 ms) — inget över 200 ms, ingen studs. Den kvarvarande, riktiga bugg som fanns: `ScoreBadge`s räkneanimation (Framer Motion, `count.set(1)` → `animate(...)` vid varje montering) kunde under de ~900 ms den pågick visa ett annat tal än en samtidigt monterad `ScoreRing` i sidhuvudet (som inte animerar sin siffra) — t.ex. på Resan/steg 06, där båda visar närbesläktade poäng samtidigt. Löst genom att **ta bort räkneanimationen helt** i stället för att bygga delad state mellan instanserna — säkraste vägen till regeln "två siffror får aldrig visa olika värden samtidigt" utan att röra fler filer. `ScoreBadge` renderar nu talet direkt; tonfärgen och storleksvarianterna är oförändrade. Framer Motion blev därmed oanvänt i hela kodbasen (bekräftat med grep) och togs bort som beroende (`pnpm remove framer-motion`) — den enda "borttagning av beroende" i den här sessionen, ingen ny lades till.
+
+### g) Källchipset — redan enhetligt
+`SourceTag` är redan den enda källchip-komponenten (form/storlek/kant/typsnitt låst sedan formgivningspasset mot artefakten) — ingen divergerande inline-variant hittades.
+
+### h) Maxbredd — redan konsekvent, avgränsning bekräftad
+Alla elva `/demo/app`-sidor har redan `max-w-[1080px] gap-[18px]` (bekräftat med grep). `--maxw` gäller uttryckligen bara de sidor artefakten modellerar (de sex inloggade appvyerna, inte onboarding/marknadsföring) sedan tidigare sessioner — marknadsförings-, inloggnings- och `/designsystem`-sidornas egna, varierande maxbredder är avsiktliga (en landningssida har annan sektionsrytm än en app-sida) och rördes inte.
+
+### Uppgift 2 — datakonsekvens
+Kontrollerade grundarens exempelfel ("Bolagsverket och SCB · 9 januari" mot ett kundsamtal i september) mot faktisk kod: existerar inte längre (eller aldrig i den här formen) — alla datum i `sara.ts`/`jonas.ts`/`RegistryProvider.ts`/`OutreachProvider.ts` ligger redan kronologiskt inom januari–maj 2026, verifierat fil för fil. Kostnadsgolvets aritmetik (8 × 1 190 kr = 9 520 kr > 8 500 kr) och "7 av 9 bekräftar problemet"-påståendet (kontrollräknat rad för rad mot de nio kundcitaten — 7 bekräftar problemet explicit/tydligt, 2 nämner bara pris/idé utan att uttryckligen bekräfta problemet) höll vid närmare granskning.
+
+**En verklig, tidigare okänd bugg hittades genom webbläsarverifieringen, inte genom att läsa koden:** `adapters/demo/SimulationProvider.ts`s `kindFor(question)` avgjorde vilken av de tre kanoniska Hiasynth-simuleringarna (tid/tolerans/pris) som skulle visas genom en regex mot frågetexten (`/betal|willingness|tolerance/i`). Den svenska toleransfrågan ("... kunna tänkas **betal**a?") matchade `/betal/`, men den engelska ("... willing to pay?") matchade varken "betal", "willingness" eller "tolerance" — och föll tyst igenom till standardvärdet `"time"`. Resultatet: Valideringens och Marknads engelska sida visade **fel simulering under rätt rubrik** — "HOW MUCH MIGHT FIRMS BE WILLING TO PAY?" följt av "~6.5 hours per employee per month go to chasing receipts" (tidssimuleringens svenska/engelska innehåll om timmar, inte pengar). Bekräftat i en riktig webbläsare (skärmdump) innan fix, och att den svenska sidan alltid visade rätt innehåll (turen med att "betal" råkar matcha). **Fixad** genom att slå upp frågan mot de sex kända kanoniska strängarna i `simulationQuestions` i stället för en fri regex — kan inte glida isär mellan språken på samma sätt igen. Ny testfil `adapters/demo/SimulationProvider.test.ts` (fem tester) bevisar att alla tre simuleringar ger samma population/källdatum på båda språken, och att varken tolerans- eller prissimuleringen kan innehålla tidssimuleringens "timmar"-text. Detta är precis den typ av fel uppgift 2 bad om att hitta — bara inte där exemplet pekade.
+
+Inget annat tveksamt eller entydigt fel hittades i genomgången av `sara.ts`, `jonas.ts`, `RegistryProvider.ts`, `OutreachProvider.ts` och `screens/Validation.tsx`/`Market.tsx`s beräkningar (allt räknas live ur underliggande arrayer, inga separat hårdkodade sammanfattningstal som kan glida isär från sina delar).
+
+### Manuell webbläsarverifiering
+Playwright (cachad `npx`-installation, samma mönster som tidigare sessioner). Klickat igenom Hem, Resan, Resan/steg 06, Resan/steg 07, Marknad, Poäng, Validering och onboardingens ingångsval på **både sv och en**, via demoradens "Hoppa till steg" (client-side, hydrerad store) och sidomenyns länkar (SPA-navigering) — samma metod som tidigare sessioner etablerade för att undvika den kända fresh-load-hydreringskapplöpningen. Inga konsol-/sidfel i någon kombination. Simuleringsbuggen (se ovan) hittades just genom att faktiskt läsa den engelska skärmdumpen, inte bara kontrollera frånvaro av fel — ett bra exempel på varför uppgift 2 bad om en riktig klickgenomgång, inte bara en kodläsning.
+
+### Verifiering
+`pnpm typecheck`/`lint`/`test` (378 gröna, 36 skippade som väntat — fem nya gröna från `SimulationProvider.test.ts`) och `pnpm build` gröna.
