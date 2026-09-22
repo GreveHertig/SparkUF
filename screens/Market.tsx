@@ -146,28 +146,31 @@ function MarketBody({ data, m, locale }: { data: MarketData; m: MarketPageDict; 
         </KpiRow>
       </section>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
-        <section data-tour-id="market-distribution" className="flex flex-col gap-2.5">
-          <div className="flex items-baseline justify-between gap-2">
-            <Eyebrow>{m.distribution.title}</Eyebrow>
-            <span className="font-numeric text-xs text-slate-500">
-              {m.distribution.sniLabel} {sniCode}
-            </span>
-          </div>
-          <div className="rounded-md border border-slate-200 bg-white p-4 shadow-lg">
+      <div className="grid grid-cols-1 gap-[18px] lg:grid-cols-[2fr_316px]">
+        <section data-tour-id="market-distribution">
+          <Card
+            title={m.distribution.title}
+            right={
+              <span className="font-numeric text-xs text-slate-500">
+                {m.distribution.sniLabel} {sniCode}
+              </span>
+            }
+          >
             <BarChart bars={distribution.map((bucket) => ({ label: bucket.label, value: bucket.count }))} />
-          </div>
-          {companies.length > 0 && (
-            <p className="text-sm text-slate-600">
-              {m.distribution.mostCommonLabel} {dominant.label} — {formatCount(dominant.count, locale)} {m.companiesUnit}{" "}
-              {m.ofLabel} {formatCount(companies.length, locale)} ({dominantPercent} %).{" "}
-              {basedOn(m, companies.length, overview.companyCount, locale)}
-            </p>
-          )}
-          <SourceTag source={overview.source} />
+            {companies.length > 0 && (
+              <p className="mt-3 text-sm text-slate-600">
+                {m.distribution.mostCommonLabel} {dominant.label} — {formatCount(dominant.count, locale)} {m.companiesUnit}{" "}
+                {m.ofLabel} {formatCount(companies.length, locale)} ({dominantPercent} %).{" "}
+                {basedOn(m, companies.length, overview.companyCount, locale)}
+              </p>
+            )}
+            <div className="mt-3">
+              <SourceTag source={overview.source} />
+            </div>
+          </Card>
         </section>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-[18px]">
           <section data-tour-id="market-outreach">
             <Card title={m.outreach.title}>
               {!outreachStats ? (
@@ -223,16 +226,17 @@ function MarketBody({ data, m, locale }: { data: MarketData; m: MarketPageDict; 
         </div>
       </div>
 
-      <section data-tour-id="market-competitors" className="flex flex-col gap-3">
-        <Eyebrow>{m.competitorsTitle}</Eyebrow>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {overview.competitors.map((competitor) => (
-            <div key={competitor.name} className="rounded-md border border-slate-200 bg-white p-3.5 shadow-lg">
-              <p className="text-sm font-semibold text-slate-900">{competitor.name}</p>
-              <p className="mt-1 text-sm leading-snug text-slate-600">{competitor.description}</p>
-            </div>
-          ))}
-        </div>
+      <section data-tour-id="market-competitors">
+        <Card title={m.competitorsTitle}>
+          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-sm bg-slate-200 sm:grid-cols-3">
+            {overview.competitors.map((competitor) => (
+              <div key={competitor.name} className="bg-white p-3.5">
+                <p className="text-sm text-slate-900">{competitor.name}</p>
+                <p className="mt-1 text-sm leading-snug text-slate-600">{competitor.description}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
       </section>
 
       <section data-tour-id="market-simulation" className="flex flex-col gap-2.5">
