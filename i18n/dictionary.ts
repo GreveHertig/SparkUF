@@ -380,6 +380,8 @@ export type Dictionary = {
       published: string;
     };
     specTitle: string;
+    /** Card-head-noten bredvid "Omfånget" (artefaktens `chead("Omfånget", "steg 08")`). */
+    scopeStepNote: string;
     previewTitle: string;
     publishedUrlLabel: string;
     /** Avsnitt 2.3: "Visa att bygget kostar credits." */

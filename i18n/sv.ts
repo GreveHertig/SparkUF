@@ -356,6 +356,7 @@ export const sv = {
       published: "Publicerad",
     },
     specTitle: "Spec",
+    scopeStepNote: "steg 08",
     previewTitle: "Förhandsvisning",
     publishedUrlLabel: "Publicerad på",
     creditsUsedLabel: "Credits använda",

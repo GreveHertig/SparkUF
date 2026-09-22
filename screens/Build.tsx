@@ -75,8 +75,11 @@ export function Build({ data, notInScenario }: { data: BuildData; notInScenario?
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_2fr]">
-            <Card title={t.buildPage.specTitle}>
+          <div className="grid grid-cols-1 gap-[18px] lg:grid-cols-[300px_1fr]">
+            <Card
+              title={t.buildPage.specTitle}
+              right={<span className="text-xs text-slate-500">{t.buildPage.scopeStepNote}</span>}
+            >
               <p
                 className="text-xs font-semibold uppercase text-slate-500"
                 style={{ letterSpacing: "var(--tracking-label)" }}

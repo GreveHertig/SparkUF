@@ -356,6 +356,7 @@ export const en = {
       published: "Published",
     },
     specTitle: "Spec",
+    scopeStepNote: "step 08",
     previewTitle: "Preview",
     publishedUrlLabel: "Published at",
     creditsUsedLabel: "Credits used",
