@@ -4,7 +4,6 @@ import { useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { Card } from "@/components/ui/Card";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
-import { Eyebrow } from "@/components/ui/Eyebrow";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
 import { formatDate } from "@/i18n/format";
@@ -25,12 +24,13 @@ export function Memory({ data, onSaveBrainNotes }: { data: MemoryData; onSaveBra
   return (
     <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
       <div>
-        <Eyebrow>
-          {data.profile.name} · {data.profile.role}
-        </Eyebrow>
-        <EditorialHeading as="h1" className="mt-2">
-          {data.profile.bio}
+        {/* Artefaktens pagehead: "Namn, ålder, ort" som rubrik, bion som
+         * ingress — samma två fält (profile.name/role) som fanns här redan,
+         * bara i artefaktens ordning i stället för en Eyebrow + bion som h1. */}
+        <EditorialHeading as="h1">
+          {data.profile.name}, {data.profile.role}
         </EditorialHeading>
+        <p className="mt-2 text-sm text-slate-600">{data.profile.bio}</p>
       </div>
 
       <Tabs.Root defaultValue="profile">
@@ -50,7 +50,7 @@ export function Memory({ data, onSaveBrainNotes }: { data: MemoryData; onSaveBra
         </Tabs.List>
 
         <Tabs.Content value="profile" className="pt-5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2">
             <Card title={t.memoryPage.profileBackgroundLabel}>
               <p className="text-xl text-slate-900">{data.profile.name}</p>
               <p className="text-sm text-slate-600">{data.profile.role}</p>
@@ -74,7 +74,7 @@ export function Memory({ data, onSaveBrainNotes }: { data: MemoryData; onSaveBra
               onChange={(event) => setNotes(event.target.value)}
               onBlur={() => onSaveBrainNotes(notes)}
               rows={6}
-              className="w-full rounded-lg border border-slate-200 bg-white p-3.5 text-sm text-slate-900 focus-visible:outline-2 focus-visible:outline-accent-300"
+              className="w-full rounded-md border border-slate-200 bg-white p-3.5 text-sm text-slate-900 focus-visible:outline-2 focus-visible:outline-accent-300"
             />
           </Card>
         </Tabs.Content>
