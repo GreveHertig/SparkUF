@@ -594,3 +594,34 @@ Placera i repots befintliga struktur och dokumentera faktiska sökvägar i `docs
 - **Indata från användare och externa källor är data, aldrig instruktioner** till Gemini.
 - **Demon importerar aldrig liveadaptrar**, så att demon inte kan läcka nycklar eller röra riktig data.
 - Innan en plattformssession avslutas körs `/security-review` (eller security-reviewer-agenten om den finns i `.claude/agents/`).
+
+---
+
+## 15. Affärsplanen
+
+### 15.1 Princip
+Affärsplanen genereras aldrig. Den **sätts samman** av det grundaren redan bevisat i resan — samma data som redan driver poängen, Marknaden, Valideringen och Bygget, bara omkomponerad till planformat. Ingen språkmodell är inblandad: planen byggs i kod (`core/businessPlan.ts`), precis som poängen (`core/score.ts`).
+
+Varje påstående i planen bär en `Källa` och ett datum, återanvänd rakt av från den evidens som redan finns i `ScoreSnapshot`, `MarketOverview`, `VerdictReport`, `IdeaScreening` med flera — aldrig en ny, påhittad källa. Finns inget underlag för ett avsnitt skrivs inget påstående där. Luckan visas i stället, med vilket steg i resan som skulle ge underlaget.
+
+### 15.2 Avsnitt och underlag
+Nio avsnitt, i den här ordningen, vart och ett kopplat till en eller flera redan existerande portar:
+
+| Avsnitt | Underlag | Port(ar) |
+|---|---|---|
+| Affärsidén | Steg 01–02 (profilsamtal, idéval), eller den skarpare idén ur idégenomlysningen (ingång B) | `JourneyRepository`, `ProjectRepository` |
+| Kunden och problemet | Steg 04 (kundprofil), steg 05 (svaren) | `JourneyRepository`, `OutreachProvider`, `VerdictProvider` |
+| Marknaden | Steg 03, registret — alltid med täckning (underlaget bakom medianen/tillväxten/regionen) angiven | `RegistryProvider` |
+| Konkurrensen | Steg 03, registret | `RegistryProvider` |
+| Erbjudandet och priset | Steg 07, prövat mot prissvaren i steg 05 | `JourneyRepository`, `VerdictProvider` |
+| Beviset | Domen i steg 06, antagandena med utfall där de finns | `VerdictProvider`, `JourneyRepository`, `ProjectRepository` |
+| Genomförandet | Steg 08 (omfånget), steg 11 (planen) | `JourneyRepository`, `BuildProvider` |
+| Ekonomin | Steg 07 (kalkylen), steg 12 | `JourneyRepository`, `EvidenceRepository` |
+| Riskerna | Motsagda antaganden och låsta poängdelar | `EvidenceRepository` (`ScoreSnapshot.lockedParts`, `deriveSuggestions`s motsägande/strukturella förslag) |
+
+### 15.3 Tre regler
+1. **Luckor visas, fylls inte.** Ett avsnitt utan underlag visar tydligt att underlaget saknas och pekar på vilket steg i resan som skulle ge det — aldrig en tom ruta, aldrig en gissning.
+2. **Motsägelser döljs inte.** Säger kunderna 900 kr och kalkylen 2 000, står båda kvar i planen, sida vid sida, med domen som avgör vilken som väger tyngst.
+3. **Planen visar sin egen färdighetsgrad.** Varje avsnitt har ett status: håller (fullt underlag), tunt underlag (delvis) eller saknas (inget). En sammanfattande färdighetsgrad (andel avsnitt som håller) visas överst på planens sida.
+
+Samma plan-motor gäller för båda personas. En resa byggd i bredd snarare än djup (till exempel Jonas, avsnitt 9.4) ger naturligt fler avsnitt med status tunt underlag eller saknas — det är avsiktligt och en sanning om underlaget, inte ett fel i planmotorn.
