@@ -126,33 +126,36 @@ export function Validation({ data, notInScenario }: { data: ValidationData; notI
 
           {data.assumptions.length > 0 && (
             <section data-tour-id="validation-assumptions">
+              {/* Artefaktens .assum: rader med en avdelare, inte egna
+               * kortytor ovanpå Card-omslaget (samma dubbla-kantlinje-fix
+               * som Hems SuggestionList/PulseCard). */}
               <Card title={v.assumptionsTitle}>
-                <div className="flex flex-col gap-2">
-                {data.assumptions.map((assumption) => (
-                  <div
-                    key={assumption.id}
-                    className="flex flex-col gap-1 rounded-md border border-slate-200 bg-white p-4 shadow-lg sm:flex-row sm:items-start sm:justify-between sm:gap-4"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{assumption.text}</p>
-                      <p className="mt-1 text-sm text-slate-600">{assumption.basis}</p>
-                      <div className="mt-2">
-                        <SourceTag source={assumption.source} dataType="customer" />
-                      </div>
-                    </div>
-                    <span
-                      className={cn(
-                        "shrink-0 self-start rounded-pill px-2.5 py-1 text-xs font-semibold uppercase",
-                        assumption.verdict === "confirmed"
-                          ? "bg-score-green-bg text-score-green"
-                          : "bg-score-orange-bg text-score-orange",
-                      )}
-                      style={{ letterSpacing: "var(--tracking-label)" }}
+                <div className="flex flex-col">
+                  {data.assumptions.map((assumption) => (
+                    <div
+                      key={assumption.id}
+                      className="flex flex-col gap-1 border-b border-slate-100 py-3 first:pt-0 last:border-b-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
                     >
-                      {v.assumptionVerdict[assumption.verdict]}
-                    </span>
-                  </div>
-                ))}
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{assumption.text}</p>
+                        <p className="mt-1 text-sm text-slate-600">{assumption.basis}</p>
+                        <div className="mt-2">
+                          <SourceTag source={assumption.source} dataType="customer" />
+                        </div>
+                      </div>
+                      <span
+                        className={cn(
+                          "shrink-0 self-start rounded-pill px-2.5 py-1 text-xs font-semibold uppercase",
+                          assumption.verdict === "confirmed"
+                            ? "bg-score-green-bg text-score-green"
+                            : "bg-score-orange-bg text-score-orange",
+                        )}
+                        style={{ letterSpacing: "var(--tracking-label)" }}
+                      >
+                        {v.assumptionVerdict[assumption.verdict]}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </Card>
             </section>
