@@ -120,6 +120,7 @@ export const sv = {
       memory: "Minnet",
       legal: "Juridik",
       build: "Bygg",
+      businessPlan: "Affärsplanen",
     },
     profileMenuLabel: "Profil",
     tagline: "AI-medgrundare",
@@ -768,5 +769,56 @@ export const sv = {
     },
     medianCounterOffer: "Median av motbud: {median} kr (baserat på {count} svar).",
     pivotTraceEvent: "Domen blev pivot: {confirming} av {responded} bekräftade problemet.",
+  },
+  businessPlanPage: {
+    title: "Affärsplanen",
+    subtitle: "Sätts samman av det som redan är bevisat i resan — aldrig genererad, aldrig gissad.",
+    maturityLabel: "Färdighetsgrad",
+    status: {
+      solid: "Håller",
+      thin: "Tunt underlag",
+      missing: "Saknas",
+    },
+    requiresStepTemplate: "Underlag saknas — kommer från steg {step}",
+    contradictionLabel: "Motsägelse — båda sidor visas",
+    lockedPartsTitle: "Ännu inte bevisat",
+    sections: {
+      idea: {
+        title: "Affärsidén",
+        description: "Den idé grundaren valt, eller den skarpare idén ur idégenomlysningen.",
+      },
+      customerAndProblem: {
+        title: "Kunden och problemet",
+        description: "Vem kunden är, och vad kundsamtalen faktiskt visade.",
+      },
+      market: {
+        title: "Marknaden",
+        description: "Registerbilden, alltid med täckningen bakom siffrorna angiven.",
+      },
+      competition: {
+        title: "Konkurrensen",
+        description: "Vilken lucka i marknaden idén fyller.",
+      },
+      offerAndPrice: {
+        title: "Erbjudandet och priset",
+        description: "Priset, prövat mot vad kunderna faktiskt sagt.",
+      },
+      evidence: {
+        title: "Beviset",
+        description: "Domen och de antaganden som prövats.",
+      },
+      execution: {
+        title: "Genomförandet",
+        description: "Vad som byggs, och planen för att få de första kunderna.",
+      },
+      economy: {
+        title: "Ekonomin",
+        description: "Kalkylen och finansieringen.",
+      },
+      risks: {
+        title: "Riskerna",
+        description: "Motsagt underlag och de delar av planen som ännu inte är bevisade.",
+      },
+    },
   },
 } satisfies Dictionary;

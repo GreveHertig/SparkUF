@@ -121,6 +121,7 @@ export type Dictionary = {
       memory: string;
       legal: string;
       build: string;
+      businessPlan: string;
     };
     profileMenuLabel: string;
     /** Undertext under ordmärket i sidomenyn (artefaktens `.brand small`). */
@@ -724,5 +725,20 @@ export type Dictionary = {
     };
     medianCounterOffer: string;
     pivotTraceEvent: string;
+  };
+  /** Affärsplanen (docs/uppdrag.md avsnitt 15). Platshållare i
+   * `requiresStepTemplate`: {step}. */
+  businessPlanPage: {
+    title: string;
+    subtitle: string;
+    maturityLabel: string;
+    status: { solid: string; thin: string; missing: string };
+    requiresStepTemplate: string;
+    contradictionLabel: string;
+    lockedPartsTitle: string;
+    sections: Record<
+      "idea" | "customerAndProblem" | "market" | "competition" | "offerAndPrice" | "evidence" | "execution" | "economy" | "risks",
+      { title: string; description: string }
+    >;
   };
 };

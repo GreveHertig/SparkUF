@@ -120,6 +120,7 @@ export const en = {
       memory: "Memory",
       legal: "Legal",
       build: "Build",
+      businessPlan: "Business plan",
     },
     profileMenuLabel: "Profile",
     tagline: "AI co-founder",
@@ -764,5 +765,56 @@ export const en = {
     },
     medianCounterOffer: "Median counter-offer: SEK {median} (based on {count} replies).",
     pivotTraceEvent: "Verdict was pivot: {confirming} of {responded} confirmed the problem.",
+  },
+  businessPlanPage: {
+    title: "Business plan",
+    subtitle: "Assembled from what the journey has already proven — never generated, never guessed.",
+    maturityLabel: "Maturity",
+    status: {
+      solid: "Solid",
+      thin: "Thin evidence",
+      missing: "Missing",
+    },
+    requiresStepTemplate: "No evidence yet — comes from step {step}",
+    contradictionLabel: "Contradiction — both sides shown",
+    lockedPartsTitle: "Not yet proven",
+    sections: {
+      idea: {
+        title: "The business idea",
+        description: "The idea the founder chose, or the sharper idea from the idea screening.",
+      },
+      customerAndProblem: {
+        title: "The customer and the problem",
+        description: "Who the customer is, and what the customer calls actually showed.",
+      },
+      market: {
+        title: "The market",
+        description: "The registry picture, always with the coverage behind the numbers stated.",
+      },
+      competition: {
+        title: "The competition",
+        description: "Which gap in the market the idea fills.",
+      },
+      offerAndPrice: {
+        title: "The offer and the price",
+        description: "The price, tested against what customers actually said.",
+      },
+      evidence: {
+        title: "The evidence",
+        description: "The verdict and the assumptions that were tested.",
+      },
+      execution: {
+        title: "The execution",
+        description: "What gets built, and the plan for the first customers.",
+      },
+      economy: {
+        title: "The economics",
+        description: "The calculation and the financing.",
+      },
+      risks: {
+        title: "The risks",
+        description: "Contradicted evidence and the parts of the plan not yet proven.",
+      },
+    },
   },
 } satisfies Dictionary;

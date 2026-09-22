@@ -42,10 +42,14 @@ export const BUSINESS_PLAN_SECTION_ORDER: readonly BusinessPlanSectionId[] = [
 ];
 
 /** Ett påstående i planen. `text` är redan lokaliserad text som fanns i en
- * port sedan tidigare (en highlight, ett citat, en registerfakta) — den här
- * filen skriver aldrig en ny mening. */
+ * port sedan tidigare (en highlight, ett citat, en registerfakta, en
+ * etikett ur i18n) — den här filen skriver aldrig en ny mening. `value` är
+ * valfri, för siffertunga påståenden (t.ex. registrets nyckeltal) som hellre
+ * visas som etikett + tal, i samma stil som `DataFact`, än som en hopklistrad
+ * sträng. */
 export type BusinessPlanClaim = {
   text: string;
+  value?: string | number;
   source: Källa;
   dataType: DataType;
 };

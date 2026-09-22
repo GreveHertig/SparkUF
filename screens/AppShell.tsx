@@ -81,6 +81,7 @@ export function AppShell({
     { slug: "minnet", label: t.appShell.nav.memory, icon: "memory" },
     { slug: "juridik", label: t.appShell.nav.legal, icon: "legal" },
     { slug: "bygg", label: t.appShell.nav.build, icon: "build" },
+    { slug: "affarsplan", label: t.appShell.nav.businessPlan, icon: "businessPlan" },
   ];
 
   // Räknare (artefaktens navbtn .ct) — bara där en redan hämtad siffra

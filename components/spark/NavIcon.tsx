@@ -16,7 +16,8 @@ export type NavIconName =
   | "pulse"
   | "memory"
   | "legal"
-  | "build";
+  | "build"
+  | "businessPlan";
 
 const PATHS: Record<NavIconName, string> = {
   home: "M4 11.5 12 4l8 7.5M6 10v9.5h5V15h2v4.5h5V10",
@@ -29,6 +30,7 @@ const PATHS: Record<NavIconName, string> = {
   memory: "M9 4a4 4 0 0 0-3.9 5 3.5 3.5 0 0 0 0 6.8A4 4 0 1 0 13 18V6a4 4 0 0 0-4-2Zm6 2v12a4 4 0 1 0 3.9-5 3.5 3.5 0 0 0 0-6.8A4 4 0 0 0 15 6Z",
   legal: "M12 3v18M6 7l-3 6a3 3 0 0 0 6 0ZM18 7l-3 6a3 3 0 0 0 6 0ZM5 21h14M4 7l8-3 8 3",
   build: "m14.5 6.5-8 8a2.1 2.1 0 0 0 3 3l8-8M18 9l1.5-1.5a2.1 2.1 0 0 0-3-3L15 6M4 20l3-1 8.5-8.5-2-2L5 17l-1 3Z",
+  businessPlan: "M7 3h7l4 4v14H7ZM14 3v4h4M9 12h6M9 15.5h6M9 9h3",
 };
 
 export function NavIcon({ name, className }: { name: NavIconName; className?: string }) {
