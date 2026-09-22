@@ -45,3 +45,6 @@ next-env.d.ts
 # lokal MCP-konfiguration och Supabase CLI-temp
 .mcp.json
 supabase/.temp/
+
+# Lokala engångsskript, aldrig i repot
+/scratchpad/

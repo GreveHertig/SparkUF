@@ -44,8 +44,11 @@ vidare med `RegistryProvider` (Fas 1):
      datamängder. Licensen för namngivna företag är **Verifierat**, med
      undantag för enskilda firmors personuppgifter och reklamspärr. Se
      avsnitt 2. Kvarstår som två olösta frågor:
-  1. Det är **oklart om Bolagsverkets API går att söka på SNI-kod**.
-     `searchCompanies` bygger på det. Se avsnitt 3.
+  1. ~~Det är oklart om Bolagsverkets API går att söka på SNI-kod.~~
+     **Avgjort 2026-09-21:** det går inte. API:et har bara fyra endpoints
+     och stöder bara uppslag på känt organisationsnummer. `searchCompanies`
+     måste bygga på SCB. Se avsnitt 2 ("Bolagsverkets API — sökning/listning
+     på SNI-kod") och fråga 2 i avsnitt 6.
   2. Registerdatan ger **inga kontaktuppgifter** (ingen e-post eller
      telefon). Mottagarnas e-post hämtas i Fas 2 via egen sökning
      (Tavily + Gemini), se överst och avsnitt 6.
@@ -182,7 +185,7 @@ Det som **inte** är löst:
 
 | Portfält | Möjlig källa | Status |
 |---|---|---|
-| `RegistryQuery.sniCode` | SCB SNI-koder | Verifierat att fältet finns. **Osäkert** om Bolagsverkets API kan söka på det (se nedan) |
+| `RegistryQuery.sniCode` | SCB SNI-koder | Verifierat att fältet finns. Bolagsverkets API kan **inte** söka på det (avgjort 2026-09-21), listning måste komma från SCB |
 | `RegistryCompany.name`, `sniCode` | Register | Verifierat |
 | `RegistryCompany.employees` | SCB storleksklass (inte exakt tal), eller medelantal anställda ur iXBRL | Osäkert. Portens `min/maxEmployees` kräver ett tal, klasserna ger intervall |
 | `RegistryCompany.revenueKsek` | iXBRL, nettoomsättning | Osäkert. Bara aktiebolag, kräver en fil per bolag |
@@ -193,12 +196,125 @@ Det som **inte** är löst:
 | `MarketOverview.regionSharePercent` | Fördelning över län | Rimligt om län går att härleda |
 | `MarketOverview.competitors` | Bolag per SNI + verksamhetsbeskrivning | Rimligt |
 
-**Största tekniska osäkerheten:** Bolagsverkets API beskrivs som en
-uppslagstjänst per organisation och dokument (Sekundärt, Context7). Att
-**lista alla bolag på en SNI-kod** görs sannolikt via SCB:s API eller via
-de nedladdningsbara filerna, inte via Bolagsverkets uppslag. Det avgör hur
-adaptern byggs. Kontrolleras i API-specifikationen (Swagger) när nycklarna
-kommer.
+**Avgjort 2026-09-21:** Bolagsverkets API är en ren uppslagstjänst per
+organisationsnummer och dokument. Det kan **inte** lista bolag på SNI-kod
+(bekräftat mot Swagger-specen, se "Bolagsverkets API — sökning/listning på
+SNI-kod" ovan). Listning per SNI och storleksklass måste därför komma från
+SCB (statistikdatabas, nedladdningsbara filer eller företagsregister-API).
+Vilket av dem som håller är nästa spik, se fråga 7 i avsnitt 6.
+
+### Spik med nycklar (2026-09-21)
+
+Kört av Erik lokalt med `scratchpad/bv-test.mjs` (gitignorad). Claude Codes
+miljö når inte `portal.api.bolagsverket.se` (timeout), så resultaten nedan
+är Eriks rapport, inte egna anrop.
+
+**Verifierat (Erik körde det):**
+- OAuth 2 client credentials fungerar mot
+  `https://portal.api.bolagsverket.se/oauth2/token` med `client_id`,
+  `client_secret` och `scope=vardefulla-datamangder:read`. Uppgifterna
+  ligger i `.env.local` som `BOLAGSVERKET_CLIENT_ID` och
+  `BOLAGSVERKET_CLIENT_SECRET`. Det gäller alltså inte en enskild API-nyckel
+  i en header.
+- **Uppslag på organisationsnummer fungerar och ger riktig data**
+  (Volvo, 5560125790).
+- `dokumentlista` för samma organisationsnummer kom **tom**. Orsak okänd:
+  kan vara fel anrop, ingen digital årsredovisning för just det bolaget,
+  eller att `[TEST]`-åtkomsten inte omfattar dokument. Ej utrett.
+
+**Skarp data, trots `[TEST]` i bekräftelsemailet (Erik, från Volvo-svaret):**
+det verkar vara skarp, inte syntetisk, data. Vad `[TEST]` betyder är
+**inte klarlagt**: om det finns en separat produktionsmiljö med annan
+bas-URL eller andra gränser vet vi inte. Fråga Bolagsverket eller läs
+Developer Portal innan vi bygger på antagandet.
+
+### Bolagsverkets API — sökning/listning på SNI-kod: definitivt inte möjligt
+
+**Status: bekräftat** (Erik läste Swagger-specen i Developer Portal,
+portal.api.bolagsverket.se, API:et "VärdefullaDatamängder"; Claude Code når
+inte portalen och har inte läst specen själv). Specen visar samtliga
+endpoints, och det finns bara fyra:
+
+| Metod | Endpoint | Syfte |
+|---|---|---|
+| GET | `/isalive` | Hälsokontroll. Kräver scope `vardefulla-datamangder:ping`, ett annat än `:read`, vilket förklarar 403 vid tidigare test |
+| POST | `/organisationer` | Slå upp ett bolag via `identitetsbeteckning` (känt organisationsnummer). Inget SNI-filter, inget sökfält |
+| POST | `/dokumentlista` | Lista årsredovisningar för ett känt organisationsnummer |
+| GET | `/dokument/{dokumentId}` | Hämta en specifik årsredovisning (zip) |
+
+Det finns ingen sök- eller listningsendpoint. API:et stöder bara uppslag på
+ett organisationsnummer man redan känner till.
+
+**Konsekvens för `searchCompanies`:** kan inte byggas på Bolagsverkets API
+ensamt. Måste luta sig mot SCB:s statistikdatabas eller nedladdningsbara
+filer, enligt reservplanen redan skisserad nedan.
+
+**Övrigt specen bekräftar:**
+- Ingen omsättning eller antal anställda i grunddatan från
+  `/organisationer`. Det måste hämtas ur iXBRL-dokumenten via
+  `/dokumentlista` + `/dokument/{dokumentId}`.
+- Inget eget länsfält, bara postnummer i adressen. Län måste härledas ur
+  postnumret.
+
+**Kvar att utreda:** `/dokumentlista` gav tom lista för Volvo
+(5560125790). Kan bero på fel anrop, på att bolaget saknar digital
+årsredovisning i materialet, eller på `[TEST]`-åtkomsten. Bas-URL:en
+`https://gw.api.bolagsverket.se/vardefulla-datamangder/v1` användes i
+skriptet från minnet, och Erik har sedan fått uppslaget att fungera, men
+den är ännu inte skriven in här från specen.
+
+### Svarsformat, POST /organisationer
+
+Struktur enligt Swagger-specen, **inte verifierad mot ett faktiskt
+testanrop.** Verifiera fälten mot ett riktigt svar innan strukturen låses i
+adaptern.
+
+```json
+{
+  "organisationer": [
+    {
+      "identitetsbeteckning": "5560000000",
+      "organisationsnamn": {
+        "organisationsnamnLista": [
+          { "namn": "Exempel AB", "typ": "REGISTRERAT_NAMN" }
+        ]
+      },
+      "naringsgrenOrganisation": {
+        "sni": [
+          { "kod": "62010", "beskrivning": "Dataprogrammering" }
+        ]
+      },
+      "postadressOrganisation": {
+        "postadress": {
+          "coAdress": null,
+          "utdelningsadress": "Exempelgatan 1",
+          "postnummer": "11122",
+          "postort": "Stockholm",
+          "land": "SE"
+        }
+      },
+      "reklamsparr": false
+    }
+  ]
+}
+```
+
+### TODO — öppna punkter från Bolagsverket-spiken
+
+Noterade 2026-09-21, medvetet inte lösta än:
+
+- [ ] **Svarsformatet för `POST /organisationer` är rekonstruerat från
+  Swagger-specen, inte verifierat mot ett riktigt testanrop.** Kör ett
+  anrop och jämför fält för fält innan strukturen låses i adaptern.
+- [ ] **`/dokumentlista` gav tom lista för Volvo (5560125790).** Orsak
+  okänd (fel anrop, ingen digital årsredovisning i materialet, eller
+  `[TEST]`-åtkomst). Prova fler organisationsnummer och kontrollera
+  anropets utformning mot specen.
+- [ ] **Bas-URL:en är inte inskriven från specen.** Skriptet använde
+  `https://gw.api.bolagsverket.se/vardefulla-datamangder/v1` från minnet.
+  Läs den ur Swagger-specen och skriv in den här.
+- [ ] Vad `[TEST]` i bekräftelsemailet betyder (separat produktionsmiljö
+  eller ej), se "Spik med nycklar".
 
 ## 3. Rekommenderad arkitektur för MVP
 
@@ -334,13 +450,130 @@ sannolikt inget.
 | # | Fråga | Vem/hur | Blockerar |
 |---|---|---|---|
 | 1 | ~~Bolagsverkets faktiska användarvillkor (lagring, vidareutnyttjande)~~ **Avgjort, Verifierat 2026-09-20** (Erik läste Bolagsverkets sida om värdefulla datamängder): lagring, visning och vidaredistribution tillåtet; enskilda firmors personuppgifter får inte profileras/samköras; reklamspärr ska respekteras. Kvar: detaljer som källhänvisning | Erik vid godkänd kundanmälan | **Inte längre ett hinder för exponering på licensgrunden.** Licensgrinden (`docs/moduler/registret.md`) ligger kvar tills Erik själv öppnar den. Fråga 4 nedan gäller fortfarande |
-| 2 | Kan Bolagsverkets API söka på SNI, eller krävs SCB/filer? | Spik med nycklar | `searchCompanies` |
+| 2 | ~~Kan Bolagsverkets API söka på SNI, eller krävs SCB/filer?~~ **Avgjort, bekräftat 2026-09-21:** nej. Bara fyra endpoints, ingen sökning eller listning. `searchCompanies` måste bygga på SCB:s statistikdatabas eller nedladdningsbara filer. Nästa steg: undersök SCB-spåret (fråga 7) | Undersök SCB:s databas och filer | `searchCompanies` |
 | 3 | Vilka iXBRL-taggar finns för små bolag, och täckning | Spik med nycklar | `revenueKsek`, `growthSharePercent`, median |
 | 4 | Får namngivna aktiebolag lagras/visas, och hur hanteras enskilda firmor och reklamspärr? | Juridisk koll + vuxen/handledare | Steg 04–05 i live |
 | 5 | ~~Var får Utskick och svar mottagarnas e-post från?~~ **Avgjort:** egen mejlsökning med Tavily + Gemini, grundaren bekräftar alltid adressen. Hunter.io valdes bort (50 krediter per konto/månad) | Beslutat | Fas 2 (`OutreachProvider`), byggs inte nu |
 | 6 | Allabolag/UC: kontakt, villkor, pris, vem som är rättighetshavare (UC eller Proff AS) | Grundaren + partner + vuxen/handledare | Inget i MVP |
 | 7 | SCB:s statistikdatabas som källa till branschaggregat | Undersök vid spiken | `medianRevenueKsek` utan iXBRL-urval |
-| 8 | SCB:s byte från certifikat till API-nycklar (september 2026) | Kolla vid åtkomst | Autentiseringens utformning |
+| 8 | ~~SCB:s byte från certifikat till API-nycklar~~ Gemensamma API:et använder OAuth 2 client credentials (**Verifierat** 2026-09-21). Oklart om SCB:s separata företagsregister-API gör det | Kolla vid behov | Autentiseringens utformning |
+
+## Förslag: SCB-spåret (UTKAST, väntar på godkännande)
+
+> **Status:** förslag skrivet 2026-09-21, godkänt av Erik samma dag. Underlag: SCB:s egna sidor och söksammanfattningar. Inget
+> anrop mot SCB är gjort, och Claude Codes miljö har inte nycklar.
+> Märkningarna följer avsnittet "Så läser du märkningarna".
+
+### Frågan
+
+Kan vi **lista bolag per SNI-kod och storleksklass** (antal anställda,
+omsättning)? Det är vad `searchCompanies` behöver, eftersom Bolagsverkets
+API inte kan det (se avsnitt 2). Tre kandidater hos SCB och Bolagsverket:
+
+### Jämförelse
+
+| | A. SCB Företagsregister-API (avgiftsfritt) | B. SCB Statistikdatabas (PxWeb) | C. Nedladdningsbara filer (värdefulla datamängder) |
+|---|---|---|---|
+| **Vad du får** | Enskilda företag och arbetsställen | Aggregat (antal, nyckeltal), **inga bolagsnamn** | Bolagsdata i filer, per bolag |
+| **Lista per SNI** | **Ja** (Sekundärt: SCB:s sida säger att man kan söka på fasta koder som SNI) | Nej, bara antal per SNI | Ja, filtrera lokalt. SNI finns i de 15 variablerna (Verifierat, se avsnitt 2) |
+| **Storleksklass anställda** | **Ja**, som klass, inte exakt tal (Sekundärt) | Ja, som filter/dimension: nio klasser, 0 till 500+ anställda (Sekundärt, tabell FDBR07N) | **Nej**, finns inte bland de 15 variablerna (Verifierat, avsnitt 2) |
+| **Storleksklass omsättning** | **Osäkert.** Variabeln finns i registrets variabelbeskrivning (Sekundärt), men sidan om de avgiftsfria uppgifterna nämner den inte | Delvis: "Företagens ekonomi" (nettoomsättning per SNI och storleksklass, 2022–2024) och branschnyckeltal med kvartiler (Sekundärt, tabellnamn ur sökresultat, innehåll ej granskat) | Nej, bara iXBRL per bolag, en fil per bolag och år |
+| **Kontaktuppgifter** | Troligen inte i den avgiftsfria delen (Sekundärt). Registret har telefon/e-post/reklam som variabler, men det gäller inte nödvändigtvis det gratis utsnittet | Nej | Nej |
+| **Kostnad** | Avgiftsfritt sedan 2025-06-26 (Sekundärt) | Avgiftsfritt (Osäkert, inte kontrollerat mot sidan) | Avgiftsfritt |
+| **Åtkomst** | Godkänna villkor och få certifikat via scbforetag@scb.se. Byter till API-nycklar i september 2026 (Sekundärt: alltså nu, kolla vad som gäller) | Öppet API, ingen inloggning (Osäkert, inte prövat) | Ingen inloggning känd, se Bolagsverkets sida om nedladdningsbara filer (Sekundärt) |
+| **Gränser** | Max 2 000 rader per anrop, 10 anrop per 10 sekunder och användare, bara aktuell data, ingen historik (Sekundärt) | Inte kontrollerade | Stora filer, tung bearbetning |
+| **Format** | REST, JSON eller XML (Sekundärt) | JSON via PxWeb (Sekundärt) | Filer (Osäkert vilket format) |
+
+**Storleksklasserna (Sekundärt, registrets variabelbeskrivning):**
+1 = 0 anställda, 2 = 1–4, 3 = 5–9, 4 = 10–19, 5 = 20–49, 6 = 50–99,
+7 = 100–199, 8 = 200–499, och därefter större. Klasserna 2–6 stämmer med
+de fem klasser demot redan visar (1–4, 5–9, 10–19, 20–49, 50+). Portens
+`minEmployees`/`maxEmployees` måste alltså översättas till klasser och
+`RegistryCompany.employees` visas som intervall, aldrig som exakt tal.
+
+### Rekommendation
+
+**Bygg listningen på A och aggregaten på B, och berika med Bolagsverket.**
+
+1. **`searchCompanies` (lista + org.nr) via A.** Det är den enda
+   kandidaten som listar enskilda bolag på SNI *och* storleksklass i ett
+   anrop. Filen (C) klarar SNI men saknar storleksklass, och B har inga
+   namn.
+2. **Berika med Bolagsverkets `/organisationer`** för de träffar vi visar:
+   juridisk form, reklamspärr och verksamhetsbeskrivning. Det ger också
+   filtret "bara aktiebolag utan reklamspärr" (avsnitt 2) även om A inte
+   har juridisk form i det gratis utsnittet.
+3. **`getMarketOverview` via B** för `companyCount` per SNI och
+   storleksklass, och (om tabellerna visar sig innehålla det) omsättning
+   per storleksklass. Det är billigare och ärligare än en median över ett
+   iXBRL-urval, och rätt sätt att uppfylla Datalöftet: ett tal med källa
+   för hela marknaden i stället för "baserat på N bolag".
+4. **Omsättning per bolag** kommer bara via iXBRL för aktiebolag, som
+   tidigare. Om A har omsättningsklass räcker det för filtrering, och då
+   behövs iXBRL bara för de bolag vi visar upp.
+5. **C (filer) som reserv**, inte första val: om A:s access dröjer eller
+   villkoren blockerar. Då listar vi på SNI ur filen och tappar
+   storleksfiltret.
+
+### Spik, i ordning
+
+1. **B först (inget att vänta på).** Slå upp `FDBR07N` och tabellerna för
+   Företagens ekonomi och branschnyckeltal i PxWeb. Kontrollera: SNI-djup
+   (2–5 siffror), storleksklasser, senaste år, om nettoomsättning finns,
+   om API:et är öppet. Testa med en verklig SNI-kod från demot.
+2. **A: begär åtkomst hos SCB** (mejl till scbforetag@scb.se) och ställ
+   frågorna nedan. **Det är ett utåtriktat steg och görs av Erik, inte av
+   Claude.** Kolla först om nya API-nycklar redan ersatt certifikaten.
+3. Kör riktiga anrop och **uppdatera det här dokumentet** med det som
+   visade sig, precis som Bolagsverket-spiken.
+
+**Frågor till SCB / att kontrollera i A:**
+- Går det att filtrera på SNI **och** storleksklass anställda i samma anrop?
+- Finns storleksklass omsättning i det avgiftsfria utsnittet?
+- Finns juridisk form och län/kommun som sökfilter? (Behövs för "bara
+  aktiebolag" och `county`.)
+- Finns reklamspärr (variabeln "Reklam") med, och kan vi filtrera bort
+  spärrade?
+- Hur fungerar pagineringen nu när 2 000 rader/anrop är taket, och gäller
+  gränsen 10 anrop/10 s även med API-nyckel?
+- Får vi lagra svaren (Supabase-cache), och vilken källhänvisning krävs?
+- Får enskilda firmor listas, eller bara aggregeras? (Samma GDPR-fråga som
+  i avsnitt 2.)
+
+### TODO / nästa steg
+
+- [ ] **Erik mejlar scbforetag@scb.se** för åtkomst till API:et (A) och
+  ställer frågorna ovan. Inget mejl är skickat. Claude skickar inget.
+- [ ] **Läs variabelbeskrivnings-PDF:en för API:et**
+  (`variabelbeskrivning-api-sni-2025.pdf`, länk under Källor). Den kunde
+  inte läsas i den här sessionen (saknat PDF-verktyg), så uppgifterna om
+  vilka variabler det gratis utsnittet har och vilka som går att filtrera
+  på är oläst i original. Kontrollera särskilt omsättningsklass,
+  juridisk form, län/kommun, reklam.
+- [ ] Spik B (statistikdatabasen), se "Spik, i ordning".
+
+### Risker och luckor
+
+- **Allt om A är Sekundärt** tills Erik eller någon med åtkomst kört ett
+  anrop. Särskilt omsättningsklass och juridisk form är osäkra i det
+  gratis utsnittet.
+- **Enskilda firmor** ingår i SCB:s register. Samma förslag som i avsnitt
+  2: namngivna listor bara för aktiebolag utan reklamspärr.
+- **Datafärskhet:** A uppdateras nattligen, de flesta variabler veckovis
+  (Sekundärt). B har årsdata med eftersläpning. Visa alltid
+  `Källa.hämtad` och statistikår.
+- **Två register kan säga olika saker** (SCB:s och Bolagsverkets SNI-kod
+  kan skilja). Visa källan per uppgift, blanda inte tyst.
+
+Källor (Sekundärt, hämtade 2026-09-21 som sammanfattat utdrag):
+- SCB, avgiftsfria uppgifter i företagsregistret: https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/avgiftsfria-uppgifter-i-foretagsregistret/
+- SCB, variabelbeskrivning för företagsregistret: https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/variabelbeskrivning/
+- SCB, variabelbeskrivning API (PDF, kunde inte läsas i den här sessionen): https://www.scb.se/contentassets/8a8eb5c3d45f461ea93482f8e8d4de4f/variabelbeskrivning-api-sni-2025.pdf
+- SCB, värdefulla datamängder: https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/vardefulla-datamangder--grundlaggande-foretagsinformation/ (hänvisar vidare till Bolagsverket för API och filer, ger inga detaljer om filter)
+- SCB Statistikdatabasen, Företag (FDB) efter SNI 2007 och storleksklass 2008–2025: https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__NV__NV0101/FDBR07N/
+- SCB Statistikdatabasen, Företagens ekonomi, basfakta efter SNI och storleksklass: https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__NV__NV0109__NV0109P/NSEBasStklFEngs07/
+- SCB Statistikdatabasen, branschnyckeltal: https://www.statistikdatabasen.scb.se/pxweb/en/ssd/START__NV__NV0109__NV0109O/BNTT01/
+- CRMdata, om det avgiftsfria API:et (tredjepart): https://www.crmdata.se/scbs-avgiftsfria-api-for-foretagsregistret-nar-racker-det/
 
 ## 7. Källor
 
