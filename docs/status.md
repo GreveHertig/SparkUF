@@ -1850,3 +1850,32 @@ poängdelarna, handlingskortet och sidomenyn. `core/score.ts`, `adapters/live/`,
 
 ### Kända problem
 - Inga nya.
+
+## Formgivningspass mot artefakten, fullständigt (klar, gren `prototyp`)
+
+Uppdrag: artefakten (`design-referens/artefakt/app.js`/`app.css`) är specifikationen överallt där vår kod och den skiljer sig — tidigare sessioners medvetna avsteg ska bort, inte försvaras. Fyra uppgifter: typografin, skalet (sidomeny+sidhuvud), de sex sidor med en artefaktmotsvarighet (Hem, Medgrundaren, Marknad, Validering, Bygg, Minnet), och de fyra utan (Resan, Poäng, Pulsen, Juridik). Full motivering i `DESIGN.md` under samma rubrik — den här posten sammanfattar. Tio commits, `core/score.ts`/`adapters/live/`/`lib/server/`/`ports/`/demodatan orörda.
+
+### Klart
+- **Typografin:** `--font-data` (Funnel Display) borttaget helt, inklusive fontfilerna — siffror ärver Castoro precis som artefaktens `.num`/`.mono`. `font-bold`/`font-extrabold` borttaget från alla rubriker (Castoro har bara vikt 400, fetstilen renderades som syntetisk) — hierarkin byggs om med storlek efter artefaktens egen dokumenterade kompensationstabell i `app.css`. **Det tidigare "grundarens uttryckliga undantag"** om `ScorePanel`s poängtal (se föregående sessions post ovan) **är nu löst, inte kringgånget:** `.font-numeric` byter inte längre typsnitt (ingen `--font-data` kvar att peka på), så klassen är tillbaka på poängtalet för konsekvent spårning — ingen konflikt med det gamla beslutet, bara att grunden för det försvann.
+- **Skalet:** sidomenyns brand-rad fick ett ikonmärke + undertext (`t.appShell.tagline`), navposterna fick ikoner (ny `components/spark/NavIcon.tsx`) och Hem fick en räknare (upplåsta/totalt delar). Ny sidfot med profilblock (flyttat från sidhuvudet) + en ny `SidebarRestart`-knapp (samma `useDemoStore().reset()` som demoradens "Återställ", en andra ingång). Sidhuvudets brödsmula och stegpill är nu två rader, inte en sammanslagen sträng. Sidomenyn kvar mörk (`--navy`) — grundarens uttryckliga undantag, oförändrat.
+- **De sex sidorna:** Hem tappade sin pagehead (artefakten har ingen), `SuggestionList` omskriven till artefaktens `.sugggrid`-kortmönster, och **den dubbla kantlinjen på Hems "Höj din poäng"/Pulsen — grundarens uttryckligen flaggade kända avsteg — är fixad** (delad rutnätslinje i stället för kant+skugga per kort ovanpå `Card`-omslaget, samma mönster spred sig till Marknads Konkurrenter och Valideringens Antaganden som hade samma bugg). Medgrundarens pagehead är statisk igen ("Medgrundaren", inte det aktuella momentets etikett). Marknads Storleksfördelning/Konkurrenter fick sina `Card`-skal. Byggets sidospalt fick sin fasta 300px-bredd + en "steg 08"-not. Minnets pagehead bytte till "Namn, ålder, ort" + bio (artefaktens ordning, samma data).
+- **De fyra extra sidorna (Resan/Poäng/Pulsen/Juridik):** redan i gott skick sedan en tidigare session — bara Resans fasgap (24px→18px) och Poängs saknade sorteringsnot behövde rättas. Ärver typografi- och dubbelkantlinje-fixarna automatiskt via delade komponenter.
+- Ny i18n: `appShell.tagline`/`restartDemo`, `scorePage.estimatedMinutesUnit`/`suggestionsSortNote`, `buildPage.scopeStepNote`.
+- Verifierat vid varje commit: `pnpm typecheck`/`lint`/`test` (373 gröna, 36 skippade) och `pnpm build`. Manuell Playwright-verifiering (cachad installation, inget nytt beroende): alla nio `/demo/app`-sidorna klickade igenom på både sv och en via sidomenyns länkar, skärmdumpar tagna, inga konsolfel.
+
+### Vad som INTE kunde matchas (rapporterat, se `DESIGN.md` för full motivering)
+1. Artefaktens "Kundlistan" hör hemma på Marknad — hos oss lever den datan på Validering sedan en tidigare sessions hopslagning (`i18n/dictionary.ts:305`). En sidoombyggnad, inte en sektionsjustering — inte gjord.
+2. Validerings navräknare (artefaktens `S.svar`-siffra) byggdes inte — skulle krävt en ny datahämtning i det delade skalet för en decorativ siffra.
+3. `VerdictCard` byggdes inte om till artefaktens rikare `.verdict`-kort — delas av tre ställen, en egen större uppgift.
+4. Byggets grindrad visar bara byggstatus, inte artefaktens rubrik+beskrivning om huruvida underlaget är låst — den datan finns inte i `BuildData`.
+5. Tabelltypografi och mobilanpassning — samma två punkter en tidigare sessions `DESIGN.md`-post redan flaggade, oförändrat.
+6. Minnets "Härifrån kom idén"-kedjekort — ingen strukturerad data, samma godkända avgränsning som tidigare.
+
+### Beslut nästa session behöver känna till
+- **`ScorePanel`s poängtal bär nu `.font-numeric` igen** — det gamla "rör det inte utan att fråga"-beslutet i föregående sessions post gäller inte längre (grunden för undantaget, ett annat typsnitt bakom klassen, är borta). Inget kvar att fråga om här.
+- **`aside` i `AppShell.tsx` är nu `sticky top-0 h-screen`** med `pb-20` när `bottomBar` är satt — ett nytt mönster, inte bara en klassändring. Om en framtida sidfotskomponent läggs till i skalet, kontrollera att den ryms inom den paddningen.
+- **`SuggestionList`/`PulseCard`s rutnätslinje-mönster** (`gap-px` + `bg-slate-200`, fyllnadsceller för ofullständiga rader) är nu det etablerade sättet att visa ett kortrutnät inuti en `Card` utan dubbel kantlinje — återanvänd det, uppfinn inte en ny variant.
+- **Validering/Marknad-uppdelningen är en känd, olöst motsägelse mot artefakten** (se punkt 1 ovan) — om en framtida session får i uppdrag att åtgärda den, är det en flytt av hela kontaktstatustabellen (med dess tour-steg och tester), inte en enkel sektionsjustering.
+
+### Kända problem
+- **`/demo/app/<undersida>` kan redirecta tillbaka till `/demo/start` vid en hård, fräsch sidladdning** (`page.goto` rakt in på en nästlad route), trots att `onboardingDone:true` redan är korrekt persisterat i localStorage — en trolig Zustand-hydreringskapplöpning i `app/demo/app/layout.tsx`s onboarding-redirect-effekt. Reproducerar INTE vid vanlig SPA-navigering (klick på en sidomeny-länk, den här sessionens hela verifieringsmetod) eller vid navigering till `/demo/app` själv. Upptäckt under sessionen, inte skapad av den, inte undersökt vidare — utanför uppdraget (typografi/skal/sidor). Flagga och undersök `app/demo/app/layout.tsx` specifikt om nästa session ser samma sak.
