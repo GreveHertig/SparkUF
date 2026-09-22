@@ -242,6 +242,8 @@ export type Dictionary = {
     subtitle: string;
     breakdownTitle: string;
     suggestionsTitle: string;
+    /** Card-head-noten bredvid "Höj din poäng" (artefaktens `chead`-höger). */
+    suggestionsSortNote: string;
     gapType: {
       insufficient: string;
       contradicting: string;
@@ -249,6 +251,9 @@ export type Dictionary = {
     };
     pointsPerMinuteUnit: string;
     historyTitle: string;
+    /** Tidsuppskattningens enhet i förslagskortens fot (artefaktens `pill(s.tid)`),
+     * t.ex. "min" i "~15 min". */
+    estimatedMinutesUnit: string;
   };
   marketPage: {
     title: string;

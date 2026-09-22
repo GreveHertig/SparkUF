@@ -14,6 +14,10 @@ type PulseCardProps = {
   timestamp: string;
   source: Källa;
   dataType?: DataType;
+  /** Utan egen kant/skugga, för ett rutnät redan inneslutet i en `Card`
+   * (artefaktens `.pulse3` — en rutnätslinje mellan cellerna i stället för
+   * dubblerade kanter, se `SuggestionList`s samma mönster). */
+  bare?: boolean;
   className?: string;
 };
 
@@ -25,12 +29,13 @@ export function PulseCard({
   timestamp,
   source,
   dataType = "register",
+  bare = false,
   className,
 }: PulseCardProps) {
   const { t } = useI18n();
 
   return (
-    <div className={cn("rounded-md border border-slate-200 bg-white p-4 shadow-lg", className)}>
+    <div className={cn("bg-white p-4", !bare && "rounded-md border border-slate-200 shadow-lg", className)}>
       <div className="flex items-center justify-between">
         <Eyebrow>{category}</Eyebrow>
         <span className="text-xs text-slate-600">{timestamp}</span>

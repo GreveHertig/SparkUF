@@ -224,12 +224,14 @@ export const en = {
     subtitle: "Eight parts, every one sourced. The score is calculated in code and can be checked by hand.",
     breakdownTitle: "Breakdown",
     suggestionsTitle: "Raise your score",
+    suggestionsSortNote: "Sorted by points per effort",
     gapType: {
       insufficient: "Insufficient evidence",
       contradicting: "Contradicting evidence",
       structural: "Structural gap",
     },
     pointsPerMinuteUnit: "points/min",
+    estimatedMinutesUnit: "min",
     historyTitle: "Score history",
   },
   marketPage: {

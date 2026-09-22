@@ -224,12 +224,14 @@ export const sv = {
     subtitle: "Åtta delar, alla med källa. Poängen räknas i kod och går att räkna för hand.",
     breakdownTitle: "Nedbrytning",
     suggestionsTitle: "Höj din poäng",
+    suggestionsSortNote: "Sorterat efter poäng per insats",
     gapType: {
       insufficient: "Otillräckligt underlag",
       contradicting: "Motsägande underlag",
       structural: "Strukturell lucka",
     },
     pointsPerMinuteUnit: "poäng/min",
+    estimatedMinutesUnit: "min",
     historyTitle: "Poängens historik",
   },
   marketPage: {

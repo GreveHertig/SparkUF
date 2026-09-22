@@ -2,8 +2,6 @@
 
 import { Card } from "@/components/ui/Card";
 import { DataFact } from "@/components/ui/DataFact";
-import { EditorialHeading } from "@/components/ui/EditorialHeading";
-import { Eyebrow } from "@/components/ui/Eyebrow";
 import { LockedState } from "@/components/ui/LockedState";
 import { JourneyRail } from "@/components/spark/JourneyRail";
 import { NextStepCard } from "@/components/spark/NextStepCard";
@@ -58,20 +56,11 @@ export function AppHome({
   const totalPartsCount = unlockedPartsCount + data.score.lockedParts.length;
 
   return (
-    <div className="mx-auto flex max-w-[1200px] flex-col gap-[18px]">
-      <div>
-        <Eyebrow>
-          {t.homePage.todayLabel} · {formatDate(data.todayIso, locale)}
-        </Eyebrow>
-        <EditorialHeading as="h1" className="mt-2">
-          {t.homePage.heroHeadingBefore}{" "}
-          <EditorialHeading.Em>{t.homePage.heroHeadingEmphasis}</EditorialHeading.Em>{" "}
-          {t.homePage.heroHeadingAfter}
-        </EditorialHeading>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-6">
+    // Artefaktens vyHem har ingen egen pagehead/rubrik — sidan går rakt in i
+    // hero-griden, handlingskortets egen rubrik bär hela vikten.
+    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
+      <div className="grid grid-cols-1 gap-[18px] lg:grid-cols-[2fr_316px]">
+        <div className="flex flex-col gap-[18px]">
           <div data-tour-id="hem-act">
             <NextStepCard
               actionPillLabel={t.homePage.actNowLabel}
@@ -90,7 +79,7 @@ export function AppHome({
           <JourneyRail steps={data.journeySteps} stepHref={journeyStepHref} />
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-[18px]">
           <div data-tour-id="hem-score">
             <ScorePanel snapshot={data.score} title={t.appShell.nav.score} history={data.scoreHistory} />
           </div>
@@ -126,7 +115,7 @@ export function AppHome({
         </div>
       </div>
 
-      <Card title={t.scorePage.suggestionsTitle}>
+      <Card title={t.scorePage.suggestionsTitle} right={<span className="text-xs text-slate-500">{t.scorePage.suggestionsSortNote}</span>}>
         <SuggestionList suggestions={data.suggestions} />
       </Card>
 
@@ -134,7 +123,10 @@ export function AppHome({
         {data.pulseSignals.length === 0 ? (
           <LockedState unlockHint={t.homePage.notInThisScenario} />
         ) : (
-          <div data-tour-id="hem-pulse" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div
+            data-tour-id="hem-pulse"
+            className="grid grid-cols-1 gap-px overflow-hidden rounded-sm bg-slate-200 sm:grid-cols-3"
+          >
             {data.pulseSignals.map((signal, index) => (
               <PulseCard
                 key={`${signal.headline}-${index}`}
@@ -143,7 +135,11 @@ export function AppHome({
                 whyItMatters={signal.whyItMatters}
                 timestamp={signal.timestamp}
                 source={signal.source}
+                bare
               />
+            ))}
+            {Array.from({ length: (3 - (data.pulseSignals.length % 3)) % 3 }).map((_, index) => (
+              <div key={`filler-${index}`} aria-hidden="true" className="hidden bg-white sm:block" />
             ))}
           </div>
         )}
