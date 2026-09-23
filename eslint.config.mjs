@@ -21,6 +21,17 @@ const mailPattern = {
     "Sändning är avstängd tills Theodor och grundaren uttryckligen sagt ja. Se docs/moduler/utskick-och-svar.md, Sändspärr.",
 };
 
+// Registergrinden (docs/moduler/registret.md, "Säkerhet" punkt a): transporterna
+// anropar själva assertRegistryAccessAllowed(), och bara liveadaptern (och
+// tester) får importera dem, så att en framtida route inte når registret förbi
+// adaptern.
+const registryTransportPattern = {
+  group: ["**/lib/server/bolagsverket", "**/lib/server/scb", "./bolagsverket", "./scb"],
+  message:
+    "Registertransporterna importeras bara av adapters/live/RegistryProvider.ts. Se docs/moduler/registret.md, Säkerhet.",
+};
+const registryTransportImporters = ["adapters/live/RegistryProvider.ts", "**/*.test.ts"];
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -35,6 +46,7 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             mailPattern,
+            registryTransportPattern,
             {
               group: [
                 "@/adapters/live",
@@ -50,9 +62,17 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Sändspärr: se mailPattern ovan. Gäller alla filer utom demofilerna, som har
-  // egen regel (flat config ersätter regelns inställningar, slår inte ihop dem).
+  // Sändspärr och registergrinden: se mailPattern och registryTransportPattern
+  // ovan. Gäller alla filer utom demofilerna, som har egen regel (flat config
+  // ersätter regelns inställningar, slår inte ihop dem).
   {
+    ignores: ["app/demo/**", "adapters/demo/**", ...registryTransportImporters],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [mailPattern, registryTransportPattern] }],
+    },
+  },
+  {
+    files: registryTransportImporters,
     ignores: ["app/demo/**", "adapters/demo/**"],
     rules: {
       "no-restricted-imports": ["error", { patterns: [mailPattern] }],
