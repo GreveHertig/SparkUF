@@ -9,10 +9,11 @@ Skriven 2026-09-18 på branchen `dataspiken`.
 De två punkter som tidigare stod som olösta är avgjorda nog för att gå
 vidare med `RegistryProvider` (Fas 1):
 
-1. **Licens för namngivna företag: Verifierat.** Erik har själv läst
-   Bolagsverkets sida om värdefulla datamängder (https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder.5294.html,
-   läst av Erik 2026-09-20). Lagring, visning och vidaredistribution av
-   bolagsdata är tillåtet. Undantag: enskilda firmors personuppgifter
+1. **Licens för namngivna företag: Sekundärt, blockerar exponering.**
+   Nedgraderat 2026-09-23 från Verifierat: det som lästes var Bolagsverkets informationssida om värdefulla datamängder, inte villkorstexten, och ingen ordalydelse är citerad. Licensgrinden (`docs/moduler/registret.md`) gäller fullt ut. Erik har läst Bolagsverkets sida om värdefulla datamängder
+   (https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder.5294.html,
+   2026-09-20), och enligt den är lagring, visning och vidaredistribution av
+   bolagsdata tillåtet. Undantag: enskilda firmors personuppgifter
    (GDPR) får inte profileras eller samköras, och reklamspärr ska
    respekteras. Rekommendationen står kvar: visa bara namngivna listor för
    **aktiebolag utan reklamspärr**, eftersom det är precis vad undantagen
@@ -40,9 +41,10 @@ vidare med `RegistryProvider` (Fas 1):
 - **Ratsit: vi går inte vidare.** Se avsnitt 5.
 - **Två saker är inte lösta av den här spiken och kan ändra planen:**
   1. ~~Bolagsverkets användarvillkor är inte lästa av en människa.~~
-     **Avgjort 2026-09-20:** Erik har läst Bolagsverkets sida om värdefulla
-     datamängder. Licensen för namngivna företag är **Verifierat**, med
-     undantag för enskilda firmors personuppgifter och reklamspärr. Se
+     **Delvis 2026-09-20, nedgraderat 2026-09-23:** Erik har läst
+     Bolagsverkets sida om värdefulla datamängder, men inte villkorstexten.
+     Licensen för namngivna företag är **Sekundärt** (tillåtet enligt sidan,
+     med undantag för enskilda firmors personuppgifter och reklamspärr). Se
      avsnitt 2. Kvarstår som två olösta frågor:
   1. ~~Det är oklart om Bolagsverkets API går att söka på SNI-kod.~~
      **Avgjort 2026-09-21:** det går inte. API:et har bara fyra endpoints
@@ -71,7 +73,7 @@ citaten i avsnitt 4 mot originalet innan de används i något beslut.
 |---|---|---|---|
 | **Kostnad** | Gratis, inget avtal (Verifierat: Bolagsverkets API-sida, läst av Erik 2026-09-19, sidans datum 2026-06-30, och EU-förordningen) | Ingen publik prissättning (Verifierat). Troligen betald (Osäkert) | Styckpris per dokument, t.ex. registreringsbevis ca 119 kr inkl. moms (Sekundärt, ur sökresultat) |
 | **Åtkomst** | Kundanmälan, nycklar via e-post/SMS (Sekundärt) | Kontaktformulär, developerportal (Verifierat) | Oklart. Ingen publik utvecklaråtkomst hittad |
-| **Licens/villkor** | Öppen licens, CC BY 4.0 eller mindre restriktiv (Verifierat i förordningen). Lagring, visning och vidaredistribution tillåtet; enskilda firmors personuppgifter får inte profileras/samköras och reklamspärr ska respekteras (Verifierat: Bolagsverkets sida, läst av Erik 2026-09-20) | Systematisk lagring förbjuden utan skriftligt medgivande (Verifierat, se 4) | Automatiserad hämtning verkar förbjuden (Sekundärt) |
+| **Licens/villkor** | Öppen licens, CC BY 4.0 eller mindre restriktiv (Verifierat i förordningen). Lagring, visning och vidaredistribution tillåtet; enskilda firmors personuppgifter får inte profileras/samköras och reklamspärr ska respekteras (Sekundärt: Bolagsverkets informationssida, läst av Erik 2026-09-20, villkorstexten ej citerad) | Systematisk lagring förbjuden utan skriftligt medgivande (Verifierat, se 4) | Automatiserad hämtning verkar förbjuden (Sekundärt) |
 | **Lämpar sig för MVP** | Ja | Nej, inte utan avtal | Nej |
 
 ## 2. Bolagsverket + SCB — värdefulla datamängder
@@ -121,7 +123,8 @@ kräver avgiftsfri tillgång (Verifierat). Sidan tar inte upp visning eller
 lagring av namngivna företag, se nedan.
 
 ### Får vi visa och lagra namngivna företag? (frågan från Erik)
-**Svar: ja för företag, med två undantag. Verifierat** (Bolagsverkets sida, läst av Erik 2026-09-20).
+**Svar: troligen ja för företag, med två undantag. Sekundärt** (Bolagsverkets informationssida, läst av Erik 2026-09-20).
+Nedgraderat 2026-09-23 från Verifierat: det som lästes var Bolagsverkets informationssida om värdefulla datamängder, inte villkorstexten, och ingen ordalydelse är citerad. Licensgrinden (`docs/moduler/registret.md`) gäller fullt ut.
 
 Det som är verifierat:
 - Förordning (EU) 2023/138 artikel 4 kräver att datamängderna är
@@ -134,7 +137,8 @@ Det som är verifierat:
 - Förordningen tillåter "kompletterande villkor för återanvändning av
   personuppgifter där det är tillämpligt" (Verifierat).
 
-Verifierat av Erik på Bolagsverkets egen sida
+Enligt Bolagsverkets informationssida, läst av Erik (Sekundärt; sidan är
+inte villkorstexten)
 (https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder.5294.html,
 läst 2026-09-20): lagring, visning och vidaredistribution av bolagsdata är
 tillåtet, med två undantag:
@@ -155,8 +159,11 @@ AI-sökningar) och som stämmer med ovan:
 Det som **inte** är löst:
 - Sidans exakta ordalydelse är inte kopierad hit. Kontrollera detaljer som
   källhänvisning när kundanmälan godkänns. Blockerar inte bygget.
-- **Lagring och cachning** (t.ex. i Supabase) omfattas av den verifierade
-  tillåtelsen ovan.
+- **Villkorstexten är inte läst.** För att nå Verifierat: en människa läser
+  Bolagsverkets faktiska villkor (troligen på API-sidan eller vid
+  kundanmälan) och citerar ordalydelsen här med URL och datum.
+- **Lagring och cachning** (t.ex. i Supabase) är tillåtet enligt
+  informationssidan (Sekundärt), inte bekräftat mot villkoren.
 - **Personuppgifter är den verkliga risken, inte licensen.** Enskilda
   firmor är fysiska personer, och SCB:s register innehåller uttryckligen
   "fysiska personer som har ett inregistrerat företagsnamn och/eller är
@@ -449,7 +456,7 @@ sannolikt inget.
 
 | # | Fråga | Vem/hur | Blockerar |
 |---|---|---|---|
-| 1 | ~~Bolagsverkets faktiska användarvillkor (lagring, vidareutnyttjande)~~ **Avgjort, Verifierat 2026-09-20** (Erik läste Bolagsverkets sida om värdefulla datamängder): lagring, visning och vidaredistribution tillåtet; enskilda firmors personuppgifter får inte profileras/samköras; reklamspärr ska respekteras. Kvar: detaljer som källhänvisning | Erik vid godkänd kundanmälan | **Inte längre ett hinder för exponering på licensgrunden.** Licensgrinden (`docs/moduler/registret.md`) ligger kvar tills Erik själv öppnar den. Fråga 4 nedan gäller fortfarande |
+| 1 | Bolagsverkets faktiska användarvillkor (lagring, vidareutnyttjande). **Sekundärt** (nedgraderat 2026-09-23 från Verifierat: Erik läste 2026-09-20 informationssidan om värdefulla datamängder, inte villkorstexten; ingen ordalydelse citerad). Enligt sidan: lagring, visning och vidaredistribution tillåtet; enskilda firmors personuppgifter får inte profileras/samköras; reklamspärr ska respekteras. Kvar: detaljer som källhänvisning | Erik: läs villkorstexten och citera den här | **Exponering** (licensgrinden, `docs/moduler/registret.md`). Internt bygge och test blockeras inte. Fråga 4 nedan gäller fortfarande |
 | 2 | ~~Kan Bolagsverkets API söka på SNI, eller krävs SCB/filer?~~ **Avgjort, bekräftat 2026-09-21:** nej. Bara fyra endpoints, ingen sökning eller listning. `searchCompanies` måste bygga på SCB:s statistikdatabas eller nedladdningsbara filer. Nästa steg: undersök SCB-spåret (fråga 7) | Undersök SCB:s databas och filer | `searchCompanies` |
 | 3 | Vilka iXBRL-taggar finns för små bolag, och täckning | Spik med nycklar | `revenueKsek`, `growthSharePercent`, median |
 | 4 | Får namngivna aktiebolag lagras/visas, och hur hanteras enskilda firmor och reklamspärr? | Juridisk koll + vuxen/handledare | Steg 04–05 i live |
@@ -578,7 +585,7 @@ Källor (Sekundärt, hämtade 2026-09-21 som sammanfattat utdrag):
 ## 7. Källor
 
 Verifierat (läst den här sessionen, som sammanfattat utdrag):
-- Bolagsverket, värdefulla datamängder, licens och användning (läst av Erik 2026-09-20): https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder.5294.html
+- Bolagsverket, värdefulla datamängder, informationssida (läst av Erik 2026-09-20; licensslutsatsen därifrån är Sekundärt, inte villkorstext): https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder.5294.html
 - Bolagsverket, API för värdefulla datamängder (läst av Erik 2026-09-19, sidans datum 2026-06-30): https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder/apiforvardefulladatamangder.5513.html
 - Förordning (EU) 2023/138: https://eur-lex.europa.eu/legal-content/SV/TXT/?uri=CELEX:32023R0138
 - SCB, värdefulla datamängder, grundläggande företagsinformation: https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/vardefulla-datamangder--grundlaggande-foretagsinformation/

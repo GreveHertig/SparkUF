@@ -1257,6 +1257,8 @@ Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
 
 ### Inga blockerare kvar för Fas 1
 1. **Licens för namngivna företag: Verifierat (Erik läste https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder.5294.html 2026-09-20).** Lagring, visning och vidaredistribution av bolagsdata tillåtet; enskilda firmors personuppgifter (GDPR) får inte profileras/samköras och reklamspärr ska respekteras. Rekommendationen står kvar: namngivna listor bara för aktiebolag utan reklamspärr. Uppdaterad i `docs/dataspiken.md` (status, kort svar, avsnitt 1, 2, 6, 7).
+   *Senare (2026-09-23):* nedgraderat till **Sekundärt**. Sidan är en
+   informationssida, inte villkorstexten, och ingen ordalydelse citerades.
 2. **Mottagarnas kontaktuppgifter (steg 05): beslut.** Hunter.io valdes bort (gratisnivån delar 50 krediter per hela kontot/månad). Egen mejlsökning med Tavily (sök "Kontakta oss"-sidan) + Gemini (extrahera adressen). Grundaren bekräftar/redigerar alltid adressen före utskick. **Beslut för Fas 2 (`OutreachProvider`), byggs inte nu.**
 
 ### Klart
@@ -1267,7 +1269,7 @@ Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
 
 ### Var vi står / vad som är kvar innan nästa session
 - **Kundanmälan till Bolagsverket är inte skickad än** (Erik 2026-09-19; tidigare stod här felaktigt att den väntade på godkännande).
-- **Erik:** kontrollera detaljer (t.ex. källhänvisning) när nycklarna kommer (blockerar inte Fas 1). Licensfrågan är Verifierad 2026-09-20.
+- **Erik:** kontrollera detaljer (t.ex. källhänvisning) när nycklarna kommer (blockerar inte Fas 1). Licensfrågan är Verifierad 2026-09-20. *Senare (2026-09-23): nedgraderad till Sekundärt, se ovan.*
 - **Fas 2:** bygg `OutreachProvider` med Tavily + Gemini för mottagarnas e-post (punkt 2 ovan).
 - **Grundaren + partner + vuxen/handledare:** Allabolag/UC är ett öppet avtalsbeslut. Villkoren förbjuder regelbunden, systematisk lagring utan skriftligt medgivande. Ingen kontakt tas och inget formulär skickas innan dess.
 - **Först därefter:** en spik med riktiga nycklar (ordning i `dataspiken.md` avsnitt 3), sedan bygg enligt `docs/bygga-en-modul.md`.
@@ -1295,7 +1297,7 @@ Byggd enligt `docs/bygga-en-modul.md`, plan godkänd 2026-09-19 (beslut D1–D7)
 **Villkor (blockerande för exponering):** ingen annan än Erik och Theodor får se
 eller använda liveregisterdata (ingen demo för lärare, investerare eller andra
 UF-företag) förrän `docs/dataspiken.md` §6 fråga 1 är uppgraderad från
-Sekundärt till Verifierat. **Uppfyllt 2026-09-20** (Erik läste Bolagsverkets sida); licensgrinden i koden ligger kvar tills Erik öppnar den, och juridisk koll av fråga 4 (aktiebolag/reklamspärr) återstår. Internt utvecklingsarbete och
+Sekundärt till Verifierat. **Uppfyllt 2026-09-20** (Erik läste Bolagsverkets sida; *senare, 2026-09-23: inte uppfyllt, nedgraderat till Sekundärt, villkorstexten är inte läst*); licensgrinden i koden ligger kvar tills Erik öppnar den, och juridisk koll av fråga 4 (aktiebolag/reklamspärr) återstår. Internt utvecklingsarbete och
 tester är okej.
 
 ### Klart
@@ -2049,3 +2051,29 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 - Inga nya utöver den redan flaggade `RegistryProvider`/
   `ProjectRepository`-luckan ovan (som är en förutsättning för resultatet,
   inte en bugg i den här sessionens kod).
+
+## Licensfrågan nedgraderad till Sekundärt (klar, gren `prototyp`)
+
+### Klart
+- **`docs/dataspiken.md`:** licensen för namngivna företag (§6 fråga 1,
+  "Status inför Fas 1", "Kort svar", avsnitt 1 och 2, källistan) sänkt från
+  Verifierat till **Sekundärt**. Underlaget 2026-09-20 var Bolagsverkets
+  informationssida om värdefulla datamängder, inte villkorstexten, och
+  ingen ordalydelse citerades. EU-förordningens krav (öppen licens) och
+  API-sidans "inget avtal, avgiftsfritt" står kvar som Verifierat.
+- **`docs/beslut.md`:** beslutet infört under 2026-09-23.
+
+### Återstår
+- **Erik:** läs Bolagsverkets faktiska villkor (troligen på sidan API för
+  värdefulla datamängder eller vid kundanmälan) och citera ordalydelsen i
+  dataspiken med URL och datum. Först då Verifierat, och först därefter får
+  licensgrinden i `docs/moduler/registret.md` lyftas.
+
+### Kända problem
+- Claude Code kom inte åt `bolagsverket.se`: curl fick timeout på port 443,
+  WebFetch misslyckades utan fel, och Chrome-tillägget var inte anslutet.
+  Samma domänproblem som i Juridisk koll-sessionen.
+
+### Beslut nästa session behöver känna till
+- **Verifierat kräver citerad villkorstext.** En informationssida eller ett
+  fungerande API räcker inte för att lyfta licensgrinden.

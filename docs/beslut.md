@@ -88,3 +88,12 @@ idégenomlysning, så "antagandena med utfall" saknas för henne). Jonas:
 4 håller, 3 tunt, 2 saknas (Kunden och problemet, Konkurrensen) — en
 direkt konsekvens av att hans resa är byggd i bredd och att Registret/
 Utskicket/Domen aldrig byggdes ut för hans persona.
+
+## 2026-09-23
+
+**Licensen för namngivna företag nedgraderad från Verifierat till Sekundärt.**
+Erik 2026-09-20 hade läst Bolagsverkets informationssida om värdefulla
+datamängder, inte villkorstexten, och ingen ordalydelse citerades. Ett
+fungerande API eller en informationssida är inte lästa villkor. Licensgrinden
+(`docs/moduler/registret.md`) lyfts först när en människa läst villkoren och
+citerat dem i `docs/dataspiken.md`.
