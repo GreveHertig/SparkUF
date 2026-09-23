@@ -164,3 +164,7 @@ Samma innehåll nås genom att klicka **Hoppa till steg** i demoraden och
 välja beat rakt av — stoppens rubriker ovan anger vilket steg (och
 "före/körning/efter") som hör till. Poäng och citat är identiska, bara
 utan spotlight/pil.
+Kör aldrig rundturen från Jonas — den finns bara för Sara.
+Öppna aldrig en djup adress direkt, och ladda inte om sidan mitt i en visning. Starta alltid från början och klicka dig fram. 
+## Regler vid visning
+Visa aldrig liveregisterdata för någon utanför Theo och Erik.
