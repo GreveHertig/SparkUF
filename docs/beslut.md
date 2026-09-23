@@ -112,3 +112,9 @@ fråga 4).
 öppning kräver alla tre: transporten skriven, SCB:s villkor lästa (efter 30
 september 2026) och dataspiken §6 fråga 4 avgjord med handledare. Se
 `docs/moduler/registret.md`, "Licensgrind".
+
+**Supabase-projekten: SparkUF2 är utveckling och beta.**
+SparkUF2 (Supabase, Frankfurt) är utvecklings- och betaprojektet trots
+PRODUCTION-märkningen i Supabase. Före lanseringen 30 november skapas
+ett separat produktionsprojekt med samma migreringar. Testanvändarna
+test-a och test-b är borttagna 2026-09-23.
