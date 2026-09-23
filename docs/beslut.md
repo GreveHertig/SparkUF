@@ -106,3 +106,9 @@ bearbetning inom personuppgifts- och sekretesslag, och är citerat i
 i koden lyfts separat, av Erik. De tidigare påstådda "undantagen" om enskilda
 firmor och reklamspärr fanns inte i texten; de hör till GDPR-frågan (§6
 fråga 4).
+
+**Licensgrinden förblir stängd för alla utom Erik och Theodor.** En påbörjad
+öppning (allowlisten borttagen) förkastades innan den committades. Full
+öppning kräver alla tre: transporten skriven, SCB:s villkor lästa (efter 30
+september 2026) och dataspiken §6 fråga 4 avgjord med handledare. Se
+`docs/moduler/registret.md`, "Licensgrind".

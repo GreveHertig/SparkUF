@@ -108,10 +108,20 @@ lagring av namngivna företag. Internt utvecklingsarbete och tester är okej.
 **Licensvillkoret är uppfyllt 2026-09-23.** Erik läste Bolagsverkets text
 "Användning av värdefulla data" och den är ordagrant citerad i
 `docs/dataspiken.md` avsnitt 2 och §6 fråga 1 (Verifierat). Grinden i koden är
-**fortfarande stängd**: den lyfts bara när Erik själv väljer det, och då med
-§6 fråga 4 i åtanke. Transporten (`lib/server/scb.ts`, `bolagsverket.ts`) är
-dessutom oskriven, och SCB:s företagsregister-API har egna villkor som inte
-täcks av Bolagsverkets text.
+**fortfarande stängd för alla utom Erik och Theodor** (flagga + allowlist med
+bara de två). Licensen räcker inte ensam för att öppna den.
+
+**Full öppning kräver alla tre (Eriks beslut 2026-09-23):**
+1. **Transporten är skriven**: `lib/server/scb.ts` och `lib/server/bolagsverket.ts`
+   gör riktiga anrop och är provkörda.
+2. **SCB:s villkor är lästa** för företagsregister-API:t, efter 30 september
+   2026, och citerade ordagrant i `docs/dataspiken.md` på samma sätt som
+   Bolagsverkets.
+3. **§6 fråga 4 är avgjord med handledare**: enskilda firmor, reklamspärr och
+   GDPR, beslutet dokumenterat i `docs/dataspiken.md`.
+
+Först när alla tre är klara får `REGISTRY_ALLOWED_USER_IDS` utökas eller
+grinden tas bort, i en commit som också uppdaterar det här avsnittet.
 
 **Mekanism (fyra lager, inget ensamt tillräckligt):**
 1. Ingen liveyta: ingen `/app/marknad`-route finns, `screens/` och routes rörs inte. Demon använder fiktiv data.
@@ -119,11 +129,8 @@ täcks av Bolagsverkets text.
 3. CI-vakt i `ports/stubStatus.test.ts` (blocket "Licensvakt: Registret nekar utan öppen grind"): testerna blir röda om grinden tas bort eller försvagas.
 4. Ingen lagring: inget skrivs till `public.companies` förrän licensen är Verifierat.
 
-**Så lyfts grinden:** en människa läser Bolagsverkets villkor, `docs/dataspiken.md`
-§6 fråga 1 ändras till Verifierat i en commit som också uppdaterar det här
-avsnittet, och först därefter får `REGISTRY_ALLOWED_USER_IDS` utökas eller
-grinden tas bort. Reglerna för enskilda firmor/reklamspärr (§6 fråga 4,
-Juridisk koll + vuxen/handledare) är en separat, fortfarande öppen fråga.
+**Så lyfts grinden:** se "Full öppning kräver alla tre" ovan. Licensdelen
+(§6 fråga 1) är klar sedan 2026-09-23; de tre kraven där återstår.
 
 ## Säkerhet
 
@@ -191,7 +198,7 @@ Demoadaptern är klar och används av `/demo/app/marknad` och
 2. Skriv transporten och skriv om `lib/server/registrySchemas.ts` mot det
    verkliga svaret; byt `RegistryProvider.live.test.ts` mot riktiga anrop.
    Respektera SCB:s gränser (2 000 rader/anrop, 10 anrop/10 s). Adaptern kastar `RegistryTransportError` om ett svar når 2 000 rader (troligen avkortat) tills paginering finns.
-3. ~~Läs Bolagsverkets villkor (Verifierat)~~ klart 2026-09-23. Kvar: Erik beslutar om och när licensgrinden lyfts.
+3. ~~Läs Bolagsverkets villkor (Verifierat)~~ klart 2026-09-23. Grinden lyfts först när de tre kraven under "Licensgrind" är uppfyllda.
 4. Portens `employees`/`revenueKsek` är icke-nullbara, så bolag med okänt värde
    utelämnas i dag. Överväg nullbara fält när en skärm ska visa dem.
 5. Enskilda firmor/reklamspärr med Juridisk koll + vuxen/handledare
