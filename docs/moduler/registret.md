@@ -189,6 +189,20 @@ Demoadaptern är klar och används av `/demo/app/marknad` och
   `RegistryInputError` (ogiltig indata), `RegistryTransportError` (transport
   eller oväntat svar). Ingen ärver `NotImplementedError`.
 
+## Öppna frågor (avgörs före vecka 2)
+
+1. **Vem skriver till `registry_cache`?** I dag skriver användaren själv
+   (insert/update-policy för `authenticated` i
+   `supabase/migrations/20260923120000_registry_cache.sql`). Det låter en
+   användare förfalska registerdata i sin egen cache, vilket kan påverka
+   Marknad-poängen och affärsplanen. **Alternativ:** bara servern skriver
+   (servicenyckel isolerad i `lib/server/`, inga insert/update-policies för
+   `authenticated`). **Beslut tas av Erik innan transporten skrivs.**
+2. **Utgångna rader rensas aldrig.** `expires_at` sätter ett tak på 7 dagar,
+   men ingenting tar bort raderna efter det. Lägg till rensning, t.ex. vid
+   läsning eller som ett schemalagt jobb, så att data inte sparas längre än
+   7 dagar.
+
 ## Kvar innan modulen är klar
 
 0. **Senare session:** koppla `sniCode` automatiskt till projektets bransch (beslutat 2026-09-19 att lämna den valfri tills dess).
