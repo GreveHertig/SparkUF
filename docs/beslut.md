@@ -97,3 +97,12 @@ datamängder, inte villkorstexten, och ingen ordalydelse citerades. Ett
 fungerande API eller en informationssida är inte lästa villkor. Licensgrinden
 (`docs/moduler/registret.md`) lyfts först när en människa läst villkoren och
 citerat dem i `docs/dataspiken.md`.
+
+**Licensen för namngivna företag Verifierad, samma dag.** Erik klistrade in
+Bolagsverkets sida om värdefulla datamängder ordagrant. Stycket "Användning
+av värdefulla data" tillåter fri kommersiell användning, modifiering och
+bearbetning inom personuppgifts- och sekretesslag, och är citerat i
+`docs/dataspiken.md`. Licensvillkoret för grinden är därmed uppfyllt. Grinden
+i koden lyfts separat, av Erik. De tidigare påstådda "undantagen" om enskilda
+firmor och reklamspärr fanns inte i texten; de hör till GDPR-frågan (§6
+fråga 4).

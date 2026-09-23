@@ -105,6 +105,14 @@ dvs. tills en människa faktiskt läst Bolagsverkets egna villkor om
 avgiftsfritt") är redan verifierad men säger ingenting om visning eller
 lagring av namngivna företag. Internt utvecklingsarbete och tester är okej.
 
+**Licensvillkoret är uppfyllt 2026-09-23.** Erik läste Bolagsverkets text
+"Användning av värdefulla data" och den är ordagrant citerad i
+`docs/dataspiken.md` avsnitt 2 och §6 fråga 1 (Verifierat). Grinden i koden är
+**fortfarande stängd**: den lyfts bara när Erik själv väljer det, och då med
+§6 fråga 4 i åtanke. Transporten (`lib/server/scb.ts`, `bolagsverket.ts`) är
+dessutom oskriven, och SCB:s företagsregister-API har egna villkor som inte
+täcks av Bolagsverkets text.
+
 **Mekanism (fyra lager, inget ensamt tillräckligt):**
 1. Ingen liveyta: ingen `/app/marknad`-route finns, `screens/` och routes rörs inte. Demon använder fiktiv data.
 2. `lib/server/registryAccess.ts`: kräver både `REGISTRY_LIVE_ENABLED=true` och att inloggad `user.id` finns i `REGISTRY_ALLOWED_USER_IDS`. Avstängd som standard. Anropas som första sats i båda portmetoderna. Nekat ger `RegistryLockedError` (visas som `ComingSoon`) innan något externt anrop görs.
@@ -183,7 +191,7 @@ Demoadaptern är klar och används av `/demo/app/marknad` och
 2. Skriv transporten och skriv om `lib/server/registrySchemas.ts` mot det
    verkliga svaret; byt `RegistryProvider.live.test.ts` mot riktiga anrop.
    Respektera SCB:s gränser (2 000 rader/anrop, 10 anrop/10 s). Adaptern kastar `RegistryTransportError` om ett svar når 2 000 rader (troligen avkortat) tills paginering finns.
-3. Läs Bolagsverkets villkor (Verifierat) och lyft licensgrinden.
+3. ~~Läs Bolagsverkets villkor (Verifierat)~~ klart 2026-09-23. Kvar: Erik beslutar om och när licensgrinden lyfts.
 4. Portens `employees`/`revenueKsek` är icke-nullbara, så bolag med okänt värde
    utelämnas i dag. Överväg nullbara fält när en skärm ska visa dem.
 5. Enskilda firmor/reklamspärr med Juridisk koll + vuxen/handledare
