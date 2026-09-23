@@ -14,12 +14,14 @@ import { liveBuildProvider } from "@/adapters/live/BuildProvider";
 import { liveVerdictProvider } from "@/adapters/live/VerdictProvider";
 
 /**
- * Vakt, inte kontrakt: de 12 moduler som enligt docs/moduler/*.md fortfarande
- * har status "stub" ska fortsätta kasta NotImplementedError. Så fort en
+ * Vakt, inte kontrakt: de moduler vars liveadapter fortfarande är en stub
+ * rakt igenom ska fortsätta kasta NotImplementedError. Så fort en
  * modulsession bygger en av dem klart går den här listan sönder av sig
  * själv — ta bort raden HÄR bara samtidigt som du sätter status "klar" i
  * docs/moduler/<modul>.md och docs/status.md (docs/bygga-en-modul.md).
- * Juridisk koll är redan byggd och står därför inte i listan.
+ * Utskick och svar kastar OutreachSendDisabledError (en NotImplementedError)
+ * så länge sändspärren gäller. Byggda eller påbörjade moduler står inte här:
+ * delvis byggda i PARTIELLA_STUBBAR nedan, grindade i Licens-/Grindvakten.
  */
 const STILL_STUBS: { module: string; call: () => Promise<unknown> }[] = [
   { module: "Medgrundaren", call: () => liveCofounderAgent.sendMessage("hej", [], "sv") },
@@ -66,7 +68,7 @@ const PARTIELLA_STUBBAR: { module: string; metod: string; call: () => Promise<un
 ];
 
 describe("Stub-vakt: enstaka metoder i annars påbörjade liveadaptrar kastar fortfarande NotImplementedError", () => {
-  it.each(PARTIELLA_STUBBAR)("$module.$metod", async ({ call }) => {
+  it.each(PARTIELLA_STUBBAR)("$module: $metod", async ({ call }) => {
     await expect(call()).rejects.toBeInstanceOf(NotImplementedError);
   });
 });

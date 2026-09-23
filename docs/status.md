@@ -251,6 +251,9 @@ planner-agenten och godkända av grundaren innan kod skrevs.
   slutar kasta `NotImplementedError` utan att raden tagits bort här (vilket
   tvingar fram en samtidig uppdatering av `docs/moduler/<modul>.md` och
   `docs/status.md`, se `docs/bygga-en-modul.md` steg 7 och 10).
+  *Senare:* listan är i dag 7 helstubbar (Medgrundaren, Webbresearch,
+  Pulsen, Simuleringar, Utskick och svar, Bygg, Domen) plus 3 partiella metoder
+  (`PARTIELLA_STUBBAR`); övriga har byggts eller grindats sedan dess.
 - **`docs/moduler/*.md` — alla 12 moduler har nu ett dokument.** De två
   prioriterade (`registret.md`, `utskick-och-svar.md`) skrevs först och mest
   utförligt. De nio återstående: `profil.md`, `projekt-och-ide.md`,
@@ -268,6 +271,8 @@ planner-agenten och godkända av grundaren innan kod skrevs.
   kastar sedan `NotImplementedError` — ingen riktig sökning än.
   `TAVILY_API_KEY` tillagd i `.env.example` utan värde. Gemini-klienten
   rördes inte (redan klar sedan Juridisk koll-sessionen).
+  *Senare:* inte längre ett skelett — byggd till riktig klient i
+  "Modul: Utskick — mejlsökning och utkast" nedan.
 - **`docs/bygga-en-modul.md`:** generell steg-för-steg-guide (branch →
   läs kontraktet → bygg → nycklar → tre testlager → extern data är data →
   granskning → dokumentation → avslutning → checklista), med Juridisk koll

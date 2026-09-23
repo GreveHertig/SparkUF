@@ -108,7 +108,7 @@ lagring av namngivna företag. Internt utvecklingsarbete och tester är okej.
 **Mekanism (fyra lager, inget ensamt tillräckligt):**
 1. Ingen liveyta: ingen `/app/marknad`-route finns, `screens/` och routes rörs inte. Demon använder fiktiv data.
 2. `lib/server/registryAccess.ts`: kräver både `REGISTRY_LIVE_ENABLED=true` och att inloggad `user.id` finns i `REGISTRY_ALLOWED_USER_IDS`. Avstängd som standard. Anropas som första sats i båda portmetoderna. Nekat ger `RegistryLockedError` (visas som `ComingSoon`) innan något externt anrop görs.
-3. CI-vakt i `ports/stubStatus.test.ts` (`LICENSGRINDADE`): testerna blir röda om grinden tas bort eller försvagas.
+3. CI-vakt i `ports/stubStatus.test.ts` (blocket "Licensvakt: Registret nekar utan öppen grind"): testerna blir röda om grinden tas bort eller försvagas.
 4. Ingen lagring: inget skrivs till `public.companies` förrän licensen är Verifierat.
 
 **Så lyfts grinden:** en människa läser Bolagsverkets villkor, `docs/dataspiken.md`
