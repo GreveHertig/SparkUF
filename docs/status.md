@@ -1268,13 +1268,20 @@ Ren research, ingen kod. Resultat i `docs/dataspiken.md`.
 - **Först därefter:** en spik med riktiga nycklar (ordning i `dataspiken.md` avsnitt 3), sedan bygg enligt `docs/bygga-en-modul.md`.
 
 ### Beslut nästa session behöver känna till
-- **Oklart om Bolagsverkets API kan söka på SNI-kod.** `searchCompanies` kan behöva SCB:s API eller filnedladdning. Avgörs i spiken.
+- **Avgjort 2026-09-21: Bolagsverkets API kan inte söka eller lista på SNI-kod.** Swagger-specen (läst av Erik) har bara fyra endpoints (`/isalive`, `POST /organisationer`, `POST /dokumentlista`, `GET /dokument/{dokumentId}`), alla uppslag på känt organisationsnummer. `searchCompanies` måste bygga på SCB (statistikdatabas, nedladdningsbara filer eller företagsregister-API). SCB-spåret är nästa steg.
 - **Reklamspärr och enskilda firmor:** SCB-registret innehåller fysiska personer och en reklamspärr-variabel. Förslag: namngivna listor bara för aktiebolag och utan reklamspärrade. Kräver Juridisk koll och en vuxen/handledare.
 - **Rättighetshavaren för Allabolag** står som Proff AS i villkoren men UC Affärsinformation AB i integritetspolicyn. Oklart vem som ska ge tillstånd.
 
 ### Kända problem / öppna frågor
 - **Ratsit** verifierades bara via sökresultat (403 på deras sidor). En söksammanfattning antyder ett API, vilket inte bekräftades.
 - SCB:s statistikdatabas (branschaggregat) är inte undersökt. SCB byter från certifikat till API-nycklar i september 2026.
+
+### Uppdatering 2026-09-21 — spik med nycklar (branch `docs/dataspik-bolagsverket`)
+- **Verifierat (Erik körde `scratchpad/bv-test.mjs`, gitignorad):** OAuth 2 client credentials fungerar mot `portal.api.bolagsverket.se` med scope `vardefulla-datamangder:read`; uppslag på organisationsnummer (Volvo) ger riktig data. Nycklarna ligger i `.env.local` (`BOLAGSVERKET_CLIENT_ID`/`_SECRET`). Claude Codes miljö når inte portalen, så inget här är egna anrop.
+- **Bolagsverkets API saknar sök/listning på SNI: bekräftat, inte längre "sannolikt".** Beskrivet i `docs/dataspiken.md` (avsnittet "Bolagsverkets API — sökning/listning på SNI-kod").
+- **Nästa steg: SCB-spåret.** Jämför statistikdatabasen, nedladdningsbara filer och företagsregister-API:et mot kravet lista bolag per SNI och storleksklass (`docs/dataspiken.md` fråga 7).
+- **Öppna TODO:s (inte lösta):** svarsformatet för `POST /organisationer` är rekonstruerat ur specen, inte verifierat mot ett riktigt anrop; `/dokumentlista` gav tom lista för Volvo; bas-URL:en är inte inskriven från specen. Se "TODO — öppna punkter" i `docs/dataspiken.md`.
+- **Hantering av `scratchpad/`:** `.gitignore` ignorerar nu `/scratchpad/` (mergead in från `scratchpad-gitignore`). Engångsskript med nycklar från `.env.local` committas inte.
 
 ## Modul: Registret — liveadapter (påbörjad, grindad, branch `modul/registret`)
 
