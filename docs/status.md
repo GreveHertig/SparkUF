@@ -2264,10 +2264,10 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
   kommentaren "service role används INTE" är ersatt.
 
 ### Återstår
-- **Ny PR behövs.** PR #14 (`scb/forberedelse`) var redan mergad
-  2026-09-23, så den här pushen når inte `prototyp` av sig själv.
-- **Erik:** lägg `SUPABASE_SERVICE_ROLE_KEY` i `.env.local` och i
-  driftmiljön, som server-only.
+- **PR #17** (`scb/forberedelse` → `prototyp`) väntar på granskning. PR #14
+  från samma gren var redan mergad.
+- **`SUPABASE_SERVICE_ROLE_KEY` läggs inte in** i `.env.local` eller
+  driftmiljön förrän §6 fråga 4 är avgjord.
 - Kör migreringen mot SparkUF2 först när du vill det. Ingenting får skrivas
   till tabellen förrän §6 fråga 4 är avgjord, och `set()` anropas inte av
   någon än.
@@ -2286,3 +2286,38 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
   nytt beslut i `docs/beslut.md` och en rad i `docs/arkitektur.md` avsnitt 9.
 - Beslutet i avsnittet "SCB-spåret förberett" ovan, att cachen ägs per
   användare, gäller inte längre.
+
+## Sammanfattning 2026-09-23 (kvällen) och vad som återstår i morgon
+
+### Dagens session
+- **Bolagsverket-transporten (PR #16, `modul/registret-bolagsverket`):**
+  svarsformaten är verifierade mot riktiga anrop (steg A), och
+  `lib/server/bolagsverket.ts` gör `/organisationer` och `/dokumentlista`
+  bakom grinden (steg B). `/dokument` och iXBRL är uppskjutna.
+- **Cachebeslutet (PR #17, `scb/forberedelse`):** `registry_cache` är en
+  gemensam cache som bara servern läser och skriver, med service role.
+  Tabellen är stängd för alla klienter.
+- **Städning:** den ospårade filen `main` i repots rot var tom (0 byte,
+  skapad 21:35), troligen en felriktad `>main` från ett skalkommando. Den
+  är borttagen. Innehållet var tomt, så ingenting gick förlorat.
+
+### I morgon
+- **PR #16 och PR #17 väntar på Theos granskning.** Mergea ingen av dem
+  innan dess. Räkna med en konflikt i `eslint.config.mjs`: båda ändrar samma
+  `no-restricted-imports`-block. Slå ihop `registryTransportPattern` och
+  `registryCachePattern` i samma regel.
+- **Provkör TypeScript-transporten lokalt** mot Bolagsverket från Eriks dator.
+  Codespacet når inte Bolagsverket. Lägg först
+  `BOLAGSVERKET_API_BASE_URL` i `.env.local`. Grindkrav 1 i `registret.md`
+  kräver provkörningen.
+- **`SUPABASE_SERVICE_ROLE_KEY` läggs inte in** förrän dataspiken §6 fråga 4
+  är avgjord.
+- **Beslut med Theo:**
+  - **SNI 2025:** demot och porten använder troligen SNI 2007-koder
+    (`69.201`), och SCB följer SNI 2025. Bolagsverkets koder är fem siffror
+    utan punkt, och versionen är okänd.
+  - **CofounderAgent.**
+  - **`getOnboardingScript`.**
+- **30 september:** SCB-nyckeln kommer. Läs SCB:s villkor och citera dem
+  ordagrant i `docs/dataspiken.md` (grindkrav 2). Ställ frågorna i avsnittet
+  "SCB-spåret förberett".
