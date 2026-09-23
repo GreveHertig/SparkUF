@@ -21,6 +21,16 @@ const mailPattern = {
     "Sändning är avstängd tills Theodor och grundaren uttryckligen sagt ja. Se docs/moduler/utskick-och-svar.md, Sändspärr.",
 };
 
+// Registercachen (lib/server/registryCache.ts) bär service role-nyckeln och går
+// förbi RLS. Bara registrets liveadapter och tester får importera den
+// (docs/beslut.md 2026-09-23, docs/arkitektur.md avsnitt 9).
+const registryCachePattern = {
+  group: ["**/lib/server/registryCache", "./registryCache"],
+  message:
+    "Registercachen (service role) importeras bara av adapters/live/RegistryProvider.ts. Se docs/arkitektur.md, avsnitt 9.",
+};
+const registryCacheImporters = ["adapters/live/RegistryProvider.ts", "**/*.test.ts"];
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -35,6 +45,7 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             mailPattern,
+            registryCachePattern,
             {
               group: [
                 "@/adapters/live",
@@ -50,9 +61,17 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Sändspärr: se mailPattern ovan. Gäller alla filer utom demofilerna, som har
-  // egen regel (flat config ersätter regelns inställningar, slår inte ihop dem).
+  // Sändspärr och registercachen: se mailPattern och registryCachePattern ovan.
+  // Gäller alla filer utom demofilerna, som har egen regel (flat config ersätter
+  // regelns inställningar, slår inte ihop dem).
   {
+    ignores: ["app/demo/**", "adapters/demo/**", ...registryCacheImporters],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [mailPattern, registryCachePattern] }],
+    },
+  },
+  {
+    files: registryCacheImporters,
     ignores: ["app/demo/**", "adapters/demo/**"],
     rules: {
       "no-restricted-imports": ["error", { patterns: [mailPattern] }],

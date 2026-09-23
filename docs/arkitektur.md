@@ -202,3 +202,34 @@ P1-portarna: kontraktstest (mockad), adapterns egna tester (mockad,
 kantfall/tomma tillstånd), och ett opt-in `.live.test.ts`
 (`adapters/live/rls.live.test.ts`) mot en riktig databas, `skipIf` på
 saknade testkonton.
+
+## 9. Service role-nyckeln: ett enda, avgränsat undantag (2026-09-23)
+
+Plattformen läser och skriver annars bara via användarens session, och RLS är
+spärren i databasen (avsnitt 8, punkt 3). `SUPABASE_SERVICE_ROLE_KEY` går
+förbi RLS och används därför på exakt **ett** ställe: `lib/server/registryCache.ts`,
+den gemensamma registercachen (`public.registry_cache`).
+
+**Varför** (Eriks beslut, `docs/beslut.md` 2026-09-23): registerdata är
+offentlig och inte användarspecifik. Om användaren själv skrev till cachen
+kunde hen förfalska registerdata som påverkar Marknad-poängen och
+affärsplanen. Därför skriver och läser bara servern.
+
+**Hur undantaget hålls litet:**
+- **Tabellen är stängd för alla klienter.** RLS är på utan policies, och
+  `revoke all … from anon, authenticated`. RLS-vakten
+  (`supabase/migrations/migrations.test.ts`, `CLOSED_TABLES`) kräver att en
+  stängd tabell *inte* har någon policy.
+- **Nyckeln är server-only** och har aldrig `NEXT_PUBLIC_`-prefix. En vakt i
+  `lib/server/registryCache.test.ts` kräver att bara `registryCache.ts` läser
+  den och att inget `NEXT_PUBLIC_…SERVICE` finns i koden.
+- **Importen är låst.** Lint-regeln `registryCachePattern` i
+  `eslint.config.mjs` låter bara `adapters/live/RegistryProvider.ts` och
+  tester importera cachen. Klienten lämnas aldrig ut ur filen.
+- **Grinden gäller.** Cachen anropar `assertRegistryAccessAllowed()` först,
+  precis som transporterna.
+- **Lagring är tidsbegränsad.** Varje `get()` tar bort alla utgångna rader,
+  och databasen tillåter högst 7 dagar mellan `fetched_at` och `expires_at`.
+
+Nya användningar av service role kräver ett nytt beslut i `docs/beslut.md`
+och en rad här.
