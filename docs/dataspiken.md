@@ -510,7 +510,7 @@ API inte kan det (se avsnitt 2). Tre kandidater hos SCB och Bolagsverket:
 | **Gränser** | Max 2 000 rader per anrop, 10 anrop per 10 sekunder och användare, bara aktuell data, ingen historik (Sekundärt) | Inte kontrollerade | Stora filer, tung bearbetning |
 | **Format** | REST, JSON eller XML (Sekundärt) | JSON via PxWeb (Sekundärt) | Filer (Osäkert vilket format) |
 
-**Storleksklasserna (Sekundärt, registrets variabelbeskrivning):**
+**Storleksklasserna (Sekundärt, registrets variabelbeskrivning):** *Rättad 2026-09-23, se avsnittet "SCB:s företagsregister-API: publicerad dokumentation".*
 1 = 0 anställda, 2 = 1–4, 3 = 5–9, 4 = 10–19, 5 = 20–49, 6 = 50–99,
 7 = 100–199, 8 = 200–499, och därefter större. Klasserna 2–6 stämmer med
 de fem klasser demot redan visar (1–4, 5–9, 10–19, 20–49, 50+). Portens
@@ -600,6 +600,94 @@ Källor (Sekundärt, hämtade 2026-09-21 som sammanfattat utdrag):
 - SCB Statistikdatabasen, Företagens ekonomi, basfakta efter SNI och storleksklass: https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__NV__NV0109__NV0109P/NSEBasStklFEngs07/
 - SCB Statistikdatabasen, branschnyckeltal: https://www.statistikdatabasen.scb.se/pxweb/en/ssd/START__NV__NV0109__NV0109O/BNTT01/
 - CRMdata, om det avgiftsfria API:et (tredjepart): https://www.crmdata.se/scbs-avgiftsfria-api-for-foretagsregistret-nar-racker-det/
+
+## SCB:s företagsregister-API: publicerad dokumentation (läst 2026-09-23)
+
+> Hämtat ordagrant från scb.se av Claude Code 2026-09-23 (HTML och PDF, inte
+> sammanfattat). Märkt **Verifierat** där SCB:s egen text säger det, och
+> **Finns inte publicerat** där den inte gör det. Inget är gissat.
+
+### Två olika saker som båda kallas SCB-data
+
+1. **SCB:s värdefulla datamängder (HVD)** levereras inte i ett eget API.
+   SCB:s sida: "Uppgifterna från SCB finns därför tillgängliga i samma API
+   som de uppgifter som Bolagsverket ansvarar för." (https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/vardefulla-datamangder--grundlaggande-foretagsinformation/) Det är alltså
+   Bolagsverkets API, som bara slår upp på organisationsnummer (avsnitt 2).
+   **Ingen sökning på SNI här.**
+2. **SCB:s allmänna företagsregister-API** är separat, avgiftsfritt sedan
+   2025-06-26, och det är det som kan ge listor (SCB-spåret, alternativ A).
+   Resten av avsnittet gäller det.
+
+### Vad som är publicerat (Verifierat, https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/avgiftsfria-uppgifter-i-foretagsregistret/)
+
+- **Innehåll:** "I API:et kan du utan kostnad söka och hämta hem information
+  om företag och arbetsställen i Sverige." Till exempel "Vilken näringsgren
+  (SNI-kod) ett företag har" och "Hur många anställda ett företag har (anges
+  i storleksklasser)."
+- **Åtkomst:** "För att använda API:et behöver du godkänna användarvillkoren
+  för API:et, och därefter få ett certifikat och lösenord. Kontakta oss på
+  scbforetag@scb.se". I förfrågan ska man ange bland annat vilka *layouter*
+  man vill ha (Företag, Arbetsställe och två sammanslagna).
+- **Teknik och gränser (nuvarande API):** "API:et är en REST-tjänst baserad på
+  http och json eller XML. Anrop mot tjänsten ska krypteras via https.
+  Auktorisation sker via certifikat som användaren får från SCB. Maximalt
+  2 000 rader kan hämtas hem vid varje anrop. API:et tillåter användning för
+  varje användare att göra 10 anrop per 10 sekunder." Tillhandahålls "i
+  befintligt skick".
+- **Nytt API i september 2026:** "Auktoriseringen kommer att bytas från
+  nuvarande certifikat till API-nyckel. Stöd för paginering införs, antalet
+  hemtagningar per anrop ökas och det blir även andra förändringar i
+  sökfunktionaliteten." De sammanslagna layouterna utgår, och "Vissa
+  variabelförändringar kommer att ske". Det nuvarande API:t finns kvar
+  "minst sex månader".
+- **Sökning, det enda som står:** "För kategorier finns det fasta kodtabeller
+  men för variabler är det fritext. Det innebär att du behöver skriva
+  värdet, vad variabeln ska innehålla till exempel Postort=Örebro."
+- **Uppdatering:** varje natt utom lördag–söndag, ingen historik, ingen
+  ändringsavisering i API:t.
+
+### Vilka fält som levereras (Verifierat, postbeskrivning Företag daterad 2025-06-26, https://www.scb.se/contentassets/8a8eb5c3d45f461ea93482f8e8d4de4f/postbeskrivning-foretag.pdf)
+
+Bland annat `PeOrgNr`/`OrgNr`, `Företagsnamn`, postadress, säte (kommun/län),
+`Stkl, kod` (antal anställda i klass), `Juridisk form, kod`, `Reklam, kod`,
+`Företagsstatus`, `Bransch_1`–`Bransch_5` (SNI, med och utan punkt).
+Omsättning i storleksklass (`Stkl, oms`), telefon och e-post är
+**tilläggsgrupper** (TG07Oms, TG22Tel_JE, TG09Epost_JE) som måste beställas;
+utan tillägg levereras `*`. Gulmarkerade variabler (bl.a. `Aregion`,
+`Utskick`, ägarandelar) utgår i det nya API:t.
+
+**Storleksklass anställda** (variabelbeskrivningen, https://www.scb.se/contentassets/8a8eb5c3d45f461ea93482f8e8d4de4f/variabelbeskrivning-api-sni-2025.pdf): 0 = uppgift
+saknas, 1 = 0, 2 = 1–4, 3 = 5–9, 4 = 10–19, 5 = 20–49, 6 = 50–99,
+7 = 100–199, 8 = 200–499, 9 = 500–999, 10–16 = 1 000 och uppåt. Det rättar
+listan "Storleksklasserna (Sekundärt …)" ovan, som saknade klass 0 och 9–16.
+
+**Reklam:** kod 11–13 tar emot reklam; 2x har "frånsagt sig reklam".
+Variabelbeskrivningen: "Det tillhör därmed god marknadsföringssed att inte
+kontakta dessa på de sätt som de avsagt sig."
+
+### Vad som INTE är publicerat
+
+- **Endpoints:** inga URL:er eller operationer finns på sidan eller i PDF:erna.
+- **Sökbara fält:** vilka fält som går att filtrera på, och hur (t.ex. om SNI
+  och `Stkl` är sökbara kategorier), står inte. Citatet om kategorier och
+  fritext ovan antyder att det går, men anger inga fältnamn.
+- **Det nya API:ts specifikation:** SCB skriver "Ovanstående information
+  kompletteras med fler detaljer efter sommaren". Den 2026-09-23 fanns inga
+  fler detaljer på sidan. Ingen swagger eller utvecklarportal för
+  företagsregistret hittades. (`api.scb.se/ov0104/v2beta` är PxWeb,
+  statistikdatabasen, inte företagsregistret.)
+- **Användarvillkoren** är inte publicerade på sidan; de godkänns via
+  scbforetag@scb.se.
+
+### Öppna frågor som följer av det här
+
+- **SNI 2025.** Variabelbeskrivningen följer "SNI 2025". Demot och porten
+  använder koder som `69.201`, som troligen är SNI 2007. Om och hur de
+  översätts är okontrollerat. Blockerar `searchCompanies` tills det är utrett.
+- **Frågor till SCB när nyckeln kommer:** endpoints och sökbara fält i nya
+  API:t, maxrader per anrop, om `Stkl` och SNI går att kombinera i en fråga,
+  om omsättningsklass (TG07Oms) ingår avgiftsfritt, och användarvillkoren
+  ordagrant.
 
 ## 7. Källor
 
