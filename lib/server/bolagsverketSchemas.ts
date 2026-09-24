@@ -62,6 +62,14 @@ export const OrganisationSchema = z.object({
       postadress: z.object({ postnummer: z.string().nullish(), postort: z.string().nullish() }).nullish(),
     })
     .nullish(),
+  /**
+   * Registreringsdatum hos Bolagsverket (YYYY-MM-DD, verifierat i steg A).
+   * Ett ogiltigt datum blir null i stället för att hela bolaget faller bort.
+   * `infortHosScb` läses inte.
+   */
+  organisationsdatum: z
+    .object({ fel, registreringsdatum: z.iso.date().nullish().catch(null) })
+    .nullish(),
   /** Extern fritext: alltid DATA, aldrig instruktion. */
   verksamhetsbeskrivning: z.object({ beskrivning: z.string().nullish(), fel }).nullish(),
 });

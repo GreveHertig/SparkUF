@@ -161,6 +161,7 @@ describe("lookupOrganisation", () => {
       orgNr: ERICSSON,
       name: "Telefonaktiebolaget LM Ericsson",
       legalForm: "AB",
+      registrationDate: "1918-08-19",
       sniCodes: ["70100", "62201"],
       active: true,
       deregistered: false,
@@ -204,6 +205,24 @@ describe("lookupOrganisation", () => {
     expect(org.deregistered).toBe(true);
     expect(org.inLiquidationOrRestructuring).toBe(true);
     expect(org).not.toHaveProperty("hemligtNyttFalt");
+  });
+
+  it("saknat, ogiltigt eller felmarkerat registreringsdatum blir null utan att bolaget faller bort", async () => {
+    const variants = [
+      { organisationsdatum: null },
+      { organisationsdatum: { registreringsdatum: null, fel: null } },
+      { organisationsdatum: { registreringsdatum: "2023-02-29", fel: null } },
+      { organisationsdatum: { registreringsdatum: "1918-8-19", fel: null } },
+      { organisationsdatum: { registreringsdatum: "1918-08-19", fel: { kod: "X" } } },
+    ];
+    for (const over of variants) {
+      fetchMock.mockResolvedValueOnce(tokenReply()).mockResolvedValueOnce(json({ organisationer: [ericsson(over)] }));
+      resetBolagsverketState();
+      const orgs = await lookupOrganisation(ERICSSON);
+      expect(orgs).toHaveLength(1);
+      expect(orgs[0].registrationDate).toBeNull();
+      expect(orgs[0].name).toBe("Telefonaktiebolaget LM Ericsson");
+    }
   });
 
   it("tom lista, 404 och svar för ett annat org.nr ger []", async () => {

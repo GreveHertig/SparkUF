@@ -50,6 +50,8 @@ export type BolagsverketOrganisation = {
   name: string | null;
   /** Bolagsverkets organisationsform, t.ex. "AB". */
   legalForm: string | null;
+  /** Registreringsdatum hos Bolagsverket (YYYY-MM-DD). Null = saknas, ogiltigt eller felmarkerat. */
+  registrationDate: string | null;
   /** SNI-koder som fem siffror, tomma platser borttagna. Version (2007/2025) är inte avgjord. */
   sniCodes: string[];
   /** verksamOrganisation: JA = true, NEJ = false, annat eller saknat = null (okänt). */
@@ -275,6 +277,7 @@ function mapOrganisation(raw: RawOrganisation, fetchedAt: string): BolagsverketO
     orgNr: raw.organisationsidentitet.identitetsbeteckning,
     name: nonEmpty(name?.namn),
     legalForm: nonEmpty(ok(raw.organisationsform)?.kod),
+    registrationDate: ok(raw.organisationsdatum)?.registreringsdatum ?? null,
     sniCodes: sni.map((s) => s.kod.trim()).filter((kod) => /^\d{5}$/.test(kod)),
     active: active === "JA" ? true : active === "NEJ" ? false : null,
     deregistered: raw.avregistreradOrganisation !== null && raw.avregistreradOrganisation !== undefined,
