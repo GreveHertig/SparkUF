@@ -118,3 +118,15 @@ SparkUF2 (Supabase, Frankfurt) är utvecklings- och betaprojektet trots
 PRODUCTION-märkningen i Supabase. Före lanseringen 30 november skapas
 ett separat produktionsprojekt med samma migreringar. Testanvändarna
 test-a och test-b är borttagna 2026-09-23.
+
+**`registry_cache` blir en gemensam cache som bara servern läser och skriver
+(Erik).** Tidigare skiss: cachen ägdes per användare och användaren skrev
+själv, vilket lät en användare förfalska registerdata som påverkar
+Marknad-poängen och affärsplanen. Nu: ingen `user_id`, unik nyckel
+`(source, request_key)`, RLS på utan policies och rättigheterna indragna från
+`anon`/`authenticated`, så att ingen klient kommer åt tabellen. Servern läser
+och skriver via `lib/server/registryCache.ts` med `SUPABASE_SERVICE_ROLE_KEY`,
+som är server-only och aldrig har `NEXT_PUBLIC_`-prefix. Det är projektets enda
+användning av service role, se `docs/arkitektur.md` avsnitt 9. Källa,
+hämtdatum och 7-dagarstaket står kvar, och `get()` tar bort utgångna rader.
+Ingenting skrivs till tabellen förrän dataspiken §6 fråga 4 är avgjord.

@@ -146,10 +146,11 @@ ovan); när ett avtal ger en API-nyckel eller inloggningsuppgift gäller
 samma regel som alla andra moduler: bara i serverkod, aldrig
 `NEXT_PUBLIC_`-prefix. Sökfrågan (`RegistryQuery`) är begränsad till
 strukturerad indata (SNI-kod, siffror) — inget fritextfält går vidare till
-en extern källa okontrollerat. Ingen Supabase-koppling för själva
-registerdatan (den är offentlig, inte användarspecifik); om liveadaptern
-cachar resultat i Supabase för att spara anrop gäller RLS som för alla
-andra tabeller.
+en extern källa okontrollerat. Registerdatan är offentlig och inte
+användarspecifik. Den cachas därför i en **gemensam** tabell,
+`public.registry_cache`, som bara servern når med service role-nyckeln
+(`lib/server/registryCache.ts`, beslut 2026-09-23). Tabellen har RLS på utan
+policies och är stängd för alla klienter.
 
 ## Status
 
@@ -215,17 +216,14 @@ svarsform** (`lib/server/registrySchemas.ts`). **Exponering är spärrad**, se
 
 ## Öppna frågor (avgörs före vecka 2)
 
-1. **Vem skriver till `registry_cache`?** I dag skriver användaren själv
-   (insert/update-policy för `authenticated` i
-   `supabase/migrations/20260923120000_registry_cache.sql`). Det låter en
-   användare förfalska registerdata i sin egen cache, vilket kan påverka
-   Marknad-poängen och affärsplanen. **Alternativ:** bara servern skriver
-   (servicenyckel isolerad i `lib/server/`, inga insert/update-policies för
-   `authenticated`). **Beslut tas av Erik innan transporten skrivs.**
-2. **Utgångna rader rensas aldrig.** `expires_at` sätter ett tak på 7 dagar,
-   men ingenting tar bort raderna efter det. Lägg till rensning, t.ex. vid
-   läsning eller som ett schemalagt jobb, så att data inte sparas längre än
-   7 dagar.
+1. ~~**Vem skriver till `registry_cache`?**~~ **Avgjort 2026-09-23 (Erik):**
+   gemensam cache som bara servern läser och skriver
+   (`lib/server/registryCache.ts`, service role). Tabellen är stängd för alla
+   klienter. Se `docs/beslut.md` och `docs/arkitektur.md` avsnitt 9.
+2. **Utgångna rader rensas aldrig.** *Delvis löst 2026-09-23:* varje
+   `registryCache.get()` tar bort alla utgångna rader. Om cachen inte används
+   alls ligger raderna kvar, så ett schemalagt jobb behövs fortfarande för att
+   garantera 7 dagar.
 
 ## Kvar innan modulen är klar
 
