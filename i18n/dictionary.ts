@@ -741,4 +741,63 @@ export type Dictionary = {
       { title: string; description: string }
     >;
   };
+  /** Designexperimentet /experiment/landning (gren experiment/landning-erik,
+   * mergas aldrig). Rubriker delas i before/em/after så att anropande kod kan
+   * sätta betoningsordet i serif-kursiv utan markup i strängen. Platshållare:
+   * `{count}` i `lockedTemplate`, `{points}`/`{weight}` i `partPoints`,
+   * `{amount}` i `close.priceTemplate`. */
+  experimentLanding: {
+    nav: { home: string };
+    hero: {
+      titleBefore: string;
+      titleEm: string;
+      titleAfter: string;
+      lead: string;
+      demoCta: string;
+      demoNote: string;
+      signupCta: string;
+    };
+    proof: {
+      label: string;
+      idea: string;
+      scoreLabel: string;
+      toggleLabel: string;
+      toggleHint: string;
+      deltaReason: string;
+      lockedTemplate: string;
+      partPoints: string;
+      sources: { profile: string; calls: string };
+    };
+    register: {
+      title: string;
+      question: string;
+      guess: { label: string; quote: string; verdict: string };
+      sourced: { label: string; quote: string };
+      unknown: { label: string; quote: string };
+    };
+    score: {
+      titleBefore: string;
+      titleEm: string;
+      titleAfter: string;
+      lead: string;
+      rules: Record<"counts" | "simulations" | "contradictions", { title: string; body: string }>;
+      backToExample: string;
+    };
+    audience: { title: string; body: string };
+    close: {
+      title: string;
+      priceLabel: string;
+      priceTemplate: string;
+      priceUnit: string;
+      tbd: string;
+      tbdNote: string;
+      priceNote: string;
+      emailLabel: string;
+      emailHelp: string;
+      submit: string;
+      invalid: string;
+      sentNotConnected: string;
+    };
+    footer: { experiment: string; fiction: string };
+  };
 };

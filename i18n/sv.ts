@@ -821,4 +821,87 @@ export const sv = {
       },
     },
   },
+  experimentLanding: {
+    nav: { home: "Spark, startsida" },
+    hero: {
+      titleBefore: "Spark är en AI-\u2060medgrundare som prövar din affärsidé mot ",
+      titleEm: "riktiga källor",
+      titleAfter: ".",
+      lead: "För dig som startar ditt första företag, eller driver ett helt på egen hand.",
+      demoCta: "Se demot",
+      demoNote: "Demo med fiktiv data",
+      signupCta: "Få besked",
+    },
+    proof: {
+      label: "Exempel",
+      idea: "Mobil hundtrim, efter sex kundsamtal",
+      scoreLabel: "Poäng",
+      toggleLabel: "Tre av kunderna säger emot",
+      toggleHint: "Slå på och se vad som händer med poängen.",
+      deltaReason: "Tre svar säger emot problemet",
+      lockedTemplate: "{count} delar låses upp i senare steg",
+      partPoints: "{points} av {weight}",
+      sources: { profile: "Profilsamtalet", calls: "Kundsamtal" },
+    },
+    register: {
+      title: "Spark pekar på registret. Den gissar inte.",
+      question: "Hur många konkurrenter har jag?",
+      guess: {
+        label: "En gissning",
+        quote: "Marknaden är stor och det finns plats för fler.",
+        verdict: "Ingen källa. Så svarar inte Spark.",
+      },
+      sourced: {
+        label: "Med källa",
+        quote: "Här är bolagen med din SNI-kod i din kommun, hämtade ur registret.",
+      },
+      unknown: {
+        label: "Utan källa",
+        quote: "Det vet jag inte än. Det finns ingen källa för det.",
+      },
+    },
+    score: {
+      titleBefore: "Poängen mäter bevis. Den kan också ",
+      titleEm: "sjunka",
+      titleAfter: ".",
+      lead: "Poängen går från 1 till 100. Den visar hur väl idén är belagd, inte hur bra den låter.",
+      rules: {
+        counts: {
+          title: "Kundsvar räknas",
+          body: "Svar från riktiga personer väger tyngst, och varje del av poängen har en källa.",
+        },
+        simulations: {
+          title: "Simuleringar ger noll",
+          body: "En simulerad kund kan visa vad du borde fråga. Den ger aldrig poäng.",
+        },
+        contradictions: {
+          title: "Motsägelser drar ner",
+          body: "Säger svaren emot varandra sjunker poängen, även om du har samlat fler.",
+        },
+      },
+      backToExample: "Prova i exemplet",
+    },
+    audience: {
+      title: "Byggd för förstagångs- och soloentreprenörer i Sverige.",
+      body: "Du har ingen medgrundare som frågar hur du vet det du tror. Spark frågar, visar underlaget och säger rakt ut när det är tunt.",
+    },
+    close: {
+      title: "Vill du veta när Spark öppnar?",
+      priceLabel: "Pris",
+      priceTemplate: "{amount} kr",
+      priceUnit: "/mån",
+      tbd: "TBD",
+      tbdNote: "Preliminärt pris, inte fastställt.",
+      priceNote: "Demot är gratis och kräver inget konto.",
+      emailLabel: "Mejladress",
+      emailHelp: "Formuläret är inte kopplat än. Inget sparas.",
+      submit: "Få besked",
+      invalid: "Skriv en giltig mejladress, till exempel namn@exempel.se.",
+      sentNotConnected: "Tack. Formuläret är inte kopplat än, så adressen har inte sparats.",
+    },
+    footer: {
+      experiment: "Designexperiment. Priset är en platshållare.",
+      fiction: "Företag och personer i demot är fiktiva. Spark ger vägledning, inte juridisk eller ekonomisk rådgivning.",
+    },
+  },
 } satisfies Dictionary;

@@ -1,0 +1,94 @@
+/*
+ * Designexperimentet /experiment/landning. Bara värden ur design/tokens.css.
+ * Allt är scopat under .xl-root så att inget läcker till resten av appen.
+ */
+
+.xl-root {
+  background: var(--paper-50);
+  color: var(--ink-900);
+  caret-color: var(--accent);
+}
+
+.xl-root ::selection {
+  background: var(--accent-100);
+  color: var(--ink-900);
+}
+
+.xl-root .xl-dark ::selection {
+  background: var(--accent-300);
+  color: var(--ink-900);
+}
+
+.xl-root .xl-dark :focus-visible {
+  outline-color: var(--accent-300);
+}
+
+.xl-root a {
+  text-underline-offset: 0.22em;
+  text-decoration-thickness: 1px;
+}
+
+/* Kursiv serif i rubriker: lite luft under så att descendrar (g, j, p)
+   inte klipps av den täta radhöjden. */
+.xl-em {
+  font-family: var(--font-serif-italic);
+  font-style: italic;
+  font-weight: 400;
+  padding-bottom: 0.06em;
+}
+
+/* Tryckbara ytor: omedelbar återkoppling vid tryck. */
+.xl-press {
+  transition:
+    transform var(--motion-fast) var(--ease-out),
+    background-color var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard);
+}
+
+.xl-press:active {
+  transform: scale(0.97);
+}
+
+/* Sidans enda komponerade rörelse: när poängen räknas om tonar det nya
+   talet in ur en lätt oskärpa, i stället för att bytas hårt. Klassen sätts
+   bara efter en omräkning, aldrig vid första visningen. */
+.xl-recount {
+  animation: xl-recount var(--motion-slow) var(--ease-out) both;
+}
+
+@keyframes xl-recount {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(12%);
+  }
+}
+
+.xl-switch-thumb {
+  transition: transform var(--motion-base) var(--ease-out);
+}
+
+.xl-switch[aria-checked="true"] .xl-switch-thumb {
+  transform: translateX(1.25rem);
+}
+
+.xl-switch {
+  transition: background-color var(--motion-base) var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xl-recount {
+    animation-name: xl-fade;
+  }
+
+  .xl-press:active {
+    transform: none;
+  }
+}
+
+@keyframes xl-fade {
+  from {
+    opacity: 0;
+  }
+}

@@ -392,3 +392,17 @@ Playwright (cachad `npx`-installation, samma mönster som tidigare sessioner). K
 
 ### Verifiering
 `pnpm typecheck`/`lint`/`test` (378 gröna, 36 skippade som väntat — fem nya gröna från `SimulationProvider.test.ts`) och `pnpm build` gröna.
+
+## Designexperiment — /experiment/landning (gren `experiment/landning-erik`, mergas aldrig)
+
+Ett fristående experiment med en annan landningssida än `/`, byggt med skillsen impeccable (utan dess binär, bara Markdown-delen), taste-skill och emil-design-eng. Grenen finns bara lokalt och ska aldrig mergas.
+
+- **Egen ram, inte `(marketing)`:** avskalad header (logga, "Se demot", SV/EN) och sidfot inuti den mörka avslutningen. `robots: noindex`.
+- **Mekanismen i första vyn:** hero-kortet (`ScoreProof`) låter besökaren själv slå på "tre av kunderna säger emot". `calculateScore` räknar om, och poängen går från 51 till 40 och byter nivå. Underlaget ligger i `exampleEvidence.ts`, är fiktivt och märkt `DemoDataBadge`. Ingen poäng är hårdkodad.
+- **Registret utan siffror:** samma fråga med tre svar (gissning överstruken, svar med källa + `SourceTag`, "vet inte"). Inga registersiffror, partnerskap eller kundcitat.
+- **Typografi:** bara Castoro 400 och Instrument Serif Italic som i resten av appen. Hierarkin bärs av grad och tracking. taste-skill avråder från Instrument Serif, men varumärket vinner.
+- **Former:** interaktivt = pill (knappar, fält, reglage), behållare = `--r-lg` (kortet). Ett kort på hela sidan. Reglerna i poängsektionen är text med en överlinje, inte kort.
+- **Rörelse:** ett enda komponerat ögonblick. När poängen räknas om tonar talen in ur en lätt oskärpa (`--motion-slow`, `--ease-out`). Med reducerad rörelse blir det bara en toning. Knappar har `scale(0.97)` vid tryck.
+- **Inga eyebrows.** Ljust tema med en medveten mörk avslutning (`navy`), som uppdraget redan föreskriver för sidfot.
+- **Kontrast, uträknad:** `slate-600` på `paper-50` är 4,30:1 och klarar inte AA. Etiketterna på `paper-50` använder därför `slate-700`. Övriga nya par ligger på 5,7–15:1. Reglagets spår (`slate-500` mot vitt) ger 3,14:1 för icke-text.
+- **Pris:** 149 kr/mån är en platshållare märkt TBD. Uppdragets 199 kr/mån gäller fortfarande `/priser`.

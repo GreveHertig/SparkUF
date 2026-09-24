@@ -2427,3 +2427,19 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 ### Beslut nästa session behöver känna till
 - **Ett ogiltigt registreringsdatum blir `null`**, det fäller inte hela bolaget.
   Samma princip som för övriga fält: saknat eller trasigt betyder okänt.
+
+## Designexperiment — /experiment/landning (gren `experiment/landning-erik`, lokal, mergas aldrig)
+
+### Klart
+- `app/experiment/landning/` innehåller `page.tsx`, `layout.tsx` (noindex), `ScoreProof.tsx` (interaktivt poängexempel via `calculateScore`), `SignupForm.tsx` (ett mejlfält, inte kopplat, säger uttryckligen att inget sparas), `exampleEvidence.ts` och `landning.css` (bara tokens).
+- i18n: nytt namnutrymme `experimentLanding` i `dictionary.ts`/`sv.ts`/`en.ts`.
+- Tester: `exampleEvidence.test.ts` (poängen sjunker och byter nivå) och `page.test.tsx` (båda språken, TBD, demolänk, formulärets tillstånd, reglaget).
+- Verifierat med Playwright MCP på 1440 och 390 px, sv + en. `typecheck`, `test` (444 gröna) och `eslint` (0 fel) går igenom.
+
+### Kända problem
+- `pnpm lint` faller på `scratchpad/bv-transport-prov.ts`, en gitignorerad lokal fil utanför grenens ändringar. Det är åtgärdat på `docs/registret-provkorning` (9610909, ESLint ignorerar `scratchpad/**`). Här verifierat med `eslint . --ignore-pattern 'scratchpad/**'`.
+- I Playwright visas en hydreringsvarning om `caret-color` på mejlfältet. Den kommer från Playwrights egen stil, och serverns HTML saknar attributet.
+
+### Beslut
+- Grenen pushas aldrig och mergas aldrig. Den är ett designexperiment att jämföra mot `/`.
+- Priset 149 kr/mån är en platshållare (TBD) och ändrar inte `/priser`.

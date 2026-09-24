@@ -817,4 +817,87 @@ export const en = {
       },
     },
   },
+  experimentLanding: {
+    nav: { home: "Spark, home" },
+    hero: {
+      titleBefore: "Spark is an AI co-\u2060founder that tests your business idea against ",
+      titleEm: "real sources",
+      titleAfter: ".",
+      lead: "For people starting their first company, or running one entirely on their own.",
+      demoCta: "See the demo",
+      demoNote: "Demo with fictional data",
+      signupCta: "Get notified",
+    },
+    proof: {
+      label: "Example",
+      idea: "Mobile dog grooming, after six customer calls",
+      scoreLabel: "Score",
+      toggleLabel: "Three customers disagree",
+      toggleHint: "Switch it on and watch the score.",
+      deltaReason: "Three answers contradict the problem",
+      lockedTemplate: "{count} parts unlock in later steps",
+      partPoints: "{points} of {weight}",
+      sources: { profile: "Profile conversation", calls: "Customer calls" },
+    },
+    register: {
+      title: "Spark points to the register. It does not guess.",
+      question: "How many competitors do I have?",
+      guess: {
+        label: "A guess",
+        quote: "The market is big and there is room for more.",
+        verdict: "No source. Spark does not answer like this.",
+      },
+      sourced: {
+        label: "With a source",
+        quote: "Here are the companies with your industry code in your municipality, taken from the register.",
+      },
+      unknown: {
+        label: "Without a source",
+        quote: "I don't know yet. There is no source for that.",
+      },
+    },
+    score: {
+      titleBefore: "The score measures evidence. It can also ",
+      titleEm: "drop",
+      titleAfter: ".",
+      lead: "The score runs from 1 to 100. It shows how well the idea is backed, not how good it sounds.",
+      rules: {
+        counts: {
+          title: "Customer answers count",
+          body: "Answers from real people weigh the most, and every part of the score has a source.",
+        },
+        simulations: {
+          title: "Simulations score zero",
+          body: "A simulated customer can show you what to ask. It never adds points.",
+        },
+        contradictions: {
+          title: "Contradictions pull it down",
+          body: "When answers disagree the score drops, even if you have collected more of them.",
+        },
+      },
+      backToExample: "Try it in the example",
+    },
+    audience: {
+      title: "Built for first-time and solo founders in Sweden.",
+      body: "You have no co-founder asking how you know what you believe. Spark asks, shows the evidence and tells you plainly when it is thin.",
+    },
+    close: {
+      title: "Want to know when Spark opens?",
+      priceLabel: "Price",
+      priceTemplate: "SEK {amount}",
+      priceUnit: "/month",
+      tbd: "TBD",
+      tbdNote: "Provisional price, not decided.",
+      priceNote: "The demo is free and needs no account.",
+      emailLabel: "Email address",
+      emailHelp: "This form is not connected yet. Nothing is stored.",
+      submit: "Get notified",
+      invalid: "Enter a valid email address, for example name@example.com.",
+      sentNotConnected: "Thanks. The form is not connected yet, so your address was not stored.",
+    },
+    footer: {
+      experiment: "Design experiment. The price is a placeholder.",
+      fiction: "Companies and people in the demo are fictional. Spark gives guidance, not legal or financial advice.",
+    },
+  },
 } satisfies Dictionary;
