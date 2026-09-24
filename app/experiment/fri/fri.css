@@ -1,0 +1,785 @@
+/*
+ * /experiment/fri — egen visuell identitet, helt lokal. Inga värden ur
+ * design/tokens.css; allt är scopat under .fri så att resten av appen inte
+ * påverkas. Typsnitt: Bricolage Grotesque (rubriker), Geist (brödtext),
+ * Geist Mono (källstämplar och stegnummer), självhostade via @fontsource.
+ *
+ * Kontrast (uträknad, WCAG 2.x): bläck/papper 16.9, dämpad/papper 6.2,
+ * bläck på signal 5.6, signal-bläck/papper 5.0, dämpad-mörk/bläck 7.8.
+ */
+
+.fri {
+  --paper: #f3f3ef;
+  --white: #fcfcfa;
+  --ink: #101211;
+  --ink-2: #1b1e1c;
+  --muted: #565b58;
+  --muted-dark: #a3a8a4;
+  --line: #d6d8d2;
+  --line-dark: #2e3330;
+  --signal: #ff4a1c;
+  --signal-ink: #c2330f;
+
+  --display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --mono: "Geist Mono Variable", ui-monospace, monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-press: cubic-bezier(0.23, 1, 0.32, 1);
+  --radius: 16px;
+  --gutter: clamp(20px, 4vw, 48px);
+  --max: 1320px;
+
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.55;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  caret-color: var(--signal-ink);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.fri ::selection {
+  background: var(--signal);
+  color: var(--ink);
+}
+
+.fri :focus-visible {
+  outline: 2px solid var(--signal-ink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.fri .on-dark :focus-visible {
+  outline-color: var(--signal);
+}
+
+.fri .on-signal :focus-visible {
+  outline-color: var(--ink);
+}
+
+.fri a {
+  color: inherit;
+  text-underline-offset: 0.24em;
+  text-decoration-thickness: 1px;
+}
+
+.fri-wrap {
+  width: 100%;
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ---------- Typografi ---------- */
+
+.fri-display {
+  font-family: var(--display);
+  font-weight: 720;
+  font-variation-settings: "opsz" 96;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+.fri-h2 {
+  font-family: var(--display);
+  font-weight: 680;
+  font-variation-settings: "opsz" 72;
+  font-size: clamp(2.4rem, 1.4rem + 3.4vw, 4.5rem);
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.fri-lead {
+  font-size: clamp(1.08rem, 1rem + 0.3vw, 1.25rem);
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 46ch;
+  text-wrap: pretty;
+}
+
+.fri-mono {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ---------- Ordmärke och navigation ---------- */
+
+.fri-mark {
+  font-family: var(--display);
+  font-weight: 760;
+  font-size: 1.6rem;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.fri-mark::after {
+  content: "";
+  width: 0.28em;
+  height: 0.28em;
+  border-radius: 999px;
+  background: var(--signal);
+  margin-bottom: 0.08em;
+}
+
+.fri-nav {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.fri-nav-links {
+  display: none;
+  gap: 28px;
+  font-size: 0.95rem;
+}
+
+.fri-nav-links a {
+  text-decoration: none;
+  color: var(--muted);
+  transition: color 160ms ease;
+}
+
+.fri-nav-links a:hover {
+  color: var(--ink);
+}
+
+@media (min-width: 900px) {
+  .fri-nav-links {
+    display: flex;
+  }
+}
+
+.fri-demo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.fri-demo-link .fri-tag {
+  font-size: 0.64rem;
+  padding: 2px 7px;
+}
+
+.fri-tag {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px dashed currentColor;
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------- Knappar ---------- */
+
+.fri-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 54px;
+  padding-inline: 26px;
+  border-radius: 999px;
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 540;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition:
+    transform 160ms var(--ease-press),
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease;
+}
+
+.fri-btn:active {
+  transform: scale(0.97);
+}
+
+.fri-btn-signal {
+  background: var(--signal);
+  color: var(--ink);
+}
+
+.fri-btn-ghost {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.fri-btn-ink {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fri-btn-signal:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .fri-btn-ghost:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .fri-btn-ink:hover {
+    background: var(--ink-2);
+  }
+}
+
+.fri-arrow {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  transition: transform 220ms var(--ease-press);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fri-btn:hover .fri-arrow {
+    transform: translateX(3px);
+  }
+}
+
+/* ---------- Hero ---------- */
+
+.fri-hero {
+  padding-top: clamp(28px, 5vw, 72px);
+  padding-bottom: clamp(72px, 9vw, 128px);
+}
+
+/* Medvetet över craft-floors 6rem-tak: affischrubriken är sidans bärande
+   element, och radbrytningen är fast (två rader) så den kan inte svälla. */
+.fri-h1 {
+  font-size: clamp(3.1rem, 0.6rem + 8.6vw, 8.5rem);
+  margin: 0;
+}
+
+.fri-h1 .line {
+  display: block;
+  overflow: clip;
+  padding-bottom: 0.06em;
+  margin-bottom: -0.06em;
+}
+
+.fri-h1 .line > span {
+  display: inline-block;
+}
+
+.fri-dot {
+  color: var(--signal);
+}
+
+.fri-hero-grid {
+  display: grid;
+  gap: 48px;
+  margin-top: clamp(32px, 4vw, 56px);
+}
+
+@media (min-width: 1024px) {
+  .fri-hero-grid {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    gap: 64px;
+    align-items: start;
+  }
+}
+
+.fri-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 36px;
+}
+
+.fri-demo-note {
+  margin-top: 16px;
+}
+
+/* Exempelkortet */
+.fri-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow:
+    0 1px 0 rgb(16 18 17 / 0.04),
+    0 30px 60px -32px rgb(16 18 17 / 0.28);
+  padding: clamp(20px, 2.4vw, 28px);
+}
+
+.fri-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+}
+
+.fri-msg-you {
+  margin-top: 20px;
+  margin-left: auto;
+  max-width: 88%;
+  background: var(--paper);
+  border-radius: 14px 14px 4px 14px;
+  padding: 12px 16px;
+  font-size: 0.98rem;
+}
+
+.fri-msg-you .who,
+.fri-msg-spark .who {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.fri-msg-spark {
+  margin-top: 16px;
+  font-size: 1.06rem;
+  line-height: 1.5;
+}
+
+.fri-stamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.fri-stamp {
+  --rot: -2deg;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 560;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--signal-ink);
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  padding: 5px 10px;
+  transform: rotate(var(--rot));
+}
+
+.fri-stamp:nth-child(2) {
+  --rot: 1.5deg;
+}
+
+.fri-card-foot {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.95rem;
+}
+
+.fri-card-foot .step {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  font-weight: 540;
+}
+
+/* ---------- Resan ---------- */
+
+.fri-section {
+  padding-block: clamp(88px, 11vw, 160px);
+  border-top: 1px solid var(--line);
+}
+
+.fri-journey {
+  display: grid;
+  gap: 56px;
+}
+
+@media (min-width: 1024px) {
+  .fri-journey {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 80px;
+  }
+  .fri-journey-intro {
+    position: sticky;
+    top: 48px;
+    align-self: start;
+  }
+}
+
+.fri-steps {
+  position: relative;
+  padding-left: 28px;
+  view-timeline: --fri-steps block;
+}
+
+/* Skenan: en tunn linje som fylls i takt med att man läser resan. */
+.fri-rail,
+.fri-rail-fill {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+}
+
+.fri-rail {
+  background: var(--line);
+}
+
+.fri-rail-fill {
+  background: var(--signal);
+  transform-origin: top;
+  transform: scaleY(1);
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .fri-rail-fill {
+      animation: fri-fill linear both;
+      animation-timeline: --fri-steps;
+      animation-range: entry 35% exit 65%;
+    }
+  }
+}
+
+@keyframes fri-fill {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.fri-phase + .fri-phase {
+  margin-top: 48px;
+}
+
+.fri-phase-name {
+  font-family: var(--display);
+  font-weight: 660;
+  font-size: 1.7rem;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.fri-phase-desc {
+  color: var(--muted);
+  margin-top: 6px;
+  max-width: 44ch;
+}
+
+.fri-step-list {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.fri-step {
+  display: grid;
+  grid-template-columns: 3.2rem minmax(0, 1fr);
+  align-items: baseline;
+  padding-block: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.fri-step .num {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--signal-ink);
+}
+
+.fri-step .title {
+  font-size: clamp(1.15rem, 1rem + 0.5vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: -0.012em;
+}
+
+/* ---------- Underlaget (mörk yta) ---------- */
+
+.fri-dark {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.fri-dark .fri-lead {
+  color: var(--muted-dark);
+}
+
+.fri-sources {
+  display: grid;
+  gap: 40px;
+  margin-top: clamp(56px, 7vw, 96px);
+}
+
+@media (min-width: 900px) {
+  .fri-sources {
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+  }
+}
+
+.fri-source {
+  border-top: 1px solid var(--line-dark);
+  padding-top: 24px;
+}
+
+.fri-source-name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(2.4rem, 1.6rem + 2.6vw, 4rem);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.fri-source-name::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--signal);
+  margin-top: 18px;
+}
+
+.fri-source-desc {
+  margin-top: 16px;
+  color: var(--muted-dark);
+  max-width: 40ch;
+  font-size: 1.08rem;
+}
+
+.fri-dark .fri-stamp {
+  color: var(--signal);
+}
+
+.fri-stamp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: clamp(48px, 6vw, 80px);
+  color: var(--muted-dark);
+}
+
+/* ---------- Medgrundaren: en trappa av påståenden ---------- */
+
+.fri-stair {
+  margin-top: clamp(48px, 6vw, 88px);
+  display: grid;
+  gap: clamp(36px, 4vw, 56px);
+}
+
+.fri-stair-item {
+  border-top: 1.5px solid var(--ink);
+  padding-top: 18px;
+  max-width: 760px;
+}
+
+@media (min-width: 1024px) {
+  .fri-stair-item:nth-child(2) {
+    margin-left: 16%;
+  }
+  .fri-stair-item:nth-child(3) {
+    margin-left: 32%;
+  }
+}
+
+.fri-stair-title {
+  font-family: var(--display);
+  font-weight: 660;
+  font-size: clamp(1.7rem, 1.2rem + 1.6vw, 2.6rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.fri-stair-body {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 1.08rem;
+  max-width: 48ch;
+}
+
+/* ---------- Pris och mejl (signalyta) ---------- */
+
+.fri-signal {
+  background: var(--signal);
+  color: var(--ink);
+}
+
+.fri-close {
+  display: grid;
+  gap: 56px;
+}
+
+@media (min-width: 1024px) {
+  .fri-close {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 80px;
+    align-items: end;
+  }
+}
+
+.fri-price {
+  font-family: var(--display);
+  font-weight: 760;
+  font-size: clamp(4rem, 2rem + 6vw, 6rem);
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fri-price small {
+  font-family: var(--sans);
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.fri-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+@media (min-width: 560px) {
+  .fri-form-row {
+    flex-direction: row;
+  }
+}
+
+.fri-input {
+  flex: 1;
+  min-width: 0;
+  height: 54px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  background: var(--white);
+  color: var(--ink);
+  padding-inline: 22px;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.fri-input[aria-invalid="true"] {
+  border-width: 2.5px;
+}
+
+/* ---------- Sidfot ---------- */
+
+.fri-footer {
+  padding-block: 40px 48px;
+  display: grid;
+  gap: 24px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+@media (min-width: 900px) {
+  .fri-footer {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 40px;
+  }
+}
+
+.fri-lang {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.fri-lang button {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  padding: 5px 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.fri-lang button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------- Rörelse: ett komponerat ögonblick i hero ---------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .fri-h1 .line > span {
+    animation: fri-rise 1000ms var(--ease-out-expo) both;
+  }
+  .fri-h1 .line:nth-child(2) > span {
+    animation-delay: 90ms;
+  }
+  .fri-reveal {
+    animation: fri-fade-up 900ms var(--ease-out-expo) 260ms both;
+  }
+  .fri-reveal-late {
+    animation: fri-fade-up 900ms var(--ease-out-expo) 420ms both;
+  }
+  .fri-card .fri-stamp {
+    animation: fri-stamp 520ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
+    animation-delay: 1050ms;
+  }
+  .fri-card .fri-stamp:nth-child(2) {
+    animation-delay: 1200ms;
+  }
+}
+
+@keyframes fri-rise {
+  from {
+    transform: translateY(108%);
+  }
+}
+
+@keyframes fri-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+@keyframes fri-stamp {
+  from {
+    opacity: 0;
+    transform: scale(1.4) rotate(var(--rot));
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(var(--rot));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fri-btn:active {
+    transform: none;
+  }
+}

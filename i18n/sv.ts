@@ -904,4 +904,81 @@ export const sv = {
       fiction: "Företag och personer i demot är fiktiva. Spark ger vägledning, inte juridisk eller ekonomisk rådgivning.",
     },
   },
+  experimentFree: {
+    nav: {
+      home: "Spark, startsida",
+      journey: "Resan",
+      sources: "Underlaget",
+      price: "Pris",
+      demo: "Se demot",
+      demoTag: "Fiktiv data",
+      language: "Språk",
+    },
+    hero: {
+      titleA: "Från idé",
+      titleB: "till första kunden",
+      lead: "Spark är en AI-\u2060medgrundare för dig som startar företag i Sverige. Den tar dig steg för steg från idé till första kunden, med riktig företagsdata från Bolagsverket och SCB under varje beslut.",
+      demoCta: "Se demot",
+      demoNote: "Demo med fiktiv data",
+      signupCta: "Få besked",
+    },
+    example: {
+      label: "Exempel",
+      you: "Du",
+      question: "Jag vill starta en bokföringstjänst för hantverkare i Umeå. Finns det kunder?",
+      answer: "Det tar vi reda på i stället för att gissa. Jag hämtar hantverksföretagen i Umeå ur Bolagsverket och marknadsstatistiken ur SCB. Sedan kontaktar du några av dem.",
+      next: "Nästa steg",
+    },
+    journey: {
+      title: "Tolv steg. Ett i taget.",
+      lead: "Resan börjar med vem du är och slutar med de första kunderna. Varje steg ger dig en konkret uppgift och visar vad som återstår.",
+      stepLabel: "Steg",
+      phases: {
+        discover: "Vem du är och vilka idéer som passar dig.",
+        tryPhase: "Marknaden, kunderna och samtalen som visar om idén håller.",
+        launch: "Pris, omfång och det formella inför starten.",
+        grow: "De första kunderna och kapitalet.",
+      },
+    },
+    sources: {
+      title: "Ingen källa, inget påstående.",
+      lead: "Varje uppgift i Spark visar var den kommer ifrån och när den hämtades. Finns det ingen källa säger Spark att den inte vet.",
+      bolagsverket: "Företagen: vilka som finns, i vilken bransch och var, och vad deras årsredovisningar visar.",
+      scb: "Statistiken: hur stor marknaden är och hur den ser ut.",
+      stampNote: "Källa och datum, på varje uppgift.",
+    },
+    cofounder: {
+      title: "En medgrundare som säger emot.",
+      items: {
+        straight: {
+          title: "Säger rakt ut när idén är svag.",
+          body: "Håller inte svaren föreslår Spark att du förfinar idén eller byter spår.",
+        },
+        memory: {
+          title: "Minns varje beslut.",
+          body: "Det du bestämt i ett steg följer med genom resten av resan.",
+        },
+        score: {
+          title: "Mäter bevis, inte optimism.",
+          body: "Poängen bygger på källor och kundsvar, och den kan sjunka.",
+        },
+      },
+    },
+    price: {
+      lead: "Demot är gratis och kräver inget konto.",
+      allPlans: "Se alla nivåer",
+    },
+    signup: {
+      title: "Få veta när Spark öppnar.",
+      emailLabel: "Mejladress",
+      submit: "Få besked",
+      help: "Formuläret är inte kopplat än. Inget sparas.",
+      invalid: "Skriv en giltig mejladress, till exempel namn@exempel.se.",
+      sent: "Tack. Formuläret är inte kopplat än, så adressen har inte sparats.",
+    },
+    footer: {
+      experiment: "Designexperiment.",
+      fiction: "Företag och personer i demot är fiktiva. Spark ger vägledning, inte juridisk eller ekonomisk rådgivning.",
+    },
+  },
 } satisfies Dictionary;

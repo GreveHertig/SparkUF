@@ -406,3 +406,12 @@ Ett fristående experiment med en annan landningssida än `/`, byggt med skillse
 - **Inga eyebrows.** Ljust tema med en medveten mörk avslutning (`navy`), som uppdraget redan föreskriver för sidfot.
 - **Kontrast, uträknad:** `slate-600` på `paper-50` är 4,30:1 och klarar inte AA. Etiketterna på `paper-50` använder därför `slate-700`. Övriga nya par ligger på 5,7–15:1. Reglagets spår (`slate-500` mot vitt) ger 3,14:1 för icke-text.
 - **Pris:** 149 kr/mån är en platshållare märkt TBD. Uppdragets 199 kr/mån gäller fortfarande `/priser`.
+
+## Designexperiment — /experiment/fri (gren `experiment/landning-fri`, lokal, mergas aldrig)
+
+En landningssida från ett tomt blad, med egen identitet, för att jämföras med `/experiment/landning`. Den använder varken designsystemets tokens eller komponenter. Alla värden ligger lokalt i `app/experiment/fri/fri.css` under `.fri`.
+
+- **Identitet:** bläck (`#101211`) på papper (`#f3f3ef`) med en enda signalorange (`#ff4a1c`, "gnistan"). Mörk yta för underlaget och signalytan för pris och mejl. Kontrast uträknad: bläck/papper 16,9, bläck på signal 5,6, signaltext (`#c2330f`) på papper 5,0.
+- **Typsnitt (nya beroenden):** Bricolage Grotesque (rubriker), Geist (brödtext) och Geist Mono (källstämplar och stegnummer, där de bär data). Alla självhostade via `@fontsource-variable`.
+- **Komposition:** affischrubrik på två fasta rader (medvetet över craft-floors 6rem-tak) med ett exempelsamtal där källstämplarna "trycks" på. Resan har en klistrad intro och en skena som fylls när man scrollar (CSS scroll-driven animation, statisk utan stöd eller med reducerad rörelse). Källorna visas som stor typografi på mörk yta, medgrundarens tre drag som en trappa, och pris plus mejl på signalytan.
+- **Innehåll:** stegtitlar ur `journeySteps`, faser ur `JOURNEY_STEP_META`, priset ur `pricingPage.founder`. Inga siffror utöver pris och stegnummer, inga citat, partnerskap eller "den enda"-påståenden.

@@ -2443,3 +2443,9 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 ### Beslut
 - Grenen pushas aldrig och mergas aldrig. Den är ett designexperiment att jämföra mot `/`.
 - Priset 149 kr/mån är en platshållare (TBD) och ändrar inte `/priser`.
+
+## Designexperiment — /experiment/fri (gren `experiment/landning-fri`, lokal, mergas aldrig)
+- Grenad från `experiment/landning-erik` @ c28ba7f, efter att den lokala, opushade commiten b127b81 (ny hero-text, 199-pris, Hem i demot) backats bort på begäran.
+- `app/experiment/fri/` innehåller `page.tsx`, `layout.tsx` (noindex, typsnitt), `FreeSignup.tsx`, `fri.css` (egen identitet, inga designsystem-tokens) och `page.test.tsx`. i18n: `experimentFree` (sv/en).
+- **Nya beroenden:** `@fontsource-variable/bricolage-grotesque`, `@fontsource-variable/geist`, `@fontsource-variable/geist-mono` (5.3.0, bara typsnittsfiler och CSS).
+- `/experiment/landning` är orörd.

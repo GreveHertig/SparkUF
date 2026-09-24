@@ -900,4 +900,81 @@ export const en = {
       fiction: "Companies and people in the demo are fictional. Spark gives guidance, not legal or financial advice.",
     },
   },
+  experimentFree: {
+    nav: {
+      home: "Spark, home",
+      journey: "The journey",
+      sources: "The evidence",
+      price: "Price",
+      demo: "See the demo",
+      demoTag: "Fictional data",
+      language: "Language",
+    },
+    hero: {
+      titleA: "From idea",
+      titleB: "to first customer",
+      lead: "Spark is an AI co-\u2060founder for people starting a company in Sweden. It takes you step by step from idea to first customer, with real company data from Bolagsverket and SCB behind every decision.",
+      demoCta: "See the demo",
+      demoNote: "Demo with fictional data",
+      signupCta: "Get notified",
+    },
+    example: {
+      label: "Example",
+      you: "You",
+      question: "I want to start a bookkeeping service for tradespeople in Umeå. Are there customers?",
+      answer: "Let's find out instead of guessing. I'll pull the trade companies in Umeå from Bolagsverket and the market statistics from SCB. Then you contact a few of them.",
+      next: "Next step",
+    },
+    journey: {
+      title: "Twelve steps. One at a time.",
+      lead: "The journey starts with who you are and ends with your first customers. Every step gives you a concrete task and shows what is left.",
+      stepLabel: "Step",
+      phases: {
+        discover: "Who you are and which ideas suit you.",
+        tryPhase: "The market, the customers and the calls that show whether the idea holds.",
+        launch: "Price, scope and the formalities before you start.",
+        grow: "The first customers and the capital.",
+      },
+    },
+    sources: {
+      title: "No source, no claim.",
+      lead: "Every fact in Spark shows where it came from and when it was retrieved. If there is no source, Spark says it does not know.",
+      bolagsverket: "The companies: which ones exist, in which industry and where, and what their annual reports show.",
+      scb: "The statistics: how big the market is and what it looks like.",
+      stampNote: "Source and date, on every fact.",
+    },
+    cofounder: {
+      title: "A co-founder who pushes back.",
+      items: {
+        straight: {
+          title: "Says it plainly when the idea is weak.",
+          body: "If the answers do not hold up, Spark suggests refining the idea or changing course.",
+        },
+        memory: {
+          title: "Remembers every decision.",
+          body: "What you decide in one step carries through the rest of the journey.",
+        },
+        score: {
+          title: "Measures evidence, not optimism.",
+          body: "The score is built on sources and customer answers, and it can drop.",
+        },
+      },
+    },
+    price: {
+      lead: "The demo is free and needs no account.",
+      allPlans: "See all plans",
+    },
+    signup: {
+      title: "Hear when Spark opens.",
+      emailLabel: "Email address",
+      submit: "Get notified",
+      help: "This form is not connected yet. Nothing is stored.",
+      invalid: "Enter a valid email address, for example name@example.com.",
+      sent: "Thanks. The form is not connected yet, so your address was not stored.",
+    },
+    footer: {
+      experiment: "Design experiment.",
+      fiction: "Companies and people in the demo are fictional. Spark gives guidance, not legal or financial advice.",
+    },
+  },
 } satisfies Dictionary;

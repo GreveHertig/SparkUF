@@ -800,4 +800,33 @@ export type Dictionary = {
     };
     footer: { experiment: string; fiction: string };
   };
+  /** Designexperimentet /experiment/fri (gren experiment/landning-fri,
+   * mergas aldrig). Egen visuell identitet, samma sanningskrav på innehållet.
+   * Priset läses från `pricingPage.founder`; stegtitlar från `journeySteps`. */
+  experimentFree: {
+    nav: { home: string; journey: string; sources: string; price: string; demo: string; demoTag: string; language: string };
+    hero: { titleA: string; titleB: string; lead: string; demoCta: string; demoNote: string; signupCta: string };
+    example: { label: string; you: string; question: string; answer: string; next: string };
+    journey: {
+      title: string;
+      lead: string;
+      stepLabel: string;
+      phases: Record<"discover" | "tryPhase" | "launch" | "grow", string>;
+    };
+    sources: { title: string; lead: string; bolagsverket: string; scb: string; stampNote: string };
+    cofounder: {
+      title: string;
+      items: Record<"straight" | "memory" | "score", { title: string; body: string }>;
+    };
+    price: { lead: string; allPlans: string };
+    signup: {
+      title: string;
+      emailLabel: string;
+      submit: string;
+      help: string;
+      invalid: string;
+      sent: string;
+    };
+    footer: { experiment: string; fiction: string };
+  };
 };
