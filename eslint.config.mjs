@@ -99,6 +99,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Gitignorerad arbetsmapp för lokala provskript och buntar, inte appkod.
+    "scratchpad/**",
   ]),
 ]);
 
