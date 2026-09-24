@@ -21,6 +21,15 @@ const mailPattern = {
     "Sändning är avstängd tills Theodor och grundaren uttryckligen sagt ja. Se docs/moduler/utskick-och-svar.md, Sändspärr.",
 };
 
+// Registergrinden (docs/moduler/registret.md, "Säkerhet" punkt a): transporterna
+// anropar själva assertRegistryAccessAllowed(), och bara liveadaptern (och
+// tester) får importera dem, så att en framtida route inte når registret förbi
+// adaptern.
+const registryTransportPattern = {
+  group: ["**/lib/server/bolagsverket", "**/lib/server/scb", "./bolagsverket", "./scb"],
+  message:
+    "Registertransporterna importeras bara av adapters/live/RegistryProvider.ts. Se docs/moduler/registret.md, Säkerhet.",
+};
 // Registercachen (lib/server/registryCache.ts) bär service role-nyckeln och går
 // förbi RLS. Bara registrets liveadapter och tester får importera den
 // (docs/beslut.md 2026-09-23, docs/arkitektur.md avsnitt 9).
@@ -29,7 +38,8 @@ const registryCachePattern = {
   message:
     "Registercachen (service role) importeras bara av adapters/live/RegistryProvider.ts. Se docs/arkitektur.md, avsnitt 9.",
 };
-const registryCacheImporters = ["adapters/live/RegistryProvider.ts", "**/*.test.ts"];
+// Transporterna och cachen har samma tillåtna importörer.
+const registryImporters = ["adapters/live/RegistryProvider.ts", "**/*.test.ts"];
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -45,6 +55,7 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             mailPattern,
+            registryTransportPattern,
             registryCachePattern,
             {
               group: [
@@ -61,17 +72,21 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Sändspärr och registercachen: se mailPattern och registryCachePattern ovan.
-  // Gäller alla filer utom demofilerna, som har egen regel (flat config ersätter
-  // regelns inställningar, slår inte ihop dem).
+  // Sändspärr, registergrinden och registercachen: se mailPattern,
+  // registryTransportPattern och registryCachePattern ovan. Gäller alla filer
+  // utom demofilerna, som har egen regel (flat config ersätter regelns
+  // inställningar, slår inte ihop dem).
   {
-    ignores: ["app/demo/**", "adapters/demo/**", ...registryCacheImporters],
+    ignores: ["app/demo/**", "adapters/demo/**", ...registryImporters],
     rules: {
-      "no-restricted-imports": ["error", { patterns: [mailPattern, registryCachePattern] }],
+      "no-restricted-imports": [
+        "error",
+        { patterns: [mailPattern, registryTransportPattern, registryCachePattern] },
+      ],
     },
   },
   {
-    files: registryCacheImporters,
+    files: registryImporters,
     ignores: ["app/demo/**", "adapters/demo/**"],
     rules: {
       "no-restricted-imports": ["error", { patterns: [mailPattern] }],

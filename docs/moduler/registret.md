@@ -136,6 +136,7 @@ grinden tas bort, i en commit som också uppdaterar det här avsnittet.
 
 **Regler för framtiden (security-review 2026-09-19):**
 - `competitors[].name/description` är extern text, rensad men inte neutraliserad. Om Gemini/Tavily någon gång får läsa dem: lägg dem i ett avgränsat databloc, säg i systemprompten att de är opålitliga, och aktivera inga verktygsanrop utifrån dem.
+- **Uppfyllt för Bolagsverket 2026-09-23:** (a) transporten anropar grinden själv, och lint-regeln `registryTransportPattern` i `eslint.config.mjs` låter bara liveadaptern och tester importera `bolagsverket`/`scb`; (b) bas-URL:en kommer bara från miljövariabeln och måste vara https mot `*.api.bolagsverket.se`; (c) timeout 10 s och minst 200 ms mellan anrop i processen (Bolagsverket skickar inga rate limit-headers, så det finns ingen throttle per användare); (d) felen bär aldrig `cause`, request-id eller svarstext. Org.nr med tredje siffran under 2 (personnummer) avvisas före anropet. Kvar för SCB:
 - När transporterna skrivs: (a) de ska själva anropa `assertRegistryAccessAllowed()` eller bara importeras av `adapters/live/RegistryProvider.ts` (lägg en `no-restricted-imports`-regel), så en framtida route inte kan gå förbi grinden; (b) bas-URL bara från miljövariabel, aldrig från indata (SSRF); (c) timeout, paginering och throttle per användare (SCB: 2 000 rader/anrop, 10 anrop/10 s) — `getMarketOverview` utan `sniCode` hämtar hela registret; (d) logga aldrig `RegistryTransportError.cause` (ZodError kan innehålla registervärden), bara `issues[].path` och `code`.
 - `REGISTRY_LIVE_ENABLED` måste vara exakt `true` (`1`/`TRUE` nekas, avsiktligt).
 - Bolagsnamn kan innehålla personnamn. Aktiebolag är juridiska personer och reklamspärr respekteras, men det är en GDPR-nyans att ta upp med Juridisk koll (§6 fråga 4).
@@ -153,15 +154,38 @@ policies och är stängd för alla klienter.
 
 ## Status
 
-**påbörjad — grindad, transporten oskriven.** `adapters/live/RegistryProvider.ts`
-är byggd: grind, indatavalidering, aktiebolag utan reklamspärr, källstämpling
-och ärlighet kring luckor. Men `lib/server/scb.ts` och `lib/server/bolagsverket.ts`
-kastar `RegistryTransportError` (inga nycklar, ingen API-spec, kundanmälan är
-inte skickad). Kontraktstestet är grönt **mot mockad transport i en ANTAGEN
-svarsform** (`lib/server/registrySchemas.ts`): det bevisar vår logik, inte att
-Bolagsverket/SCB ser ut så. **Exponering är spärrad**, se "Licensgrind".
-Demoadaptern är klar och används av `/demo/app/marknad` och
+**påbörjad — grindad, Bolagsverket-transporten delvis skriven (2026-09-23).**
+`adapters/live/RegistryProvider.ts` är byggd: grind, indatavalidering,
+aktiebolag utan reklamspärr, källstämpling och ärlighet kring luckor.
+`lib/server/bolagsverket.ts` gör nu riktiga anrop mot `/organisationer` och
+`/dokumentlista` (se "Bolagsverket-transporten" nedan). Svarsformen är
+verifierad mot Eriks körning i steg A (`docs/dataspiken.md`). Transporten är
+**inte kopplad till adaptern än**, och det finns tre skäl: `searchCompanies`
+och `getMarketOverview` börjar i SCB:s lista, `lib/server/scb.ts` kastar
+fortfarande, och `fetchAnnualFigures` (/dokument, iXBRL) är uppskjuten.
+Kontraktstestet är fortfarande grönt **mot mockad transport i en ANTAGEN
+svarsform** (`lib/server/registrySchemas.ts`). **Exponering är spärrad**, se
+"Licensgrind". Demoadaptern är klar och används av `/demo/app/marknad` och
 `/demo/app/kunder` (via Utskick och svar).
+
+## Bolagsverket-transporten (`lib/server/bolagsverket.ts`)
+
+- **`lookupOrganisation(orgNr)`**: `POST /organisationer`. Returnerar en platt
+  `BolagsverketOrganisation` (namn, organisationsform, SNI-koder som fem
+  siffror, verksam, avregistrerad, avveckling, reklamspärr, postnummer, ort,
+  verksamhetsbeskrivning och `fetchedAt`). Okänt blir `null`, aldrig en
+  gissning. **`advertisingBlock: null` betyder okänt**, inte "ingen spärr".
+  Adaptern måste därför behandla `null` som att bolaget inte får visas tills
+  frågan är utredd. Tom lista eller 404 ger `[]`.
+- **`fetchDocumentList(orgNr)`**: `POST /dokumentlista`. Elementens form är
+  overifierad, eftersom listan var tom för alla bolag i steg A.
+- **`fetchAnnualFigures`** kastar fortfarande, eftersom `/dokument` och iXBRL
+  är uppskjutna (inga nya beroenden).
+- **Token:** OAuth 2 client credentials mot en fast token-URL, cachas i
+  minnet tills 60 s före `expires_in`. Vid 401 hämtas en ny token och anropet
+  görs om en gång.
+- **Miljövariabler:** `BOLAGSVERKET_CLIENT_ID`, `BOLAGSVERKET_CLIENT_SECRET`
+  och `BOLAGSVERKET_API_BASE_URL` (https mot `*.api.bolagsverket.se`).
 
 ## Hur liveadaptern fungerar i dag
 
@@ -208,7 +232,9 @@ Demoadaptern är klar och används av `/demo/app/marknad` och
 1. Spik med riktiga nycklar (`docs/dataspiken.md` §3): kan man söka på SNI, vilka
    iXBRL-taggar finns, går län att härleda, vad säger villkoren om lagring.
 2. Skriv transporten och skriv om `lib/server/registrySchemas.ts` mot det
-   verkliga svaret; byt `RegistryProvider.live.test.ts` mot riktiga anrop.
+   verkliga svaret (**Bolagsverket `/organisationer` och `/dokumentlista`
+   klart 2026-09-23**; kvar är SCB, `/dokument`/iXBRL och att koppla in
+   `lookupOrganisation` i adaptern); byt `RegistryProvider.live.test.ts` mot riktiga anrop.
    Respektera SCB:s gränser (2 000 rader/anrop, 10 anrop/10 s). Adaptern kastar `RegistryTransportError` om ett svar når 2 000 rader (troligen avkortat) tills paginering finns.
 3. ~~Läs Bolagsverkets villkor (Verifierat)~~ klart 2026-09-23. Grinden lyfts först när de tre kraven under "Licensgrind" är uppfyllda.
 4. Portens `employees`/`revenueKsek` är icke-nullbara, så bolag med okänt värde

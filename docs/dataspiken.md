@@ -282,65 +282,138 @@ filer, enligt reservplanen redan skisserad nedan.
 - Inget eget länsfält, bara postnummer i adressen. Län måste härledas ur
   postnumret.
 
-**Kvar att utreda:** `/dokumentlista` gav tom lista för Volvo
-(5560125790). Kan bero på fel anrop, på att bolaget saknar digital
-årsredovisning i materialet, eller på `[TEST]`-åtkomsten. Bas-URL:en
-`https://gw.api.bolagsverket.se/vardefulla-datamangder/v1` användes i
-skriptet från minnet, och Erik har sedan fått uppslaget att fungera, men
-den är ännu inte skriven in här från specen.
+**Kvar att utreda:** se "Fortfarande okänt efter steg A" nedan.
+`/dokumentlista` var tom även för Ericsson och H&M. Bas-URL:en fungerar
+men är inte avläst i specen.
 
-### Svarsformat, POST /organisationer
+### Svarsformat, verifierat mot riktiga anrop (steg A, 2026-09-23)
 
-Struktur enligt Swagger-specen, **inte verifierad mot ett faktiskt
-testanrop.** Verifiera fälten mot ett riktigt svar innan strukturen låses i
-adaptern.
+**Status: Verifierat.** Erik körde `scratchpad/bv-steg-a.mjs` (gitignorerad,
+fristående) från sin egen dator 2026-09-23 mot tre aktiebolag: Volvo
+(5560125790), Ericsson (5560160680) och H&M (5560427220), plus tre felfall.
+Claude Code läste utdatafilen, men anropen är inte Claudes egna, eftersom
+Codespacet fortfarande inte når Bolagsverket: timeout både över IPv4 och
+IPv6 samma dag, medan `www.scb.se` svarade. Ip-adresser, trace-id och
+request-id ur utdatan skrivs medvetet inte in här.
+
+**Adresser (Verifierat, fungerade i körningen):**
+- Token: `POST https://portal.api.bolagsverket.se/oauth2/token`,
+  `grant_type=client_credentials` med `client_id`, `client_secret` och
+  `scope=vardefulla-datamangder:read` som formulärfält. Svar:
+  `{ access_token, scope, token_type: "Bearer", expires_in: 3600 }`.
+- Bas-URL: `https://gw.api.bolagsverket.se/vardefulla-datamangder/v1`.
+  Adressen fungerade, men den är inte avläst i Swagger-specen. Vad
+  `[TEST]` betyder är fortfarande oklart.
+- Gatewayen är WSO2 API Manager. Svaren hade **inga rate limit-headers**
+  (varken `x-ratelimit-*` eller `retry-after`), så gränserna är fortfarande
+  okända.
+
+**`GET /isalive` med scope `:read`:** HTTP 403, WSO2-format
+`{ code: "900910", message, description: "…Scope validation failed." }`.
+Det bekräftar att `/isalive` kräver scope `:ping`.
+
+**`POST /organisationer`**, body `{ "identitetsbeteckning": "<10 siffror>" }`:
+HTTP 200, `{ "organisationer": [ … ] }` med ett element per bolag. Alla tre
+bolagen gav samma fält. Så här ser Ericssons svar ut i kort form
+(verksamhetsbeskrivningen är avkortad):
 
 ```json
 {
   "organisationer": [
     {
-      "identitetsbeteckning": "5560000000",
-      "organisationsnamn": {
-        "organisationsnamnLista": [
-          { "namn": "Exempel AB", "typ": "REGISTRERAT_NAMN" }
-        ]
-      },
+      "avregistreradOrganisation": null,
+      "avregistreringsorsak": null,
+      "juridiskForm": { "kod": "49", "klartext": "Övriga aktiebolag", "dataproducent": "SCB", "fel": null },
+      "namnskyddslopnummer": null,
       "naringsgrenOrganisation": {
         "sni": [
-          { "kod": "62010", "beskrivning": "Dataprogrammering" }
+          { "kod": "70100", "klartext": "Verksamheter som utövas av huvudkontor" },
+          { "kod": "62201", "klartext": "Datakonsultverksamhet" },
+          { "kod": "     ", "klartext": "" },
+          { "kod": "     ", "klartext": "" },
+          { "kod": "     ", "klartext": "" }
+        ],
+        "dataproducent": "SCB", "fel": null
+      },
+      "organisationsdatum": { "registreringsdatum": "1918-08-19", "dataproducent": "Bolagsverket", "fel": null, "infortHosScb": "1972-01-01" },
+      "organisationsform": { "kod": "AB", "klartext": "Aktiebolag", "dataproducent": "Bolagsverket", "fel": null },
+      "organisationsidentitet": { "identitetsbeteckning": "5560160680", "typ": { "kod": "ORGNR", "klartext": "Organisationsnummer" } },
+      "organisationsnamn": {
+        "dataproducent": "Bolagsverket", "fel": null,
+        "organisationsnamnLista": [
+          { "namn": "Telefonaktiebolaget LM Ericsson",
+            "organisationsnamntyp": { "kod": "FORETAGSNAMN", "klartext": "Företagsnamn" },
+            "registreringsdatum": "2015-11-19",
+            "verksamhetsbeskrivningSarskiltForetagsnamn": null }
         ]
       },
+      "pagaendeAvvecklingsEllerOmstruktureringsforfarande": null,
       "postadressOrganisation": {
-        "postadress": {
-          "coAdress": null,
-          "utdelningsadress": "Exempelgatan 1",
-          "postnummer": "11122",
-          "postort": "Stockholm",
-          "land": "SE"
-        }
+        "postadress": { "postnummer": "16483", "coAdress": null, "land": null, "postort": "STOCKHOLM", "utdelningsadress": null },
+        "dataproducent": "Bolagsverket", "fel": null
       },
-      "reklamsparr": false
+      "registreringsland": { "kod": "SE-LAND", "klartext": "Sverige" },
+      "reklamsparr": null,
+      "verksamOrganisation": { "kod": "JA", "dataproducent": "SCB", "fel": null },
+      "verksamhetsbeskrivning": { "beskrivning": "Bolaget har till föremål för sin verksamhet att …", "dataproducent": "Bolagsverket", "fel": null }
     }
   ]
 }
 ```
 
-### TODO — öppna punkter från Bolagsverket-spiken
+**Skillnader mot den tidigare Swagger-rekonstruktionen** (skissen är
+borttagen härifrån eftersom den var fel på flera punkter, men den finns kvar i
+git-historiken):
+- Namnet ligger i `organisationsnamnLista[].namn`, och typen heter
+  `organisationsnamntyp.kod` = `"FORETAGSNAMN"`, inte `typ` =
+  `"REGISTRERAT_NAMN"`.
+- SNI-klartexten heter `klartext`, inte `beskrivning`. **SNI-listan har
+  alltid fem platser.** Tomma platser har `kod` = fem blanksteg och
+  `klartext` = `""`. Koderna är fem siffror utan punkt (`70100`).
+- Org.nr ligger i `organisationsidentitet.identitetsbeteckning`, inte på
+  toppnivån.
+- Nästan varje delobjekt har `dataproducent` (`"SCB"` eller
+  `"Bolagsverket"`) och `fel` (`null` i alla svar vi sett).
+- Nya fält som saknades i skissen: `juridiskForm` (SCB:s kod, `49` =
+  "Övriga aktiebolag"), `organisationsform` (Bolagsverkets kod, `AB`),
+  `verksamOrganisation.kod` (`"JA"`), `avregistreradOrganisation`,
+  `avregistreringsorsak`, `pagaendeAvvecklingsEllerOmstruktureringsforfarande`,
+  `organisationsdatum`, `registreringsland`, `namnskyddslopnummer`,
+  `verksamhetsbeskrivning`.
+- `postadress.land` var `null` för alla tre, inte `"SE"`.
+  `utdelningsadress` kan vara `null` (Volvo, Ericsson) eller en sträng (H&M).
 
-Noterade 2026-09-21, medvetet inte lösta än:
+**`POST /dokumentlista`**, samma body: HTTP 200 `{ "dokument": [] }` för
+**alla tre** bolagen. Hur ett element i listan ser ut vet vi alltså
+fortfarande inte.
 
-- [ ] **Svarsformatet för `POST /organisationer` är rekonstruerat från
-  Swagger-specen, inte verifierat mot ett riktigt testanrop.** Kör ett
-  anrop och jämför fält för fält innan strukturen låses i adaptern.
-- [ ] **`/dokumentlista` gav tom lista för Volvo (5560125790).** Orsak
-  okänd (fel anrop, ingen digital årsredovisning i materialet, eller
-  `[TEST]`-åtkomst). Prova fler organisationsnummer och kontrollera
-  anropets utformning mot specen.
-- [ ] **Bas-URL:en är inte inskriven från specen.** Skriptet använde
-  `https://gw.api.bolagsverket.se/vardefulla-datamangder/v1` från minnet.
-  Läs den ur Swagger-specen och skriv in den här.
-- [ ] Vad `[TEST]` i bekräftelsemailet betyder (separat produktionsmiljö
-  eller ej), se "Spik med nycklar".
+**Felformat (Verifierat):**
+- **Gatewayfel (WSO2), 401/403:** `{ code, message, description }`. Utan
+  token ger det 401 med `code` `"900902"` ("Missing Credentials") och en
+  `www-authenticate: … Bearer realm="WSO2 API Manager" …`-header.
+- **API-fel, 400:** Problem Details-form `{ type: "about:blank", instance:
+  "client.error", status: 400, title: "Bad Request", detail, requestId,
+  timestamp: null }`. Org.nr `5599999999` gav `detail` = "Identitetsbeteckning
+  har ogiltig kontrollsiffra.", och `"abc"` gav "Felaktigt format för
+  identitetsbeteckning.". **API:et kontrollerar alltså kontrollsiffran
+  (Luhn)** innan det slår upp numret.
+
+**Fortfarande okänt efter steg A (Osäkert):**
+- [ ] **Hur ett bolag som inte finns besvaras** (404 eller tom lista).
+  `5599999999` testade bara kontrollsiffran. Transporten behandlar båda
+  fallen som "inte hittad".
+- [ ] **`reklamsparr`** var `null` för alla tre. Vi vet inte om `null`
+  betyder "ingen spärr" eller "uppgift saknas", eller hur en satt spärr ser
+  ut. Transporten tolkar `null` som **okänt**, inte som "ingen spärr".
+- [ ] **`fel`** var `null` överallt, så formen på ett ifyllt `fel` är okänd.
+  Transporten behandlar ett ifyllt `fel` som att uppgiften saknas.
+- [ ] **`/dokumentlista`** var tom för alla tre stora bolag. Prova med små
+  aktiebolag som lämnat årsredovisningen digitalt. Det behövs innan
+  `/dokument` och iXBRL byggs (uppskjutet 2026-09-23, inga nya beroenden).
+- [ ] **SNI-version:** Bolagsverkets koder är fem siffror. Om de följer SNI
+  2007 eller SNI 2025 är inte avgjort, samma öppna fråga som för SCB.
+- [ ] **Rate limits** saknas i headers. Fråga Bolagsverket.
+- [ ] Vad `[TEST]` i bekräftelsemailet betyder, se "Spik med nycklar".
 
 ## 3. Rekommenderad arkitektur för MVP
 
