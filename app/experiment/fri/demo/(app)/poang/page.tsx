@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/context";
+import type { ScoreSnapshot } from "@/core/domain";
+import type { ScoreSuggestion } from "@/core/score";
+import { useDemoStore } from "@/adapters/demo/demoStore";
+import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
 import { getScoreLevel } from "@/score/levels";
-import { FriSuggestions } from "../_components/FriBlocks";
-import { FriSource } from "../_components/FriSource";
-import { scoreDataFor } from "../_lib/friDemoData";
-import { useFriBeatIndex } from "../_lib/friDemoState";
+import { FriSuggestions } from "../../_components/FriBlocks";
+import { FriSource } from "../../_components/FriSource";
+
+type ScoreData = { snapshot: ScoreSnapshot; suggestions: ScoreSuggestion[]; scoreHistory: number[] };
 
 // Staplarnas längd är delens vikt (högsta vikten = hela bredden) och fyllnaden
 // är poängen i delen, så både vikt och utfall syns i samma form.
@@ -15,8 +19,26 @@ const MAX_WEIGHT = 18;
 /** Poäng i kopian: samma innehåll som /demo/app/poang (screens/Score), ny form. */
 export default function FriDemoScorePage() {
   const { t, locale } = useI18n();
-  const beatIndex = useFriBeatIndex();
-  const { snapshot, suggestions, scoreHistory } = useMemo(() => scoreDataFor(beatIndex, locale), [beatIndex, locale]);
+  const beatIndex = useDemoStore((state) => state.beatIndex);
+  const [data, setData] = useState<ScoreData | null>(null);
+
+  // Samma hämtning som app/demo/app/poang/page.tsx, ur samma adapter.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      demoEvidenceRepository.getScoreSnapshot(locale),
+      demoEvidenceRepository.getSuggestions(locale),
+      demoEvidenceRepository.getScoreHistory(locale),
+    ]).then(([snapshot, suggestions, scoreHistory]) => {
+      if (!cancelled) setData({ snapshot, suggestions, scoreHistory });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, beatIndex]);
+
+  if (!data) return null;
+  const { snapshot, suggestions, scoreHistory } = data;
   const level = getScoreLevel(snapshot.total);
   const unlockedCount = snapshot.parts.length;
   const totalParts = unlockedCount + snapshot.lockedParts.length;
@@ -72,7 +94,7 @@ export default function FriDemoScorePage() {
         )}
       </dl>
 
-      <section className="fri-section-demo">
+      <section className="fri-section-demo" data-tour-id="score-breakdown">
         <h2 className="fri-h2-demo">{t.scorePage.breakdownTitle}</h2>
         <div className="fri-breakdown">
           {snapshot.parts.map((part) => (
@@ -106,7 +128,7 @@ export default function FriDemoScorePage() {
 
       {scoreHistory.length >= 2 && <FriHistory history={scoreHistory} />}
 
-      <section className="fri-section-demo">
+      <section className="fri-section-demo" data-tour-id="score-suggestions">
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
           <h2 className="fri-h2-demo">{t.scorePage.suggestionsTitle}</h2>
           <span className="fri-muted" style={{ fontSize: "0.92rem" }}>

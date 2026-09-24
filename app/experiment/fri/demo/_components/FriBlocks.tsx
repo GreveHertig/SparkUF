@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { NextStep, ScoreSnapshot } from "@/core/domain";
 import type { ScoreSuggestion } from "@/core/score";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
@@ -191,7 +192,7 @@ export function FriScoreCard({ snapshot, title }: { snapshot: ScoreSnapshot; tit
 
 const PHASE_ORDER = ["discover", "tryPhase", "launch", "grow"] as const;
 
-export function FriJourney({ steps }: { steps: JourneyStepView[] }) {
+export function FriJourney({ steps, stepHref }: { steps: JourneyStepView[]; stepHref: (stepNumber: number) => string }) {
   const { t } = useI18n();
   const currentStep = steps.find((step) => step.status === "current");
   const [selectedStep, setSelectedStep] = useState<number>(currentStep?.stepNumber ?? steps[0]?.stepNumber ?? 1);
@@ -251,9 +252,14 @@ export function FriJourney({ steps }: { steps: JourneyStepView[] }) {
               {selected.oneLiner}
             </p>
           </div>
-          <p className="fri-mono" style={{ color: "var(--signal-ink)", whiteSpace: "nowrap" }}>
-            {t.common.upToPointsBefore} {selected.maxPoints} {t.common.upToPointsAfter}
-          </p>
+          <div style={{ display: "grid", gap: 8, justifyItems: "start" }}>
+            <p className="fri-mono" style={{ color: "var(--signal-ink)", whiteSpace: "nowrap" }}>
+              {t.common.upToPointsBefore} {selected.maxPoints} {t.common.upToPointsAfter}
+            </p>
+            <Link href={stepHref(selected.stepNumber)} className="fri-link">
+              {t.journeyPage.openStep}
+            </Link>
+          </div>
         </div>
       )}
     </section>

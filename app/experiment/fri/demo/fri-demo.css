@@ -4,96 +4,84 @@
  * design/tokens.css. Kontrast som i fri.css; nya par är räknade där de införs.
  */
 
-/* ---------- Skal ---------- */
+/* ---------- Skal: sidomeny + sidhuvud ---------- */
 
-.fri-demo-head {
-  border-bottom: 1px solid var(--line);
-  background: var(--paper);
-  position: sticky;
-  top: 0;
-  z-index: 20;
+.fri-app {
+  display: flex;
+  min-height: 100dvh;
 }
 
-.fri-demo-head-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  height: 64px;
+.fri-side {
+  display: none;
 }
 
-.fri-demo-brand {
+@media (min-width: 1100px) {
+  .fri-side {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    width: 248px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    padding: 24px 20px 150px;
+    border-right: 1px solid var(--line);
+    background: var(--paper);
+  }
+}
+
+.fri-side-top {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
-  min-width: 0;
 }
 
-.fri-demo-tabs {
+.fri-side-nav {
   display: flex;
-  gap: 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
 }
 
-.fri-demo-tabs a {
-  position: relative;
-  display: inline-flex;
+.fri-side-nav a,
+.fri-mobile-nav a {
+  display: flex;
   align-items: center;
-  height: 40px;
-  padding-inline: 14px;
+  height: 38px;
+  padding-inline: 12px;
   border-radius: 999px;
-  text-decoration: none;
   color: var(--muted);
+  text-decoration: none;
   font-size: 0.95rem;
   white-space: nowrap;
   transition: color 160ms ease, background-color 160ms ease;
 }
 
-.fri-demo-tabs a:hover {
+.fri-side-nav a:hover,
+.fri-mobile-nav a:hover {
   color: var(--ink);
 }
 
-.fri-demo-tabs a[aria-current="page"] {
+.fri-side-nav a[aria-current="page"],
+.fri-mobile-nav a[aria-current="page"] {
   background: var(--ink);
   color: var(--paper);
 }
 
-.fri-demo-tabs-mobile {
+.fri-side-foot {
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.fri-persona-line {
   display: flex;
-  padding-bottom: 10px;
-}
-
-.fri-demo-tabs-desktop {
-  display: none;
-}
-
-@media (min-width: 900px) {
-  .fri-demo-tabs-mobile {
-    display: none;
-  }
-  .fri-demo-tabs-desktop {
-    display: flex;
-  }
-}
-
-.fri-demo-side {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.fri-persona {
-  display: none;
   align-items: center;
   gap: 10px;
   font-size: 0.92rem;
-}
-
-@media (min-width: 1100px) {
-  .fri-persona {
-    display: inline-flex;
-  }
 }
 
 .fri-initials {
@@ -109,10 +97,178 @@
   letter-spacing: 0.04em;
 }
 
+.fri-app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fri-app-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 24px;
+  padding: 14px var(--gutter);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.fri-app-head-mobile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (min-width: 1100px) {
+  .fri-app-head-mobile {
+    display: none;
+  }
+}
+
+.fri-head-step {
+  display: none;
+  align-items: baseline;
+  gap: 12px;
+  font-weight: 540;
+}
+
+@media (min-width: 1100px) {
+  .fri-head-step {
+    display: flex;
+  }
+}
+
+.fri-head-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
+}
+
+.fri-head-score {
+  display: none;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 0.92rem;
+}
+
+.fri-head-score .num {
+  font-family: var(--display);
+  font-weight: 760;
+  font-size: 1.5rem;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+@media (min-width: 700px) {
+  .fri-head-score {
+    display: inline-flex;
+  }
+}
+
+.fri-mobile-nav {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 10px var(--gutter);
+  border-bottom: 1px solid var(--line);
+}
+
+@media (min-width: 1100px) {
+  .fri-mobile-nav {
+    display: none;
+  }
+}
+
 .fri-demo-main {
   flex: 1;
-  padding-top: clamp(32px, 5vw, 64px);
-  padding-bottom: 180px;
+  width: 100%;
+  max-width: 1180px;
+  padding: clamp(32px, 5vw, 64px) var(--gutter) 220px;
+}
+
+/* ---------- Onboarding ---------- */
+
+.fri-start {
+  min-height: 100dvh;
+}
+
+.fri-start-main {
+  padding-top: clamp(32px, 6vw, 88px);
+  padding-bottom: 220px;
+}
+
+.fri-start-title {
+  font-size: clamp(2.8rem, 1.2rem + 5vw, 5.5rem);
+  max-width: 14ch;
+}
+
+.fri-entry-cards {
+  margin-top: clamp(40px, 5vw, 64px);
+  display: grid;
+  gap: 20px;
+}
+
+@media (min-width: 800px) {
+  .fri-entry-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.fri-entry-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: clamp(24px, 3vw, 36px);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  text-decoration: none;
+  box-shadow: 0 30px 60px -40px rgb(16 18 17 / 0.3);
+  transition: transform 220ms var(--ease-press), border-color 200ms ease, box-shadow 220ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fri-entry-card:hover {
+    border-color: var(--ink);
+    transform: translateY(-2px);
+  }
+}
+
+.fri-entry-card:active {
+  transform: scale(0.985);
+}
+
+.fri-entry-card .title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.2rem);
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+}
+
+.fri-entry-card .cta {
+  margin-top: 8px;
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  height: 44px;
+  padding-inline: 20px;
+  border-radius: 999px;
+  background: var(--signal);
+  color: var(--ink);
+  font-weight: 540;
+}
+
+.fri-start-narrow {
+  max-width: 760px;
 }
 
 /* ---------- Demoraden ---------- */
@@ -120,51 +276,114 @@
 .fri-bar {
   position: fixed;
   inset: auto 0 0 0;
-  z-index: 30;
+  z-index: 40;
   background: var(--ink);
   color: var(--paper);
   border-top: 1px solid var(--line-dark);
 }
 
-.fri-bar-row {
+.fri-bar-top {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px 20px;
-  padding-block: 12px;
-}
-
-.fri-bar-where {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  gap: 14px;
+  padding-top: 10px;
   min-width: 0;
 }
 
-.fri-bar-where .moment {
+.fri-bar-persona {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--line-dark);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  color: var(--muted-dark);
+}
+
+.fri-bar-moment {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.fri-bar-moment .fri-mono {
+  color: var(--muted-dark);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.fri-bar-moment .moment {
   font-size: 0.95rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.fri-bar-where .fri-mono {
-  color: var(--muted-dark);
-  font-size: 0.7rem;
+.fri-bar-collapse {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.fri-bar-collapse:hover {
+  background: var(--ink-2);
+}
+
+.fri-bar-collapse .chev {
+  width: 9px;
+  height: 9px;
+  border-right: 1.5px solid var(--paper);
+  border-bottom: 1.5px solid var(--paper);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 200ms var(--ease-press);
+}
+
+.fri-bar-collapse .chev.up {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+.fri-bar .fri-bar-top {
+  padding-bottom: 10px;
 }
 
 .fri-bar-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  padding-block: 0 12px;
 }
 
 .fri-bar .fri-btn {
   height: 40px;
   padding-inline: 16px;
   font-size: 0.92rem;
+}
+
+.fri-bar-reset {
+  margin-left: auto;
+}
+
+@media (max-width: 699px) {
+  .fri-bar-persona {
+    display: none;
+  }
+  .fri-bar-controls .fri-select {
+    flex: 1 1 100%;
+    max-width: none;
+    order: -1;
+  }
+  .fri-bar-reset {
+    margin-left: 0;
+  }
 }
 
 .fri-btn-outline-dark {
@@ -187,47 +406,9 @@
   transform: none;
 }
 
-@media (max-width: 699px) {
-  .fri-bar-row {
-    padding-block: 10px;
-    gap: 8px;
-  }
-  .fri-bar-where {
-    flex-direction: row;
-    align-items: baseline;
-    gap: 10px;
-    width: 100%;
-  }
-  .fri-bar-where .fri-mono {
-    flex-shrink: 0;
-  }
-  .fri-bar-controls {
-    width: 100%;
-    flex-wrap: nowrap;
-  }
-  .fri-bar-controls .fri-select {
-    flex: 1;
-    min-width: 0;
-    max-width: none;
-  }
-  .fri-bar-controls .fri-textbtn {
-    display: none;
-  }
-  .fri-reset-mobile {
-    margin-left: auto;
-    padding: 0;
-  }
-}
-
-@media (min-width: 700px) {
-  .fri-reset-mobile {
-    display: none;
-  }
-}
-
 .fri-select {
   height: 40px;
-  max-width: 220px;
+  max-width: 260px;
   border-radius: 999px;
   border: 1.5px solid var(--line-dark);
   background: var(--ink-2);
@@ -248,6 +429,16 @@
 
 .fri-textbtn:hover {
   color: var(--paper);
+}
+
+.fri-textbtn[aria-pressed="true"] {
+  color: var(--signal);
+}
+
+.fri-textbtn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.6;
+  text-decoration: none;
 }
 
 /* ---------- Byggblock ---------- */
@@ -771,5 +962,749 @@
 @keyframes fri-bd-grow {
   from {
     transform: scaleX(0);
+  }
+}
+
+/* ---------- Sidhuvud och sektioner ---------- */
+
+.fri-pagehead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.fri-section-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.fri-two-col {
+  display: grid;
+  gap: 48px;
+}
+
+@media (min-width: 1000px) {
+  .fri-two-col {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    gap: 64px;
+  }
+}
+
+/* ---------- Status, låst, koncept ---------- */
+
+.fri-status {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 3px 9px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.fri-status.ok {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.fri-status.warn {
+  border-color: var(--signal-ink);
+  color: var(--signal-ink);
+}
+
+.fri-status.muted {
+  background: var(--line);
+  color: var(--ink);
+}
+
+.fri-status.signal {
+  background: var(--signal);
+  color: var(--ink);
+}
+
+.fri-locked {
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  color: var(--muted);
+}
+
+.fri-locked .fri-mono {
+  color: var(--ink);
+}
+
+.fri-concept {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px dashed var(--ink);
+  border-radius: 999px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+
+/* ---------- Medgrundaren ---------- */
+
+.fri-convo {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.fri-convo-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fri-convo-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fri-chat {
+  display: flex;
+}
+
+.fri-chat p {
+  max-width: min(560px, 88%);
+  padding: 12px 16px;
+  font-size: 1rem;
+  line-height: 1.5;
+  border-radius: 16px;
+}
+
+.fri-chat.founder {
+  justify-content: flex-end;
+}
+
+.fri-chat.founder p {
+  background: var(--ink);
+  color: var(--paper);
+  border-bottom-right-radius: 4px;
+}
+
+.fri-chat.cofounder p {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fri-chat p {
+    animation: fri-fade-up 420ms var(--ease-out-expo) both;
+  }
+}
+
+.fri-toolrun {
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.fri-toolrun .fri-mono {
+  color: var(--muted);
+}
+
+.fri-toolrun ul {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.fri-toolrun li {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  font-size: 0.95rem;
+}
+
+.fri-toolrun li::before {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 1.5px solid var(--signal-ink);
+  border-bottom: 1.5px solid var(--signal-ink);
+  transform: translateY(0.45em) rotate(-45deg);
+}
+
+.fri-timeskip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+}
+
+.fri-timeskip::before,
+.fri-timeskip::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.fri-prompt {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 10px 10px 10px 20px;
+  background: var(--white);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+}
+
+.fri-prompt textarea {
+  flex: 1;
+  resize: none;
+  background: transparent;
+  font: inherit;
+  padding-block: 8px;
+  color: var(--ink);
+}
+
+.fri-prompt textarea::placeholder {
+  color: var(--muted);
+}
+
+.fri-prompt textarea:disabled,
+.fri-prompt button:disabled {
+  cursor: not-allowed;
+}
+
+.fri-context {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+  counter-reset: fri-ctx;
+}
+
+.fri-context li {
+  color: var(--muted);
+  font-size: 0.95rem;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---------- Simulering och domen ---------- */
+
+.fri-sim {
+  border: 1.5px dashed var(--ink);
+  border-radius: var(--radius);
+  padding: clamp(20px, 2.4vw, 28px);
+}
+
+.fri-sim-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.fri-sim-head .fri-mono {
+  color: var(--muted);
+}
+
+.fri-sim-result {
+  margin-top: 14px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.2rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.fri-sim-foot {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.fri-verdict {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--radius);
+  padding: clamp(24px, 3vw, 36px);
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 800px) {
+  .fri-verdict {
+    grid-template-columns: auto 1fr;
+    gap: 48px;
+    align-items: end;
+  }
+}
+
+.fri-verdict-score {
+  margin-top: 10px;
+  font-family: var(--display);
+  font-weight: 760;
+  font-size: 5rem;
+  letter-spacing: -0.05em;
+  line-height: 0.85;
+}
+
+.fri-verdict-score small {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--muted-dark);
+  margin-left: 6px;
+}
+
+.fri-verdict-headline {
+  font-family: var(--display);
+  font-weight: 680;
+  font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+/* ---------- Resan: stegrader ---------- */
+
+.fri-step-rows {
+  margin-top: 18px;
+  border-top: 1.5px solid var(--ink);
+}
+
+.fri-step-row {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: 6px 16px;
+  padding-block: 18px;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  transition: background-color 160ms ease;
+}
+
+@media (min-width: 800px) {
+  .fri-step-row {
+    grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+.fri-step-row:hover {
+  background: color-mix(in srgb, var(--white) 70%, transparent);
+}
+
+.fri-step-row .num {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.fri-step-row.current .num {
+  color: var(--signal-ink);
+}
+
+.fri-step-row .body {
+  display: grid;
+  gap: 4px;
+}
+
+.fri-step-row .title {
+  font-size: 1.25rem;
+  font-weight: 540;
+  letter-spacing: -0.015em;
+}
+
+.fri-step-row .meta {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (min-width: 800px) {
+  .fri-step-row .meta {
+    grid-column: auto;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+}
+
+.fri-step-row.locked .title {
+  color: var(--muted);
+}
+
+/* ---------- Marknad ---------- */
+
+.fri-barchart {
+  margin-top: 22px;
+  display: grid;
+  gap: 12px;
+}
+
+.fri-barchart-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.92rem;
+}
+
+.fri-barchart-track {
+  height: 14px;
+  position: relative;
+}
+
+.fri-barchart-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ink);
+  border-radius: 3px;
+  min-width: 2px;
+  transform-origin: left;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fri-barchart-fill {
+    animation: fri-bd-grow 900ms var(--ease-out-expo) both;
+  }
+}
+
+.fri-layers {
+  display: grid;
+}
+
+.fri-layers li {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding-block: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---------- Validering ---------- */
+
+.fri-quotes {
+  margin-top: 22px;
+  display: grid;
+  gap: 32px 48px;
+}
+
+@media (min-width: 900px) {
+  .fri-quotes {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.fri-quotes li {
+  border-top: 1.5px solid var(--ink);
+  padding-top: 14px;
+}
+
+.fri-quotes blockquote {
+  margin: 14px 0 12px;
+  font-family: var(--display);
+  font-weight: 560;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.fri-table-wrap {
+  margin-top: 22px;
+  overflow-x: auto;
+}
+
+.fri-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  min-width: 620px;
+}
+
+.fri-table th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 12px 10px 0;
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.fri-table td {
+  padding: 14px 12px 14px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.fri-table .num {
+  text-align: right;
+}
+
+/* ---------- Juridik och antaganden ---------- */
+
+.fri-legal {
+  margin-top: 22px;
+  border-top: 1.5px solid var(--ink);
+}
+
+.fri-legal li {
+  padding-block: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---------- Minnet ---------- */
+
+.fri-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.fri-tabs button {
+  height: 40px;
+  padding-inline: 16px;
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.fri-tabs button[data-state="active"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.fri-tab-panel {
+  padding-top: 32px;
+}
+
+.fri-textarea {
+  margin-top: 12px;
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--white);
+  padding: 16px;
+  font: inherit;
+  color: var(--ink);
+}
+
+.fri-textarea:focus-visible {
+  border-color: var(--ink);
+}
+
+.fri-trace {
+  border-top: 1.5px solid var(--ink);
+}
+
+.fri-trace li {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: 16px;
+  padding-block: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---------- Bygg ---------- */
+
+.fri-build-gate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding-block: 16px;
+  border-block: 1px solid var(--line);
+}
+
+.fri-build-grid {
+  display: grid;
+  gap: 40px;
+}
+
+@media (min-width: 1000px) {
+  .fri-build-grid {
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 56px;
+    align-items: start;
+  }
+}
+
+.fri-chips-row {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fri-chips-row li {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.88rem;
+}
+
+.fri-window {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 30px 60px -40px rgb(16 18 17 / 0.3);
+}
+
+.fri-window-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.fri-window-body {
+  padding: clamp(20px, 2.4vw, 28px);
+}
+
+.fri-claims {
+  margin-top: 16px;
+  display: grid;
+}
+
+.fri-claims li {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding-block: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---------- Affärsplanen ---------- */
+
+.fri-plan-section {
+  padding-block: 36px;
+  border-top: 1.5px solid var(--ink);
+}
+
+.fri-plan-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 16px;
+}
+
+.fri-contradiction {
+  margin-top: 16px;
+  border: 1.5px dashed var(--signal-ink);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.fri-contradiction > .fri-mono {
+  color: var(--signal-ink);
+}
+
+/* ---------- Rundturen ---------- */
+
+.fri-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+.fri-tour-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(16 18 17 / 0.62);
+}
+
+.fri-tour-spot {
+  position: absolute;
+  pointer-events: none;
+  border: 2px solid var(--signal);
+  border-radius: 14px;
+  box-shadow: 0 0 0 9999px rgb(16 18 17 / 0.62);
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-press);
+}
+
+.fri-tour-card {
+  position: absolute;
+  display: grid;
+  gap: 12px;
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: 0 30px 70px -20px rgb(16 18 17 / 0.5);
+}
+
+.fri-tour-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.fri-tour-actions {
+  margin-top: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.fri-demo-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Långa sidrubriker (t.ex. byggets sammanfattning) får en mindre grad. */
+.fri-h1-demo.long {
+  font-size: clamp(1.9rem, 1.3rem + 1.7vw, 2.9rem);
+  max-width: 28ch;
+  line-height: 1.04;
+}
+
+/* Smala skärmar: källstämplar får radbryta och nyckeltal staplas. */
+.fri-src {
+  max-width: 100%;
+}
+
+@media (max-width: 559px) {
+  .fri-src {
+    white-space: normal;
+  }
+  .fri-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.fri-sim-head {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 559px) {
+  .fri-concept {
+    white-space: normal;
   }
 }

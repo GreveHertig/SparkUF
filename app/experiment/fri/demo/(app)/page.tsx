@@ -1,18 +1,53 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/context";
+import type { NextStep, PulseSignal, ScoreSnapshot, SinceLastTime } from "@/core/domain";
+import type { ScoreSuggestion } from "@/core/score";
+import type { JourneyStepView } from "@/ports/JourneyRepository";
+import { useDemoStore } from "@/adapters/demo/demoStore";
+import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
+import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
+import { demoPulseProvider } from "@/adapters/demo/PulseProvider";
 import { formatCount, formatDate } from "@/i18n/format";
-import { FriJourney, FriNextStep, FriScoreCard, FriSuggestions } from "./_components/FriBlocks";
-import { FriSource } from "./_components/FriSource";
-import { homeDataFor } from "./_lib/friDemoData";
-import { useFriBeatIndex } from "./_lib/friDemoState";
+import { FriJourney, FriNextStep, FriScoreCard, FriSuggestions } from "../_components/FriBlocks";
+import { FriSource } from "../_components/FriSource";
+import { FRI_DEMO_BASE } from "../_lib/friPaths";
+
+type HomeData = {
+  score: ScoreSnapshot;
+  nextStep: NextStep;
+  sinceLastTime: SinceLastTime;
+  pulseSignals: PulseSignal[];
+  suggestions: ScoreSuggestion[];
+  journeySteps: JourneyStepView[];
+};
 
 /** Hem i kopian: samma innehåll som /demo/app (screens/AppHome), ny form. */
 export default function FriDemoHomePage() {
   const { t, locale } = useI18n();
-  const beatIndex = useFriBeatIndex();
-  const data = useMemo(() => homeDataFor(beatIndex, locale), [beatIndex, locale]);
+  const beatIndex = useDemoStore((state) => state.beatIndex);
+  const [data, setData] = useState<HomeData | null>(null);
+
+  // Samma hämtning som app/demo/app/page.tsx, ur samma adaptrar.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      demoJourneyRepository.getHomeSummary(locale),
+      demoEvidenceRepository.getScoreSnapshot(locale),
+      demoPulseProvider.getSignals(locale),
+      demoEvidenceRepository.getSuggestions(locale),
+      demoJourneyRepository.getSteps(locale),
+    ]).then(([journey, score, pulseSignals, suggestions, journeySteps]) => {
+      if (cancelled) return;
+      setData({ score, nextStep: journey.nextStep, sinceLastTime: journey.sinceLastTime, pulseSignals, suggestions, journeySteps });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, beatIndex]);
+
+  if (!data) return null;
 
   const remainingParts = [...data.score.lockedParts].sort((a, b) => a.unlocksAfterStep - b.unlocksAfterStep);
   const unlockedPartsCount = data.score.parts.length;
@@ -43,19 +78,23 @@ export default function FriDemoHomePage() {
   return (
     <>
       <div className="fri-home-top">
+        <div data-tour-id="hem-act">
         <FriNextStep
-          key={beatIndex}
+          key={`${data.nextStep.title}-${data.nextStep.eyebrow}`}
           nextStep={data.nextStep}
           remainingParts={remainingParts}
           unlockedPartsCount={unlockedPartsCount}
           totalPartsCount={unlockedPartsCount + data.score.lockedParts.length}
         />
-        <FriScoreCard snapshot={data.score} title={t.appShell.nav.score} />
+        </div>
+        <div data-tour-id="hem-score">
+          <FriScoreCard snapshot={data.score} title={t.appShell.nav.score} />
+        </div>
       </div>
 
       {/* Nyckeln nollställer valt steg när momentet byts, så att det aktuella
           steget alltid är förvalt (samma beteende som JourneyRail). */}
-      <FriJourney key={beatIndex} steps={data.journeySteps} />
+      <FriJourney key={data.journeySteps.find((step) => step.status === "current")?.stepNumber ?? 0} steps={data.journeySteps} stepHref={(n) => `${FRI_DEMO_BASE}/resan/${n}`} />
 
       <section className="fri-section-demo">
         <h2 className="fri-h2-demo">{t.homePage.sinceLastTimeTitle}</h2>
@@ -95,7 +134,7 @@ export default function FriDemoHomePage() {
             {t.homePage.notInThisScenario}
           </p>
         ) : (
-          <ul className="fri-pulse">
+          <ul className="fri-pulse" data-tour-id="hem-pulse">
             {data.pulseSignals.map((signal, index) => (
               <li key={`${signal.headline}-${index}`} className="fri-ruled">
                 <p className="fri-mono fri-muted" style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
