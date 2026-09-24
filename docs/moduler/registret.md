@@ -114,6 +114,11 @@ bara de två). Licensen räcker inte ensam för att öppna den.
 **Full öppning kräver alla tre (Eriks beslut 2026-09-23):**
 1. **Transporten är skriven**: `lib/server/scb.ts` och `lib/server/bolagsverket.ts`
    gör riktiga anrop och är provkörda.
+   - **Bolagsverket: provkörd 2026-09-24.** Erik körde den riktiga
+     `lookupOrganisation` och `fetchDocumentList` från sin dator mot Volvo,
+     Ericsson och H&M. Alla sex anropen lyckades, och grinden gällde som i
+     appen. Se "Provkörning 2026-09-24" nedan.
+   - **SCB: inte uppfyllt.** `lib/server/scb.ts` kastar fortfarande.
 2. **SCB:s villkor är lästa** för företagsregister-API:t, efter 30 september
    2026, och citerade ordagrant i `docs/dataspiken.md` på samma sätt som
    Bolagsverkets.
@@ -172,8 +177,8 @@ svarsform** (`lib/server/registrySchemas.ts`). **Exponering är spärrad**, se
 
 - **`lookupOrganisation(orgNr)`**: `POST /organisationer`. Returnerar en platt
   `BolagsverketOrganisation` (namn, organisationsform, SNI-koder som fem
-  siffror, verksam, avregistrerad, avveckling, reklamspärr, postnummer, ort,
-  verksamhetsbeskrivning och `fetchedAt`). Okänt blir `null`, aldrig en
+  siffror, registreringsdatum, verksam, avregistrerad, avveckling,
+  reklamspärr, postnummer, ort, verksamhetsbeskrivning och `fetchedAt`). Okänt blir `null`, aldrig en
   gissning. **`advertisingBlock: null` betyder okänt**, inte "ingen spärr".
   Adaptern måste därför behandla `null` som att bolaget inte får visas tills
   frågan är utredd. Tom lista eller 404 ger `[]`.
@@ -186,6 +191,30 @@ svarsform** (`lib/server/registrySchemas.ts`). **Exponering är spärrad**, se
   görs om en gång.
 - **Miljövariabler:** `BOLAGSVERKET_CLIENT_ID`, `BOLAGSVERKET_CLIENT_SECRET`
   och `BOLAGSVERKET_API_BASE_URL` (https mot `*.api.bolagsverket.se`).
+
+### Provkörning 2026-09-24 (grindkrav 1, Bolagsverket-delen)
+
+- **Hur:** en fristående bunt av den riktiga transporten
+  (`scratchpad/bv-transport-prov.mjs`, gitignorerad), körd av Erik från sin
+  dator. Codespacet når inte Bolagsverket. Grinden
+  (`lib/server/registryAccess.ts`) var den riktiga. I bunten var bara
+  `server-only` och inloggningen utbytta: den inloggade användaren var Eriks
+  user.id från en miljövariabel. Id, secret och token maskades i utdata.
+- **`lookupOrganisation`:** ett bolag per org.nr, alla fält mappade.
+
+  | Bolag | Registreringsdatum | SNI | Postnummer, ort |
+  |---|---|---|---|
+  | Aktiebolaget Volvo (5560125790) | 1915-05-05 | 70100 | 40508 GÖTEBORG |
+  | Telefonaktiebolaget LM Ericsson (5560160680) | 1918-08-19 | 70100, 62201 | 16483 STOCKHOLM |
+  | H & M Hennes & Mauritz AB (5560427220) | 1943-08-07 | 70100 | 10638 STOCKHOLM |
+
+  Alla tre: `legalForm` `AB`, `active: true`, inte avregistrerade, ingen
+  avveckling, `advertisingBlock: null` (okänt) och en ifylld
+  verksamhetsbeskrivning.
+- **`fetchDocumentList`:** **tom lista för alla tre bolagen**, precis som i
+  steg A. Elementens form är därför fortfarande overifierad. **Nästa steg är
+  att prova med mindre aktiebolag** som har lämnat årsredovisningen
+  digitalt. Det behövs innan `/dokument` och iXBRL byggs.
 
 ## Hur liveadaptern fungerar i dag
 
