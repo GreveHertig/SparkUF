@@ -2449,3 +2449,10 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 - `app/experiment/fri/` innehåller `page.tsx`, `layout.tsx` (noindex, typsnitt), `FreeSignup.tsx`, `fri.css` (egen identitet, inga designsystem-tokens) och `page.test.tsx`. i18n: `experimentFree` (sv/en).
 - **Nya beroenden:** `@fontsource-variable/bricolage-grotesque`, `@fontsource-variable/geist`, `@fontsource-variable/geist-mono` (5.3.0, bara typsnittsfiler och CSS).
 - `/experiment/landning` är orörd.
+
+### Kopia av demot: /experiment/fri/demo (samma gren, lokal commit)
+- Hem (`/experiment/fri/demo`) och Poäng (`/experiment/fri/demo/poang`) är kopior i `/experiment/fri`s stil. `app/experiment/fri/demo/` innehåller skal, demorad, byggblock och `fri-demo.css`. "Se demot" på `/experiment/fri` går hit.
+- **Eget moment-läge** i `spark:fri-demo`, inte demots `useDemoStore` (`spark:demo-state`), så kopian kan aldrig flytta det riktiga demots framsteg. Datan hämtas ur samma motor (`engineFor`, `core/score`) via `_lib/friDemoData.ts`, som speglar demoadaptrarna rad för rad. `friDemoData.test.ts` bevisar pariteten mot de riktiga adaptrarna för flera moment på sv och en.
+- **Pulssignalerna är en ordagrann kopia** (`_lib/pulseSignals.ts`), eftersom `demoPulseProvider` bara kan läsas via det delade läget. Paritetstestet fångar om källan ändras.
+- Bara Saras ingång än. Jonas, stegsidorna ("Öppna steget") och övriga sidor tas efter grundarens ok.
+- Verifierat att `/demo` är orört: inga filer utanför `app/experiment/fri` och `i18n` ändrade, och en skärmdump av `/demo/app` är byte-identisk med den som togs före ändringen.

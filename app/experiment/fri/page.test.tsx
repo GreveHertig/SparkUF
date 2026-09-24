@@ -27,7 +27,7 @@ describe("/experiment/fri", () => {
     expect(screen.getByText(sv.pricingPage.founder.name)).toBeInTheDocument();
     expect(screen.getByText(copy.hero.demoNote)).toBeInTheDocument();
     for (const link of screen.getAllByRole("link", { name: new RegExp(copy.hero.demoCta) })) {
-      expect(link).toHaveAttribute("href", "/demo");
+      expect(link).toHaveAttribute("href", "/experiment/fri/demo");
     }
   });
 

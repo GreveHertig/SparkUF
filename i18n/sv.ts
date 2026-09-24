@@ -981,4 +981,10 @@ export const sv = {
       fiction: "Företag och personer i demot är fiktiva. Spark ger vägledning, inte juridisk eller ekonomisk rådgivning.",
     },
   },
+  experimentFreeDemo: {
+    backToSite: "Till startsidan",
+    navLabel: "Demots sidor",
+    historyTitle: "Poängen genom resan",
+    historyNote: "Varje punkt är ett moment i resan. Poängen räknas om av samma motor varje gång.",
+  },
 } satisfies Dictionary;

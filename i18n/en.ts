@@ -977,4 +977,10 @@ export const en = {
       fiction: "Companies and people in the demo are fictional. Spark gives guidance, not legal or financial advice.",
     },
   },
+  experimentFreeDemo: {
+    backToSite: "Back to the site",
+    navLabel: "Demo pages",
+    historyTitle: "The score through the journey",
+    historyNote: "Each point is a moment in the journey. The same engine recalculates the score every time.",
+  },
 } satisfies Dictionary;

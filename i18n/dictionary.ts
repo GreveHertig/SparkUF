@@ -829,4 +829,12 @@ export type Dictionary = {
     };
     footer: { experiment: string; fiction: string };
   };
+  /** Kopian av demot på /experiment/fri/demo (samma gren). Övriga texter
+   * återanvänds ur appShell, demoBar, homePage, scorePage, kpi och score. */
+  experimentFreeDemo: {
+    backToSite: string;
+    navLabel: string;
+    historyTitle: string;
+    historyNote: string;
+  };
 };

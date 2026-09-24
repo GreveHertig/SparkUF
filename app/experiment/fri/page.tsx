@@ -30,7 +30,7 @@ export default function FreeLandingPage() {
           <a href="#underlaget">{copy.nav.sources}</a>
           <a href="#pris">{copy.nav.price}</a>
         </nav>
-        <Link href="/demo" className="fri-demo-link" aria-describedby="fri-demo-tag">
+        <Link href="/experiment/fri/demo" className="fri-demo-link" aria-describedby="fri-demo-tag">
           {copy.nav.demo}
           <span id="fri-demo-tag" className="fri-tag">
             {copy.nav.demoTag}
@@ -59,7 +59,7 @@ export default function FreeLandingPage() {
                 {copy.hero.lead}
               </p>
               <div className="fri-ctas">
-                <Link href="/demo" className="fri-btn fri-btn-signal" aria-describedby="fri-demo-note">
+                <Link href="/experiment/fri/demo" className="fri-btn fri-btn-signal" aria-describedby="fri-demo-note">
                   {copy.hero.demoCta}
                 </Link>
                 <a href="#besked" className="fri-btn fri-btn-ghost">
