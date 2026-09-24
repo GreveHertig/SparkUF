@@ -382,6 +382,13 @@ git-historiken):
   `verksamhetsbeskrivning`.
 - `postadress.land` var `null` för alla tre, inte `"SE"`.
   `utdelningsadress` kan vara `null` (Volvo, Ericsson) eller en sträng (H&M).
+- `organisationsdatum.registreringsdatum` är ett datum i formatet YYYY-MM-DD
+  (`"1918-08-19"` för Ericsson). **Sedan 2026-09-24 läser transporten det**
+  och exponerar det som `registrationDate`. Det valideras med `z.iso.date()`.
+  Om datumet saknas, är ogiltigt eller har ett ifyllt `fel` blir det `null`,
+  och bolaget kommer ändå med. `infortHosScb` läses inte.
+  `registreringsdatum` inne i `organisationsnamnLista` gäller namnet, inte
+  bolaget, och läses inte heller.
 
 **`POST /dokumentlista`**, samma body: HTTP 200 `{ "dokument": [] }` för
 **alla tre** bolagen. Hur ett element i listan ser ut vet vi alltså
