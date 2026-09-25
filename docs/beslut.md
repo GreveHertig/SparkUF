@@ -130,3 +130,13 @@ som är server-only och aldrig har `NEXT_PUBLIC_`-prefix. Det är projektets end
 användning av service role, se `docs/arkitektur.md` avsnitt 9. Källa,
 hämtdatum och 7-dagarstaket står kvar, och `get()` tar bort utgångna rader.
 Ingenting skrivs till tabellen förrän dataspiken §6 fråga 4 är avgjord.
+
+## 2026-09-25
+
+**`waitlist` blir en stängd tabell i `CLOSED_TABLES` (Erik).** Allt ska gå
+genom `join_waitlist`. Policyn `using (false)` tas bort, `waitlist` läggs till
+i `CLOSED_TABLES` i `supabase/migrations/migrations.test.ts`, och `anon` och
+`authenticated` har inga rättigheter på tabellen (`revoke all`). Skäl: en
+`using (false)`-policy är vilseledande, eftersom den ser ut som en policy men
+inte gör något, och inkonsekvent, eftersom det då finns två olika sätt att
+markera en stängd tabell i kodbasen.

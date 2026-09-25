@@ -657,6 +657,16 @@ export const en = {
       startDemoCta: "Start demo",
       createAccountCta: "Create account",
     },
+    waitlist: {
+      label: "Get notified when Spark opens",
+      submitCta: "Join the waitlist",
+      privacyNote: "We only store your email address and only use it to let you know when Spark opens. Email spark.ai.uf@gmail.com if you want to be removed from the list.",
+      joined: "Thanks! You're on the waitlist.",
+      errors: {
+        emailInvalid: "Enter a valid email address.",
+        unexpected: "Something went wrong. Please try again shortly.",
+      },
+    },
   },
   pricingPage: {
     eyebrow: "PRICING",
