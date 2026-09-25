@@ -130,3 +130,17 @@ som är server-only och aldrig har `NEXT_PUBLIC_`-prefix. Det är projektets end
 användning av service role, se `docs/arkitektur.md` avsnitt 9. Källa,
 hämtdatum och 7-dagarstaket står kvar, och `get()` tar bort utgångna rader.
 Ingenting skrivs till tabellen förrän dataspiken §6 fråga 4 är avgjord.
+
+## 2026-09-25
+
+**Pulsens dagscache: `pulse_fetches`, per grundare och svensk dag (Erik).**
+En rad per `(user_id, fetch_date)`, där `fetch_date` räknas i
+Europe/Stockholm i databasen. Adaptern tar raden med `insert … on conflict do
+nothing` innan Tavily anropas, så samtidiga förfrågningar ger ett enda anrop.
+En tom dag sparas som `empty` och söks inte om samma dag. `claimed_at` lades
+till utöver den ursprungliga specen, så att en rad som fastnat på `pending`
+(äldre än 5 minuter) eller står på `error` kan tas över med en villkorad
+update. Användarägd med RLS (läsa, skapa, uppdatera egen), till skillnad från
+`registry_cache`: raden styr bara grundarens egen sökning, så en förfalskad rad
+skadar ingen annan. Flödet står i `docs/moduler/webbresearch-och-pulsen.md`,
+"Dagscachen".
