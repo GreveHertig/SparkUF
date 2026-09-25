@@ -323,6 +323,8 @@ export const en = {
     title: "Pulse",
     subtitle: "Signals that matter for this specific idea, with source and time.",
     emptyState: "No signals for this scenario.",
+    liveCategory: "Industry news",
+    liveWhyItMatters: "This news touches the same area as {project}. Consider how it affects your customers.",
   },
   memoryPage: {
     title: "Memory",

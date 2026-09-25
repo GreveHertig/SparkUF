@@ -323,6 +323,8 @@ export const sv = {
     title: "Pulsen",
     subtitle: "Signaler som spelar roll för just den här idén, med källa och tid.",
     emptyState: "Inga signaler för det här scenariot.",
+    liveCategory: "Branschnyhet",
+    liveWhyItMatters: "Nyheten rör samma område som {project}. Fundera på hur den påverkar dina kunder.",
   },
   memoryPage: {
     title: "Minnet",

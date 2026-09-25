@@ -6,7 +6,6 @@ import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
 import { liveCofounderAgent } from "@/adapters/live/CofounderAgent";
 import { liveRegistryProvider } from "@/adapters/live/RegistryProvider";
 import { liveResearchProvider } from "@/adapters/live/ResearchProvider";
-import { livePulseProvider } from "@/adapters/live/PulseProvider";
 import { liveSimulationProvider } from "@/adapters/live/SimulationProvider";
 import { liveOutreachPrep } from "@/adapters/live/OutreachPrep";
 import { liveOutreachProvider } from "@/adapters/live/OutreachProvider";
@@ -26,7 +25,6 @@ import { liveVerdictProvider } from "@/adapters/live/VerdictProvider";
 const STILL_STUBS: { module: string; call: () => Promise<unknown> }[] = [
   { module: "Medgrundaren", call: () => liveCofounderAgent.sendMessage("hej", [], "sv") },
   { module: "Webbresearch", call: () => liveResearchProvider.search("test") },
-  { module: "Pulsen", call: () => livePulseProvider.getTodaysSignal("sv") },
   { module: "Simuleringar", call: () => liveSimulationProvider.simulate("test", "sv") },
   { module: "Utskick och svar", call: () => liveOutreachProvider.getStatuses() },
   { module: "Bygg", call: () => liveBuildProvider.getStatus() },

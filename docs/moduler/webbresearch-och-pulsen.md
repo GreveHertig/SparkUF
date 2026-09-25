@@ -39,7 +39,7 @@ timestamp, source: Källa }`.
 ## Datakällor och vad som krävs
 
 - **Tavily search API**, `TAVILY_API_KEY` — server-only, via den nya
-  `lib/server/tavily.ts` (klienten är byggd sedan mejlsökningen i steg 05; adaptrarna här är fortfarande stubbar).
+  `lib/server/tavily.ts` (klienten är byggd sedan mejlsökningen i steg 05; Pulsens liveadapter använder den, Webbresearch är fortfarande en stubbe).
   Samma mönster som `lib/server/gemini.ts`: tunn klient, ingen domänlogik.
 - **Kostnad per sökning.** Pulsen är tänkt att köras dagligen per grundare
   (avsnitt 1.4). Pulsen har en dagscache, `pulse_fetches`, som ger högst en
@@ -100,9 +100,10 @@ Ett check-villkor kräver att `fetched_at` är `null` exakt när status är
    `fetched_at = now()` i samma update.
 
 Ett `error` kan alltså försökas igen samma dag, men bara av en förfrågan åt
-gången. Begränsa antalet omförsök (till exempel att bara ta över ett `error`
-som är äldre än några minuter) när adaptern byggs, så att ett trasigt
-Tavily-svar inte ger ett anrop per sidvisning.
+gången. **Taket (beslut Bruno 2026-09-25):** ett `error` tas bara över när
+dess `fetched_at` är äldre än **6 timmar**. Det ger högst 3 omförsök per
+svensk dag (efter 6, 12 och 18 timmar) utan en räknarkolumn, och
+väntetiden ligger i databasen, så den gäller över alla serverinstanser.
 
 **RLS.** Användaren läser, skapar och uppdaterar bara sina egna rader
 (`(select auth.uid()) = user_id`). Ingen delete-policy. Raderna försvinner
@@ -121,6 +122,55 @@ egen rad till `done` får hen själv ingen signal den dagen, inget mer.
   Skatteverket och Bolagsverket namngivna enligt uppdrag 2.5 "myndigheter …
   får nämnas vid namn"), nyast först — totalt 4 signaler (Saras dagens
   signal + 3 till), inom 9.5:s krav på 3–5.
+
+## Hur liveadaptern fungerar i dag (Pulsen)
+
+`adapters/live/PulseProvider.ts`:
+
+- **Bransch = idén.** Det finns ingen branschkolumn. Adaptern läser det
+  aktiva projektets `name` och `one_liner` och tar ut högst 6 nyckelord
+  (minst 4 tecken, utan stoppord). Bara nyckelorden skickas till Tavily,
+  efter den fasta frasen "svenska näringslivsnyheter". Utan aktivt projekt
+  eller utan nyckelord blir det ingen sökning och en tom lista.
+- **Filtrering.** En träff behålls bara om den har rubrik, en https-URL
+  (validerad i `lib/server/tavily.ts`) och om rubrik eller text nämner
+  något nyckelord. Enkla svenska böjningsändelser tas bort först, så
+  "redovisningsbyråer" hittar "redovisningsbyrå". En URL som redan finns i
+  `pulse_signals` för projektet sparas inte igen. Rubriken rensas från
+  styrtecken och kapas till 200 tecken. Webbtext är data, aldrig
+  instruktion. Ingen modell är inblandad.
+- **Källa.** `source.namn` = sajtens domän (utan `www.`), `source.url` =
+  artikelns URL, `source.hämtad` = dagens `fetch_date` från databasen.
+  `signal_at` = publiceringsdatumet om det är giltigt och inte i
+  framtiden, annars nu.
+- **Text.** Kategorin ("Branschnyhet") och "varför det spelar roll" är
+  fasta i18n-texter (`pulsePage.liveCategory`, `pulsePage.liveWhyItMatters`)
+  med projektets namn infogat. De sparas på svenska (kolumnerna är NOT
+  NULL) men byggs om per språk vid läsning.
+- **Dagscachen** följer flödet ovan, med två tekniska detaljer:
+  - Claimen är `upsert({ user_id }, { onConflict: "user_id,fetch_date", ignoreDuplicates: true }).select()`,
+    alltså `insert … on conflict do nothing returning`.
+  - Supabase-klienten kan inte skicka databasens datumuttryck som filter.
+    Efter en krock läser adaptern därför grundarens **nyaste** rad. Krocken
+    visar att dagens rad finns, så den nyaste raden är dagens. Datumet
+    räknas aldrig i Node. Övertagandet filtrerar på radens eget
+    `fetch_date`. Tidsgränserna (5 min, 6 h) räknas från serverns klocka
+    och jämförs med databasens tidsstämplar, så en liten klockskillnad
+    förskjuter dem med samma marginal.
+  - Slut-updaten kräver att raden fortfarande är vår (`status = 'pending'`
+    och samma `claimed_at`), så en förfrågan som tagits över skriver aldrig
+    över den nya ägarens resultat.
+- **Fel.** Nätverks-/HTTP-fel från Tavily (`OutreachTransportError`) ger
+  `error` och det som redan finns (ofta en tom lista). Andra fel (t.ex.
+  saknad `TAVILY_API_KEY`) och fel när signalerna sparas ger också `error`
+  men kastas vidare, så att de syns.
+- **Retur.** `getSignals` ger de 5 nyaste signalerna för projektet, nyast
+  först. Det kan vara 0–5 i verkligheten. Skärmarna visar tomläget vid `[]`.
+  `getTodaysSignal` ger den nyaste signalen eller kastar `EmptyStateError`.
+- **Tester.** `adapters/live/PulseProvider.test.ts` (Tavily och Supabase
+  mockade med `test/stubs/pulseSupabaseFake.ts`), kontraktstestet med
+  samma fejk, och opt-in `adapters/live/PulseProvider.live.test.ts` mot
+  riktiga Tavily.
 
 ## Acceptanskriterier
 
@@ -144,10 +194,20 @@ visas för användaren.
 
 ## Status
 
-stub — `adapters/live/ResearchProvider.ts` och `adapters/live/PulseProvider.ts`
-kastar båda `NotImplementedError`, med hänvisning hit. Demoadaptrarna är
-klara; Pulsen används av `/demo/app` och `/demo/app/pulsen`, Webbresearch av
-ingen skärm än. `lib/server/tavily.ts` är en riktig, tunn klient (används av mejlsökningen i steg 05;
-Research/Pulse-adaptrarna anropar den inte än) — Webbresearch behöver en cachningsstrategi innan den anropar Tavily på
-riktigt. Dagscachen för Pulsen (`pulse_fetches`) är migrerad, men ingen
-adapter använder den än.
+- **Pulsen: live** (2026-09-25, gren `modul/pulsen`). Se "Hur liveadaptern
+  fungerar i dag (Pulsen)" ovan. Används av `/app` (Hem).
+- **Webbresearch: stub.** `adapters/live/ResearchProvider.ts` kastar
+  `NotImplementedError`, med hänvisning hit. Den behöver en
+  cachningsstrategi innan den anropar Tavily på riktigt.
+
+Demoadaptrarna är klara. Pulsen används av `/demo/app` och
+`/demo/app/pulsen`, Webbresearch av ingen skärm än.
+
+Kända begränsningar (Pulsen):
+- "Bransch" härleds ur idéns ord. Det finns ingen riktig branschkolumn, så
+  en kort eller vag enradsbeskrivning ger få eller irrelevanta träffar.
+- Nyckelordsfiltret är enkelt (delsträng plus böjningsändelser), ingen
+  semantisk bedömning.
+- "Varför det spelar roll" är samma mall för alla signaler, inte
+  skräddarsydd per nyhet.
+- Tidsgränserna räknas från serverns klocka mot databasens tidsstämplar.
