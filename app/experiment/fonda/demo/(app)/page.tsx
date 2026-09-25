@@ -11,9 +11,9 @@ import { demoPulseProvider } from "@/adapters/demo/PulseProvider";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import type { NextStep, PulseSignal, ScoreSnapshot, SinceLastTime } from "@/core/domain";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
-import { fill } from "../_lib/fill";
-import { JourneyStepper, ScoreDelta, ScoreFigure } from "./_components/DemoBlocks";
-import { FONDA_DEMO_PATHS } from "./_lib/paths";
+import { fill } from "@/app/experiment/fonda/_lib/fill";
+import { JourneyStepper, ScoreDelta, ScoreFigure } from "../_components/DemoBlocks";
+import { FONDA_DEMO_PATHS, journeyStepPath } from "../_lib/paths";
 
 type HomeData = {
   todayIso: string;
@@ -74,7 +74,7 @@ export default function FondaDemoHomePage() {
       </header>
 
       <div className="fdd-hero">
-        <section aria-labelledby="fdd-next-title" className="fd-panel fdd-next">
+        <section aria-labelledby="fdd-next-title" className="fd-panel fdd-next" data-tour-id="hem-act">
           <p className="fd-nextstep__eyebrow">{nextStep.eyebrow}</p>
           <h2 id="fdd-next-title" className="fdd-next__title">
             {nextStep.title}
@@ -109,7 +109,7 @@ export default function FondaDemoHomePage() {
           </div>
         </section>
 
-        <section aria-labelledby="fdd-score-title" className="fd-panel fdd-scorecard">
+        <section aria-labelledby="fdd-score-title" className="fd-panel fdd-scorecard" data-tour-id="hem-score">
           <h2 id="fdd-score-title" className="fdd-label">
             {t.experimentFonda.proof.scoreLabel}
           </h2>
@@ -126,7 +126,7 @@ export default function FondaDemoHomePage() {
           {copy.demo.journeyTitle}
         </h2>
         <div className="fd-journey">
-          <JourneyStepper steps={data.steps} />
+          <JourneyStepper steps={data.steps} stepHref={journeyStepPath} />
         </div>
       </section>
 
@@ -161,13 +161,16 @@ export default function FondaDemoHomePage() {
           </p>
         </section>
 
-        <section aria-labelledby="fdd-pulse-title" className="fdd-block">
+        <section aria-labelledby="fdd-pulse-title" className="fdd-block" data-tour-id="hem-pulse">
           <h2 id="fdd-pulse-title" className="fdd-block__title">
             {t.homePage.todaysPulseTitle}
           </h2>
           {signal ? (
             <article className="fd-panel fdd-signal">
-              <p className="fdd-signal__category">{signal.category}</p>
+              <p className="fdd-signal__meta">
+                <span className="fdd-signal__category">{signal.category}</span>
+                <span className="fdd-muted">{signal.timestamp}</span>
+              </p>
               <p className="fdd-signal__headline">{signal.headline}</p>
               <p className="fd-nextstep__why">
                 {t.common.pulseWhyItMattersPrefix} {signal.whyItMatters}

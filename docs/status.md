@@ -2465,14 +2465,27 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 ### Klart
 - **Landningssida `/experiment/fonda`**: sektionsrytm och berättande i steg med fonda.co som inspiration (bara struktur, inga texter, bilder eller varumärke därifrån, och Fonda nämns inte på sidan). Bara projektets tokens och typsnitt, `design/tokens.css` orörd. Sektioner: hero med ett interaktivt poängexempel (sex kundsvar, tre slår om till "säger emot" och `calculateScore` räknar om, 51 → 40, nivån byter), Resan (tolv steg i fyra faser ur `journeySteps`), Registret (demots marknadsbild och kundlista, märkt fiktiv), Poängen (de åtta vikterna ur `SCORE_PART_WEIGHTS` och tre regler), Medgrundaren (demots riktiga nästa steg efter Domen), Pris (Grundare 199 kr/mån, märkt som förslag, steg 10 ingår inte), mejlfält (inte kopplat, säger att inget sparas) och sidfot. "Se demot" är alltid märkt "Demo med fiktiv data" och går till kopian.
 - **Demokopia `/experiment/fonda/demo`, första omgången:** Hem och Poäng i samma stil, plus en egen demorad (bakåt, nästa, börja om, ← →). Datan kommer ur de oförändrade demoadaptrarna. Kopian byter demo-lagrets lagringsnyckel till `spark:fonda-demo-state` medan man är i den (samma mönster som `/experiment/fri`, `_lib/fondaDemoIsolation.ts`), så det riktiga demots läge läses och skrivs aldrig.
-- **Skillnader mot originalet (medvetna):** kopian har ingen onboarding än och börjar på moment 1; knappen i "Nästa steg" spelar upp nästa moment; förslag som nämner Lovable eller Hiasynth får `ConceptBadge` (originalets Poäng-sida saknar den).
+- **Skillnader mot originalet (medvetna):** knappen i "Nästa steg" på Hem spelar upp nästa moment (i originalet gör den ingenting); förslag som nämner Lovable eller Hiasynth får `ConceptBadge` (originalets Poäng-sida saknar den).
 - i18n: nytt namnutrymme `experimentFonda` i `dictionary.ts`/`sv.ts`/`en.ts`, bara tillagda rader. Inga nya beroenden.
 - Tester: `page.test.tsx` (sv/en, demolänkens märkning och mål, formulärets tillstånd, att poängen sjunker, att texterna inte nämner Fonda, "den enda"/"only" eller tankstreck), `_lib/proofEvidence.test.ts`, `demo/_lib/fondaDemoIsolation.test.ts`, `demo/demo.test.tsx`.
 - Verifierat: `typecheck`, `lint` (0 fel, 3 gamla varningar i `design-referens/`) och `test` (450 gröna). Playwright på 1440 och 390 px, sv och en, ingen horisontell överrullning. Skärmdumpar av `/demo/start`, `/demo/app` och `/demo/app/poang` (steg 6, Domen, Efter) är byte-identiska före och efter.
 
+### Demokopian, andra omgången (samma gren, lokal commit)
+- **Alla sidor finns nu i kopian:** onboardingen (`start`, `start/profil`, `start/ide`), Hem, Medgrundaren, Resan med stegsidor, Poäng, Marknad, Validering, Pulsen, Minnet, Juridik, Bygg och Affärsplanen. Samma data och samma urval per steg och persona som det riktiga demots rutter, i landningssidans stil.
+- **Struktur:** `demo/layout.tsx` sköter bara lagringsisoleringen, demoraden och rundturen. `demo/(app)/` har skalet med en flikrad för alla sidor. `demo/start/` är onboardingen utan skal, som i originalet. Rutterna är oförändrade (`/experiment/fonda/demo/...`).
+- **Onboarding-spärr som i originalet:** app-sidorna skickar en ny besökare till `start`. Spärren läser lagrets faktiska värde efter inläsning, så en återvändande besökare skickas inte tillbaka (originalets hydreringsbugg finns inte här).
+- **Demoraden** har originalets alla funktioner: bakåt, nästa, hoppa till steg (Radix Popover), rundtur (låst för Jonas), byt ingång, börja om, fäll ihop, och tangenterna ← → T R.
+- **Rundturen** (`_components/FondaTour.tsx`): samma 20 stopp ur `adapters/demo/tourSteps.ts` (orörd). Rutterna översätts med `toFondaPath`, och kopians sidor bär samma `data-tour-id` som originalets skärmar. `paths.test.ts` kontrollerar att varje stopp och varje menyrutt har en sida.
+- **Koncept-etiketten** sätts i kopian på allt som nämner Lovable eller Hiasynth: chattrader, verktygskörningar, "Sedan tidigare", stegens höjdpunkter, datalagret på Marknad, förslagen på Poäng och påståendena i Affärsplanen (`_lib/concepts.ts`). Originalets skärmar saknar den på flera av dessa ställen.
+- **Juridik** visar ansvarsbegränsningen. Hjärnan i Minnet sparar via demoadapterns `setBrainNotes`, som inte gör något, så inget kan skrivas till det riktiga demots data.
+- Inga nya i18n-rader i den här omgången: kopian återanvänder de befintliga nycklarna (`onboarding`, `journeyPage`, `marketPage`, `validationPage`, `demoBar`, `tour` m.fl.).
+- Tester: `demo/demo.test.tsx` (spärren, ingången sparas bara i kopians läge, Hem, menyn, Poäng mot motorn och koncept-etiketten, Marknad låst för Jonas, Juridikens ansvarsbegränsning) och `demo/_lib/paths.test.ts`.
+- Verifierat: `typecheck`, `lint` (0 fel) och `test` (457 gröna). Playwright på 1440 och 390 px: onboardingen hela vägen till Hem, alla sidor, rundturen med spotlight, engelska. Inga filer utanför `app/experiment/fonda` ändrade i den här omgången, och det riktiga demots lagringsnyckel var orörd under hela genomgången.
+
 ### Återstår
-- Resten av demots sidor i kopian (onboarding, Medgrundaren, Resan med stegsidor, Marknad, Validering, Pulsen, Minnet, Juridik, Bygg, Affärsplanen) och rundturen. **Väntar på grundarens ok.**
+- Inget i kopian. Grenen pushas inte förrän grundaren säger till.
 
 ### Kända problem
+- `next dev` var mycket långsam under arbetet (20-80 s för första kompileringen av en rutt). Rundturens navigering väntar då på servern. Inget fel i koden, men värt att veta vid en visning i dev-läge.
 - Impeccable-skillens verktyg (`scripts/impeccable`) finns inte i miljön, så dess automatiska granskning och DESIGN.md-dokumentation kördes inte. Designbesluten står här i stället; `DESIGN.md` är orörd.
 - Sidan är bara ljus, eftersom tokens saknar mörkt läge.

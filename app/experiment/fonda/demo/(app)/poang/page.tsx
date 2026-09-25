@@ -8,13 +8,10 @@ import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import type { ScoreSnapshot } from "@/core/domain";
 import type { ScoreSuggestion } from "@/core/score";
-import { fill } from "../../_lib/fill";
-import { PartsList, ScoreDelta, ScoreFigure } from "../_components/DemoBlocks";
-import { ScoreHistory } from "../_components/ScoreHistory";
-
-// Hiasynth och Lovable är koncept och ska alltid bära ConceptBadge. Namnen är
-// egennamn i demodatan, inte i18n-text, så de är desamma på båda språken.
-const CONCEPT_NAMES = /\b(Lovable|Hiasynth)\b/;
+import { fill } from "@/app/experiment/fonda/_lib/fill";
+import { PartsList, ScoreDelta, ScoreFigure } from "../../_components/DemoBlocks";
+import { ScoreHistory } from "../../_components/ScoreHistory";
+import { mentionsConcept } from "../../_lib/concepts";
 
 type ScoreData = { snapshot: ScoreSnapshot; suggestions: ScoreSuggestion[]; history: number[] };
 
@@ -54,7 +51,7 @@ export default function FondaDemoScorePage() {
       </header>
 
       <div className="fdd-hero">
-        <section aria-labelledby="fdd-breakdown-title" className="fd-panel">
+        <section aria-labelledby="fdd-breakdown-title" className="fd-panel" data-tour-id="score-breakdown">
           <div className="fdd-scorehead">
             <ScoreFigure snapshot={snapshot} />
             <ScoreDelta snapshot={snapshot} />
@@ -74,7 +71,7 @@ export default function FondaDemoScorePage() {
         </section>
       </div>
 
-      <section aria-labelledby="fdd-suggestions-title" className="fdd-block">
+      <section aria-labelledby="fdd-suggestions-title" className="fdd-block" data-tour-id="score-suggestions">
         <div className="fdd-block__head">
           <h2 id="fdd-suggestions-title" className="fdd-block__title">
             {t.scorePage.suggestionsTitle}
@@ -88,7 +85,7 @@ export default function FondaDemoScorePage() {
               <div className="fdd-suggestion__body">
                 <p className="fdd-suggestion__label">{suggestion.label}</p>
                 <p className="fdd-muted">{suggestion.explanation}</p>
-                {CONCEPT_NAMES.test(suggestion.explanation) && <ConceptBadge className="fdd-suggestion__concept" />}
+                {mentionsConcept(suggestion.explanation) && <ConceptBadge className="fdd-suggestion__concept" />}
               </div>
               <div className="fdd-suggestion__meta">
                 <span className={`fdd-gap fdd-gap--${suggestion.gapType}`}>
