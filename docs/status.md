@@ -2228,3 +2228,71 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
   `registry_cache` skapas. Mergea #14 först.
 - "Vecka 2" finns inte definierat någonstans i repot. Rubriken följer Eriks
   formulering, men datumet behöver bestämmas.
+
+## Väntelistan på landningssidan (WIP, gren `landning`, ingen PR än)
+
+Pågående arbete, pushat så att teamet kan se det. Inte klart för merge.
+Påverkar varken `prototyp`, `main` eller produktion.
+
+### Klart
+- **`supabase/migrations/20260924120000_waitlist.sql`:** tabellen
+  `public.waitlist` med bara `id`, `email` och `created_at`. Villkor i
+  databasen: högst 254 tecken, bara gemener, ett @ och en punkt i domänen,
+  `unique` på `email`. RLS är på. Enda policyn är insert för `anon` och
+  `authenticated`. Det finns ingen läs-, ändrings- eller raderingspolicy, så
+  ingen besökare kan se en enda rad. Besökare får bara skriva kolumnen
+  `email` (`revoke all` + `grant insert (email)`).
+- **`app/(marketing)/actions.ts`:** Server Action `joinWaitlist`. Trimmar,
+  gör om till gemener, validerar med `zod` och gör insert **utan
+  `.select()`** (det finns ingen läspolicy). En adress som redan finns
+  (Postgres `23505`) ger samma svar som en ny, som skydd mot uppräkning.
+  Returnerar bara koder, aldrig text.
+- **`app/(marketing)/WaitlistForm.tsx`:** ett mejlfält (återanvänder
+  `TextField`), en knapp och en GDPR-rad om vad adressen används till. En
+  komponent som används två gånger i `page.tsx`, i hero och i den
+  avslutande sektionen.
+- **i18n:** `landingPage.waitlist` på svenska och engelska.
+- **Tester:** `actions.test.ts` (giltig, ogiltig, dubblett ger samma svar,
+  okänt fel, anropet kastar), `WaitlistForm.test.tsx` (sv och en) och en rad i
+  `page.test.tsx` som kontrollerar att formuläret finns två gånger. Supabase
+  är mockad.
+- `typecheck`, `lint` (0 fel, samma 3 gamla varningar i
+  `design-referens/artefakt/app.js`) och `test` är gröna. `build` och
+  `/security-review` är inte körda än.
+
+### Återstår
+- **Migreringen är inte körd.** Erik granskar och kör den mot SparkUF2.
+  Därefter måste en grundare prova formuläret skarpt, med riktiga
+  Supabase-nycklar. Allt hittills är testat mot mockad Supabase.
+- **Kontaktadress för borttagning saknas i GDPR-raden.** PR:en får inte slås
+  ihop förrän adressen finns och är inlagd i i18n (`privacyNote`).
+- `DESIGN.md`-rad om formuläret, `pnpm build`, `/security-review` och
+  PR mot `prototyp`.
+
+### Kända problem
+- **Inget spamskydd.** Insert-policyn betyder att vem som helst med den
+  publika anon-nyckeln kan lägga till rader, också direkt mot Supabases API
+  utan att gå via formuläret. Databasen stoppar bara ogiltiga adresser och
+  dubbletter.
+- **"Invalid Server Actions request" när formuläret skickas via
+  Codespaces-adressen (`*.app.github.dev`). Inte löst.** Orsak (återskapad
+  med curl): Next.js jämför `Origin`-headern (Codespaces-adressen) med
+  `x-forwarded-host`, som Codespaces sätter till `localhost:3000`. De skiljer
+  sig, så Next.js avbryter anropet som skydd mot CSRF. Det är ett problem i
+  utvecklingsmiljön, inte i koden för väntelistan. En möjlig lösning är
+  `experimental.serverActions.allowedOrigins` (och `allowedDevOrigins`) i
+  `next.config.ts`. Listan gäller dock även i produktion, så den bör bara
+  läggas till i utvecklingsläge och bara för den egna Codespace-adressen,
+  aldrig ett brett `*.app.github.dev`. Det kräver ett eget beslut och är inte
+  gjort.
+
+### Beslut nästa session behöver känna till
+- **Avsteg från RLS-mönstret "egen data":** besökaren är inte inloggad och
+  har inget `user_id`. Det ersätts av insert-only utan någon läspolicy, vilket
+  är striktare. Godkänt av Oskar innan det byggdes.
+- **Grenen heter `landning`,** inte `prototyp-landning`. Den gamla grenen
+  ligger 98 commits efter `prototyp` och är redan inslagen.
+- **Produktion deployas från `main`.** Det finns ingen deploykonfiguration i
+  repot. Enligt GitHubs deploy-historik bygger Vercel Production från `main`
+  och en Preview för varje push till andra grenar, så `landning` får en egen
+  förhandsadress.

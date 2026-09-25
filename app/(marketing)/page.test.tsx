@@ -57,6 +57,8 @@ describe("Landningssidan", () => {
     expect(screen.getByText("Två koncept, inget avtal än.")).toBeInTheDocument();
     expect(screen.getByText("Innan du börjar")).toBeInTheDocument();
     expect(screen.getByText("Redo att testa din idé mot verkligheten?")).toBeInTheDocument();
+    // Väntelistan: samma WaitlistForm i hero och i den avslutande sektionen.
+    expect(screen.getAllByRole("button", { name: "Ställ mig på väntelistan" })).toHaveLength(2);
   });
 
   it("visar samma sektioner på engelska utan att krascha", () => {

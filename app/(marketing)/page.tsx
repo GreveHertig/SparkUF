@@ -16,6 +16,7 @@ import { SimulationCard } from "@/components/spark/SimulationCard";
 import { useI18n } from "@/i18n/context";
 import { formatSek } from "@/i18n/format";
 import type { JuridisktKrav } from "@/core/domain";
+import { WaitlistForm } from "./WaitlistForm";
 
 // Stegen grupperade i faserna (uppdrag 1.5) — bara för layout här, titlarna
 // kommer alltid ur `journeySteps`/`journeyPage.phaseNames`, aldrig hårdkodade.
@@ -100,6 +101,7 @@ export default function LandningPage() {
                 {t.landingPage.hero.createAccountCta}
               </Link>
             </div>
+            <WaitlistForm className="mt-8 max-w-md" />
           </div>
           <NextStepCard
             eyebrow={t.landingPage.hero.productCard.eyebrow}
@@ -372,6 +374,7 @@ export default function LandningPage() {
               {t.landingPage.finalCta.createAccountCta}
             </Link>
           </div>
+          <WaitlistForm className="mx-auto mt-10 max-w-md" />
         </div>
       </section>
     </>

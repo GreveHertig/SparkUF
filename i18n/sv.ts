@@ -661,6 +661,16 @@ export const sv = {
       startDemoCta: "Starta demo",
       createAccountCta: "Skapa konto",
     },
+    waitlist: {
+      label: "Få besked när Spark öppnar",
+      submitCta: "Ställ mig på väntelistan",
+      privacyNote: "Vi sparar bara din mejladress och använder den bara för att meddela dig när Spark öppnar.",
+      joined: "Tack! Du står på väntelistan.",
+      errors: {
+        emailInvalid: "Skriv en giltig mejladress.",
+        unexpected: "Något gick fel. Försök igen om en stund.",
+      },
+    },
   },
   pricingPage: {
     eyebrow: "PRISER",
