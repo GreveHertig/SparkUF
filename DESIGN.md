@@ -400,5 +400,5 @@ Playwright (cachad `npx`-installation, samma mönster som tidigare sessioner). K
 - **Vitt kort på mörk botten** (`rounded-lg bg-white p-5 shadow-xl`). `TextField` är byggd för ljus botten. Kortet gör att den går att återanvända oförändrad, i stället för att bygga en mörk variant av fältet.
 - **Knappen** har samma pillerform och accent som landningssidans övriga primärknappar (`rounded-full bg-accent-600 … hover:opacity-90`). Den är tonad (`disabled:opacity-50`) medan anropet pågår.
 - **Tre tillstånd:** formuläret, fältfel (via `TextField`s `error`) eller formulärfel (`text-score-red`, `role="alert"`), och tack-texten (`role="status"`), som ersätter formuläret helt när adressen är mottagen. En dubblett ger samma tack-text som en ny adress, så att ingen kan ta reda på vilka adresser som finns.
-- **GDPR-raden** (`text-xs text-slate-500`) står direkt under knappen, så att den syns innan man skickar. Kontaktadressen för borttagning saknas än (se `docs/status.md`).
+- **GDPR-raden** (`text-xs text-slate-500`) står direkt under knappen, så att den syns innan man skickar. Raden anger också vart man mejlar för att bli borttagen från listan.
 - Ingen ny token och ingen ny komponent i `components/ui/`.

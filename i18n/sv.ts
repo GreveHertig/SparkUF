@@ -664,7 +664,7 @@ export const sv = {
     waitlist: {
       label: "Få besked när Spark öppnar",
       submitCta: "Ställ mig på väntelistan",
-      privacyNote: "Vi sparar bara din mejladress och använder den bara för att meddela dig när Spark öppnar.",
+      privacyNote: "Vi sparar bara din mejladress och använder den bara för att meddela dig när Spark öppnar. Mejla spark.ai.uf@gmail.com om du vill bli borttagen från listan.",
       joined: "Tack! Du står på väntelistan.",
       errors: {
         emailInvalid: "Skriv en giltig mejladress.",

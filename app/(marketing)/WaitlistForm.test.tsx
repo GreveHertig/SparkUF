@@ -45,7 +45,7 @@ describe("WaitlistForm på svenska", () => {
     expect(screen.getAllByRole("textbox")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Ställ mig på väntelistan" })).toBeInTheDocument();
     expect(
-      screen.getByText("Vi sparar bara din mejladress och använder den bara för att meddela dig när Spark öppnar."),
+      screen.getByText("Vi sparar bara din mejladress och använder den bara för att meddela dig när Spark öppnar. Mejla spark.ai.uf@gmail.com om du vill bli borttagen från listan."),
     ).toBeInTheDocument();
   });
 
@@ -88,7 +88,7 @@ describe("WaitlistForm på engelska", () => {
     expect(await screen.findByLabelText("Get notified when Spark opens")).toHaveAttribute("type", "email");
     expect(screen.getByRole("button", { name: "Join the waitlist" })).toBeInTheDocument();
     expect(
-      screen.getByText("We only store your email address and only use it to let you know when Spark opens."),
+      screen.getByText("We only store your email address and only use it to let you know when Spark opens. Email spark.ai.uf@gmail.com if you want to be removed from the list."),
     ).toBeInTheDocument();
   });
 

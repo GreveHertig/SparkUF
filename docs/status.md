@@ -2495,6 +2495,10 @@ Påverkar varken `prototyp`, `main` eller produktion.
   komponent som används två gånger i `page.tsx`, i hero och i den
   avslutande sektionen. Beskriven i `DESIGN.md`.
 - **i18n:** `landingPage.waitlist` på svenska och engelska.
+- **Kontaktadress för borttagning i GDPR-raden** (`privacyNote`, sv och en):
+  `spark.ai.uf@gmail.com`, bestämd av Theo. Den som vill bli borttagen från
+  listan mejlar dit. Theo eller Erik tar då bort adressen i Supabase. Är inte
+  längre ett hinder för merge.
 - **Tester:**
   - `actions.test.ts`: giltig adress går via `join_waitlist` och aldrig
     `from()`, ogiltig adress, dubblett ger samma svar, okänt fel, anropet
@@ -2526,9 +2530,6 @@ Påverkar varken `prototyp`, `main` eller produktion.
   Supabase-nycklar, och gärna pröva att direkt `POST /rest/v1/waitlist` med
   anon-nyckeln ger "permission denied" och att `rpc/join_waitlist` svarar
   likadant två gånger med samma adress.
-- **Kontaktadress för borttagning saknas i GDPR-raden.** Väntar på teamet.
-  PR:en får inte slås ihop förrän adressen finns och är inlagd i i18n
-  (`privacyNote`).
 - **PR mot `prototyp`** öppnas när migreringen är körd.
 
 ### Kända problem

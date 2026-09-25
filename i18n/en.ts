@@ -660,7 +660,7 @@ export const en = {
     waitlist: {
       label: "Get notified when Spark opens",
       submitCta: "Join the waitlist",
-      privacyNote: "We only store your email address and only use it to let you know when Spark opens.",
+      privacyNote: "We only store your email address and only use it to let you know when Spark opens. Email spark.ai.uf@gmail.com if you want to be removed from the list.",
       joined: "Thanks! You're on the waitlist.",
       errors: {
         emailInvalid: "Enter a valid email address.",
