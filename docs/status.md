@@ -2238,58 +2238,107 @@ Påverkar varken `prototyp`, `main` eller produktion.
 - **`supabase/migrations/20260924120000_waitlist.sql`:** tabellen
   `public.waitlist` med bara `id`, `email` och `created_at`. Villkor i
   databasen: högst 254 tecken, bara gemener, ett @ och en punkt i domänen,
-  `unique` på `email`. RLS är på. Enda policyn är insert för `anon` och
-  `authenticated`. Det finns ingen läs-, ändrings- eller raderingspolicy, så
-  ingen besökare kan se en enda rad. Besökare får bara skriva kolumnen
-  `email` (`revoke all` + `grant insert (email)`).
+  `unique` på `email`. RLS är på.
+  - **Besökare har inga rättigheter på tabellen**
+    (`revoke all … from anon, authenticated`, ingen grant).
+  - **Enda vägen in är funktionen `public.join_waitlist(p_email text)`:**
+    `security definer`, `set search_path = ''`, fullständiga namn,
+    `lower(trim(p_email))`, `insert … on conflict (email) do nothing`,
+    `returns void`. Samma svar för ny och befintlig adress, och inget id,
+    ingen tid och inget antal lämnar databasen.
+  - **Rättigheter:** `revoke execute … from public`, `grant execute` bara
+    till `anon` och `authenticated`.
+  - **En stängande policy** (`as restrictive for all to anon, authenticated
+    using (false) with check (false)`). Se beslutet för Erik nedan.
+  - **Varför funktion i stället för direkt insert:** med direkt insert via
+    Supabases API svarade databasen 201 för en ny adress och 409 för en som
+    redan fanns. Vem som helst med den publika anon-nyckeln kunde då pröva
+    vilka adresser som står på listan. Hittat av `/security-review`
+    innan migreringen kördes.
 - **`app/(marketing)/actions.ts`:** Server Action `joinWaitlist`. Trimmar,
-  gör om till gemener, validerar med `zod` och gör insert **utan
-  `.select()`** (det finns ingen läspolicy). En adress som redan finns
-  (Postgres `23505`) ger samma svar som en ny, som skydd mot uppräkning.
-  Returnerar bara koder, aldrig text.
+  gör om till gemener, validerar med `zod` och anropar
+  `supabase.rpc("join_waitlist", …)`, aldrig tabellen direkt. Varje fel ger
+  samma allmänna felkod. Returnerar bara koder, aldrig text.
 - **`app/(marketing)/WaitlistForm.tsx`:** ett mejlfält (återanvänder
   `TextField`), en knapp och en GDPR-rad om vad adressen används till. En
   komponent som används två gånger i `page.tsx`, i hero och i den
-  avslutande sektionen.
+  avslutande sektionen. Beskriven i `DESIGN.md`.
 - **i18n:** `landingPage.waitlist` på svenska och engelska.
-- **Tester:** `actions.test.ts` (giltig, ogiltig, dubblett ger samma svar,
-  okänt fel, anropet kastar), `WaitlistForm.test.tsx` (sv och en) och en rad i
-  `page.test.tsx` som kontrollerar att formuläret finns två gånger. Supabase
-  är mockad.
+- **Tester:**
+  - `actions.test.ts`: giltig adress går via `join_waitlist` och aldrig
+    `from()`, ogiltig adress, dubblett ger samma svar, okänt fel, anropet
+    kastar.
+  - `supabase/migrations/waitlist.test.ts` (ny, statisk som
+    `migrations.test.ts`, läser alla migreringar):
+    - Ingen migrering ger `anon` eller `authenticated` någon rättighet på
+      tabellen, inte heller med namn utan schema, med citattecken eller via
+      `on all tables in schema`.
+    - Alla policyer på tabellen är stängande.
+    - **Varje** definition av `join_waitlist`, också en senare `create or
+      replace`, har `security definer`, låst `search_path`, `returns void`,
+      `lower(trim(...))` och `on conflict do nothing`. Ingen `alter
+      function` på den.
+    - `execute` bara för `anon` och `authenticated`.
+    - Prövat genom att tillfälligt lägga in fem felaktiga rader i
+      migreringen: testet föll varje gång.
+  - `WaitlistForm.test.tsx` (sv och en) och en rad i `page.test.tsx`.
+  - Supabase är mockad. Ingenting är prövat mot en riktig databas.
 - `typecheck`, `lint` (0 fel, samma 3 gamla varningar i
-  `design-referens/artefakt/app.js`) och `test` är gröna. `build` och
-  `/security-review` är inte körda än.
+  `design-referens/artefakt/app.js`), `test` och `build` är gröna. `build`
+  kräver `NEXT_PUBLIC_SUPABASE_URL` och `NEXT_PUBLIC_SUPABASE_ANON_KEY`;
+  utan `.env.local` fallerar `/app` vid förrendering (gäller hela appen, inte
+  väntelistan). Kört med platshållarvärden. `/security-review` körd två
+  gånger, se ovan.
 
 ### Återstår
 - **Migreringen är inte körd.** Erik granskar och kör den mot SparkUF2.
   Därefter måste en grundare prova formuläret skarpt, med riktiga
-  Supabase-nycklar. Allt hittills är testat mot mockad Supabase.
-- **Kontaktadress för borttagning saknas i GDPR-raden.** PR:en får inte slås
-  ihop förrän adressen finns och är inlagd i i18n (`privacyNote`).
-- `DESIGN.md`-rad om formuläret, `pnpm build`, `/security-review` och
-  PR mot `prototyp`.
+  Supabase-nycklar, och gärna pröva att direkt `POST /rest/v1/waitlist` med
+  anon-nyckeln ger "permission denied" och att `rpc/join_waitlist` svarar
+  likadant två gånger med samma adress.
+- **Kontaktadress för borttagning saknas i GDPR-raden.** Väntar på teamet.
+  PR:en får inte slås ihop förrän adressen finns och är inlagd i i18n
+  (`privacyNote`).
+- **PR mot `prototyp`** öppnas när migreringen är körd.
 
 ### Kända problem
-- **Inget spamskydd.** Insert-policyn betyder att vem som helst med den
-  publika anon-nyckeln kan lägga till rader, också direkt mot Supabases API
-  utan att gå via formuläret. Databasen stoppar bara ogiltiga adresser och
-  dubbletter.
+- **Inget spamskydd.** Vem som helst med den publika anon-nyckeln kan anropa
+  `join_waitlist` i en loop och fylla listan med skräp, också utan att gå
+  via formuläret. Databasen stoppar bara ogiltiga adresser och dubbletter.
+  Okej för en väntelista nu. Senare: ett spärrmönster (rate limit per IP i
+  Server Action, och att dra in `execute` från `anon` så att bara servern
+  anropar funktionen) eller en CAPTCHA.
 - **"Invalid Server Actions request" när formuläret skickas via
-  Codespaces-adressen (`*.app.github.dev`). Inte löst.** Orsak (återskapad
-  med curl): Next.js jämför `Origin`-headern (Codespaces-adressen) med
-  `x-forwarded-host`, som Codespaces sätter till `localhost:3000`. De skiljer
-  sig, så Next.js avbryter anropet som skydd mot CSRF. Det är ett problem i
-  utvecklingsmiljön, inte i koden för väntelistan. En möjlig lösning är
-  `experimental.serverActions.allowedOrigins` (och `allowedDevOrigins`) i
-  `next.config.ts`. Listan gäller dock även i produktion, så den bör bara
-  läggas till i utvecklingsläge och bara för den egna Codespace-adressen,
-  aldrig ett brett `*.app.github.dev`. Det kräver ett eget beslut och är inte
-  gjort.
+  Codespaces-adressen (`*.app.github.dev`). Inte löst, och ska inte lösas
+  här.** Orsak (återskapad med curl): Next.js jämför `Origin`-headern
+  (Codespaces-adressen) med `x-forwarded-host`, som Codespaces sätter till
+  `localhost:3000`. De skiljer sig, så Next.js avbryter anropet som skydd mot
+  CSRF. Beslut (Oskar): lägg **inte** in `allowedOrigins`. Formuläret testas
+  på Vercels förhandsadress för `landning` eller efter att migreringen är
+  körd.
 
 ### Beslut nästa session behöver känna till
+- **Öppet beslut för Erik: policyn på `public.waitlist`.**
+  `migrations.test.ts` kräver minst en `create policy` per tabell. Med
+  funktionen behövs ingen policy, så migreringen har en stängande policy
+  (`as restrictive … using (false)`) som inte ger någon rättighet men
+  stoppar direktåtkomst om någon senare råkar lägga till en grant. Erik
+  väljer:
+  1. **Behålla den stängande policyn** (nuvarande lösning,
+     `migrations.test.ts` orörd).
+  2. **Ändra `migrations.test.ts`** så att en tabell utan grants till `anon`
+     och `authenticated` inte behöver någon policy, och ta bort den stängande
+     policyn. Då gäller "RLS på, inga policies för anon" rakt av.
+- **Supabases Security Advisor kommer att varna för `join_waitlist`**
+  ("security definer function executable by anon/authenticated", lints
+  0028/0029). Det är avsiktligt: funktionen är den enda vägen in på listan
+  och kan bara lägga till en normaliserad adress. Stäng inte av
+  `execute` för `anon` och gör inte om den till `security invoker` utan att
+  lösa väntelistan på annat sätt, annars slutar formuläret fungera eller
+  läckan öppnas igen.
 - **Avsteg från RLS-mönstret "egen data":** besökaren är inte inloggad och
-  har inget `user_id`. Det ersätts av insert-only utan någon läspolicy, vilket
-  är striktare. Godkänt av Oskar innan det byggdes.
+  har inget `user_id`. Det ersätts av inga rättigheter på tabellen och en
+  `security definer`-funktion som enda väg in. Godkänt av Oskar.
 - **Grenen heter `landning`,** inte `prototyp-landning`. Den gamla grenen
   ligger 98 commits efter `prototyp` och är redan inslagen.
 - **Produktion deployas från `main`.** Det finns ingen deploykonfiguration i

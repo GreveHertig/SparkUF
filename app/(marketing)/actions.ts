@@ -4,8 +4,8 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/server/supabase";
 
 /**
- * Server Action för väntelistan på landningssidan (tabellen public.waitlist,
- * supabase/migrations/20260924120000_waitlist.sql). Samma mönster som
+ * Server Action för väntelistan på landningssidan (funktionen
+ * public.join_waitlist, supabase/migrations/20260924120000_waitlist.sql). Samma mönster som
  * app/(auth)/actions.ts: ingen text lämnar servern, bara koder som klienten
  * slår upp i i18n (CLAUDE.md: "Ingen hårdkodad text").
  */
@@ -31,9 +31,6 @@ const WaitlistSchema = z.object({
     .pipe(z.email({ error: "email_invalid" })),
 });
 
-/** Postgres felkod för brutet unique-villkor: adressen finns redan. */
-const UNIQUE_VIOLATION = "23505";
-
 export async function joinWaitlist(
   _prevState: WaitlistFormState,
   formData: FormData,
@@ -45,14 +42,14 @@ export async function joinWaitlist(
 
   try {
     const supabase = await createSupabaseServerClient();
-    // Ingen .select() efter insert: tabellen har ingen läspolicy, så att be
-    // om raden tillbaka skulle ge fel.
-    const { error } = await supabase.from("waitlist").insert({ email: parsed.data.email });
+    // Via funktionen, inte direkt mot tabellen: besökare har inga rättigheter
+    // på public.waitlist. Funktionen ger samma svar för en adress som redan
+    // står på listan som för en ny (on conflict do nothing) och returnerar
+    // ingenting, så fältet kan inte användas för att ta reda på vilka
+    // adresser som finns där.
+    const { error } = await supabase.rpc("join_waitlist", { p_email: parsed.data.email });
 
-    // En adress som redan står på listan ger AVSIKTLIGT samma svar som en ny,
-    // annars kan fältet användas för att ta reda på vilka adresser som finns
-    // där. Samma skydd som signUp i app/(auth)/actions.ts.
-    if (error && error.code !== UNIQUE_VIOLATION) {
+    if (error) {
       return { formError: "unexpected" };
     }
   } catch {

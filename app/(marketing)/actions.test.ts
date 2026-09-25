@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const insertMock = vi.fn();
-const fromMock = vi.fn(() => ({ insert: insertMock }));
+const rpcMock = vi.fn();
+const fromMock = vi.fn();
 
 vi.mock("@/lib/server/supabase", () => ({
-  createSupabaseServerClient: async () => ({ from: fromMock }),
+  createSupabaseServerClient: async () => ({ rpc: rpcMock, from: fromMock }),
 }));
 
 function formData(email: string): FormData {
@@ -18,15 +18,14 @@ describe("app/(marketing)/actions: joinWaitlist", () => {
     vi.clearAllMocks();
   });
 
-  it("sparar en giltig adress, trimmad och med gemener, utan att be om raden tillbaka", async () => {
-    // Mocken returnerar ett rent löfte utan .select() — skulle funktionen
-    // kedja på .select() kraschar testet.
-    insertMock.mockResolvedValue({ error: null });
+  it("sparar en giltig adress, trimmad och med gemener, via join_waitlist och aldrig direkt mot tabellen", async () => {
+    rpcMock.mockResolvedValue({ data: null, error: null });
     const { joinWaitlist } = await import("./actions");
     const state = await joinWaitlist(undefined, formData("  Sara@Exempel.SE "));
 
-    expect(fromMock).toHaveBeenCalledWith("waitlist");
-    expect(insertMock).toHaveBeenCalledWith({ email: "sara@exempel.se" });
+    expect(rpcMock).toHaveBeenCalledWith("join_waitlist", { p_email: "sara@exempel.se" });
+    // Besökare har inga rättigheter på public.waitlist (migreringen).
+    expect(fromMock).not.toHaveBeenCalled();
     expect(state).toEqual({ joined: true });
   });
 
@@ -37,25 +36,26 @@ describe("app/(marketing)/actions: joinWaitlist", () => {
       const state = await joinWaitlist(undefined, formData(email));
 
       expect(state).toEqual({ fieldError: "email_invalid" });
-      expect(insertMock).not.toHaveBeenCalled();
+      expect(rpcMock).not.toHaveBeenCalled();
     },
   );
 
   it("ger samma svar för en adress som redan står på listan som för en ny (skydd mot uppräkning)", async () => {
-    insertMock.mockResolvedValue({ error: null });
+    // join_waitlist gör on conflict do nothing och returnerar void, så
+    // databasen svarar likadant båda gångerna. Actionen får inte heller
+    // skilja på dem.
+    rpcMock.mockResolvedValue({ data: null, error: null });
     const { joinWaitlist } = await import("./actions");
     const nyAdress = await joinWaitlist(undefined, formData("sara@exempel.se"));
-
-    insertMock.mockResolvedValue({
-      error: { code: "23505", message: "duplicate key value violates unique constraint" },
-    });
     const dubblett = await joinWaitlist(undefined, formData("sara@exempel.se"));
 
     expect(dubblett).toEqual(nyAdress);
+    expect(rpcMock).toHaveBeenNthCalledWith(1, "join_waitlist", { p_email: "sara@exempel.se" });
+    expect(rpcMock).toHaveBeenNthCalledWith(2, "join_waitlist", { p_email: "sara@exempel.se" });
   });
 
   it("ger ett allmänt fel vid okänt databasfel, utan Supabases egen text", async () => {
-    insertMock.mockResolvedValue({ error: { code: "42501", message: "permission denied" } });
+    rpcMock.mockResolvedValue({ data: null, error: { code: "42501", message: "permission denied" } });
     const { joinWaitlist } = await import("./actions");
     const state = await joinWaitlist(undefined, formData("sara@exempel.se"));
 
@@ -63,7 +63,7 @@ describe("app/(marketing)/actions: joinWaitlist", () => {
   });
 
   it("ger ett allmänt fel om anropet kastar, i stället för att krascha sidan", async () => {
-    insertMock.mockRejectedValue(new Error("nätverksfel"));
+    rpcMock.mockRejectedValue(new Error("nätverksfel"));
     const { joinWaitlist } = await import("./actions");
     const state = await joinWaitlist(undefined, formData("sara@exempel.se"));
 
