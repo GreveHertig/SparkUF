@@ -2458,10 +2458,11 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 - **Provbunten är gitignorerad** och byggs om med
   `node scratchpad/bv-transport-bygg.mjs` om transporten ändras.
 
-## Väntelistan på landningssidan (WIP, gren `landning`, ingen PR än)
+## Väntelistan på landningssidan (PR #21 från `landning` mot `prototyp`, väntar på granskning)
 
-Pågående arbete, pushat så att teamet kan se det. Inte klart för merge.
-Påverkar varken `prototyp`, `main` eller produktion.
+PR: https://github.com/GreveHertig/SparkUF/pull/21. Granskare: Erik
+(`GreveHertig`) och Theo (`magnussontheodor-max`).
+Påverkar varken `main` eller produktion förrän PR:en är mergad.
 
 ### Klart
 - **`supabase/migrations/20260924120000_waitlist.sql`:** tabellen
@@ -2525,12 +2526,18 @@ Påverkar varken `prototyp`, `main` eller produktion.
   gånger, se ovan.
 
 ### Återstår
-- **Migreringen är inte körd.** Erik granskar och kör den mot SparkUF2.
-  Därefter måste en grundare prova formuläret skarpt, med riktiga
-  Supabase-nycklar, och gärna pröva att direkt `POST /rest/v1/waitlist` med
-  anon-nyckeln ger "permission denied" och att `rpc/join_waitlist` svarar
-  likadant två gånger med samma adress.
-- **PR mot `prototyp`** öppnas när migreringen är körd.
+Ordningen (Eriks beslut 2026-09-25): granska, merga, sedan kör Erik
+migreringen.
+1. **Granskning av PR #21** (Erik och Theo).
+2. **Merge mot `prototyp`.**
+3. **Migreringen är inte körd.** Efter merge kör Erik **bara**
+   `20260924120000_waitlist.sql` mot SparkUF2 via SQL Editor, inte
+   `supabase db push`, eftersom `registry_cache` inte ska köras än.
+4. **Prova skarpt efter migreringen:** skicka formuläret med riktiga
+   Supabase-nycklar, pröva att direkt `POST /rest/v1/waitlist` med
+   anon-nyckeln ger "permission denied", och att `rpc/join_waitlist` svarar
+   likadant två gånger med samma adress.
+- **Bekräftelsemejl (dubbel opt-in)** ingår inte och kommer i en egen PR.
 
 ### Kända problem
 - **Inget spamskydd.** Vem som helst med den publika anon-nyckeln kan anropa
