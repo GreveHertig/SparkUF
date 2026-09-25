@@ -3274,59 +3274,93 @@
 
 /* Rundturen. */
 .fdd-tour {
-  /* Förflyttning på skärmen: easeInOutCubic, samma kurva som skrollen i
-     FondaTour.tsx. Längden sätts per stopp från JS (420-680 ms). In/ut: --fd-ease. */
-  --fdd-tour-move: cubic-bezier(0.65, 0, 0.35, 1);
-  --fdd-tour-glide: 480ms;
-  position: fixed;
-  inset: 0;
+  /* Lagret ligger i sidans koordinater (ingen förälder är positionerad), så
+     spotlighten och kortet följer med sidans egen skroll. Bara transform och
+     opacity animeras, se _components/FondaTour.tsx. */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
   z-index: 60;
+  pointer-events: none;
   font-family: var(--font-sans), Georgia, serif;
-  transition: opacity 200ms var(--fd-ease);
+  /* Stora ytor som tonar (hålet, kortet ut) får en mjuk ease-in-out. En stark
+     ease-out gör nästan hela tonen på några bildrutor och ser ut som en blink. */
+  --fdd-tour-fade: cubic-bezier(0.45, 0, 0.55, 1);
+  /* Lite ljusare än --scrim (72 %), så att kontrasten mot hålet inte blir hård. */
+  --fdd-tour-scrim: color-mix(in srgb, var(--ink-900) 64%, transparent);
+  animation: fdd-tour-fade-in 320ms var(--fdd-tour-fade) both;
+  transition: opacity 240ms var(--fdd-tour-fade);
 }
 
 .fdd-tour[data-closing="true"] {
   opacity: 0;
+}
+
+.fdd-tour[data-closing="true"] .fdd-tour__card {
   pointer-events: none;
 }
 
-/* Mörkläggning, ring och puls är helskärmslager som klipps med clip-path
-   (demo/_lib/tourGeometry.ts). Bara clip-path, opacity och transform animeras. */
-.fdd-tour__scrim,
+/* Fångar klick på sidan bakom rundturen. Hjulet skrollar sidan som vanligt. */
+.fdd-tour-blocker {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+}
+
+/* Hålet: resten av sidan mörkläggs av en skugga som är större än skärmen.
+   FLIP-glidet skalar elementet, och skuggan räcker även vid kraftig nedskalning. */
+.fdd-tour__spot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-radius: var(--r-lg);
+  box-shadow: 0 0 0 200vmax var(--fdd-tour-scrim);
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* Under ett glid som skrollar sidan ligger hålet i skärmens koordinater. */
+.fdd-tour__spot[data-fixed="true"] {
+  position: fixed;
+}
+
+/* Locket fyller hålet när det är stängt, så att hela sidan är mörk. Hålet
+   öppnas och stängs genom att locket tonar, i stället för att krympa. */
+.fdd-tour__cover {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--fdd-tour-scrim);
+  transition: opacity 300ms var(--fdd-tour-fade);
+}
+
+.fdd-tour__spot[data-open="true"] .fdd-tour__cover {
+  opacity: 0;
+}
+
 .fdd-tour__ring,
 .fdd-tour__ping {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.fdd-tour__scrim {
-  background: var(--scrim);
-  animation: fdd-tour-fade-in 240ms var(--fd-ease) both;
-}
-
-.fdd-tour__ring,
-.fdd-tour__ping {
-  background: var(--accent-300);
+  inset: -2px;
+  border: 2px solid var(--accent-300);
+  border-radius: calc(var(--r-lg) + 2px);
   opacity: 0;
 }
 
 .fdd-tour__ring {
-  transition: opacity 200ms var(--fd-ease);
+  transition: opacity 300ms var(--fdd-tour-fade);
 }
 
-.fdd-tour__ring[data-open="true"] {
+.fdd-tour__spot[data-open="true"] .fdd-tour__ring {
   opacity: 1;
 }
 
-.fdd-tour__scrim[data-motion="glide"] {
-  transition: clip-path var(--fdd-tour-glide) var(--fdd-tour-move);
-}
-
-.fdd-tour__ring[data-motion="glide"] {
-  transition:
-    clip-path var(--fdd-tour-glide) var(--fdd-tour-move),
-    opacity 200ms var(--fd-ease);
+.fdd-tour__ping {
+  transform-origin: 50% 50%;
 }
 
 .fdd-tour__card {
@@ -3346,11 +3380,11 @@
   translate: 0 6px;
   pointer-events: none;
   will-change: transform, opacity;
-  /* Uttoning: kort och snabb. */
+  /* Uttoning: kort och mjuk. */
   transition:
-    opacity 160ms var(--fd-ease),
-    scale 160ms var(--fd-ease),
-    translate 160ms var(--fd-ease);
+    opacity 180ms var(--fdd-tour-fade),
+    scale 180ms var(--fdd-tour-fade),
+    translate 180ms var(--fdd-tour-fade);
 }
 
 .fdd-tour__card[data-visible="true"] {
@@ -3360,15 +3394,15 @@
   pointer-events: auto;
   /* Intoning: lite längre, så att kortet landar mjukt. */
   transition:
-    opacity 280ms var(--fd-ease),
-    scale 280ms var(--fd-ease),
-    translate 280ms var(--fd-ease);
+    opacity 320ms var(--fd-ease),
+    scale 320ms var(--fd-ease),
+    translate 320ms var(--fd-ease);
 }
 
 /* Bara små rättelser efter landningen glider; mellan stoppen tonar kortet om. */
 .fdd-tour__card[data-visible="true"][data-motion="glide"] {
   transition:
-    transform var(--fdd-tour-glide) var(--fdd-tour-move),
+    transform 280ms cubic-bezier(0.65, 0, 0.35, 1),
     opacity 280ms var(--fd-ease),
     scale 280ms var(--fd-ease),
     translate 280ms var(--fd-ease);
@@ -3387,18 +3421,13 @@
   height: 100%;
   background: var(--accent-500);
   transform-origin: left center;
-  transition: transform var(--fdd-tour-glide) var(--fd-ease);
+  transition: transform 480ms var(--fd-ease);
 }
 
 .fdd-tour__content {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
-
-/* Nästa stopps text syns inte medan det gamla kortet tonar ut. */
-.fdd-tour__card:not([data-visible="true"]) .fdd-tour__content {
-  opacity: 0;
 }
 
 /* Nytt stopp: raderna tonar upp en i taget när kortet visas. */

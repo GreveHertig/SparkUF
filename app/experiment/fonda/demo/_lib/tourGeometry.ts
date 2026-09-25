@@ -1,11 +1,11 @@
 /**
  * Geometrin bakom rundturens spotlight (_components/FondaTour.tsx).
  *
- * Mörkläggningen är ett helskärmslager med ett hål som ritas med
- * `clip-path: path(evenodd, …)`. Varje stopp ger samma sekvens av
- * path-kommandon, bara med andra tal. Det gör att webbläsaren kan tweena
- * hålet mellan stoppen som en vanlig CSS-transition, utan att width/height/
- * top/left animeras och utan en box-shadow på 9999 px som målas om varje bildruta.
+ * Spotlighten är ett element i sidans koordinater med en stor box-shadow som
+ * mörklägger resten. All rörelse görs med `transform` (FLIP) och `opacity`,
+ * som webbläsaren kör på compositorn. Då fortsätter glidet mjukt även när
+ * huvudtråden är upptagen med att rendera nästa sida, och spotlighten följer
+ * med sidans egen skroll utan att något behöver räknas om.
  *
  * Placeringen räknas inom den säkra ytan: under sidhuvudet (som är sticky)
  * och ovanför demoraden (som är fixerad). Där hamnar både hålet och kortet.
@@ -32,11 +32,6 @@ export function padRect(rect: TourRect, padding = SPOTLIGHT_PADDING): TourRect {
   };
 }
 
-/** En ruta med storleken noll i mitten av `rect`, dit hålet krymper mellan stoppen. */
-export function collapseRect(rect: TourRect): TourRect {
-  return { top: rect.top + rect.height / 2, left: rect.left + rect.width / 2, width: 0, height: 0 };
-}
-
 export function rectsAreClose(a: TourRect, b: TourRect, tolerance = 0.5): boolean {
   return (
     Math.abs(a.top - b.top) < tolerance &&
@@ -46,54 +41,8 @@ export function rectsAreClose(a: TourRect, b: TourRect, tolerance = 0.5): boolea
   );
 }
 
-function round(value: number): number {
-  return Math.round(value * 10) / 10;
-}
-
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), Math.max(min, max));
-}
-
-/**
- * En rundad rektangel som alltid består av samma kommandon (fyra linjer,
- * fyra bågar), även när den har storleken noll. Radien kläms så att bågarna
- * aldrig blir större än halva sidan.
- */
-export function roundedRectPath(rect: TourRect, radius: number): string {
-  const x = round(rect.left);
-  const y = round(rect.top);
-  const w = round(Math.max(0, rect.width));
-  const h = round(Math.max(0, rect.height));
-  const r = round(Math.max(0, Math.min(radius, w / 2, h / 2)));
-  return [
-    `M${round(x + r)} ${y}`,
-    `H${round(x + w - r)}`,
-    `A${r} ${r} 0 0 1 ${round(x + w)} ${round(y + r)}`,
-    `V${round(y + h - r)}`,
-    `A${r} ${r} 0 0 1 ${round(x + w - r)} ${round(y + h)}`,
-    `H${round(x + r)}`,
-    `A${r} ${r} 0 0 1 ${x} ${round(y + h - r)}`,
-    `V${round(y + r)}`,
-    `A${r} ${r} 0 0 1 ${round(x + r)} ${y}`,
-    "Z",
-  ].join(" ");
-}
-
-/** Mörkläggningen: hela viewporten minus hålet. */
-export function scrimClipPath(viewport: Size, hole: TourRect, radius: number): string {
-  const outer = `M0 0H${viewport.width}V${viewport.height}H0Z`;
-  return `path(evenodd, "${outer} ${roundedRectPath(hole, radius)}")`;
-}
-
-/** Ringen runt hålet: ett band som är `thickness` px brett, strax utanför hålet. */
-export function ringClipPath(hole: TourRect, radius: number, thickness: number): string {
-  const outer = {
-    top: hole.top - thickness,
-    left: hole.left - thickness,
-    width: hole.width + thickness * 2,
-    height: hole.height + thickness * 2,
-  };
-  return `path(evenodd, "${roundedRectPath(outer, radius + thickness)} ${roundedRectPath(hole, radius)}")`;
 }
 
 /** Hålet beskuret till den säkra ytan, så att det aldrig går in under sidhuvudet eller demoraden. */
@@ -237,7 +186,19 @@ export function glideDuration(distance: number): number {
   return Math.round(clamp(380 + distance * 0.3, 420, 680));
 }
 
-/** easeInOutCubic, samma kurva som CSS-variabeln --fdd-tour-move. */
-export function easeInOutCubic(t: number): number {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+/**
+ * FLIP: transformen som får ett element som står på `to` att se ut att stå på
+ * `from`. Animeras den till `none` glider elementet från `from` till `to`.
+ */
+export function flipTransform(from: TourRect, to: TourRect): string {
+  const scaleX = to.width > 0 ? from.width / to.width : 1;
+  const scaleY = to.height > 0 ? from.height / to.height : 1;
+  const dx = from.left - to.left;
+  const dy = from.top - to.top;
+  return `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${scaleX.toFixed(4)}, ${scaleY.toFixed(4)})`;
+}
+
+/** En ruta i viewportens koordinater flyttad till sidans (dokumentets) koordinater. */
+export function toDocument(rect: TourRect, scroll: { x: number; y: number }): TourRect {
+  return { ...rect, top: rect.top + scroll.y, left: rect.left + scroll.x };
 }

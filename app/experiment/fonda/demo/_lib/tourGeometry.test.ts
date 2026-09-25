@@ -2,20 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   cardCoversHole,
   clipToSafeArea,
-  collapseRect,
-  easeInOutCubic,
+  flipTransform,
   frameStop,
   glideDuration,
   layoutStop,
-  ringClipPath,
-  roundedRectPath,
-  scrimClipPath,
+  toDocument,
 } from "./tourGeometry";
-
-/** Kommandobokstäverna i en path, utan talen. */
-function commands(path: string): string {
-  return path.replace(/[^A-Za-z]/g, "");
-}
 
 const desktop = { width: 1440, height: 900 };
 const mobile = { width: 390, height: 844 };
@@ -24,18 +16,21 @@ const safe = { top: 121, bottom: 844 };
 const card = { width: 380, height: 290 };
 
 describe("rundturens spotlight-geometri", () => {
-  const rect = { top: 300, left: 50, width: 300, height: 120 };
 
-  it("hålet har samma kommandon oavsett storlek, så att det kan tweenas", () => {
-    const open = scrimClipPath(desktop, rect, 16);
-    const closed = scrimClipPath(desktop, collapseRect(rect), 16);
-    expect(commands(open)).toBe(commands(closed));
-    expect(commands(ringClipPath(rect, 16, 2))).toBe(commands(ringClipPath(collapseRect(rect), 16, 2)));
+  it("FLIP-transformen lägger elementet på den gamla platsen", () => {
+    const from = { top: 100, left: 50, width: 200, height: 100 };
+    const to = { top: 400, left: 250, width: 400, height: 50 };
+    expect(flipTransform(from, to)).toBe("translate(-200.00px, -300.00px) scale(0.5000, 2.0000)");
+    expect(flipTransform(to, to)).toBe("translate(0.00px, 0.00px) scale(1.0000, 1.0000)");
   });
 
-  it("radien kläms till halva sidan", () => {
-    expect(roundedRectPath({ top: 0, left: 0, width: 10, height: 4 }, 16)).toContain("A2 2");
-    expect(roundedRectPath(collapseRect(rect), 16)).toContain("A0 0");
+  it("flyttar en ruta från viewportens till sidans koordinater", () => {
+    expect(toDocument({ top: 100, left: 20, width: 10, height: 10 }, { x: 0, y: 500 })).toEqual({
+      top: 600,
+      left: 20,
+      width: 10,
+      height: 10,
+    });
   });
 
   it("hålet går aldrig in under sidhuvudet eller demoraden", () => {
@@ -131,9 +126,4 @@ describe("rundturens spotlight-geometri", () => {
     expect(glideDuration(400)).toBeGreaterThan(glideDuration(100));
   });
 
-  it("kurvan börjar i 0, slutar i 1 och är symmetrisk", () => {
-    expect(easeInOutCubic(0)).toBe(0);
-    expect(easeInOutCubic(1)).toBe(1);
-    expect(easeInOutCubic(0.5)).toBeCloseTo(0.5);
-  });
 });
