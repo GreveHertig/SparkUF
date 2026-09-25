@@ -83,7 +83,7 @@ export default function FondaDemoJourneyStepPage({ params }: { params: Promise<{
             {data.highlights.length > 0 && (
               <section className="fd-panel" aria-labelledby="fdd-step-highlights" data-tour-id="journey-highlights">
                 <h2 id="fdd-step-highlights" className="fdd-label">
-                  {j.whatHappened}
+                  {t.experimentFonda.demo.stepHighlightsTitle}
                 </h2>
                 <ul className="fdd-bullets">
                   {data.highlights.map((highlight) => (

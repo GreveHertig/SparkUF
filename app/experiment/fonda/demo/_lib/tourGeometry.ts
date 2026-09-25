@@ -1,24 +1,32 @@
 /**
  * Geometrin bakom rundturens spotlight (_components/FondaTour.tsx).
  *
- * Spotlighten är ett element i sidans koordinater med en stor box-shadow som
- * mörklägger resten. All rörelse görs med `transform` (FLIP) och `opacity`,
- * som webbläsaren kör på compositorn. Då fortsätter glidet mjukt även när
- * huvudtråden är upptagen med att rendera nästa sida, och spotlighten följer
- * med sidans egen skroll utan att något behöver räknas om.
+ * Mörkläggningen är fyra enfärgade paneler runt hålet och fyra små hörnbitar
+ * som rundar det. Allt flyttas med `transform` (compositorn), och enfärgade
+ * ytor kostar nästan inget att flytta. (En box-shadow på 200vmax, som förut,
+ * måste rastreras om när den flyttas och tappade bildrutor.)
  *
  * Placeringen räknas inom den säkra ytan: under sidhuvudet (som är sticky)
- * och ovanför demoraden (som är fixerad). Där hamnar både hålet och kortet.
+ * och ovanför demoraden (som är fixerad). Kortet täcker aldrig hålet.
  */
 
 export type TourRect = { top: number; left: number; width: number; height: number };
 export type Size = { width: number; height: number };
 /** Den del av viewporten som varken täcks av sidhuvudet eller demoraden. */
 export type SafeArea = { top: number; bottom: number };
-export type CardPlacement = "right" | "left" | "below" | "above" | "docked" | "sheet" | "center";
-export type StopLayout = { hole: TourRect | null; card: { x: number; y: number }; placement: CardPlacement };
+export type CardPlacement = "right" | "left" | "below" | "above" | "stacked" | "center";
+export type StopLayout = {
+  hole: TourRect | null;
+  card: { x: number; y: number; width: number };
+  placement: CardPlacement;
+};
+/** Kortets höjd vid en viss bredd (texten bryts om när bredden ändras). */
+export type MeasureCard = (width: number) => number;
 
 export const SPOTLIGHT_PADDING = 8;
+export const CARD_WIDTH = 380;
+export const CARD_MIN_SIDE_WIDTH = 300;
+export const HOLE_RADIUS = 16;
 const GAP = 16;
 const EDGE = 16;
 
@@ -45,140 +53,134 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), Math.max(min, max));
 }
 
-/** Hålet beskuret till den säkra ytan, så att det aldrig går in under sidhuvudet eller demoraden. */
+/** Hålet beskuret till en yta, så att det aldrig går in under sidhuvudet, demoraden eller kortet. */
 export function clipToSafeArea(rect: TourRect, safe: SafeArea): TourRect {
   const top = Math.max(rect.top, safe.top + 4);
   const bottom = Math.min(rect.top + rect.height, safe.bottom - 4);
   return { top, left: rect.left, width: rect.width, height: Math.max(0, bottom - top) };
 }
 
-function overlaps(card: TourRect, hole: TourRect): boolean {
-  return (
-    card.left < hole.left + hole.width &&
-    card.left + card.width > hole.left &&
-    card.top < hole.top + hole.height &&
-    card.top + card.height > hole.top
-  );
-}
-
-/** På smal skärm är kortet lika brett som skärmen och läggs som ett ark längst ner. */
-function isSheet(card: Size, viewport: Size): boolean {
-  return card.width >= viewport.width - EDGE * 2 - 1;
-}
-
-/** Ryms kortet bredvid målet? I så fall på vilken sida (höger först). */
-function sidePlacement(target: TourRect, card: Size, viewport: Size): "right" | "left" | null {
-  const spaceRight = viewport.width - EDGE - (target.left + target.width) - GAP;
-  const spaceLeft = target.left - GAP - EDGE;
-  if (spaceRight >= card.width) return "right";
-  if (spaceLeft >= card.width) return "left";
-  return null;
-}
-
-/** Var kortet och hålet hamnar för ett mål som står där det står nu. */
-export function layoutStop(target: TourRect | null, card: Size, viewport: Size, safe: SafeArea): StopLayout {
-  const minY = safe.top + EDGE;
-  const maxY = safe.bottom - EDGE - card.height;
-  if (!target) {
-    return {
-      hole: null,
-      card: { x: Math.round((viewport.width - card.width) / 2), y: Math.round(clamp((safe.top + safe.bottom - card.height) / 2, minY, maxY)) },
-      placement: "center",
-    };
-  }
-
-  const hole = clipToSafeArea(target, safe);
-  const centerX = clamp(hole.left + hole.width / 2 - card.width / 2, EDGE, viewport.width - EDGE - card.width);
-  const side = sidePlacement(hole, card, viewport);
-  if (side) {
-    const x = side === "right" ? hole.left + hole.width + GAP : hole.left - GAP - card.width;
-    const y = clamp(hole.top + hole.height / 2 - card.height / 2, minY, maxY);
-    return { hole, card: { x: Math.round(x), y: Math.round(y) }, placement: side };
-  }
-
-  const holeBottom = hole.top + hole.height;
-  if (safe.bottom - EDGE - (holeBottom + GAP) >= card.height) {
-    return { hole, card: { x: Math.round(centerX), y: Math.round(holeBottom + GAP) }, placement: "below" };
-  }
-  if (hole.top - GAP - minY >= card.height) {
-    return { hole, card: { x: Math.round(centerX), y: Math.round(hole.top - GAP - card.height) }, placement: "above" };
-  }
-  // Smal skärm (kortet är lika brett som skärmen): kortet blir ett ark längst
-  // ner, och spotlighten visar den del av målet som syns ovanför arket.
-  if (isSheet(card, viewport)) {
-    const y = clamp(maxY, minY, maxY);
-    return {
-      hole: clipToSafeArea(target, { top: safe.top, bottom: y - GAP / 2 }),
-      card: { x: Math.round(EDGE), y: Math.round(y) },
-      placement: "sheet",
-    };
-  }
-  // Ett mål som fyller större delen av ytan: kortet dockas i nedre högra
-  // hörnet, alltid på samma ställe.
-  if (hole.height > (safe.bottom - safe.top) * 0.66) {
-    return {
-      hole,
-      card: { x: Math.round(viewport.width - EDGE - card.width), y: Math.round(clamp(maxY, minY, maxY)) },
-      placement: "docked",
-    };
-  }
-  // Annars nära målet: nästan under eller nästan över, det som täcker minst.
-  const below = { x: centerX, y: clamp(maxY, minY, maxY), placement: "below" as const };
-  const above = { x: centerX, y: minY, placement: "above" as const };
-  const covered = (c: { x: number; y: number }) => overlapArea({ top: c.y, left: c.x, ...card }, hole);
-  const best = covered(above) < covered(below) ? above : below;
-  return { hole, card: { x: Math.round(best.x), y: Math.round(best.y) }, placement: best.placement };
-}
-
-function overlapArea(a: TourRect, b: TourRect): number {
+export function overlapArea(a: TourRect, b: TourRect): number {
   const width = Math.min(a.left + a.width, b.left + b.width) - Math.max(a.left, b.left);
   const height = Math.min(a.top + a.height, b.top + b.height) - Math.max(a.top, b.top);
   return Math.max(0, width) * Math.max(0, height);
 }
 
+/** Kortets bredd på en skärm: 380 px, eller skärmens bredd minus kanterna. */
+export function fullCardWidth(viewport: Size): number {
+  return Math.min(CARD_WIDTH, viewport.width - EDGE * 2);
+}
+
+/** Var kortet och hålet hamnar för ett mål som står där det står nu. */
+export function layoutStop(target: TourRect | null, measure: MeasureCard, viewport: Size, safe: SafeArea): StopLayout {
+  const width = fullCardWidth(viewport);
+  const height = measure(width);
+  const minY = safe.top + EDGE;
+  const maxY = (h: number) => safe.bottom - EDGE - h;
+  const centerX = (hole: TourRect, w: number) =>
+    clamp(hole.left + hole.width / 2 - w / 2, EDGE, viewport.width - EDGE - w);
+
+  if (!target) {
+    return {
+      hole: null,
+      card: {
+        x: Math.round((viewport.width - width) / 2),
+        y: Math.round(clamp((safe.top + safe.bottom - height) / 2, minY, maxY(height))),
+        width,
+      },
+      placement: "center",
+    };
+  }
+
+  const hole = clipToSafeArea(target, safe);
+  const spaceRight = viewport.width - EDGE - (hole.left + hole.width) - GAP;
+  const spaceLeft = hole.left - GAP - EDGE;
+  const side = (w: number, h: number): StopLayout | null => {
+    const y = Math.round(clamp(hole.top + hole.height / 2 - h / 2, minY, maxY(h)));
+    if (spaceRight >= w) return { hole, card: { x: Math.round(hole.left + hole.width + GAP), y, width: w }, placement: "right" };
+    if (spaceLeft >= w) return { hole, card: { x: Math.round(hole.left - GAP - w), y, width: w }, placement: "left" };
+    return null;
+  };
+
+  // 1. Bredvid målet med full bredd.
+  const wide = side(width, height);
+  if (wide) return wide;
+
+  // 2. Under eller över målet.
+  const holeBottom = hole.top + hole.height;
+  if (safe.bottom - EDGE - (holeBottom + GAP) >= height) {
+    return { hole, card: { x: Math.round(centerX(hole, width)), y: Math.round(holeBottom + GAP), width }, placement: "below" };
+  }
+  if (hole.top - GAP - minY >= height) {
+    return { hole, card: { x: Math.round(centerX(hole, width)), y: Math.round(hole.top - GAP - height), width }, placement: "above" };
+  }
+
+  // 3. Bredvid målet med ett smalare kort, om det finns minst 300 px.
+  const sideWidth = Math.floor(Math.min(width, Math.max(spaceRight, spaceLeft)));
+  if (sideWidth >= CARD_MIN_SIDE_WIDTH) {
+    const narrow = side(sideWidth, measure(sideWidth));
+    if (narrow) return narrow;
+  }
+
+  // 4. Staplat: kortet längst ner i ytan och hålet visar den del av målet
+  //    som ryms ovanför det. (På mobil blir det ett ark längst ner.)
+  const y = Math.round(clamp(maxY(height), minY, maxY(height)));
+  const clipped = clipToSafeArea(target, { top: safe.top, bottom: y - GAP + 4 });
+  return {
+    hole: clipped,
+    card: { x: Math.round(centerX(clipped, width)), y, width },
+    placement: "stacked",
+  };
+}
+
+/** Hålet för en placering som redan är vald, när målet har flyttat sig (t.ex. vid skroll). */
+export function holeForPlacement(target: TourRect, layout: StopLayout, safe: SafeArea): TourRect {
+  if (layout.placement === "stacked") return clipToSafeArea(target, { top: safe.top, bottom: layout.card.y - GAP + 4 });
+  return clipToSafeArea(target, safe);
+}
+
+/** Om kortet ligger ovanpå hålet. */
+export function cardCoversHole(layout: StopLayout, cardHeight: number): boolean {
+  if (!layout.hole) return false;
+  const card = { top: layout.card.y, left: layout.card.x, width: layout.card.width, height: cardHeight };
+  return overlapArea(card, layout.hole) > 0;
+}
+
 /**
- * Hur sidan ska skrolla för att visa målet väl: målet och kortet tillsammans
- * mitt i den säkra ytan, eller målets början överst om det är för högt.
- * Skrollar inte alls om målet redan syns helt och kortet får plats utan att
- * täcka det.
+ * Hur sidan ska skrolla för att visa målet väl. Skrollar inte alls om målet
+ * redan syns helt och kortet får plats bredvid, under eller över. Annars
+ * provas målet i mitten, målet och kortet tillsammans i mitten, och målets
+ * början överst. Det läge som visar hela målet och kräver minst skroll vinner.
  */
 export function frameStop(
   target: TourRect,
-  card: Size,
+  measure: MeasureCard,
   viewport: Size,
   safe: SafeArea,
   scroll: { y: number; max: number },
 ): { scrollTo: number; layout: StopLayout } {
-  const current = layoutStop(target, card, viewport, safe);
-  const fullyVisible = target.top >= safe.top + EDGE / 2 && target.top + target.height <= safe.bottom - EDGE / 2;
-  if (fullyVisible && !cardCoversHole(current, card)) return { scrollTo: scroll.y, layout: current };
+  const fullyVisible = (rect: TourRect) =>
+    rect.top >= safe.top + EDGE / 2 && rect.top + rect.height <= safe.bottom - EDGE / 2;
+  const here = layoutStop(target, measure, viewport, safe);
+  if (fullyVisible(target) && here.placement !== "stacked") return { scrollTo: scroll.y, layout: here };
 
   const room = safe.bottom - safe.top;
-  const stacked = target.height + GAP + card.height;
-  let desiredTop: number;
-  if (isSheet(card, viewport) && stacked > room - 2 * EDGE) {
-    // Arket ligger längst ner, så målets början ska stå direkt under sidhuvudet.
-    desiredTop = safe.top + EDGE;
-  } else if (sidePlacement(target, card, viewport) && target.height <= room - 2 * EDGE) {
-    desiredTop = safe.top + (room - target.height) / 2;
-  } else if (!sidePlacement(target, card, viewport) && stacked <= room - 2 * EDGE) {
-    desiredTop = safe.top + (room - stacked) / 2;
-  } else if (target.height <= room - 2 * EDGE) {
-    desiredTop = safe.top + (room - target.height) / 2;
-  } else {
-    desiredTop = safe.top + EDGE;
-  }
-
+  const cardHeight = measure(fullCardWidth(viewport));
   const documentTop = target.top + scroll.y;
-  const scrollTo = Math.round(clamp(documentTop - desiredTop, 0, scroll.max));
-  const moved = { ...target, top: documentTop - scrollTo };
-  return { scrollTo, layout: layoutStop(moved, card, viewport, safe) };
-}
-
-/** Om kortet ligger ovanpå hålet (bara tillåtet när det är dockat). */
-export function cardCoversHole(layout: StopLayout, card: Size): boolean {
-  if (!layout.hole) return false;
-  return overlaps({ top: layout.card.y, left: layout.card.x, width: card.width, height: card.height }, layout.hole);
+  const tops = [
+    safe.top + (room - target.height) / 2,
+    safe.top + (room - (target.height + GAP + cardHeight)) / 2,
+    safe.top + EDGE,
+  ];
+  const options = tops.map((desiredTop) => {
+    const scrollTo = Math.round(clamp(documentTop - desiredTop, 0, scroll.max));
+    const moved = { ...target, top: documentTop - scrollTo };
+    return { scrollTo, layout: layoutStop(moved, measure, viewport, safe), whole: fullyVisible(moved) };
+  });
+  const rank = (option: (typeof options)[number]) =>
+    (option.layout.placement === "stacked" || !option.whole ? 1_000_000 : 0) + Math.abs(option.scrollTo - scroll.y);
+  const best = options.reduce((winner, option) => (rank(option) < rank(winner) ? option : winner));
+  return { scrollTo: best.scrollTo, layout: best.layout };
 }
 
 /** Glidets längd: längre sträcka, lite längre tid, inom ett lugnt spann. */
@@ -186,19 +188,43 @@ export function glideDuration(distance: number): number {
   return Math.round(clamp(380 + distance * 0.3, 420, 680));
 }
 
-/**
- * FLIP: transformen som får ett element som står på `to` att se ut att stå på
- * `from`. Animeras den till `none` glider elementet från `from` till `to`.
- */
-export function flipTransform(from: TourRect, to: TourRect): string {
-  const scaleX = to.width > 0 ? from.width / to.width : 1;
-  const scaleY = to.height > 0 ? from.height / to.height : 1;
-  const dx = from.left - to.left;
-  const dy = from.top - to.top;
-  return `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${scaleX.toFixed(4)}, ${scaleY.toFixed(4)})`;
-}
-
 /** En ruta i viewportens koordinater flyttad till sidans (dokumentets) koordinater. */
 export function toDocument(rect: TourRect, scroll: { x: number; y: number }): TourRect {
   return { ...rect, top: rect.top + scroll.y, left: rect.left + scroll.x };
+}
+
+/** Panelernas storlek. Enfärgade ytor är billiga oavsett storlek. */
+export const SHADE_SIZE = 40000;
+
+export const SHADE_PARTS = ["top", "bottom", "left", "right", "tl", "tr", "bl", "br", "lid"] as const;
+export type ShadePart = (typeof SHADE_PARTS)[number];
+
+/**
+ * Transformerna som lägger mörkläggningen runt `hole` (sidans koordinater).
+ * Topp- och bottenpanelen är SHADE_SIZE i kvadrat, sidopanelerna är SHADE_SIZE
+ * breda och 1 px höga och skalas till hålets höjd, hörnbitarna är HOLE_RADIUS
+ * i kvadrat, och locket (som fyller hålet när det är stängt) är 1 px och
+ * skalas till hålet.
+ */
+export function shadeTransforms(hole: TourRect): Record<ShadePart, string> {
+  const s = SHADE_SIZE;
+  const r = Math.min(HOLE_RADIUS, hole.width / 2, hole.height / 2);
+  const x = hole.left;
+  const y = hole.top;
+  const right = hole.left + hole.width;
+  const bottom = hole.top + hole.height;
+  const t = (tx: number, ty: number, sx = 1, sy = 1) =>
+    `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+  const corner = Math.max(0, r) / HOLE_RADIUS;
+  return {
+    top: t(x - s / 2, y - s),
+    bottom: t(x - s / 2, bottom),
+    left: t(x - s, y, 1, Math.max(0, hole.height)),
+    right: t(right, y, 1, Math.max(0, hole.height)),
+    tl: t(x, y, corner, corner),
+    tr: t(right - r, y, corner, corner),
+    bl: t(x, bottom - r, corner, corner),
+    br: t(right - r, bottom - r, corner, corner),
+    lid: t(x, y, Math.max(0, hole.width), Math.max(0, hole.height)),
+  };
 }

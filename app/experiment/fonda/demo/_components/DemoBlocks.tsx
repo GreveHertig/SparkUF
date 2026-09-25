@@ -152,7 +152,7 @@ export function PageHead({
       <div className="fdd-head__row">
         <div className="fdd-head__text">
           {context && <p className="fdd-head__date">{context}</p>}
-          <h1 className={cn("fd-h2", typeof title === "string" && title.length > 60 && "fdd-h1--long")}>{title}</h1>
+          <h1 className={cn("fd-h2", typeof title === "string" && title.length > 40 && "fdd-h1--long")}>{title}</h1>
         </div>
         {aside}
       </div>

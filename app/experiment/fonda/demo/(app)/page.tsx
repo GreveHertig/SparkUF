@@ -73,7 +73,7 @@ export default function FondaDemoHomePage() {
         </h1>
       </header>
 
-      <div className="fdd-hero">
+      <div className="fdd-hero fdd-hero--even">
         <section aria-labelledby="fdd-next-title" className="fd-panel fdd-next" data-tour-id="hem-act">
           <p className="fd-nextstep__eyebrow">{nextStep.eyebrow}</p>
           <h2 id="fdd-next-title" className="fdd-next__title">

@@ -929,6 +929,7 @@ export const en = {
       stepOf: "Step {current} of {total}",
       nextAction: "Plays the next moment in the demo.",
       scoreLink: "See the full score",
+      stepHighlightsTitle: "Results",
       journeyTitle: "The journey",
       noPulse: "No signal in this scenario.",
       historyLabel: "The score through the journey",

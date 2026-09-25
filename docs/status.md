@@ -2504,11 +2504,26 @@ Grundaren tyckte att rundturen hackade. Orsaker: en rAF-loop satte spotlightens 
 - Tester: `demo/_lib/tourGeometry.test.ts` (FLIP-transformen, koordinatbytet, hålet stannar i den säkra ytan, alla placeringar, skrollen för breda, höga och mobila mål, glidlängd).
 - Verifierat: `typecheck`, `lint` (0 fel), `test`. Playwright på 1440 och 390 px genom alla 20 stopp.
 
+### Rundturen och layouten, fjärde varvet (2026-09-25)
+Uppdraget: jämna 60 fps, en ruta som alltid täcker rätt element, proffsig layout och sakliga rubriker. Allt mätt i produktionsbygget (`pnpm build && pnpm start -p 3200`).
+- **Mätning** (skript i sessionens scratchpad, inte i repot): per övergång rAF-tider, `document.getAnimations()` per bildruta (bara glapp medan något rör sig räknas som synliga) och Long Animation Frames med skriptorsak. Baslinje i miljön: tom sida och en transform-animation går i rena 60 fps.
+- **Orsak till tappade bildrutor:** hålets `box-shadow` på 200vmax. När elementet flyttades eller skalades rastrerades ett jättelager om, 2-5 tappade bildrutor per glid. Isolerat: utan skuggan 60 fps, locket, kortet och den egna skrollen kostade inget.
+- **Mörkläggningen är nu fyra enfärgade paneler runt hålet**, fyra hörnbitar (radiell gradient, 16 px) och ett lock som fyller hålet när det är stängt, alla i sidans nollpunkt och placerade med `transform` (`shadeTransforms` i `demo/_lib/tourGeometry.ts`). Ringen glider aldrig (ingen förvrängning): den placeras när hålet landat och tonar in.
+- **Resultat:** 1440 px: 18 av 19 övergångar utan tappad bildruta under rörelse, en med en enda (33 ms). 390 px: 19 av 19. Inga långa skript under rörelse. Reducerad rörelse: bara toningar, inga glid.
+- **Rutan följer elementet:** räknas om vid skroll (beskärs mot sidhuvudet, demoraden och kortet), vid ändrad fönsterstorlek och när innehållet ändrar storlek (ResizeObserver), och placeras först när elementet syns (storlek, `checkVisibility`, typsnitt och bilder laddade) och stått still. Ett kort som hör till målet följer med sidan men lämnar aldrig den säkra ytan, och placeringen väljs om när skrollen stannat (160 ms).
+- **Kontroll:** 17 stopp med mål × landat/skrollat ned 250 px/skrollat upp × 1440 och 390 px. Förra versionen (`bea7402`): rutan fel med 27-412 px efter skroll på de flesta stopp, kortet utanför skärmen, och på 5 stopp täckte kortet 66 % av målet. Nu: rätt på alla 102, kortet täcker aldrig hålet och hamnar aldrig utanför.
+- **Kortets placering:** bredvid (höger först), under, över, bredvid med smalare kort (300-380 px), och annars staplat: hålet visar målets början och kortet står under det (på mobil ett ark längst ner). Det dockade läget som täckte stora mål finns inte längre. Test som provar 36 kombinationer av målstorlek och läge på dator och mobil.
+- **Layout:** all spacing i demots regler och de delade komponenter demot använder följer nu `--space-*` i `design/tokens.css` (228 värden, t.ex. 0.35rem → 4 px, 0.6rem → 8 px, 0.85rem → 12 px, 1.25rem → 24 px). Typografin har färre nivåer (korttitlar 1.25rem, listrubriker 1.125rem, större titlar 1.5rem, nyckeltal lika på Hem och Marknad). Hem: korten i första raden lika höga med knapparna i linje (`.fdd-hero--even`, bara där innehållet är jämförbart). Källpillerna linjerar i nyckeltalsrader och signalkort. Resan/steg: höjdpunkterna har egen rubrik (`experimentFonda.demo.stepHighlightsTitle`, "Resultat"/"Results") i stället för en andra "Vad som gjorts", och en rubricerad del i en kolumn får sektionsluft. Simuleringen på Marknad är fullbredd. Långa sidrubriker (över 40 tecken) krymps. Flikraden på mobil tonar ut i kanten så att det syns att den skrollar.
+- Landningssidans egna sektionsavstånd är orörda. Delade `.fd-*`-komponenter (knapp, piller, panel) som demot använder följer nu skalan även på landningssidan.
+- Tester: `demo/_lib/tourGeometry.test.ts` (panelerna kant i kant med hålet, hörnbitarna, alla placeringar, skroll, att kortet aldrig täcker hålet).
+- Rubrikerna i rundturen (punkt 4) är inte bytta: förslaget väntar på grundarens ok. Siffror i de nya rubrikerna ska räknas fram ur motorn (`calculateScore` via demoadaptrarna, `PHASE_TOTAL_CAP`), inte skrivas in.
+
 ### Återstår
 - Inget i kopian.
 
 ### Kända problem
 - `next dev` var mycket långsam under arbetet (20-80 s för första kompileringen av en rutt). Rundturens navigering väntar då på servern. Inget fel i koden, men värt att veta vid en visning i dev-läge. 2026-09-25: en uppsvälld `.next`-cache (1,8 GB) var en stor del av det. Efter `rm -rf .next` kompilerades `/` på 3 s i stället för 3 min.
 - Rundturen: ett mål som är högre än den säkra ytan visas bara till den del som får plats (hålet beskärs). På stopp 8 på mobil ligger målet sist på sidan, så bara en remsa syns ovanför arket.
+- `start/profil` på mobil har ett litet layoutskifte (CLS 0,024, gränsen för "bra" är 0,1): profilpanelen under samtalet flyttas ner när nästa fråga visas efter en timer. Avsiktligt innehåll som växer, inte rättat.
 - Impeccable-skillens verktyg (`scripts/impeccable`) finns inte i miljön, så dess automatiska granskning och DESIGN.md-dokumentation kördes inte. Designbesluten står här i stället; `DESIGN.md` är orörd.
 - Sidan är bara ljus, eftersom tokens saknar mörkt läge.

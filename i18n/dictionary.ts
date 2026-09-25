@@ -827,6 +827,8 @@ export type Dictionary = {
       stepOf: string;
       nextAction: string;
       scoreLink: string;
+      /** Rubriken över stegets höjdpunkter på en stegsida i kopian. */
+      stepHighlightsTitle: string;
       journeyTitle: string;
       noPulse: string;
       historyLabel: string;

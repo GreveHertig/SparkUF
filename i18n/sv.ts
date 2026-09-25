@@ -933,6 +933,7 @@ export const sv = {
       stepOf: "Steg {current} av {total}",
       nextAction: "Spelar upp nästa moment i demot.",
       scoreLink: "Se hela poängen",
+      stepHighlightsTitle: "Resultat",
       journeyTitle: "Resan",
       noPulse: "Ingen signal i det här scenariot.",
       historyLabel: "Poängen genom resan",

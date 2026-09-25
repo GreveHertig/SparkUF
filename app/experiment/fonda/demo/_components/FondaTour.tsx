@@ -9,19 +9,22 @@ import { saraBeats } from "@/adapters/demo/sara";
 import { TOUR_STEPS } from "@/adapters/demo/tourSteps";
 import { toFondaPath } from "../_lib/paths";
 import {
-  flipTransform,
+  SHADE_PARTS,
   frameStop,
   glideDuration,
+  holeForPlacement,
   layoutStop,
   padRect,
   rectsAreClose,
+  shadeTransforms,
   toDocument,
   type SafeArea,
+  type ShadePart,
   type StopLayout,
   type TourRect,
 } from "../_lib/tourGeometry";
 
-/** Hålet stängs (tonar igen) innan sidan byts. Samma som i fonda.css. */
+/** Hålet tonar igen innan sidan byts. Samma som i fonda.css. */
 const CLOSE_HOLE_MS = 300;
 /** Kortets uttoning. Samma som i fonda.css. */
 const CARD_FADE_OUT_MS = 180;
@@ -31,22 +34,19 @@ const CARD_REVEAL_AT = 0.55;
 const CORRECTION_MS = 280;
 /** Skrollar sidan mer än så här stor del av skärmen tonar hålet om i stället för att glida. */
 const LONG_SCROLL_SHARE = 0.35;
+/** Så länge skrollen ska ha stått still innan kortets placering väljs om. */
+const SCROLL_SETTLE_MS = 160;
 const PING_MS = 900;
 const PING_SPREAD = 10;
 const CLOSE_TOUR_MS = 240;
 const FIND_TIMEOUT_MS = 2500;
-/** Hur länge en ny sida ska stå still innan hålet öppnas (ca 100 ms). */
-const LAYOUT_STABLE_FRAMES = 6;
-const LAYOUT_MAX_MS = 1000;
+/** Hur länge målet ska stå still innan hålet placeras: ny sida ca 100 ms, samma sida ca 50 ms. */
+const STABLE_FRAMES_NEW_PAGE = 6;
+const STABLE_FRAMES_SAME_PAGE = 3;
+const STABLE_MAX_MS = 1200;
 /** easeInOutCubic för förflyttning, stark ease-out för in/ut (som --fd-ease). */
 const EASE_MOVE = "cubic-bezier(0.65, 0, 0.35, 1)";
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
-
-type StageElements = {
-  spot: HTMLDivElement;
-  ping: HTMLDivElement;
-  card: HTMLDivElement;
-};
 
 function viewport() {
   return { width: window.innerWidth, height: window.innerHeight };
@@ -72,7 +72,18 @@ function safeArea(): SafeArea {
   return { top, bottom: bottom > top + 200 ? bottom : vp.height };
 }
 
-/** easeInOutCubic, samma kurva som EASE_MOVE, för skrollen. */
+/** Målet syns på riktigt: har storlek, är inte dolt, och typsnitt och bilder i det har laddats. */
+function isShowing(el: HTMLElement): boolean {
+  if (!el.isConnected) return false;
+  const rect = el.getBoundingClientRect();
+  if (rect.width < 1 || rect.height < 1) return false;
+  if (typeof el.checkVisibility === "function" && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) {
+    return false;
+  }
+  if (document.fonts && document.fonts.status !== "loaded") return false;
+  return Array.from(el.querySelectorAll("img")).every((img) => img.complete);
+}
+
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
@@ -100,16 +111,17 @@ export function FondaTour() {
 /**
  * Scenen medan rundturen är på.
  *
- * Spotlighten och kortet ligger i sidans koordinater, så de följer med sidans
- * egen skroll. Hålets rörelse är `transform` och `opacity` (compositorn):
- * glidet mellan två mål är en FLIP-animation och hålet tonar igen och upp i
- * stället för att krympa, så det hackar inte även om huvudtråden är upptagen.
- * Skrollar sidan under glidet gör den det med samma kurva och längd.
+ * Mörkläggningen (paneler runt hålet, se _lib/tourGeometry.ts) och kortet
+ * ligger i sidans koordinater och rör sig bara med `transform` och `opacity`.
+ * Hålet följer målets verkliga plats: vid skroll (där det beskärs mot
+ * sidhuvudet, demoraden eller kortet), när fönstret ändrar storlek och när
+ * innehållet ändrar storlek.
  *
  * Nästa stopp: kortet tonar ut (och hålet tonar igen om sidan byts). Först
- * när det är klart byts stoppet, så att det tunga arbetet sker medan inget
- * rör sig. Sedan glider hålet till målet medan sidan skrollar dit, och kortet
- * tonar in bredvid målet när hålet är nästan framme.
+ * när det är klart byts stoppet, så att React-arbetet sker medan inget rör
+ * sig. Sedan väntar scenen tills målet syns och står still, och hålet glider
+ * dit medan sidan skrollar med samma kurva och längd. Vid lång skroll tonar
+ * hålet i stället igen och upp, så att innehållet inte strömmar förbi.
  */
 function TourStage() {
   const { locale, t } = useI18n();
@@ -125,7 +137,8 @@ function TourStage() {
   const route = toFondaPath(step.route);
   const [closing, setClosing] = useState(false);
 
-  const spotRef = useRef<HTMLDivElement>(null);
+  const shadeRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
   const pingRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   /** Hålets plats i sidans koordinater, och om det är öppet. */
@@ -156,15 +169,20 @@ function TourStage() {
   }, [closing, toggleTour]);
 
   useLayoutEffect(() => {
-    const spot = spotRef.current;
+    const shade = shadeRef.current;
+    const ring = ringRef.current;
     const ping = pingRef.current;
     const card = cardRef.current;
-    if (!spot || !ping || !card) return;
-    const els: StageElements = { spot, ping, card };
+    if (!shade || !ring || !ping || !card) return;
+    const parts = Object.fromEntries(
+      SHADE_PARTS.map((part) => [part, shade.querySelector<HTMLElement>(`[data-part="${part}"]`)!]),
+    ) as Record<ShadePart, HTMLElement>;
 
     let cancelled = false;
     let frame = 0;
     let scrollFrame = 0;
+    /** Rundturen skrollar själv just nu: skrollhändelserna ska inte flytta hålet. */
+    let selfScrolling = false;
     const timers: number[] = [];
     const cleanups: Array<() => void> = [];
     const later = (fn: () => void, ms: number) =>
@@ -174,68 +192,79 @@ function TourStage() {
         }, ms),
       );
 
-    function cardSize() {
-      return { width: els.card.offsetWidth, height: els.card.offsetHeight };
+    /** Kortets höjd vid en viss bredd. Kortet är osynligt när det mäts inför ett stopp. */
+    function measure(width: number) {
+      if (card!.style.width !== `${width}px`) card!.style.width = `${width}px`;
+      return card!.offsetHeight;
     }
 
-    function setSpotGeometry(rect: TourRect) {
-      const style = els.spot.style;
-      style.top = `${rect.top}px`;
-      style.left = `${rect.left}px`;
-      style.width = `${rect.width}px`;
-      style.height = `${rect.height}px`;
-    }
-
-    /** Där spotlighten syns just nu, även mitt i ett glid. */
-    function visibleSpot(): TourRect | null {
-      if (!holeRef.current) return null;
-      const { top, left, width, height } = els.spot.getBoundingClientRect();
-      return toDocument({ top, left, width, height }, scroll());
-    }
-
-    /** Hålet i sidans koordinater (följer sidans skroll). */
-    function anchorToDocument(rect: TourRect) {
-      els.spot.dataset.fixed = "false";
-      setSpotGeometry(rect);
-    }
-
-    /**
-     * Glider hålet till `to` (sidans koordinater) med FLIP. Skrollar sidan
-     * samtidigt till `scrollTo` ligger hålet i skärmens koordinater under
-     * glidet, så att det rör sig rakt från den gamla platsen till den nya
-     * medan sidan skrollar med samma kurva och längd. Framme förankras det i
-     * sidan igen. Ett pågående glid avbryts där det är.
-     */
-    function glideTo(to: TourRect, duration: number, scrollTo = window.scrollY) {
-      const from = visibleSpot();
-      els.spot.getAnimations().forEach((animation) => animation.cancel());
-      holeRef.current = to;
-      const moving = from && !reducedMotion && duration > 0 && !rectsAreClose(from, to, 0.5);
-      const scrolling = Math.abs(scrollTo - window.scrollY) > 1;
-      if (!moving) {
-        anchorToDocument(to);
-        scrollWindowTo(scrollTo, duration);
-        return;
+    /** Flyttar mörkläggningen till `hole` (sidans koordinater), med glid om `duration` > 0. */
+    function setShade(hole: TourRect, duration: number) {
+      const next = shadeTransforms(hole);
+      const animate = duration > 0 && !reducedMotion;
+      for (const part of SHADE_PARTS) {
+        const el = parts[part];
+        const from = animate ? getComputedStyle(el).transform : "none";
+        el.getAnimations().forEach((animation) => animation.cancel());
+        el.style.transform = next[part];
+        if (animate && from !== "none") {
+          el.animate([{ transform: from }, { transform: next[part] }], { duration, easing: EASE_MOVE });
+        }
       }
-      const toScreen = { ...to, top: to.top - scrollTo, left: to.left - window.scrollX };
-      const fromScreen = { ...from, top: from.top - window.scrollY, left: from.left - window.scrollX };
-      if (scrolling) {
-        els.spot.dataset.fixed = "true";
-        setSpotGeometry(toScreen);
-      } else {
-        anchorToDocument(to);
-      }
-      const animation = els.spot.animate(
-        [{ transform: flipTransform(scrolling ? fromScreen : from, scrolling ? toScreen : to) }, { transform: "none" }],
-        { duration, easing: EASE_MOVE },
+      holeRef.current = hole;
+    }
+
+    /** Ringen runt hålet: placeras direkt och tonar in när hålet har landat. */
+    function placeRing(hole: TourRect) {
+      const style = ring!.style;
+      style.transform = `translate(${hole.left}px, ${hole.top}px)`;
+      style.width = `${hole.width}px`;
+      style.height = `${hole.height}px`;
+    }
+
+    function showRing(on: boolean) {
+      ring!.dataset.on = on ? "true" : "false";
+    }
+
+    function openHole() {
+      shade!.dataset.open = "true";
+      openRef.current = true;
+    }
+
+    function closeHole() {
+      shade!.dataset.open = "false";
+      openRef.current = false;
+      showRing(false);
+    }
+
+    /** Kortet på en plats i viewporten, omräknad till sidans koordinater vid skrollen `scrollY`. */
+    function placeCard(layout: StopLayout, glide: boolean, scrollY = window.scrollY) {
+      card!.dataset.motion = glide && !reducedMotion ? "glide" : "instant";
+      card!.dataset.placement = layout.placement;
+      card!.style.width = `${layout.card.width}px`;
+      card!.style.transform = `translate3d(${layout.card.x + window.scrollX}px, ${layout.card.y + scrollY}px, 0)`;
+    }
+
+    function revealCard() {
+      flush(card!);
+      card!.dataset.visible = "true";
+    }
+
+    function hideCard() {
+      card!.dataset.visible = "false";
+    }
+
+    function pingAt(hole: TourRect) {
+      if (reducedMotion || typeof ping!.animate !== "function") return;
+      const scaleX = 1 + (PING_SPREAD * 2) / Math.max(1, hole.width);
+      const scaleY = 1 + (PING_SPREAD * 2) / Math.max(1, hole.height);
+      ping!.animate(
+        [
+          { transform: "none", opacity: 0.6 },
+          { transform: `scale(${scaleX.toFixed(4)}, ${scaleY.toFixed(4)})`, opacity: 0 },
+        ],
+        { duration: PING_MS, easing: EASE_OUT },
       );
-      if (!scrolling) return;
-      const scrolled = scrollWindowTo(scrollTo, duration);
-      Promise.all([animation.finished, scrolled])
-        .then(() => {
-          if (!cancelled && holeRef.current === to) anchorToDocument(to);
-        })
-        .catch(() => {});
     }
 
     /** Skrollar fönstret med samma kurva och längd som hålet glider. */
@@ -247,76 +276,42 @@ function TourStage() {
         window.scrollTo(0, y);
         return Promise.resolve();
       }
+      selfScrolling = true;
       return new Promise((resolve) => {
         const startedAt = performance.now();
         const tick = (now: number) => {
           if (cancelled) return resolve();
           const progress = Math.min(1, (now - startedAt) / duration);
           window.scrollTo(0, from + (y - from) * easeInOutCubic(progress));
-          if (progress < 1) scrollFrame = requestAnimationFrame(tick);
-          else resolve();
+          if (progress < 1) {
+            scrollFrame = requestAnimationFrame(tick);
+          } else {
+            selfScrolling = false;
+            resolve();
+          }
         };
         scrollFrame = requestAnimationFrame(tick);
       });
     }
 
-    /** Hålet tonar upp på `to`. Är det stängt flyttas det dit först, osynligt. */
-    function openAt(to: TourRect) {
-      els.spot.getAnimations().forEach((animation) => animation.cancel());
-      anchorToDocument(to);
-      holeRef.current = to;
-      flush(els.spot);
-      els.spot.dataset.open = "true";
-      openRef.current = true;
-      if (!reducedMotion) {
-        // Ett litet andetag när hålet öppnas: från 2 % större till exakt storlek.
-        els.spot.animate([{ transform: "scale(1.02)" }, { transform: "none" }], {
-          duration: 420,
-          easing: EASE_OUT,
-        });
-      }
-    }
-
-    function closeHole() {
-      els.spot.dataset.open = "false";
-      openRef.current = false;
-    }
-
-    /** Kortet på en plats i viewporten, omräknad till sidans koordinater vid skrollen `scrollY`. */
-    function placeCard(layout: StopLayout, glide: boolean, scrollY = window.scrollY) {
-      els.card.dataset.motion = glide && !reducedMotion ? "glide" : "instant";
-      els.card.dataset.placement = layout.placement;
-      els.card.style.transform = `translate3d(${layout.card.x + window.scrollX}px, ${layout.card.y + scrollY}px, 0)`;
-    }
-
-    function revealCard() {
-      flush(els.card);
-      els.card.dataset.visible = "true";
-    }
-
-    function hideCard() {
-      els.card.dataset.visible = "false";
-    }
-
-    function pingAt(hole: TourRect) {
-      if (reducedMotion || typeof els.ping.animate !== "function") return;
-      const scaleX = 1 + (PING_SPREAD * 2) / Math.max(1, hole.width);
-      const scaleY = 1 + (PING_SPREAD * 2) / Math.max(1, hole.height);
-      els.ping.animate(
-        [
-          { transform: "none", opacity: 0.6 },
-          { transform: `scale(${scaleX.toFixed(4)}, ${scaleY.toFixed(4)})`, opacity: 0 },
-        ],
-        { duration: PING_MS, easing: EASE_OUT },
-      );
-    }
-
-    /** Följer målet om innehållet flyttar sig eller fönstret ändrar storlek. Skroll sköter sig själv. */
-    function track(el: Element) {
+    /**
+     * Följer målet efter landningen. Vid skroll: hålet beskärs om mot
+     * sidhuvudet, demoraden eller kortet, och ett kort som hör till
+     * skärmen (staplat eller i mitten) följer med skärmen. Vid ändrad
+     * storlek på fönstret eller innehållet räknas placeringen om.
+     */
+    function track(el: HTMLElement, initial: StopLayout) {
+      let layout = initial;
+      /** Skrollen när `layout` räknades ut: ett kort som hör till målet står i sidans koordinater för den. */
+      let layoutScroll = window.scrollY;
       let pending = 0;
+      let relayout = false;
+      let settleTimer = 0;
       let lastViewport = viewport();
       const update = () => {
         pending = 0;
+        const full = relayout;
+        relayout = false;
         if (!el.isConnected) {
           stop();
           find(performance.now());
@@ -325,27 +320,67 @@ function TourStage() {
         const vp = viewport();
         const resized = vp.width !== lastViewport.width || vp.height !== lastViewport.height;
         lastViewport = vp;
-        const layout = layoutStop(viewportRect(el), cardSize(), vp, safeArea());
-        if (!layout.hole) return;
-        const hole = toDocument(layout.hole, scroll());
-        if (!resized && holeRef.current && rectsAreClose(holeRef.current, hole, 1)) return;
-        glideTo(hole, resized ? 0 : CORRECTION_MS);
-        placeCard(layout, !resized);
+        const safe = safeArea();
+        const rect = viewportRect(el);
+        if (full || resized) {
+          const next = layoutStop(rect, measure, vp, safe);
+          if (!next.hole) return;
+          const hole = toDocument(next.hole, scroll());
+          const moved =
+            next.placement !== layout.placement ||
+            Math.abs(next.card.x - layout.card.x) > 1 ||
+            Math.abs(next.card.y + window.scrollY - (layout.card.y + layoutScroll)) > 1;
+          const changed = !holeRef.current || !rectsAreClose(holeRef.current, hole, 1) || moved;
+          layout = next;
+          layoutScroll = window.scrollY;
+          if (!changed) return;
+          setShade(hole, resized ? 0 : CORRECTION_MS);
+          placeRing(hole);
+          showRing(hole.height >= 8);
+          placeCard(next, !resized);
+          return;
+        }
+        // Skroll: behåll placeringen och räkna om hålet mot den säkra ytan.
+        const hole = toDocument(holeForPlacement(rect, layout, safe), scroll());
+        if (layout.placement === "stacked" || layout.placement === "center") {
+          // Kortet hör till skärmen: det står kvar där det står.
+          placeCard(layout, false);
+        } else {
+          // Kortet hör till målet och följer med sidan, men lämnar aldrig
+          // den säkra ytan. När skrollen stannat väljs placeringen om.
+          const cardHeight = card!.offsetHeight;
+          const y = layout.card.y + layoutScroll - window.scrollY;
+          const clamped = Math.min(Math.max(y, safe.top + 16), safe.bottom - 16 - cardHeight);
+          placeCard({ ...layout, card: { ...layout.card, y: clamped } }, false);
+        }
+        window.clearTimeout(settleTimer);
+        settleTimer = window.setTimeout(onResize, SCROLL_SETTLE_MS);
+        if (holeRef.current && rectsAreClose(holeRef.current, hole, 0.5)) return;
+        setShade(hole, 0);
+        placeRing(hole);
+        showRing(hole.height >= 8);
       };
-      const schedule = () => {
+      const schedule = (full: boolean) => () => {
+        if (full) relayout = true;
+        else if (selfScrolling) return;
         if (!pending) pending = requestAnimationFrame(update);
       };
-      window.addEventListener("resize", schedule, { passive: true });
-      const observer = new ResizeObserver(schedule);
+      const onScroll = schedule(false);
+      const onResize = schedule(true);
+      window.addEventListener("scroll", onScroll, { passive: true, capture: true });
+      window.addEventListener("resize", onResize, { passive: true });
+      const observer = new ResizeObserver(onResize);
       observer.observe(el);
       observer.observe(document.body);
       // Om sidan byter ut elementet (t.ex. när datan laddats om) letar vi upp det igen.
       const watchdog = window.setInterval(() => {
-        if (!el.isConnected) schedule();
+        if (!el.isConnected) onResize();
       }, 400);
       function stop() {
         cancelAnimationFrame(pending);
-        window.removeEventListener("resize", schedule);
+        window.clearTimeout(settleTimer);
+        window.removeEventListener("scroll", onScroll, { capture: true });
+        window.removeEventListener("resize", onResize);
         observer.disconnect();
         window.clearInterval(watchdog);
       }
@@ -354,7 +389,7 @@ function TourStage() {
 
     function land(el: HTMLElement) {
       const vp = viewport();
-      const { scrollTo, layout } = frameStop(viewportRect(el), cardSize(), vp, safeArea(), {
+      const { scrollTo, layout } = frameStop(viewportRect(el), measure, vp, safeArea(), {
         y: window.scrollY,
         max: document.documentElement.scrollHeight - vp.height,
       });
@@ -362,76 +397,82 @@ function TourStage() {
       // Hålets plats i sidans koordinater när skrollen är klar.
       const hole = toDocument(layout.hole, { x: window.scrollX, y: scrollTo });
       const scrollDelta = scrollTo - window.scrollY;
-      const previous = openRef.current ? visibleSpot() : null;
+      const previous = openRef.current ? holeRef.current : null;
       // Hur långt hålet flyttar sig på skärmen (sidans rörelse inräknad).
       const travel = previous
         ? Math.hypot(center(hole).x - center(previous).x, center(hole).y - center(previous).y - scrollDelta)
         : 0;
       const duration = reducedMotion ? 0 : glideDuration(Math.max(travel, Math.abs(scrollDelta)));
-
       const longScroll = Math.abs(scrollDelta) > vp.height * LONG_SCROLL_SHARE;
-      if (previous && longScroll && !reducedMotion) {
-        // Lång skroll: hålet tonar igen, sidan skrollar under mörkläggningen
-        // och hålet tonar upp på målet när sidan nästan är framme. Annars
-        // skulle sidans innehåll strömma förbi genom hålet.
-        closeHole();
-        scrollWindowTo(scrollTo, duration);
-        later(() => openAt(hole), Math.max(CLOSE_HOLE_MS, duration - 140));
-        later(() => {
-          placeCard(layout, false, scrollTo);
-          revealCard();
-        }, Math.max(CLOSE_HOLE_MS, duration - 140) + 90);
-        later(() => arrive(el), duration + 360);
-        return;
-      }
-      if (previous) {
-        glideTo(hole, duration, scrollTo);
-      } else {
-        // Hålet är stängt: det står redan på målet i sidan, så sidan kan
-        // skrolla dit medan hålet tonar upp.
-        openAt(hole);
-        scrollWindowTo(scrollTo, glideDuration(Math.abs(scrollDelta)));
-      }
+      showRing(false);
 
-      // Kortet flyttas först när det har tonat ut, och tonar in på sin nya plats.
-      const revealAfter = reducedMotion ? 0 : Math.max(CARD_FADE_OUT_MS, (previous ? duration : 260) * CARD_REVEAL_AT);
+      let revealAt: number;
+      let arriveAt: number;
+      if (previous && !longScroll) {
+        // Kort väg: hålet glider medan sidan skrollar med samma kurva och längd.
+        setShade(hole, duration);
+        scrollWindowTo(scrollTo, duration);
+        revealAt = Math.max(CARD_FADE_OUT_MS, duration * CARD_REVEAL_AT);
+        arriveAt = duration;
+      } else {
+        // Hålet är stängt (ny sida) eller vägen är lång: hålet tonar igen,
+        // flyttas medan det är stängt, sidan skrollar under mörkläggningen
+        // och hålet tonar upp på målet när sidan nästan är framme.
+        const wasOpen = openRef.current;
+        if (wasOpen) closeHole();
+        const scrollTime = reducedMotion ? 0 : glideDuration(Math.abs(scrollDelta));
+        const openAfter = reducedMotion ? 0 : wasOpen ? Math.max(CLOSE_HOLE_MS, scrollTime - 140) : Math.max(0, scrollTime - 200);
+        later(() => setShade(hole, 0), wasOpen ? CLOSE_HOLE_MS : 0);
+        scrollWindowTo(scrollTo, scrollTime);
+        later(openHole, openAfter);
+        revealAt = openAfter + 90;
+        arriveAt = openAfter + CLOSE_HOLE_MS;
+      }
+      if (previous && !longScroll) openHole();
+
+      // Kortet flyttas medan det är osynligt och tonar in på sin nya plats.
       later(() => {
         placeCard(layout, false, scrollTo);
         revealCard();
-      }, revealAfter);
+      }, reducedMotion ? 0 : revealAt);
 
-      later(() => arrive(el), reducedMotion ? 0 : Math.max(duration, 420) + 60);
-    }
-
-    /** Framme: rätta om sidan hunnit flytta sig, pulsa ringen och följ målet. */
-    function arrive(el: HTMLElement) {
-      const settled = layoutStop(viewportRect(el), cardSize(), viewport(), safeArea());
-      if (settled.hole) {
-        const settledHole = toDocument(settled.hole, scroll());
-        if (holeRef.current && !rectsAreClose(settledHole, holeRef.current, 1)) {
-          glideTo(settledHole, CORRECTION_MS);
-          placeCard(settled, true);
+      // Framme: rätta om sidan hunnit flytta sig, visa ringen, pulsa och följ målet.
+      later(() => {
+        const settled = layoutStop(viewportRect(el), measure, viewport(), safeArea());
+        let final = layout;
+        if (settled.hole) {
+          const settledHole = toDocument(settled.hole, scroll());
+          if (holeRef.current && !rectsAreClose(settledHole, holeRef.current, 1)) {
+            setShade(settledHole, CORRECTION_MS);
+            placeCard(settled, true);
+            final = settled;
+          }
+          placeRing(holeRef.current ?? settledHole);
+          showRing(true);
+          pingAt(holeRef.current ?? settledHole);
         }
-        pingAt(settledHole);
-      }
-      track(el);
+        track(el, final);
+      }, reducedMotion ? 0 : arriveAt + 40);
     }
 
-    function awaitStableLayout(el: HTMLElement, then: () => void) {
+    /** Väntar tills målet syns och har stått still i `frames` bildrutor. */
+    function awaitStable(el: HTMLElement, frames: number, then: () => void) {
       const startedAt = performance.now();
       let previous: { rect: TourRect; height: number; scroll: number } | null = null;
       let stable = 0;
       const tick = () => {
         if (cancelled) return;
+        const showing = isShowing(el);
         const current = { rect: viewportRect(el), height: document.documentElement.scrollHeight, scroll: window.scrollY };
         const same =
+          showing &&
           previous !== null &&
           rectsAreClose(previous.rect, current.rect) &&
           previous.height === current.height &&
           previous.scroll === current.scroll;
         stable = same ? stable + 1 : 0;
         previous = current;
-        if (stable >= LAYOUT_STABLE_FRAMES || performance.now() - startedAt > LAYOUT_MAX_MS) {
+        if (stable >= frames || performance.now() - startedAt > STABLE_MAX_MS) {
           then();
           return;
         }
@@ -440,28 +481,25 @@ function TourStage() {
       frame = requestAnimationFrame(tick);
     }
 
-    function showWithoutTarget() {
+    function showWithoutTarget(cardAlreadyHidden: boolean) {
       const wasOpen = openRef.current;
       closeHole();
+      const wait = reducedMotion ? 0 : wasOpen ? CLOSE_HOLE_MS : cardAlreadyHidden ? 0 : CARD_FADE_OUT_MS;
       later(() => {
-        placeCard(layoutStop(null, cardSize(), viewport(), safeArea()), false);
+        placeCard(layoutStop(null, measure, viewport(), safeArea()), false);
         revealCard();
-      }, reducedMotion ? 0 : wasOpen ? CLOSE_HOLE_MS : CARD_FADE_OUT_MS);
+      }, wait);
     }
 
     function find(startedAt: number) {
       if (cancelled) return;
       const el = document.querySelector<HTMLElement>(`[data-tour-id="${step.target}"]`);
       if (el) {
-        // Är hålet öppet (samma sida) glider det direkt. Är det stängt (ny
-        // sida) väntar vi tills sidan slutat flytta på sig, så att det öppnas
-        // en gång på rätt ställe.
-        if (openRef.current) land(el);
-        else awaitStableLayout(el, () => land(el));
+        awaitStable(el, openRef.current ? STABLE_FRAMES_SAME_PAGE : STABLE_FRAMES_NEW_PAGE, () => land(el));
         return;
       }
       if (performance.now() - startedAt > FIND_TIMEOUT_MS) {
-        showWithoutTarget();
+        showWithoutTarget(true);
         return;
       }
       if (openRef.current) closeHole();
@@ -474,6 +512,7 @@ function TourStage() {
       cleanups.length = 0;
       cancelAnimationFrame(scrollFrame);
       hideCard();
+      showRing(false);
       if (toFondaPath(next.route) !== pathname || !next.target) {
         // Hålet tonar igen innan sidan byts, så att den nya sidan aldrig syns
         // genom det medan den renderas.
@@ -484,11 +523,17 @@ function TourStage() {
       return reducedMotion ? 0 : CARD_FADE_OUT_MS;
     };
 
+    // Första gången: mörkläggningen står stängd mitt på skärmen.
+    if (!holeRef.current) {
+      const vp = viewport();
+      setShade(toDocument({ top: vp.height / 2, left: vp.width / 2, width: 0, height: 0 }, scroll()), 0);
+    }
     // Varje nytt stopp börjar med att kortet tonar ut där det står
     // (redan gjort om stoppet byttes via Nästa).
+    const cardHidden = card.dataset.visible !== "true";
     hideCard();
     if (pathname !== route) closeHole();
-    else if (!step.target) showWithoutTarget();
+    else if (!step.target) showWithoutTarget(cardHidden);
     else find(performance.now());
 
     return () => {
@@ -531,9 +576,12 @@ function TourStage() {
       {/* Fångar klick utanför kortet medan rundturen pågår. Skroll går igenom. */}
       <div className="fdd-tour-blocker" />
       <div className="fdd-tour" data-closing={closing ? "true" : undefined}>
-        <div ref={spotRef} className="fdd-tour__spot" data-open="false">
-          <div className="fdd-tour__cover" />
-          <div className="fdd-tour__ring" />
+        <div ref={shadeRef} className="fdd-tour__shade" data-open="false" aria-hidden="true">
+          {SHADE_PARTS.map((part) => (
+            <div key={part} className="fdd-tour__part" data-part={part} />
+          ))}
+        </div>
+        <div ref={ringRef} className="fdd-tour__ring" data-on="false" aria-hidden="true">
           <div ref={pingRef} className="fdd-tour__ping" />
         </div>
         <div
