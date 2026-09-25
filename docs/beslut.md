@@ -140,3 +140,15 @@ i `CLOSED_TABLES` i `supabase/migrations/migrations.test.ts`, och `anon` och
 `using (false)`-policy är vilseledande, eftersom den ser ut som en policy men
 inte gör något, och inkonsekvent, eftersom det då finns två olika sätt att
 markera en stängd tabell i kodbasen.
+
+**Pulsens dagscache: `pulse_fetches`, per grundare och svensk dag (Erik).**
+En rad per `(user_id, fetch_date)`, där `fetch_date` räknas i
+Europe/Stockholm i databasen. Adaptern tar raden med `insert … on conflict do
+nothing` innan Tavily anropas, så samtidiga förfrågningar ger ett enda anrop.
+En tom dag sparas som `empty` och söks inte om samma dag. `claimed_at` lades
+till utöver den ursprungliga specen, så att en rad som fastnat på `pending`
+(äldre än 5 minuter) eller står på `error` kan tas över med en villkorad
+update. Användarägd med RLS (läsa, skapa, uppdatera egen), till skillnad från
+`registry_cache`: raden styr bara grundarens egen sökning, så en förfalskad rad
+skadar ingen annan. Flödet står i `docs/moduler/webbresearch-och-pulsen.md`,
+"Dagscachen".

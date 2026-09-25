@@ -35,6 +35,10 @@ Egen branch `modul/<modul>` (t.ex. `modul/registret`) ut från `prototyp`,
 aldrig direkt på `main` eller på `prototyp`. Slås ihop via pull request när
 modulen är klar och granskad.
 
+Grennamnet följer modulen, inte dokumentet. Pulsens liveadapter byggs på
+`modul/pulsen`, inte på `modul/webbresearch-och-pulsen`, fast båda
+portarna delar `docs/moduler/webbresearch-och-pulsen.md`.
+
 ## 4. Läs kontraktet först
 
 Kontraktstestet, `ports/<Port>.contract.test.ts`, **är kravspecen** — inte
