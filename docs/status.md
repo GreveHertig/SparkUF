@@ -2626,3 +2626,55 @@ migreringen.
   samma SQL-uttryck avgöra svensk dag.
 - **`pulse_fetches` är användarägd**, till skillnad från `registry_cache`. En
   förfalskad rad påverkar bara grundarens egen sökning.
+
+## Så ser det ut: skärmbilder av demot på landningssidan (pågår, gren `landning-bilder`, PR mot `prototyp`)
+
+### Klart
+- **Beslut (Theo, 2026-09-25):** skärmbilder av demot (alternativ B, tagna
+  för hand i Chrome DevTools) fram till lansering. Riktiga komponenter
+  (alternativ C) efter lansering. Står i `DESIGN.md`.
+- Ny sektion "Så ser det ut" mellan Problemet och Datalöftet, med tre
+  skärmar ur Saras resa på svenska och engelska. Knappen "Starta demo" blir
+  kvar tills Theo bestämt något annat.
+
+### Återstår
+1. **Oskar tar de sex bilderna** och lägger dem i `public/landning/sv/` och
+   `public/landning/en/` (`hem.png`, `resan.png`, `steg-05.png`).
+   - Hem och Resan: momentet `05a-utskicket-efter`, poäng 47.
+   - Steg 05: momentet `05b-svaren-efter`, poängen sjunker från 47 till 43.
+2. Sektionen i `app/(marketing)/page.tsx` med `next/image`, bildtexter,
+   alt-texter och `DemoDataBadge`. i18n under `landingPage.screenshots`
+   (sv och en). Tester i `page.test.tsx` och ett test som kontrollerar att
+   bildfilerna finns.
+
+### Uppföljning efter lansering: alternativ C
+Ersätt skärmbilderna med riktiga komponenter och Saras demodata i en ram
+som ser ut som ett uppslag ur appen. Utvärderat 2026-09-25:
+- **Går att återanvända:** `screens/Journey.tsx` och `screens/JourneyStep.tsx`
+  rakt av. Hem byggs av `NextStepCard`, `JourneyRail` och `ScorePanel`
+  i stället för hela `screens/AppHome.tsx`, eftersom pulssignalerna inte är
+  exporterade ur `adapters/demo/PulseProvider.ts`. Ramen blir en ny liten
+  komponent med `DemoDataBadge`.
+- **Data:** demoadaptrarna läser besökarens eget demoläge
+  (`useDemoStore.getState()`) och går inte att använda från landningssidan.
+  `saraEngine` är ren och ger poäng, historik och Nästa steg för ett fast
+  moment. Hur ett steg blir en `JourneyStepDetail` och statusen per steg
+  ligger i `adapters/demo/JourneyRepository.ts` och är inte exporterade.
+- **Kräver två beslut:** Erik, om landningssidan får läsa `saraEngine`
+  direkt utan portar. Theo, om en ren hjälpfunktion får exporteras ur
+  `adapters/demo/` så att logiken inte dupliceras.
+- **Risker:**
+  - Skärmarnas brytpunkter utgår från fönstret, inte ramen, så mobilen behöver
+    en maxhöjd som tonar ut.
+  - Länkarna går till djuplänkar i demot (hydreringsbuggen), så ramen måste
+    vara `inert`.
+  - Sidan får tre `<h1>` om ramen inte är `aria-hidden`.
+  - `getByText` i `page.test.tsx` hittar dubbletter.
+  - Hela `sara.ts` hamnar i landningssidans JavaScript.
+  - Ett namnbyte på ett moment får sidan att gå sönder, så det behövs ett
+    test som kontrollerar att momentet finns.
+
+### Beslut nästa session behöver känna till
+- **Siffrorna i skärmbilderna är frysta.** Ändras Saras demodata för steg 05
+  måste bilderna tas om.
+

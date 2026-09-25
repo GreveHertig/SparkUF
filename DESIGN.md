@@ -97,6 +97,8 @@ Uppdrag: bygg `/`, `/priser` och de publika delarna av `/logga-in`/`/skapa-konto
 De publika sidorna (`/`, `/priser`) delar en ny `app/(marketing)/layout.tsx` med en ljus, sticky header (logga, Priser, Logga in, SV/EN, "Starta demo") och en footer (tagline, produkt-/kontolänkar, fiktions-/ansvarsnot). Header är medvetet ljus (inte `ink-800`) och ligger ovanför den mörka hero-sektionen som en egen sektion i sidan — samma "ljus arbetsyta, mörka ytor medvetet" princip som Session 1 satte, bara tillämpad på en ny yta. `/logga-in`/`/skapa-konto` behöll sin egen minimala `AuthLayout`-header (P1) i stället för att återanvända `PublicHeader` — de är formulär, inte marknadsföringsytor, och P1:s header (logga + SV/EN) är redan rätt avskalad för dem.
 
 ### Landningssidan: riktiga komponenter, inga illustrationer
+> **Undantag från 2026-09-25:** sektionen "Så ser det ut" får visa skärmbilder av demot fram till lansering. Se avsnittet "Så ser det ut: skärmbilder fram till lansering" längst ned.
+
 Alla nio sektionerna i uppdrag 6 byggda i `app/(marketing)/page.tsx` med redan existerande designsystemkomponenter — ingen ny visuell primitiv utom en liten lokal `FeatureCard`-hjälpare (titel + brödtext + valfri children-slot, återanvänd tre gånger i "Fyra saker Medgrundaren gör" och två gånger i "Koncept på väg", motiverar en gemensam komponent utan att vara en för tidig abstraktion):
 
 - **Hero:** `NextStepCard` (samma komponent som `/demo/app`, egen text, inte kopplad till en adapter) bredvid en `EditorialHeading` med `.Em` på "Spark" — den enda rubriken på sidan som använder kursiv betoning, avsiktligt sparsamt använt (5.4: "inga dekorativa detaljer") i stället för på varje sektionsrubrik.
@@ -402,3 +404,14 @@ Playwright (cachad `npx`-installation, samma mönster som tidigare sessioner). K
 - **Tre tillstånd:** formuläret, fältfel (via `TextField`s `error`) eller formulärfel (`text-score-red`, `role="alert"`), och tack-texten (`role="status"`), som ersätter formuläret helt när adressen är mottagen. En dubblett ger samma tack-text som en ny adress, så att ingen kan ta reda på vilka adresser som finns.
 - **GDPR-raden** (`text-xs text-slate-500`) står direkt under knappen, så att den syns innan man skickar. Raden anger också vart man mejlar för att bli borttagen från listan.
 - Ingen ny token och ingen ny komponent i `components/ui/`.
+
+## Så ser det ut: skärmbilder fram till lansering (gren `landning-bilder`)
+
+**Beslut (Theo, 2026-09-25):** sektionen "Så ser det ut" på landningssidan får visa skärmbilder av demot fram till lansering. Det är ett undantag från regeln "riktiga komponenter, inga illustrationer" i Session 6 och gäller bara den här sektionen. Övriga sektioner använder fortfarande riktiga komponenter.
+
+- **Tre skärmar ur Saras resa**, på svenska och engelska (sex bilder): Hem och Resan vid momentet "Steg 5 · Samtalen · utskicket · Efter" (poäng 47), och Steg 05 vid "Steg 5 · Samtalen · svaren · Efter", där poängen sjunker från 47 till 43.
+- **Bara från `/demo`**, aldrig från `/app`. Ingen liveregisterdata får synas i en bild.
+- **Märkning i HTML, inte inbränd i bilden:** `DemoDataBadge` på varje bild och en synlig bildtext om att Sara och alla siffror är fiktiva. Bildtexter och alt-texter ligger i i18n (sv och en).
+- **Siffrorna i bilderna är frysta.** De räknades av `calculateScore` när bilden togs, men räknas inte om när sidan visas. Ändras Saras demodata måste bilderna tas om. Momentet och datumet för varje bild står i `docs/status.md`.
+
+**Efter lansering (alternativ C):** skärmbilderna ersätts av riktiga komponenter med Saras demodata i en ram som ser ut som ett uppslag ur appen, på samma sätt som `NextStepCard` redan används i hero. Utvärderingen står i `docs/status.md` under "Så ser det ut".
