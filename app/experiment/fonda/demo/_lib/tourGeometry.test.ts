@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  cardCoversHole,
+  clipToSafeArea,
   collapseRect,
-  isComfortablyVisible,
-  placeCard,
-  predictCenteredRect,
+  easeInOutCubic,
+  frameStop,
+  glideDuration,
+  layoutStop,
   ringClipPath,
   roundedRectPath,
   scrimClipPath,
@@ -14,12 +17,18 @@ function commands(path: string): string {
   return path.replace(/[^A-Za-z]/g, "");
 }
 
+const desktop = { width: 1440, height: 900 };
+const mobile = { width: 390, height: 844 };
+/** Sidhuvudet slutar vid 121 px, demoraden börjar vid 844 px. */
+const safe = { top: 121, bottom: 844 };
+const card = { width: 380, height: 290 };
+
 describe("rundturens spotlight-geometri", () => {
-  const rect = { top: 100, left: 50, width: 300, height: 120 };
+  const rect = { top: 300, left: 50, width: 300, height: 120 };
 
   it("hålet har samma kommandon oavsett storlek, så att det kan tweenas", () => {
-    const open = scrimClipPath({ width: 1440, height: 900 }, rect, 16);
-    const closed = scrimClipPath({ width: 1440, height: 900 }, collapseRect(rect), 16);
+    const open = scrimClipPath(desktop, rect, 16);
+    const closed = scrimClipPath(desktop, collapseRect(rect), 16);
     expect(commands(open)).toBe(commands(closed));
     expect(commands(ringClipPath(rect, 16, 2))).toBe(commands(ringClipPath(collapseRect(rect), 16, 2)));
   });
@@ -29,35 +38,102 @@ describe("rundturens spotlight-geometri", () => {
     expect(roundedRectPath(collapseRect(rect), 16)).toContain("A0 0");
   });
 
-  it("en hopfälld ruta ligger i mitten av den gamla", () => {
-    expect(collapseRect(rect)).toEqual({ top: 160, left: 200, width: 0, height: 0 });
+  it("hålet går aldrig in under sidhuvudet eller demoraden", () => {
+    const clipped = clipToSafeArea({ top: 80, left: 0, width: 100, height: 900 }, safe);
+    expect(clipped.top).toBeGreaterThan(safe.top);
+    expect(clipped.top + clipped.height).toBeLessThan(safe.bottom);
   });
 
-  it("förutser var målet hamnar när sidan skrollar det till mitten", () => {
-    const target = { top: 1500, left: 0, width: 200, height: 100 };
-    const { rect: landed, scrollTo } = predictCenteredRect(target, { y: 0, max: 5000 }, 900);
-    expect(scrollTo).toBe(1100);
-    expect(landed.top).toBe(400);
+  it("lägger kortet bredvid målet när det finns plats", () => {
+    const layout = layoutStop({ top: 349, left: 842, width: 454, height: 315 }, card, desktop, safe);
+    expect(layout.placement).toBe("left");
+    expect(layout.card.x + card.width).toBeLessThanOrEqual(842);
+    expect(cardCoversHole(layout, card)).toBe(false);
+  });
+
+  it("lägger kortet under ett brett mål, och aldrig över demoraden", () => {
+    const layout = layoutStop({ top: 200, left: 144, width: 1152, height: 200 }, card, desktop, safe);
+    expect(layout.placement).toBe("below");
+    expect(layout.card.y + card.height).toBeLessThanOrEqual(safe.bottom);
+    expect(cardCoversHole(layout, card)).toBe(false);
+  });
+
+  it("dockar kortet i hörnet när målet fyller ytan", () => {
+    const layout = layoutStop({ top: 130, left: 144, width: 1152, height: 700 }, card, desktop, safe);
+    expect(layout.placement).toBe("docked");
+    expect(layout.card.x + card.width).toBe(desktop.width - 16);
+    expect(layout.card.y + card.height).toBe(safe.bottom - 16);
+  });
+
+  it("väljer läget som täcker minst av målet när inget får plats helt", () => {
+    // Ingångskorten på onboardingen: sidan kan inte skrolla, och kortet får
+    // nästan plats under dem.
+    const onboarding = { top: 69, bottom: 844 };
+    const layout = layoutStop({ top: 331, left: 336, width: 768, height: 243 }, card, desktop, onboarding);
+    expect(layout.placement).toBe("below");
+    expect(layout.card.y + card.height).toBe(onboarding.bottom - 16);
+  });
+
+  it("centrerar kortet i den säkra ytan när stoppet saknar mål", () => {
+    const layout = layoutStop(null, card, desktop, safe);
+    expect(layout.placement).toBe("center");
+    expect(layout.card.x).toBe(530);
+  });
+
+  it("skrollar inte när målet redan syns och kortet får plats", () => {
+    const target = { top: 349, left: 842, width: 454, height: 315 };
+    const { scrollTo } = frameStop(target, card, desktop, safe, { y: 0, max: 3000 });
+    expect(scrollTo).toBe(0);
+  });
+
+  it("skrollar så att ett brett mål och kortet hamnar mitt i den säkra ytan", () => {
+    const target = { top: 1500, left: 144, width: 1152, height: 200 };
+    const { scrollTo, layout } = frameStop(target, card, desktop, safe, { y: 0, max: 5000 });
+    const stacked = target.height + 16 + card.height;
+    const expectedTop = safe.top + (safe.bottom - safe.top - stacked) / 2;
+    expect(Math.abs(1500 - scrollTo - expectedTop)).toBeLessThanOrEqual(1);
+    expect(layout.placement).toBe("below");
+  });
+
+  it("skrollar ett högt mål så att dess början syns under sidhuvudet", () => {
+    const target = { top: 1500, left: 144, width: 1152, height: 1100 };
+    const { scrollTo } = frameStop(target, card, desktop, safe, { y: 0, max: 5000 });
+    expect(1500 - scrollTo).toBe(safe.top + 16);
   });
 
   it("räknar med att sidan inte kan skrolla förbi slutet", () => {
-    const target = { top: 1500, left: 0, width: 200, height: 100 };
-    const { rect: landed, scrollTo } = predictCenteredRect(target, { y: 0, max: 800 }, 900);
+    const target = { top: 1500, left: 144, width: 1152, height: 200 };
+    const { scrollTo } = frameStop(target, card, desktop, safe, { y: 0, max: 800 });
     expect(scrollTo).toBe(800);
-    expect(landed.top).toBe(700);
   });
 
-  it("skrollar inte när målet redan syns", () => {
-    expect(isComfortablyVisible(rect, 900, { top: 88, bottom: 132 })).toBe(true);
-    expect(isComfortablyVisible({ ...rect, top: 850 }, 900, { top: 88, bottom: 132 })).toBe(false);
+  it("på mobil blir kortet ett ark längst ner och hålet slutar ovanför det", () => {
+    const sheet = { width: 358, height: 250 };
+    const mobileSafe = { top: 121, bottom: 737 };
+    const layout = layoutStop({ top: 150, left: 8, width: 374, height: 500 }, sheet, mobile, mobileSafe);
+    expect(layout.placement).toBe("sheet");
+    expect(layout.card).toEqual({ x: 16, y: mobileSafe.bottom - 16 - sheet.height });
+    expect(layout.hole!.top + layout.hole!.height).toBeLessThanOrEqual(layout.card.y);
+    expect(cardCoversHole(layout, sheet)).toBe(false);
   });
 
-  it("lägger kortet under målet, över om det inte får plats, och i mitten utan mål", () => {
-    const vp = { width: 1440, height: 900 };
-    const card = { width: 380, height: 240 };
-    expect(placeCard(rect, card, vp).y).toBe(236);
-    expect(placeCard({ ...rect, top: 700 }, card, vp).y).toBe(444);
-    expect(placeCard(null, card, vp)).toEqual({ x: 530, y: 330 });
-    expect(placeCard({ ...rect, left: 0 }, card, vp).x).toBe(16);
+  it("på mobil skrollas ett högt mål fram direkt under sidhuvudet", () => {
+    const sheet = { width: 358, height: 250 };
+    const mobileSafe = { top: 121, bottom: 737 };
+    const target = { top: 900, left: 8, width: 374, height: 500 };
+    const { scrollTo } = frameStop(target, sheet, mobile, mobileSafe, { y: 0, max: 5000 });
+    expect(900 - scrollTo).toBe(mobileSafe.top + 16);
+  });
+
+  it("glidet är lugnt och längre för längre sträckor", () => {
+    expect(glideDuration(0)).toBe(420);
+    expect(glideDuration(2000)).toBe(680);
+    expect(glideDuration(400)).toBeGreaterThan(glideDuration(100));
+  });
+
+  it("kurvan börjar i 0, slutar i 1 och är symmetrisk", () => {
+    expect(easeInOutCubic(0)).toBe(0);
+    expect(easeInOutCubic(1)).toBe(1);
+    expect(easeInOutCubic(0.5)).toBeCloseTo(0.5);
   });
 });

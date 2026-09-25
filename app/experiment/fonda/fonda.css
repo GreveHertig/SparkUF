@@ -3274,14 +3274,15 @@
 
 /* Rundturen. */
 .fdd-tour {
-  /* Förflyttning på skärmen: stark ease-in-out. In/ut: --fd-ease. */
-  --fdd-tour-move: cubic-bezier(0.77, 0, 0.175, 1);
-  --fdd-tour-glide: 320ms;
+  /* Förflyttning på skärmen: easeInOutCubic, samma kurva som skrollen i
+     FondaTour.tsx. Längden sätts per stopp från JS (420-680 ms). In/ut: --fd-ease. */
+  --fdd-tour-move: cubic-bezier(0.65, 0, 0.35, 1);
+  --fdd-tour-glide: 480ms;
   position: fixed;
   inset: 0;
   z-index: 60;
   font-family: var(--font-sans), Georgia, serif;
-  transition: opacity 180ms var(--fd-ease);
+  transition: opacity 200ms var(--fd-ease);
 }
 
 .fdd-tour[data-closing="true"] {
@@ -3341,25 +3342,36 @@
   background: white;
   box-shadow: var(--shadow-lift);
   opacity: 0;
-  scale: 0.96;
+  scale: 0.97;
+  translate: 0 6px;
   pointer-events: none;
-  will-change: transform;
+  will-change: transform, opacity;
+  /* Uttoning: kort och snabb. */
   transition:
-    opacity 200ms var(--fd-ease),
-    scale 200ms var(--fd-ease);
+    opacity 160ms var(--fd-ease),
+    scale 160ms var(--fd-ease),
+    translate 160ms var(--fd-ease);
 }
 
 .fdd-tour__card[data-visible="true"] {
   opacity: 1;
   scale: 1;
+  translate: 0 0;
   pointer-events: auto;
+  /* Intoning: lite längre, så att kortet landar mjukt. */
+  transition:
+    opacity 280ms var(--fd-ease),
+    scale 280ms var(--fd-ease),
+    translate 280ms var(--fd-ease);
 }
 
-.fdd-tour__card[data-motion="glide"] {
+/* Bara små rättelser efter landningen glider; mellan stoppen tonar kortet om. */
+.fdd-tour__card[data-visible="true"][data-motion="glide"] {
   transition:
     transform var(--fdd-tour-glide) var(--fdd-tour-move),
-    opacity 200ms var(--fd-ease),
-    scale 200ms var(--fd-ease);
+    opacity 280ms var(--fd-ease),
+    scale 280ms var(--fd-ease),
+    translate 280ms var(--fd-ease);
 }
 
 .fdd-tour__progress {
@@ -3384,17 +3396,40 @@
   gap: 0.75rem;
 }
 
-/* Nytt stopp: raderna tonar upp en i taget. */
-.fdd-tour__content > * {
-  animation: fdd-tour-rise 260ms var(--fd-ease) both;
+/* Nästa stopps text syns inte medan det gamla kortet tonar ut. */
+.fdd-tour__card:not([data-visible="true"]) .fdd-tour__content {
+  opacity: 0;
 }
 
-.fdd-tour__content > :nth-child(2) {
-  animation-delay: 40ms;
+/* Nytt stopp: raderna tonar upp en i taget när kortet visas. */
+.fdd-tour__card[data-visible="true"] .fdd-tour__content > * {
+  animation: fdd-tour-rise 320ms var(--fd-ease) both;
 }
 
-.fdd-tour__content > :nth-child(3) {
-  animation-delay: 80ms;
+.fdd-tour__card[data-visible="true"] .fdd-tour__content > :nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.fdd-tour__card[data-visible="true"] .fdd-tour__content > :nth-child(3) {
+  animation-delay: 100ms;
+}
+
+/* Smal skärm: kortet är ett ark längst ner och tar så lite höjd som möjligt. */
+@media (max-width: 520px) {
+  .fdd-tour__card {
+    gap: 0.5rem;
+    padding: 1.1rem 1.25rem 1.2rem;
+  }
+  .fdd-tour__content {
+    gap: 0.4rem;
+  }
+  .fdd-tour__title {
+    font-size: 1.25rem;
+  }
+  .fdd-tour__body {
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
 }
 
 @keyframes fdd-tour-fade-in {
@@ -3453,13 +3488,12 @@
     transition: none;
   }
   /* Rundturen: inga glid, ingen skalning, bara korta toningar. */
-  .fdd-tour__card {
-    scale: none;
-  }
+  .fdd-tour__card,
   .fdd-tour__card[data-visible="true"] {
     scale: none;
+    translate: none;
   }
-  .fdd-tour__content > * {
+  .fdd-tour__card[data-visible="true"] .fdd-tour__content > * {
     animation-name: fdd-tour-fade-in;
   }
   .fdd-tour__progress-fill {

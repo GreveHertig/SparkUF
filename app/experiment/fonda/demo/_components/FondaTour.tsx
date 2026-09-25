@@ -10,37 +10,43 @@ import { TOUR_STEPS } from "@/adapters/demo/tourSteps";
 import { toFondaPath } from "../_lib/paths";
 import {
   collapseRect,
-  isComfortablyVisible,
+  easeInOutCubic,
+  frameStop,
+  glideDuration,
+  layoutStop,
   padRect,
-  placeCard,
-  predictCenteredRect,
   rectsAreClose,
   ringClipPath,
   scrimClipPath,
+  type SafeArea,
+  type StopLayout,
   type TourRect,
 } from "../_lib/tourGeometry";
 
 /** Samma som --r-lg (1rem) i design/tokens.css. */
 const RADIUS = 16;
 const RING_THICKNESS = 2;
-const PING_SPREAD = 12;
-const PING_MS = 700;
-const GLIDE_MS = 320;
-const CLOSE_MS = 180;
+const PING_SPREAD = 10;
+const PING_MS = 900;
+/** Hålet som krymper vid sidbyte eller när ett stopp saknar mål. */
+const COLLAPSE_MS = 380;
+/** Små rättelser efter landningen (t.ex. när datan laddats klart). */
+const CORRECTION_MS = 260;
+/** Kortet tonar in när spotlighten är drygt halvvägs framme. */
+const CARD_REVEAL_AT = 0.55;
+/** Samma som kortets uttoning i fonda.css. */
+const CARD_FADE_OUT_MS = 160;
+const CLOSE_MS = 200;
 const FIND_TIMEOUT_MS = 2500;
-const SETTLE_MAX_MS = 1200;
-const SETTLE_MIN_MS = 120;
-const SETTLE_STABLE_FRAMES = 4;
 /** Hur länge en ny sida ska stå still innan hålet öppnas (ca 100 ms). */
 const LAYOUT_STABLE_FRAMES = 6;
 const LAYOUT_MAX_MS = 1000;
-/** Luft uppe (sidhuvudet) och nere (demoraden) innan målet räknas som synligt. */
-const VISIBLE_MARGINS = { top: 88, bottom: 132 };
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 
 type Motion = "glide" | "instant";
 
 type StageElements = {
+  root: HTMLDivElement;
   scrim: HTMLDivElement;
   ring: HTMLDivElement;
   ping: HTMLDivElement;
@@ -54,6 +60,20 @@ function viewport() {
 function toRect(el: Element): TourRect {
   const { top, left, width, height } = el.getBoundingClientRect();
   return padRect({ top, left, width, height });
+}
+
+/** Ytan mellan det klistrade sidhuvudet och den fixerade demoraden. */
+function safeArea(): SafeArea {
+  const vp = viewport();
+  const header = document.querySelector(".fdd-top");
+  const bar = document.querySelector(".fdd-bar");
+  const top = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
+  const bottom = bar ? Math.min(vp.height, bar.getBoundingClientRect().top) : vp.height;
+  return { top, bottom: bottom > top + 200 ? bottom : vp.height };
+}
+
+function center(rect: TourRect) {
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
 }
 
 /** Läser layouten så att webbläsaren tar in värdet innan nästa ändring animeras. */
@@ -75,9 +95,13 @@ export function FondaTour() {
 /**
  * Scenen medan rundturen är på. Mörkläggning, ring och kort ligger kvar hela
  * rundturen och flyttas med `clip-path` och `transform` direkt i DOM:en, inte
- * via React-state, så att inget renderas om medan sidan skrollar. Mellan två
- * stopp glider hålet och kortet till nästa mål. Byter stoppet sida krymper
- * hålet där det står och öppnas igen när målet finns på den nya sidan.
+ * via React-state, så att inget renderas om medan sidan skrollar.
+ *
+ * Ett stopp: kortet tonar ut där det står. Sidan skrollar och hålet glider
+ * till målet med samma kurva och samma längd, så att de rör sig som en kamera.
+ * Kortet flyttas medan det är osynligt och tonar in bredvid målet när hålet är
+ * nästan framme. Byter stoppet sida krymper hålet där det står och växer ut
+ * ur målets mitt när den nya sidan stått still.
  */
 function TourStage() {
   const { locale, t } = useI18n();
@@ -93,6 +117,7 @@ function TourStage() {
   const route = toFondaPath(step.route);
   const [closing, setClosing] = useState(false);
 
+  const rootRef = useRef<HTMLDivElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const pingRef = useRef<HTMLDivElement>(null);
@@ -119,18 +144,28 @@ function TourStage() {
   }, [closing, toggleTour]);
 
   useLayoutEffect(() => {
+    const root = rootRef.current;
     const scrim = scrimRef.current;
     const ring = ringRef.current;
     const ping = pingRef.current;
     const card = cardRef.current;
-    if (!scrim || !ring || !ping || !card) return;
-    const els: StageElements = { scrim, ring, ping, card };
-    const radius = RADIUS;
+    if (!root || !scrim || !ring || !ping || !card) return;
+    const els: StageElements = { root, scrim, ring, ping, card };
 
     let cancelled = false;
     let frame = 0;
+    let scrollFrame = 0;
     const timers: number[] = [];
     const cleanups: Array<() => void> = [];
+    const later = (fn: () => void, ms: number) => timers.push(window.setTimeout(fn, ms));
+
+    function cardSize() {
+      return { width: els.card.offsetWidth, height: els.card.offsetHeight };
+    }
+
+    function setDuration(ms: number) {
+      els.root.style.setProperty("--fdd-tour-glide", `${reducedMotion ? 0 : ms}ms`);
+    }
 
     function setMotion(motion: Motion) {
       const value = reducedMotion ? "instant" : motion;
@@ -142,16 +177,16 @@ function TourStage() {
     function applyHole(hole: TourRect | null, motion: Motion) {
       const vp = viewport();
       const last = holeRef.current;
-      const shape = hole ?? (last ? collapseRect(last) : collapseRect({ top: vp.height / 2, left: vp.width / 2, width: 0, height: 0 }));
+      const shape = hole ?? collapseRect(last ?? { top: vp.height / 2, left: vp.width / 2, width: 0, height: 0 });
       setMotion(motion);
-      els.scrim.style.clipPath = scrimClipPath(vp, shape, radius);
-      els.ring.style.clipPath = ringClipPath(shape, radius, RING_THICKNESS);
+      els.scrim.style.clipPath = scrimClipPath(vp, shape, RADIUS);
+      els.ring.style.clipPath = ringClipPath(shape, RADIUS, RING_THICKNESS);
       els.ring.dataset.open = hole ? "true" : "false";
       openRef.current = hole !== null;
       if (hole) holeRef.current = hole;
     }
 
-    /** Första öppningen (eller efter ett sidbyte): hålet växer ut ur målets mitt. */
+    /** Hålet glider till `hole`. Var det stängt växer det först ut ur målets mitt. */
     function openHole(hole: TourRect) {
       if (!openRef.current) {
         applyHole(collapseRect(hole), "instant");
@@ -161,18 +196,38 @@ function TourStage() {
       applyHole(hole, "glide");
     }
 
-    function showCard(spot: TourRect | null, motion: Motion) {
-      const hidden = els.card.dataset.visible !== "true";
-      const { x, y } = placeCard(spot, { width: els.card.offsetWidth, height: els.card.offsetHeight }, viewport());
-      // Ett dolt kort flyttas direkt och tonar sedan in där det ska stå.
-      els.card.dataset.motion = hidden || reducedMotion ? "instant" : motion;
-      els.card.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-      if (hidden) flush(els.card);
+    function placeCardAt(layout: StopLayout, motion: Motion) {
+      els.card.dataset.motion = reducedMotion ? "instant" : motion;
+      els.card.dataset.placement = layout.placement;
+      els.card.style.transform = `translate3d(${layout.card.x}px, ${layout.card.y}px, 0)`;
+    }
+
+    function revealCard() {
+      flush(els.card);
       els.card.dataset.visible = "true";
     }
 
     function hideCard() {
       els.card.dataset.visible = "false";
+    }
+
+    /** Skrollar fönstret med samma kurva och längd som hålet glider. */
+    function scrollWindowTo(y: number, duration: number) {
+      cancelAnimationFrame(scrollFrame);
+      const from = window.scrollY;
+      if (Math.abs(y - from) < 1) return;
+      if (reducedMotion || duration === 0) {
+        window.scrollTo(0, y);
+        return;
+      }
+      const startedAt = performance.now();
+      const tick = (now: number) => {
+        if (cancelled) return;
+        const progress = Math.min(1, (now - startedAt) / duration);
+        window.scrollTo(0, from + (y - from) * easeInOutCubic(progress));
+        if (progress < 1) scrollFrame = requestAnimationFrame(tick);
+      };
+      scrollFrame = requestAnimationFrame(tick);
     }
 
     function pingAt(hole: TourRect) {
@@ -185,8 +240,8 @@ function TourStage() {
       };
       els.ping.animate(
         [
-          { clipPath: ringClipPath(hole, radius, RING_THICKNESS), opacity: 0.8 },
-          { clipPath: ringClipPath(grown, radius + PING_SPREAD, RING_THICKNESS), opacity: 0 },
+          { clipPath: ringClipPath(hole, RADIUS, RING_THICKNESS), opacity: 0.55 },
+          { clipPath: ringClipPath(grown, RADIUS + PING_SPREAD, RING_THICKNESS), opacity: 0 },
         ],
         { duration: PING_MS, easing: EASE_OUT },
       );
@@ -210,9 +265,11 @@ function TourStage() {
         const vp = viewport();
         const viewportChanged = vp.width !== lastViewport.width || vp.height !== lastViewport.height;
         lastViewport = vp;
-        if (!viewportChanged && holeRef.current && rectsAreClose(holeRef.current, next)) return;
-        applyHole(next, motion);
-        showCard(next, motion);
+        const layout = layoutStop(next, cardSize(), vp, safeArea());
+        if (!viewportChanged && layout.hole && holeRef.current && rectsAreClose(holeRef.current, layout.hole)) return;
+        if (motion === "glide") setDuration(CORRECTION_MS);
+        applyHole(layout.hole, motion);
+        placeCardAt(layout, motion);
       };
       const schedule = (motion: Motion) => () => {
         if (motion === "glide") pendingMotion = "glide";
@@ -239,29 +296,41 @@ function TourStage() {
       cleanups.push(stop);
     }
 
-    /** Väntar tills skrollen har stannat, rättar slutläget och pulsar ringen en gång. */
-    function settle(el: Element, startedAt: number) {
-      let previous: TourRect | null = null;
-      let stable = 0;
-      const tick = () => {
+    function land(el: HTMLElement) {
+      const vp = viewport();
+      const size = cardSize();
+      const { scrollTo, layout } = frameStop(toRect(el), size, vp, safeArea(), {
+        y: window.scrollY,
+        max: document.documentElement.scrollHeight - vp.height,
+      });
+      const hole = layout.hole;
+      const previous = openRef.current ? holeRef.current : null;
+      const travel =
+        hole && previous ? Math.hypot(center(hole).x - center(previous).x, center(hole).y - center(previous).y) : 0;
+      const duration = glideDuration(Math.max(travel, Math.abs(scrollTo - window.scrollY)));
+
+      setDuration(duration);
+      if (hole) openHole(hole);
+      else applyHole(null, "glide");
+      scrollWindowTo(scrollTo, duration);
+      // Kortet flyttas först när det har hunnit tona ut, och tonar in på sin nya plats.
+      later(() => {
+        placeCardAt(layout, "instant");
+        revealCard();
+      }, reducedMotion ? 0 : Math.max(CARD_FADE_OUT_MS, duration * CARD_REVEAL_AT));
+
+      // Framme: rätta om sidan hunnit flytta sig, pulsa ringen och följ målet.
+      later(() => {
         if (cancelled) return;
-        const current = toRect(el);
-        stable = previous && rectsAreClose(previous, current) ? stable + 1 : 0;
-        previous = current;
-        const elapsed = performance.now() - startedAt;
-        const settled = (stable >= SETTLE_STABLE_FRAMES && elapsed >= SETTLE_MIN_MS) || elapsed >= SETTLE_MAX_MS;
-        if (!settled) {
-          frame = requestAnimationFrame(tick);
-          return;
+        const settled = layoutStop(toRect(el), cardSize(), viewport(), safeArea());
+        if (settled.hole && holeRef.current && !rectsAreClose(settled.hole, holeRef.current, 1)) {
+          setDuration(CORRECTION_MS);
+          applyHole(settled.hole, "glide");
+          placeCardAt(settled, "glide");
         }
-        if (!holeRef.current || !rectsAreClose(holeRef.current, current, 1)) {
-          applyHole(current, "glide");
-          showCard(current, "glide");
-        }
-        timers.push(window.setTimeout(() => pingAt(current), Math.max(0, GLIDE_MS - elapsed)));
+        if (settled.hole) pingAt(settled.hole);
         track(el);
-      };
-      frame = requestAnimationFrame(tick);
+      }, reducedMotion ? 0 : duration + 40);
     }
 
     function awaitStableLayout(el: HTMLElement, then: () => void) {
@@ -287,18 +356,13 @@ function TourStage() {
       frame = requestAnimationFrame(tick);
     }
 
-    function land(el: HTMLElement) {
-      const startedAt = performance.now();
-      const vp = viewport();
-      let target = toRect(el);
-      if (!isComfortablyVisible(target, vp.height, VISIBLE_MARGINS)) {
-        const maxScroll = document.documentElement.scrollHeight - vp.height;
-        target = predictCenteredRect(target, { y: window.scrollY, max: maxScroll }, vp.height).rect;
-        el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center", inline: "nearest" });
-      }
-      openHole(target);
-      showCard(target, "glide");
-      settle(el, startedAt);
+    function showWithoutTarget() {
+      setDuration(COLLAPSE_MS);
+      applyHole(null, "glide");
+      later(() => {
+        placeCardAt(layoutStop(null, cardSize(), viewport(), safeArea()), "instant");
+        revealCard();
+      }, reducedMotion ? 0 : Math.max(CARD_FADE_OUT_MS, COLLAPSE_MS * CARD_REVEAL_AT));
     }
 
     function find(startedAt: number) {
@@ -313,22 +377,24 @@ function TourStage() {
         return;
       }
       if (performance.now() - startedAt > FIND_TIMEOUT_MS) {
-        applyHole(null, "glide");
-        showCard(null, "glide");
+        showWithoutTarget();
         return;
       }
-      if (openRef.current) applyHole(null, "glide");
-      hideCard();
+      if (openRef.current) {
+        setDuration(COLLAPSE_MS);
+        applyHole(null, "glide");
+      }
       frame = requestAnimationFrame(() => find(startedAt));
     }
 
+    // Varje nytt stopp börjar med att kortet tonar ut där det står.
+    hideCard();
     if (pathname !== route) {
-      // Sidan byts: hålet krymper där det står och kortet tonar ut.
+      // Sidan byts: hålet krymper där det står.
+      setDuration(COLLAPSE_MS);
       applyHole(null, "glide");
-      hideCard();
     } else if (!step.target) {
-      applyHole(null, "glide");
-      showCard(null, "glide");
+      showWithoutTarget();
     } else {
       find(performance.now());
     }
@@ -336,6 +402,7 @@ function TourStage() {
     return () => {
       cancelled = true;
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(scrollFrame);
       timers.forEach((timer) => window.clearTimeout(timer));
       cleanups.forEach((cleanup) => cleanup());
     };
@@ -351,6 +418,7 @@ function TourStage() {
 
   return (
     <div
+      ref={rootRef}
       className="fdd-tour"
       data-closing={closing ? "true" : undefined}
       role="dialog"

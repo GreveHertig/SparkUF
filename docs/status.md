@@ -2485,19 +2485,23 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 ### Rundturen, mjukare rörelse (2026-09-25)
 Grundaren tyckte att rundturen hackade. Orsaker: en rAF-loop satte spotlightens `top/left/width/height` via React-state varje bildruta medan en CSS-transition på samma egenskaper körde (spotlighten släpade efter och gungade under skrollen), mörkläggningen var en `box-shadow` på 9999 px som målades om hela tiden, och vid sidbyte försvann spotlighten och helskärmsmörkläggningen blinkade fram.
 - **Mörkläggning och ring ritas med `clip-path: path(evenodd, …)`** på helskärmslager (`demo/_lib/tourGeometry.ts`). Hålet har samma path-kommandon i alla lägen, så webbläsaren tweenar det mellan stoppen. Kortet flyttas med `transform`. Inget width/height/top/left animeras, och positionerna skrivs direkt i DOM:en, inte via React-state.
-- **Förflyttning:** spotlighten glider direkt till målets förutsagda slutläge samtidigt som sidan skrollar (`predictCenteredRect`), rättar sig en gång när skrollen stannat och följer sedan målet direkt vid skroll och med glid när innehållet flyttar sig (ResizeObserver). Skrollar inte alls om målet redan syns.
+- **Förflyttning:** spotlighten glider direkt till målets slutläge samtidigt som sidan skrollar, rättar sig en gång om sidan flyttat sig och följer sedan målet direkt vid skroll och med glid när innehållet flyttar sig (ResizeObserver).
 - **Sidbyte:** hålet krymper där det står, kortet tonar ut, och när målet finns på nya sidan och sidan stått still i ca 100 ms växer hålet ut ur målets mitt.
 - **Kortet:** riktig höjd i stället för en uppskattning, tonar in med skala 0,96 → 1, raderna tonar upp i tur och ordning (40 ms), en tunn förloppslinje för stoppet, och "Hoppa över"/"Avsluta" tonar ut rundturen (180 ms) i stället för att den försvinner.
 - **Ankomst:** ringen pulsar en gång utåt (WAAPI, 700 ms).
-- **Kurvor:** `cubic-bezier(0.77, 0, 0.175, 1)` för förflyttning (320 ms), `--fd-ease` för in/ut. Med `prefers-reduced-motion` finns inga glid, ingen skalning och ingen puls, bara toningar.
-- Tester: `demo/_lib/tourGeometry.test.ts` (samma kommandon öppet och stängt, radien kläms, förutsägelsen vid sidans slut, kortets placering).
-- Verifierat: `typecheck`, `lint` (0 fel), `test`. Playwright på 1440 px genom alla 20 stopp: en glidning per stopp, ca 58 bilder/s, och på 390 px.
+- **Kurvor:** easeInOutCubic (`cubic-bezier(0.65, 0, 0.35, 1)`) för förflyttning, `--fd-ease` för in/ut. Med `prefers-reduced-motion` finns inga glid, ingen skalning och ingen puls, bara toningar.
+- **Andra varvet, samma dag** (grundaren: "lite hårda transitions och de hamnar på lite konstiga ställen"):
+  - *Placering* (`layoutStop`/`frameStop`): allt räknas inom den säkra ytan mellan det klistrade sidhuvudet och demoraden, och hålet beskärs dit. Kortet läggs bredvid målet om det ryms (höger först), annars under eller över. Ett mål som fyller mer än två tredjedelar av ytan får kortet dockat i nedre högra hörnet, andra mål får kortet nära (det läge under/över som täcker minst). På smal skärm är kortet ett ark längst ner och hålet slutar ovanför det. Sidan skrollas så att mål och kort står mitt i ytan tillsammans, eller målets början under sidhuvudet om det är för högt, och skrollar inte alls om allt redan syns.
+  - *Rörelse:* sidan skrollas av rundturen själv med samma kurva (easeInOutCubic) och samma längd som hålet glider, 420-680 ms efter sträckan, så att de rör sig som en kamera. Kortet glider inte längre tvärs över skärmen: det tonar ut (160 ms), flyttas osynligt och tonar in (280 ms) när hålet är drygt halvvägs framme. Pulsen är dämpad (0,55 → 0, 900 ms).
+  - Mätt i Playwright på 1440 px: kortet täcker inte målet på något stopp utom de fyra där målet fyller skärmen (dockat i hörnet), aldrig över demoraden. På 390 px täcker kortet inte målet på något stopp. Längsta glapp mellan bildrutor under ett glid: 22 ms.
+- Tester: `demo/_lib/tourGeometry.test.ts` (samma kommandon öppet och stängt, radien kläms, hålet stannar i den säkra ytan, alla placeringar, skrollen för breda, höga och mobila mål, glidlängd och kurva).
+- Verifierat: `typecheck`, `lint` (0 fel), `test`. Playwright på 1440 och 390 px genom alla 20 stopp.
 
 ### Återstår
 - Inget i kopian.
 
 ### Kända problem
 - `next dev` var mycket långsam under arbetet (20-80 s för första kompileringen av en rutt). Rundturens navigering väntar då på servern. Inget fel i koden, men värt att veta vid en visning i dev-läge. 2026-09-25: en uppsvälld `.next`-cache (1,8 GB) var en stor del av det. Efter `rm -rf .next` kompilerades `/` på 3 s i stället för 3 min.
-- Rundturen: på smal skärm kan kortet täcka en del av ett mål som är högre än skärmen (t.ex. svarslistan på Validering). Samma som förut.
+- Rundturen: ett mål som är högre än den säkra ytan visas bara till den del som får plats (hålet beskärs). På stopp 8 på mobil ligger målet sist på sidan, så bara en remsa syns ovanför arket.
 - Impeccable-skillens verktyg (`scripts/impeccable`) finns inte i miljön, så dess automatiska granskning och DESIGN.md-dokumentation kördes inte. Designbesluten står här i stället; `DESIGN.md` är orörd.
 - Sidan är bara ljus, eftersom tokens saknar mörkt läge.
