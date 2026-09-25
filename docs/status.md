@@ -2482,10 +2482,22 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 - Tester: `demo/demo.test.tsx` (spärren, ingången sparas bara i kopians läge, Hem, menyn, Poäng mot motorn och koncept-etiketten, Marknad låst för Jonas, Juridikens ansvarsbegränsning) och `demo/_lib/paths.test.ts`.
 - Verifierat: `typecheck`, `lint` (0 fel) och `test` (457 gröna). Playwright på 1440 och 390 px: onboardingen hela vägen till Hem, alla sidor, rundturen med spotlight, engelska. Inga filer utanför `app/experiment/fonda` ändrade i den här omgången, och det riktiga demots lagringsnyckel var orörd under hela genomgången.
 
+### Rundturen, mjukare rörelse (2026-09-25)
+Grundaren tyckte att rundturen hackade. Orsaker: en rAF-loop satte spotlightens `top/left/width/height` via React-state varje bildruta medan en CSS-transition på samma egenskaper körde (spotlighten släpade efter och gungade under skrollen), mörkläggningen var en `box-shadow` på 9999 px som målades om hela tiden, och vid sidbyte försvann spotlighten och helskärmsmörkläggningen blinkade fram.
+- **Mörkläggning och ring ritas med `clip-path: path(evenodd, …)`** på helskärmslager (`demo/_lib/tourGeometry.ts`). Hålet har samma path-kommandon i alla lägen, så webbläsaren tweenar det mellan stoppen. Kortet flyttas med `transform`. Inget width/height/top/left animeras, och positionerna skrivs direkt i DOM:en, inte via React-state.
+- **Förflyttning:** spotlighten glider direkt till målets förutsagda slutläge samtidigt som sidan skrollar (`predictCenteredRect`), rättar sig en gång när skrollen stannat och följer sedan målet direkt vid skroll och med glid när innehållet flyttar sig (ResizeObserver). Skrollar inte alls om målet redan syns.
+- **Sidbyte:** hålet krymper där det står, kortet tonar ut, och när målet finns på nya sidan och sidan stått still i ca 100 ms växer hålet ut ur målets mitt.
+- **Kortet:** riktig höjd i stället för en uppskattning, tonar in med skala 0,96 → 1, raderna tonar upp i tur och ordning (40 ms), en tunn förloppslinje för stoppet, och "Hoppa över"/"Avsluta" tonar ut rundturen (180 ms) i stället för att den försvinner.
+- **Ankomst:** ringen pulsar en gång utåt (WAAPI, 700 ms).
+- **Kurvor:** `cubic-bezier(0.77, 0, 0.175, 1)` för förflyttning (320 ms), `--fd-ease` för in/ut. Med `prefers-reduced-motion` finns inga glid, ingen skalning och ingen puls, bara toningar.
+- Tester: `demo/_lib/tourGeometry.test.ts` (samma kommandon öppet och stängt, radien kläms, förutsägelsen vid sidans slut, kortets placering).
+- Verifierat: `typecheck`, `lint` (0 fel), `test`. Playwright på 1440 px genom alla 20 stopp: en glidning per stopp, ca 58 bilder/s, och på 390 px.
+
 ### Återstår
-- Inget i kopian. Grenen pushas inte förrän grundaren säger till.
+- Inget i kopian.
 
 ### Kända problem
-- `next dev` var mycket långsam under arbetet (20-80 s för första kompileringen av en rutt). Rundturens navigering väntar då på servern. Inget fel i koden, men värt att veta vid en visning i dev-läge.
+- `next dev` var mycket långsam under arbetet (20-80 s för första kompileringen av en rutt). Rundturens navigering väntar då på servern. Inget fel i koden, men värt att veta vid en visning i dev-läge. 2026-09-25: en uppsvälld `.next`-cache (1,8 GB) var en stor del av det. Efter `rm -rf .next` kompilerades `/` på 3 s i stället för 3 min.
+- Rundturen: på smal skärm kan kortet täcka en del av ett mål som är högre än skärmen (t.ex. svarslistan på Validering). Samma som förut.
 - Impeccable-skillens verktyg (`scripts/impeccable`) finns inte i miljön, så dess automatiska granskning och DESIGN.md-dokumentation kördes inte. Designbesluten står här i stället; `DESIGN.md` är orörd.
 - Sidan är bara ljus, eftersom tokens saknar mörkt läge.
