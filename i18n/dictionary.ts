@@ -632,6 +632,20 @@ export type Dictionary = {
       startDemoCta: string;
       createAccountCta: string;
     };
+    /** Väntelistan (`app/(marketing)/WaitlistForm.tsx`), samma formulär i
+     * hero och i den avslutande sektionen. Felen slås upp från koderna i
+     * `app/(marketing)/actions.ts`. */
+    waitlist: {
+      label: string;
+      submitCta: string;
+      /** Vad adressen används till (GDPR). Kontaktadress för borttagning saknas än. */
+      privacyNote: string;
+      joined: string;
+      errors: {
+        emailInvalid: string;
+        unexpected: string;
+      };
+    };
   };
   /** `/priser` (avsnitt 6): tre nivåer, uttryckligen märkta som förslag. */
   pricingPage: {

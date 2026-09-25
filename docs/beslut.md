@@ -133,6 +133,14 @@ Ingenting skrivs till tabellen förrän dataspiken §6 fråga 4 är avgjord.
 
 ## 2026-09-25
 
+**`waitlist` blir en stängd tabell i `CLOSED_TABLES` (Erik).** Allt ska gå
+genom `join_waitlist`. Policyn `using (false)` tas bort, `waitlist` läggs till
+i `CLOSED_TABLES` i `supabase/migrations/migrations.test.ts`, och `anon` och
+`authenticated` har inga rättigheter på tabellen (`revoke all`). Skäl: en
+`using (false)`-policy är vilseledande, eftersom den ser ut som en policy men
+inte gör något, och inkonsekvent, eftersom det då finns två olika sätt att
+markera en stängd tabell i kodbasen.
+
 **Pulsens dagscache: `pulse_fetches`, per grundare och svensk dag (Erik).**
 En rad per `(user_id, fetch_date)`, där `fetch_date` räknas i
 Europe/Stockholm i databasen. Adaptern tar raden med `insert … on conflict do

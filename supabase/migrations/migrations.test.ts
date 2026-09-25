@@ -7,9 +7,11 @@
 // att ingen tabell glöms bort.
 //
 // Undantag: tabeller i CLOSED_TABLES är avsiktligt stängda för alla klienter
-// (RLS på, INGA policies, rättigheterna indragna från anon och authenticated)
-// och nås bara av servern med service role. För dem hävdar vakten tvärtom att
-// ingen policy finns, så att en tabell inte kan öppnas i smyg.
+// (RLS på, INGA policies, rättigheterna indragna från anon och authenticated).
+// Stängda tabeller nås bara via servern (service role) eller via en
+// säkerhetsfunktion (security definer), aldrig direkt av klienten. För dem
+// hävdar vakten tvärtom att ingen policy finns, så att en tabell inte kan
+// öppnas i smyg.
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -20,6 +22,8 @@ const MIGRATIONS_DIR = import.meta.dirname;
 const CLOSED_TABLES: Record<string, string> = {
   registry_cache:
     "Gemensam registercache som bara servern läser och skriver (lib/server/registryCache.ts). Beslut Erik 2026-09-23, docs/beslut.md.",
+  waitlist:
+    "Väntelistan. Nås bara via funktionen public.join_waitlist (security definer), aldrig direkt. Beslut Erik 2026-09-25, docs/beslut.md.",
 };
 
 function readAllMigrationsSql(): string {
