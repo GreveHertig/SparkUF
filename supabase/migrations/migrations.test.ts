@@ -7,9 +7,11 @@
 // att ingen tabell glöms bort.
 //
 // Undantag: tabeller i CLOSED_TABLES är avsiktligt stängda för alla klienter
-// (RLS på, INGA policies, rättigheterna indragna från anon och authenticated)
-// och nås bara av servern med service role. För dem hävdar vakten tvärtom att
-// ingen policy finns, så att en tabell inte kan öppnas i smyg.
+// (RLS på, INGA policies, rättigheterna indragna från anon och authenticated).
+// Stängda tabeller nås bara via servern (service role) eller via en
+// säkerhetsfunktion (security definer), aldrig direkt av klienten. För dem
+// hävdar vakten tvärtom att ingen policy finns, så att en tabell inte kan
+// öppnas i smyg.
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
