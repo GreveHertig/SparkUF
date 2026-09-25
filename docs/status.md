@@ -2462,11 +2462,12 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 
 - Buggrapporten från genomklickningen av demot finns i `docs/buggar-2026-09.md`.
 
-## Väntelistan på landningssidan (PR #21 från `landning` mot `prototyp`, väntar på granskning)
+## Väntelistan på landningssidan (PR #21 från `landning`, mergad till `prototyp` 2026-09-25, migreringen väntar på Erik)
 
-PR: https://github.com/GreveHertig/SparkUF/pull/21. Granskare: Erik
-(`GreveHertig`) och Theo (`magnussontheodor-max`).
-Påverkar varken `main` eller produktion förrän PR:en är mergad.
+PR: https://github.com/GreveHertig/SparkUF/pull/21. Granskad och mergad
+till `prototyp` av Erik (`GreveHertig`) 2026-09-25. Påverkar inte `main`
+eller produktion förrän `prototyp` går vidare dit. Formuläret fungerar inte
+skarpt förrän migreringen är körd.
 
 ### Klart
 - **`supabase/migrations/20260924120000_waitlist.sql`:** tabellen
@@ -2532,9 +2533,9 @@ Påverkar varken `main` eller produktion förrän PR:en är mergad.
 ### Återstår
 Ordningen (Eriks beslut 2026-09-25): granska, merga, sedan kör Erik
 migreringen.
-1. **Granskning av PR #21** (Erik och Theo).
-2. **Merge mot `prototyp`.**
-3. **Migreringen är inte körd.** Efter merge kör Erik **bara**
+1. ~~Granskning av PR #21~~ **Klar.**
+2. ~~Merge mot `prototyp`~~ **Klar 2026-09-25** (Erik).
+3. **Migreringen är inte körd och väntar på Erik.** Erik kör **bara**
    `20260924120000_waitlist.sql` mot SparkUF2 via SQL Editor, inte
    `supabase db push`, eftersom `registry_cache` inte ska köras än.
 4. **Prova skarpt efter migreringen:** skicka formuläret med riktiga
