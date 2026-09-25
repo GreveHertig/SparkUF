@@ -348,6 +348,10 @@ export type Dictionary = {
     title: string;
     subtitle: string;
     emptyState: string;
+    /** Liveadapterns kategori för en Tavily-träff (adapters/live/PulseProvider.ts). */
+    liveCategory: string;
+    /** Liveadapterns fasta "varför det spelar roll"-mening, `{project}` = projektets namn. */
+    liveWhyItMatters: string;
   };
   memoryPage: {
     title: string;

@@ -43,7 +43,7 @@ describe("Grindvakt: adapters/live/OutreachPrep.ts", () => {
   });
 
   it("bara godkända icke-testfiler använder Tavily (varje ny användare måste läggas till här medvetet)", () => {
-    const allowed = new Set(["adapters/live/OutreachPrep.ts", "lib/server/tavily.ts"]);
+    const allowed = new Set(["adapters/live/OutreachPrep.ts", "adapters/live/PulseProvider.ts", "lib/server/tavily.ts"]);
     const users = sourceFiles()
       .filter(({ path, text }) => !/\.test\.tsx?$/.test(path) && /@\/lib\/server\/tavily"/.test(text))
       .map((f) => f.path)
