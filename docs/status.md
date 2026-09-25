@@ -2457,3 +2457,22 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 ### Beslut nästa session behöver känna till
 - **Provbunten är gitignorerad** och byggs om med
   `node scratchpad/bv-transport-bygg.mjs` om transporten ändras.
+
+## Designexperiment — /experiment/fonda (gren `experiment/landning-fonda`, lokal, mergas aldrig)
+- Grenad från `origin/prototyp` @ 48b04dc. **Pushas inte** förrän grundaren säger till, och mergas aldrig. Grenen har ingen upstream.
+- `/experiment/landning` och `/experiment/fri` finns inte på den här grenen (de ligger på `experiment/landning-erik` resp. `experiment/landning-fri`), så de påverkas inte.
+
+### Klart
+- **Landningssida `/experiment/fonda`**: sektionsrytm och berättande i steg med fonda.co som inspiration (bara struktur, inga texter, bilder eller varumärke därifrån, och Fonda nämns inte på sidan). Bara projektets tokens och typsnitt, `design/tokens.css` orörd. Sektioner: hero med ett interaktivt poängexempel (sex kundsvar, tre slår om till "säger emot" och `calculateScore` räknar om, 51 → 40, nivån byter), Resan (tolv steg i fyra faser ur `journeySteps`), Registret (demots marknadsbild och kundlista, märkt fiktiv), Poängen (de åtta vikterna ur `SCORE_PART_WEIGHTS` och tre regler), Medgrundaren (demots riktiga nästa steg efter Domen), Pris (Grundare 199 kr/mån, märkt som förslag, steg 10 ingår inte), mejlfält (inte kopplat, säger att inget sparas) och sidfot. "Se demot" är alltid märkt "Demo med fiktiv data" och går till kopian.
+- **Demokopia `/experiment/fonda/demo`, första omgången:** Hem och Poäng i samma stil, plus en egen demorad (bakåt, nästa, börja om, ← →). Datan kommer ur de oförändrade demoadaptrarna. Kopian byter demo-lagrets lagringsnyckel till `spark:fonda-demo-state` medan man är i den (samma mönster som `/experiment/fri`, `_lib/fondaDemoIsolation.ts`), så det riktiga demots läge läses och skrivs aldrig.
+- **Skillnader mot originalet (medvetna):** kopian har ingen onboarding än och börjar på moment 1; knappen i "Nästa steg" spelar upp nästa moment; förslag som nämner Lovable eller Hiasynth får `ConceptBadge` (originalets Poäng-sida saknar den).
+- i18n: nytt namnutrymme `experimentFonda` i `dictionary.ts`/`sv.ts`/`en.ts`, bara tillagda rader. Inga nya beroenden.
+- Tester: `page.test.tsx` (sv/en, demolänkens märkning och mål, formulärets tillstånd, att poängen sjunker, att texterna inte nämner Fonda, "den enda"/"only" eller tankstreck), `_lib/proofEvidence.test.ts`, `demo/_lib/fondaDemoIsolation.test.ts`, `demo/demo.test.tsx`.
+- Verifierat: `typecheck`, `lint` (0 fel, 3 gamla varningar i `design-referens/`) och `test` (450 gröna). Playwright på 1440 och 390 px, sv och en, ingen horisontell överrullning. Skärmdumpar av `/demo/start`, `/demo/app` och `/demo/app/poang` (steg 6, Domen, Efter) är byte-identiska före och efter.
+
+### Återstår
+- Resten av demots sidor i kopian (onboarding, Medgrundaren, Resan med stegsidor, Marknad, Validering, Pulsen, Minnet, Juridik, Bygg, Affärsplanen) och rundturen. **Väntar på grundarens ok.**
+
+### Kända problem
+- Impeccable-skillens verktyg (`scripts/impeccable`) finns inte i miljön, så dess automatiska granskning och DESIGN.md-dokumentation kördes inte. Designbesluten står här i stället; `DESIGN.md` är orörd.
+- Sidan är bara ljus, eftersom tokens saknar mörkt läge.
