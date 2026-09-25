@@ -2229,6 +2229,235 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 - "Vecka 2" finns inte definierat någonstans i repot. Rubriken följer Eriks
   formulering, men datumet behöver bestämmas.
 
+## Registret: Bolagsverket-transporten, steg A och B (klar, gren `modul/registret-bolagsverket`, PR mot `prototyp`)
+
+### Klart
+- **Steg A, svarsformaten är verifierade.** Erik körde det fristående skriptet
+  `scratchpad/bv-steg-a.mjs` (gitignorerat, bara Node och miljövariabler) på
+  sin egen dator mot Volvo, Ericsson och H&M, plus tre felfall. Formaten står
+  i `docs/dataspiken.md` under "Svarsformat, verifierat mot riktiga anrop".
+  Den gamla Swagger-skissen var fel på flera punkter och är ersatt.
+  Ip-adresser, trace-id och request-id skrevs medvetet inte in.
+- **Steg B, `lib/server/bolagsverket.ts`:** `lookupOrganisation` gör
+  `/organisationer` och `fetchDocumentList` gör `/dokumentlista`. Token
+  hämtas med client credentials och cachas. Vid 401 görs ett nytt försök.
+  Anropen har timeout och tempo. Bas-URL:en läses från en miljövariabel med
+  host-kontroll (SSRF). Org.nr måste ha giltig kontrollsiffra och får inte
+  vara ett personnummer. Grinden anropas först. Scheman:
+  `lib/server/bolagsverketSchemas.ts`. Tester: `lib/server/bolagsverket.test.ts`,
+  med Ericssons riktiga svar som fixtur.
+- **Lint-regel** i `eslint.config.mjs`: bara `adapters/live/RegistryProvider.ts`
+  och tester får importera `lib/server/bolagsverket` och `lib/server/scb`.
+- **`.env.example`:** `BOLAGSVERKET_CLIENT_ID`, `BOLAGSVERKET_CLIENT_SECRET`,
+  `BOLAGSVERKET_API_BASE_URL`, utan värden.
+
+### Återstår
+- **Erik:** lägg till `BOLAGSVERKET_API_BASE_URL` i `.env.local` (adressen står
+  i dataspiken). Den saknas där i dag. `.env.local` rördes inte.
+- **Provkörning av TypeScript-transporten** mot det riktiga API:t. Den går inte
+  att köra från Codespacet, och grindkrav 1 i `registret.md` kräver den.
+- Koppla `lookupOrganisation` till adaptern. Det väntar på SCB-listan, som
+  ger vilka org.nr som ska slås upp.
+- `/dokument` och iXBRL (uppskjutet, inga nya beroenden). Först behövs ett
+  bolag vars `/dokumentlista` inte är tom.
+- De öppna punkterna i dataspiken: hur "finns inte" besvaras, vad
+  `reklamsparr: null` betyder, formen på `fel`, SNI-versionen, rate limits
+  och `[TEST]`.
+
+### Kända problem
+- **Codespacet når inte Bolagsverket.** Både `gw.api`, `portal.api` och
+  `bolagsverket.se` ger timeout över IPv4 och IPv6, medan `www.scb.se` svarar.
+  Troligen blockeras molnets ip-intervall. Alla riktiga anrop måste göras
+  från en annan maskin.
+- `post-checkout`/`post-merge`-hookarna klagar på att `git-lfs` saknas.
+  Repot spårar inga LFS-filer, så det påverkar inget.
+
+### Beslut nästa session behöver känna till
+- **`reklamsparr: null` tolkas som okänt**, inte som "ingen spärr". En
+  ifylld spärr i en form vi inte känner igen räknas som spärr.
+- **Bolagsverket-schemana är inte `.strict()`**, eftersom svaret har ett
+  fyrtiotal fält. Okända fält tas bort av Zod och når aldrig transporten.
+- **`registry_cache` rördes inte** (Eriks beslut 2026-09-23, fråga 1 avgörs
+  separat).
+
+## Registret: `registry_cache` blir en gemensam servercache (klar, gren `scb/forberedelse`)
+
+### Klart
+- **Beslut (Erik 2026-09-23):** cachen är gemensam, och bara servern läser och
+  skriver den. Beslutet står i `docs/beslut.md`, och skälen till service role i
+  `docs/arkitektur.md` avsnitt 9. Öppen fråga 1 i `registret.md` är struken.
+- **Migreringen** `20260923120000_registry_cache.sql` är omskriven:
+  - `user_id` och alla policies för `authenticated` är borttagna.
+  - Unik nyckel är `(source, request_key)`.
+  - RLS är påslaget **utan policies**, och `revoke all … from anon,
+    authenticated` är tillagt.
+  - Källa, hämtdatum och 7-dagarstaket står kvar.
+  - Den är fortfarande inte körd.
+- **`lib/server/registryCache.ts`:**
+  - Exporterar `registryCache.get/set`, är server-only och använder
+    `SUPABASE_SERVICE_ROLE_KEY`.
+  - Grinden anropas först.
+  - Cachenyckeln måste vara strukturerad (ingen fritext) och käll-URL:en
+    https.
+  - `fetchedAt` får inte ligga i framtiden (det skulle förlänga lagringen),
+    och ttl är högst 7 dagar.
+  - Felen bär aldrig Supabase-meddelandet.
+  - **`get()` tar bort alla utgångna rader** och returnerar aldrig en utgången.
+- **Lint-regel** `registryCachePattern`: bara `adapters/live/RegistryProvider.ts`
+  och tester får importera cachen.
+- **RLS-vakten** (`supabase/migrations/migrations.test.ts`) har `CLOSED_TABLES`
+  med `registry_cache`. En stängd tabell måste ha RLS på, **ingen** policy och
+  indragna rättigheter. Vakten bortser nu från SQL-kommentarer.
+- **Vakt för nyckeln** (`lib/server/registryCache.test.ts`): bara
+  `registryCache.ts` läser `SUPABASE_SERVICE_ROLE_KEY`, och inget
+  `NEXT_PUBLIC_…SERVICE` finns.
+- **`.env.example`:** `SUPABASE_SERVICE_ROLE_KEY=` utan värde. Den gamla
+  kommentaren "service role används INTE" är ersatt.
+
+### Återstår
+- **PR #17** (`scb/forberedelse` → `prototyp`) väntar på granskning. PR #14
+  från samma gren var redan mergad.
+- **`SUPABASE_SERVICE_ROLE_KEY` läggs inte in** i `.env.local` eller
+  driftmiljön förrän §6 fråga 4 är avgjord.
+- Kör migreringen mot SparkUF2 först när du vill det. Ingenting får skrivas
+  till tabellen förrän §6 fråga 4 är avgjord, och `set()` anropas inte av
+  någon än.
+- Ett schemalagt rensningsjobb, om cachen kan stå oanvänd längre än 7 dagar.
+
+### Kända problem
+- **`eslint.config.mjs` kommer att krocka** med PR #16
+  (`modul/registret-bolagsverket`), eftersom båda ändrar samma
+  `no-restricted-imports`-block. Slå ihop dem till en regel med både
+  `registryTransportPattern` och `registryCachePattern`.
+- Cachens tester körs mot en egen liten fejk, inte mot riktig PostgREST.
+  Semantiken för `lte`/`gt`/`upsert` behöver prövas mot en riktig databas.
+
+### Beslut nästa session behöver känna till
+- **Service role används på exakt ett ställe.** En ny användning kräver ett
+  nytt beslut i `docs/beslut.md` och en rad i `docs/arkitektur.md` avsnitt 9.
+- Beslutet i avsnittet "SCB-spåret förberett" ovan, att cachen ägs per
+  användare, gäller inte längre.
+
+## Sammanfattning 2026-09-23 (kvällen) och vad som återstår i morgon
+
+### Dagens session
+- **Bolagsverket-transporten (PR #16, `modul/registret-bolagsverket`):**
+  svarsformaten är verifierade mot riktiga anrop (steg A), och
+  `lib/server/bolagsverket.ts` gör `/organisationer` och `/dokumentlista`
+  bakom grinden (steg B). `/dokument` och iXBRL är uppskjutna.
+- **Cachebeslutet (PR #17, `scb/forberedelse`):** `registry_cache` är en
+  gemensam cache som bara servern läser och skriver, med service role.
+  Tabellen är stängd för alla klienter.
+- **Städning:** den ospårade filen `main` i repots rot var tom (0 byte,
+  skapad 21:35), troligen en felriktad `>main` från ett skalkommando. Den
+  är borttagen. Innehållet var tomt, så ingenting gick förlorat.
+
+### I morgon
+- **PR #16 och PR #17 väntar på Theos granskning.** Mergea ingen av dem
+  innan dess. Räkna med en konflikt i `eslint.config.mjs`: båda ändrar samma
+  `no-restricted-imports`-block. Slå ihop `registryTransportPattern` och
+  `registryCachePattern` i samma regel.
+- **Provkör TypeScript-transporten lokalt** mot Bolagsverket från Eriks dator.
+  Codespacet når inte Bolagsverket. Lägg först
+  `BOLAGSVERKET_API_BASE_URL` i `.env.local`. Grindkrav 1 i `registret.md`
+  kräver provkörningen.
+- **`SUPABASE_SERVICE_ROLE_KEY` läggs inte in** förrän dataspiken §6 fråga 4
+  är avgjord.
+- **Beslut med Theo:**
+  - **SNI 2025:** demot och porten använder troligen SNI 2007-koder
+    (`69.201`), och SCB följer SNI 2025. Bolagsverkets koder är fem siffror
+    utan punkt, och versionen är okänd.
+  - **CofounderAgent.**
+  - **`getOnboardingScript`.**
+- **30 september:** SCB-nyckeln kommer. Läs SCB:s villkor och citera dem
+  ordagrant i `docs/dataspiken.md` (grindkrav 2). Ställ frågorna i avsnittet
+  "SCB-spåret förberett".
+
+## Merge av `prototyp` in i PR #16 (klar 2026-09-24, gren `modul/registret-bolagsverket`)
+
+### Klart
+- **`origin/prototyp` (med PR #17) är mergad in i `modul/registret-bolagsverket`**
+  (merge, ingen rebase eller force push). PR #16 har inte längre någon konflikt.
+- **Konflikter:**
+  - `docs/status.md`: alla avsnitt behölls, i datumordning.
+  - `eslint.config.mjs`: `registryTransportPattern` och `registryCachePattern`
+    ligger i samma `no-restricted-imports`-regel. De tillåtna importörerna är
+    en gemensam `registryImporters`.
+- Konflikten i `eslint.config.mjs` som nämns ovan, under "Kända problem" och
+  "I morgon", är därmed löst.
+
+### Återstår
+- **PR #16 väntar på Theos granskning** (GitHub: `BLOCKED`, mergebar). Mergea den
+  inte innan dess.
+
+### Kända problem
+- `git fetch origin` uppdaterade en gång inte `origin/prototyp` i Codespacet.
+  `git fetch origin prototyp:refs/remotes/origin/prototyp` fungerade.
+  Kontrollera med `git ls-remote origin prototyp` före en merge.
+
+## Registret: registreringsdatum i Bolagsverket-transporten (klar 2026-09-24, gren `modul/bv-registreringsdatum`, PR mot `prototyp`)
+
+### Klart
+- **`BolagsverketOrganisation.registrationDate`** (`string | null`, YYYY-MM-DD)
+  läses från `organisationsdatum.registreringsdatum`
+  (`lib/server/bolagsverket.ts`, `lib/server/bolagsverketSchemas.ts`).
+- **Validering:** fältet valideras med `z.iso.date()`, som också avvisar
+  datum som inte finns, som `2023-02-29`.
+- **`null` i stället för att bolaget faller bort:** ett saknat eller ogiltigt
+  datum ger `null` (`.catch(null)`), liksom ett ifyllt `fel` i delobjektet
+  (via `ok()`). Bolagets övriga uppgifter kommer ändå med.
+- **Tester** (`lib/server/bolagsverket.test.ts`): fixtur-testet förväntar
+  `"1918-08-19"` för Ericsson. Ett nytt test täcker de fall där datumet ska
+  bli `null`: saknat delobjekt, `null`, `2023-02-29`, `1918-8-19` och
+  ifyllt `fel`.
+- **`docs/dataspiken.md`:** fältet är beskrivet under "Svarsformat, verifierat
+  mot riktiga anrop".
+- **Gamla grenen `a/bolagsverket-klient`:** fältet `registreringsdatum` var
+  det enda den hade som saknades i den nya transporten, och det finns nu med.
+  Grenen finns kvar, lokalt och på GitHub.
+
+### Återstår
+- **Adaptern:** `registrationDate` når inget gränssnitt än. Adaptern
+  (`adapters/live/RegistryProvider.ts`) använder bara `fetchAnnualFigures`,
+  inte `lookupOrganisation`, och `RegistryCompany` har inget sådant fält. Det
+  avgörs när `lookupOrganisation` kopplas till adaptern.
+- **Gamla grenen:** ta bort `a/bolagsverket-klient` när den här PR:en är
+  mergad, om du vill.
+
+### Beslut nästa session behöver känna till
+- **Ett ogiltigt registreringsdatum blir `null`**, det fäller inte hela bolaget.
+  Samma princip som för övriga fält: saknat eller trasigt betyder okänt.
+
+## Registret: Bolagsverket-transporten provkörd (klar 2026-09-24, gren `docs/registret-provkorning`, PR mot `prototyp`)
+
+### Klart
+- **Grindkrav 1, Bolagsverket-delen: provkörd.** Erik körde den riktiga
+  `lookupOrganisation` och `fetchDocumentList` från sin dator mot Volvo,
+  Ericsson och H&M. Alla sex anropen lyckades.
+- **Så kördes den:** en fristående bunt (`scratchpad/bv-transport-prov.mjs`,
+  gitignorerad, byggd med rolldown som redan fanns i `node_modules`). Grinden
+  var den riktiga. Bara `server-only` och inloggningen var utbytta i bunten,
+  och inloggningen ersattes av Eriks user.id från en miljövariabel. Id,
+  secret och token maskades.
+- **Resultat:** varje bolag gav ett svar med alla fält mappade, även
+  `registrationDate` (Volvo 1915-05-05, Ericsson 1918-08-19, H&M 1943-08-07).
+  `advertisingBlock` var `null` (okänt) för alla tre. Detaljerna står i
+  `docs/moduler/registret.md`, "Provkörning 2026-09-24".
+- Punkten "Provkörning av TypeScript-transporten" under "Återstår" i avsnittet
+  om steg A och B ovan är därmed klar.
+
+### Återstår
+- **`/dokumentlista` var tom för alla tre bolagen**, som i steg A. Prova med
+  mindre aktiebolag som har lämnat årsredovisningen digitalt, med samma bunt:
+  `node bv-transport-prov.mjs <org.nr> ...`. Det behövs innan `/dokument` och
+  iXBRL byggs.
+- **Grindkrav 1, SCB-delen:** `lib/server/scb.ts` kastar fortfarande.
+  Grindkrav 2 och 3 återstår också, så grinden förblir stängd.
+
+### Beslut nästa session behöver känna till
+- **Provbunten är gitignorerad** och byggs om med
+  `node scratchpad/bv-transport-bygg.mjs` om transporten ändras.
+
 ## Väntelistan på landningssidan (WIP, gren `landning`, ingen PR än)
 
 Pågående arbete, pushat så att teamet kan se det. Inte klart för merge.
@@ -2248,8 +2477,10 @@ Påverkar varken `prototyp`, `main` eller produktion.
     ingen tid och inget antal lämnar databasen.
   - **Rättigheter:** `revoke execute … from public`, `grant execute` bara
     till `anon` och `authenticated`.
-  - **En stängande policy** (`as restrictive for all to anon, authenticated
-    using (false) with check (false)`). Se beslutet för Erik nedan.
+  - **Stängd tabell:** `waitlist` står i `CLOSED_TABLES` i
+    `migrations.test.ts`. RLS på, inga policyer,
+    `revoke all on table … from anon, authenticated`. Vakten kontrollerar
+    just det. Beslut Erik 2026-09-25, `docs/beslut.md`.
   - **Varför funktion i stället för direkt insert:** med direkt insert via
     Supabases API svarade databasen 201 för en ny adress och 409 för en som
     redan fanns. Vem som helst med den publika anon-nyckeln kunde då pröva
@@ -2273,7 +2504,6 @@ Påverkar varken `prototyp`, `main` eller produktion.
     - Ingen migrering ger `anon` eller `authenticated` någon rättighet på
       tabellen, inte heller med namn utan schema, med citattecken eller via
       `on all tables in schema`.
-    - Alla policyer på tabellen är stängande.
     - **Varje** definition av `join_waitlist`, också en senare `create or
       replace`, har `security definer`, låst `search_path`, `returns void`,
       `lower(trim(...))` och `on conflict do nothing`. Ingen `alter
@@ -2318,17 +2548,10 @@ Påverkar varken `prototyp`, `main` eller produktion.
   körd.
 
 ### Beslut nästa session behöver känna till
-- **Öppet beslut för Erik: policyn på `public.waitlist`.**
-  `migrations.test.ts` kräver minst en `create policy` per tabell. Med
-  funktionen behövs ingen policy, så migreringen har en stängande policy
-  (`as restrictive … using (false)`) som inte ger någon rättighet men
-  stoppar direktåtkomst om någon senare råkar lägga till en grant. Erik
-  väljer:
-  1. **Behålla den stängande policyn** (nuvarande lösning,
-     `migrations.test.ts` orörd).
-  2. **Ändra `migrations.test.ts`** så att en tabell utan grants till `anon`
-     och `authenticated` inte behöver någon policy, och ta bort den stängande
-     policyn. Då gäller "RLS på, inga policies för anon" rakt av.
+- **`waitlist` är en stängd tabell i `CLOSED_TABLES`** (Erik 2026-09-25,
+  `docs/beslut.md`), samma mönster som `registry_cache`. Den tidigare
+  `using (false)`-policyn är borttagen. För att få `CLOSED_TABLES` mergades
+  `origin/prototyp` in i `landning`.
 - **Supabases Security Advisor kommer att varna för `join_waitlist`**
   ("security definer function executable by anon/authenticated", lints
   0028/0029). Det är avsiktligt: funktionen är den enda vägen in på listan

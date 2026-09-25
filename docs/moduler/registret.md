@@ -114,6 +114,11 @@ bara de två). Licensen räcker inte ensam för att öppna den.
 **Full öppning kräver alla tre (Eriks beslut 2026-09-23):**
 1. **Transporten är skriven**: `lib/server/scb.ts` och `lib/server/bolagsverket.ts`
    gör riktiga anrop och är provkörda.
+   - **Bolagsverket: provkörd 2026-09-24.** Erik körde den riktiga
+     `lookupOrganisation` och `fetchDocumentList` från sin dator mot Volvo,
+     Ericsson och H&M. Alla sex anropen lyckades, och grinden gällde som i
+     appen. Se "Provkörning 2026-09-24" nedan.
+   - **SCB: inte uppfyllt.** `lib/server/scb.ts` kastar fortfarande.
 2. **SCB:s villkor är lästa** för företagsregister-API:t, efter 30 september
    2026, och citerade ordagrant i `docs/dataspiken.md` på samma sätt som
    Bolagsverkets.
@@ -136,6 +141,7 @@ grinden tas bort, i en commit som också uppdaterar det här avsnittet.
 
 **Regler för framtiden (security-review 2026-09-19):**
 - `competitors[].name/description` är extern text, rensad men inte neutraliserad. Om Gemini/Tavily någon gång får läsa dem: lägg dem i ett avgränsat databloc, säg i systemprompten att de är opålitliga, och aktivera inga verktygsanrop utifrån dem.
+- **Uppfyllt för Bolagsverket 2026-09-23:** (a) transporten anropar grinden själv, och lint-regeln `registryTransportPattern` i `eslint.config.mjs` låter bara liveadaptern och tester importera `bolagsverket`/`scb`; (b) bas-URL:en kommer bara från miljövariabeln och måste vara https mot `*.api.bolagsverket.se`; (c) timeout 10 s och minst 200 ms mellan anrop i processen (Bolagsverket skickar inga rate limit-headers, så det finns ingen throttle per användare); (d) felen bär aldrig `cause`, request-id eller svarstext. Org.nr med tredje siffran under 2 (personnummer) avvisas före anropet. Kvar för SCB:
 - När transporterna skrivs: (a) de ska själva anropa `assertRegistryAccessAllowed()` eller bara importeras av `adapters/live/RegistryProvider.ts` (lägg en `no-restricted-imports`-regel), så en framtida route inte kan gå förbi grinden; (b) bas-URL bara från miljövariabel, aldrig från indata (SSRF); (c) timeout, paginering och throttle per användare (SCB: 2 000 rader/anrop, 10 anrop/10 s) — `getMarketOverview` utan `sniCode` hämtar hela registret; (d) logga aldrig `RegistryTransportError.cause` (ZodError kan innehålla registervärden), bara `issues[].path` och `code`.
 - `REGISTRY_LIVE_ENABLED` måste vara exakt `true` (`1`/`TRUE` nekas, avsiktligt).
 - Bolagsnamn kan innehålla personnamn. Aktiebolag är juridiska personer och reklamspärr respekteras, men det är en GDPR-nyans att ta upp med Juridisk koll (§6 fråga 4).
@@ -145,22 +151,70 @@ ovan); när ett avtal ger en API-nyckel eller inloggningsuppgift gäller
 samma regel som alla andra moduler: bara i serverkod, aldrig
 `NEXT_PUBLIC_`-prefix. Sökfrågan (`RegistryQuery`) är begränsad till
 strukturerad indata (SNI-kod, siffror) — inget fritextfält går vidare till
-en extern källa okontrollerat. Ingen Supabase-koppling för själva
-registerdatan (den är offentlig, inte användarspecifik); om liveadaptern
-cachar resultat i Supabase för att spara anrop gäller RLS som för alla
-andra tabeller.
+en extern källa okontrollerat. Registerdatan är offentlig och inte
+användarspecifik. Den cachas därför i en **gemensam** tabell,
+`public.registry_cache`, som bara servern når med service role-nyckeln
+(`lib/server/registryCache.ts`, beslut 2026-09-23). Tabellen har RLS på utan
+policies och är stängd för alla klienter.
 
 ## Status
 
-**påbörjad — grindad, transporten oskriven.** `adapters/live/RegistryProvider.ts`
-är byggd: grind, indatavalidering, aktiebolag utan reklamspärr, källstämpling
-och ärlighet kring luckor. Men `lib/server/scb.ts` och `lib/server/bolagsverket.ts`
-kastar `RegistryTransportError` (inga nycklar, ingen API-spec, kundanmälan är
-inte skickad). Kontraktstestet är grönt **mot mockad transport i en ANTAGEN
-svarsform** (`lib/server/registrySchemas.ts`): det bevisar vår logik, inte att
-Bolagsverket/SCB ser ut så. **Exponering är spärrad**, se "Licensgrind".
-Demoadaptern är klar och används av `/demo/app/marknad` och
+**påbörjad — grindad, Bolagsverket-transporten delvis skriven (2026-09-23).**
+`adapters/live/RegistryProvider.ts` är byggd: grind, indatavalidering,
+aktiebolag utan reklamspärr, källstämpling och ärlighet kring luckor.
+`lib/server/bolagsverket.ts` gör nu riktiga anrop mot `/organisationer` och
+`/dokumentlista` (se "Bolagsverket-transporten" nedan). Svarsformen är
+verifierad mot Eriks körning i steg A (`docs/dataspiken.md`). Transporten är
+**inte kopplad till adaptern än**, och det finns tre skäl: `searchCompanies`
+och `getMarketOverview` börjar i SCB:s lista, `lib/server/scb.ts` kastar
+fortfarande, och `fetchAnnualFigures` (/dokument, iXBRL) är uppskjuten.
+Kontraktstestet är fortfarande grönt **mot mockad transport i en ANTAGEN
+svarsform** (`lib/server/registrySchemas.ts`). **Exponering är spärrad**, se
+"Licensgrind". Demoadaptern är klar och används av `/demo/app/marknad` och
 `/demo/app/kunder` (via Utskick och svar).
+
+## Bolagsverket-transporten (`lib/server/bolagsverket.ts`)
+
+- **`lookupOrganisation(orgNr)`**: `POST /organisationer`. Returnerar en platt
+  `BolagsverketOrganisation` (namn, organisationsform, SNI-koder som fem
+  siffror, registreringsdatum, verksam, avregistrerad, avveckling,
+  reklamspärr, postnummer, ort, verksamhetsbeskrivning och `fetchedAt`). Okänt blir `null`, aldrig en
+  gissning. **`advertisingBlock: null` betyder okänt**, inte "ingen spärr".
+  Adaptern måste därför behandla `null` som att bolaget inte får visas tills
+  frågan är utredd. Tom lista eller 404 ger `[]`.
+- **`fetchDocumentList(orgNr)`**: `POST /dokumentlista`. Elementens form är
+  overifierad, eftersom listan var tom för alla bolag i steg A.
+- **`fetchAnnualFigures`** kastar fortfarande, eftersom `/dokument` och iXBRL
+  är uppskjutna (inga nya beroenden).
+- **Token:** OAuth 2 client credentials mot en fast token-URL, cachas i
+  minnet tills 60 s före `expires_in`. Vid 401 hämtas en ny token och anropet
+  görs om en gång.
+- **Miljövariabler:** `BOLAGSVERKET_CLIENT_ID`, `BOLAGSVERKET_CLIENT_SECRET`
+  och `BOLAGSVERKET_API_BASE_URL` (https mot `*.api.bolagsverket.se`).
+
+### Provkörning 2026-09-24 (grindkrav 1, Bolagsverket-delen)
+
+- **Hur:** en fristående bunt av den riktiga transporten
+  (`scratchpad/bv-transport-prov.mjs`, gitignorerad), körd av Erik från sin
+  dator. Codespacet når inte Bolagsverket. Grinden
+  (`lib/server/registryAccess.ts`) var den riktiga. I bunten var bara
+  `server-only` och inloggningen utbytta: den inloggade användaren var Eriks
+  user.id från en miljövariabel. Id, secret och token maskades i utdata.
+- **`lookupOrganisation`:** ett bolag per org.nr, alla fält mappade.
+
+  | Bolag | Registreringsdatum | SNI | Postnummer, ort |
+  |---|---|---|---|
+  | Aktiebolaget Volvo (5560125790) | 1915-05-05 | 70100 | 40508 GÖTEBORG |
+  | Telefonaktiebolaget LM Ericsson (5560160680) | 1918-08-19 | 70100, 62201 | 16483 STOCKHOLM |
+  | H & M Hennes & Mauritz AB (5560427220) | 1943-08-07 | 70100 | 10638 STOCKHOLM |
+
+  Alla tre: `legalForm` `AB`, `active: true`, inte avregistrerade, ingen
+  avveckling, `advertisingBlock: null` (okänt) och en ifylld
+  verksamhetsbeskrivning.
+- **`fetchDocumentList`:** **tom lista för alla tre bolagen**, precis som i
+  steg A. Elementens form är därför fortfarande overifierad. **Nästa steg är
+  att prova med mindre aktiebolag** som har lämnat årsredovisningen
+  digitalt. Det behövs innan `/dokument` och iXBRL byggs.
 
 ## Hur liveadaptern fungerar i dag
 
@@ -191,17 +245,14 @@ Demoadaptern är klar och används av `/demo/app/marknad` och
 
 ## Öppna frågor (avgörs före vecka 2)
 
-1. **Vem skriver till `registry_cache`?** I dag skriver användaren själv
-   (insert/update-policy för `authenticated` i
-   `supabase/migrations/20260923120000_registry_cache.sql`). Det låter en
-   användare förfalska registerdata i sin egen cache, vilket kan påverka
-   Marknad-poängen och affärsplanen. **Alternativ:** bara servern skriver
-   (servicenyckel isolerad i `lib/server/`, inga insert/update-policies för
-   `authenticated`). **Beslut tas av Erik innan transporten skrivs.**
-2. **Utgångna rader rensas aldrig.** `expires_at` sätter ett tak på 7 dagar,
-   men ingenting tar bort raderna efter det. Lägg till rensning, t.ex. vid
-   läsning eller som ett schemalagt jobb, så att data inte sparas längre än
-   7 dagar.
+1. ~~**Vem skriver till `registry_cache`?**~~ **Avgjort 2026-09-23 (Erik):**
+   gemensam cache som bara servern läser och skriver
+   (`lib/server/registryCache.ts`, service role). Tabellen är stängd för alla
+   klienter. Se `docs/beslut.md` och `docs/arkitektur.md` avsnitt 9.
+2. **Utgångna rader rensas aldrig.** *Delvis löst 2026-09-23:* varje
+   `registryCache.get()` tar bort alla utgångna rader. Om cachen inte används
+   alls ligger raderna kvar, så ett schemalagt jobb behövs fortfarande för att
+   garantera 7 dagar.
 
 ## Kvar innan modulen är klar
 
@@ -210,7 +261,9 @@ Demoadaptern är klar och används av `/demo/app/marknad` och
 1. Spik med riktiga nycklar (`docs/dataspiken.md` §3): kan man söka på SNI, vilka
    iXBRL-taggar finns, går län att härleda, vad säger villkoren om lagring.
 2. Skriv transporten och skriv om `lib/server/registrySchemas.ts` mot det
-   verkliga svaret; byt `RegistryProvider.live.test.ts` mot riktiga anrop.
+   verkliga svaret (**Bolagsverket `/organisationer` och `/dokumentlista`
+   klart 2026-09-23**; kvar är SCB, `/dokument`/iXBRL och att koppla in
+   `lookupOrganisation` i adaptern); byt `RegistryProvider.live.test.ts` mot riktiga anrop.
    Respektera SCB:s gränser (2 000 rader/anrop, 10 anrop/10 s). Adaptern kastar `RegistryTransportError` om ett svar når 2 000 rader (troligen avkortat) tills paginering finns.
 3. ~~Läs Bolagsverkets villkor (Verifierat)~~ klart 2026-09-23. Grinden lyfts först när de tre kraven under "Licensgrind" är uppfyllda.
 4. Portens `employees`/`revenueKsek` är icke-nullbara, så bolag med okänt värde

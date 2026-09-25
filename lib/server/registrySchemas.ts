@@ -12,6 +12,12 @@ import { z } from "zod";
  * verkliga svaret. Adapterns domänlogik (filtrering, källstämpling, ärlighet
  * kring luckor) ska då inte behöva röras. Kontraktstestet grönt mot dessa
  * scheman bevisar vår mappning, inte att Bolagsverket/SCB ser ut så här.
+ *
+ * Uppdatering 2026-09-23: Bolagsverkets /organisationer och /dokumentlista är
+ * verifierade mot riktiga anrop och ligger i lib/server/bolagsverketSchemas.ts.
+ * Det som står här gäller fortfarande SCB:s bolagslista (RegistryRow) och
+ * iXBRL-nyckeltalen (AnnualFigures), och båda är fortfarande gissningar.
+ * AKTIEBOLAG_FORM = "AB" stämmer med Bolagsverkets organisationsform.kod.
  */
 
 /** ANTAGANDE: bolagsformskoden för aktiebolag i registret. */

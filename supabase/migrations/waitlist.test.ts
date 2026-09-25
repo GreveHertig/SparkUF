@@ -28,7 +28,7 @@ describe("supabase/migrations: väntelistan", () => {
   const all = statements(sql);
 
   it("tar bort alla rättigheter på tabellen från anon och authenticated", () => {
-    expect(all).toContain("revoke all on public.waitlist from anon, authenticated");
+    expect(all).toContain("revoke all on table public.waitlist from anon, authenticated");
   });
 
   it("ingen migrering ger anon eller authenticated någon rättighet på tabellen", () => {
@@ -42,16 +42,6 @@ describe("supabase/migrations: väntelistan", () => {
           /\bon all tables in schema\b/i.test(statement)),
     );
     expect(grantsToVisitors).toEqual([]);
-  });
-
-  it("har bara restrictive policyer på tabellen, ingen som öppnar för någon", () => {
-    const policies = all.filter((statement) => /^create policy .* on public\.waitlist\b/i.test(statement));
-    expect(policies.length).toBeGreaterThan(0);
-    for (const policy of policies) {
-      expect(policy).toMatch(/\bas restrictive\b/i);
-      expect(policy).toMatch(/using \(false\)/i);
-      expect(policy).toMatch(/with check \(false\)/i);
-    }
   });
 
   it("varje definition av join_waitlist är security definer med låst search_path, returnerar void och ger samma svar för dubbletter", () => {

@@ -118,3 +118,25 @@ SparkUF2 (Supabase, Frankfurt) är utvecklings- och betaprojektet trots
 PRODUCTION-märkningen i Supabase. Före lanseringen 30 november skapas
 ett separat produktionsprojekt med samma migreringar. Testanvändarna
 test-a och test-b är borttagna 2026-09-23.
+
+**`registry_cache` blir en gemensam cache som bara servern läser och skriver
+(Erik).** Tidigare skiss: cachen ägdes per användare och användaren skrev
+själv, vilket lät en användare förfalska registerdata som påverkar
+Marknad-poängen och affärsplanen. Nu: ingen `user_id`, unik nyckel
+`(source, request_key)`, RLS på utan policies och rättigheterna indragna från
+`anon`/`authenticated`, så att ingen klient kommer åt tabellen. Servern läser
+och skriver via `lib/server/registryCache.ts` med `SUPABASE_SERVICE_ROLE_KEY`,
+som är server-only och aldrig har `NEXT_PUBLIC_`-prefix. Det är projektets enda
+användning av service role, se `docs/arkitektur.md` avsnitt 9. Källa,
+hämtdatum och 7-dagarstaket står kvar, och `get()` tar bort utgångna rader.
+Ingenting skrivs till tabellen förrän dataspiken §6 fråga 4 är avgjord.
+
+## 2026-09-25
+
+**`waitlist` blir en stängd tabell i `CLOSED_TABLES` (Erik).** Allt ska gå
+genom `join_waitlist`. Policyn `using (false)` tas bort, `waitlist` läggs till
+i `CLOSED_TABLES` i `supabase/migrations/migrations.test.ts`, och `anon` och
+`authenticated` har inga rättigheter på tabellen (`revoke all`). Skäl: en
+`using (false)`-policy är vilseledande, eftersom den ser ut som en policy men
+inte gör något, och inkonsekvent, eftersom det då finns två olika sätt att
+markera en stängd tabell i kodbasen.

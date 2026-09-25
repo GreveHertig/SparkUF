@@ -27,20 +27,11 @@ create table public.waitlist (
 
 alter table public.waitlist enable row level security;
 
--- Inga rättigheter alls på tabellen för besökare eller inloggade.
-revoke all on public.waitlist from anon, authenticated;
-
--- Stänger direktåtkomst även om någon senare råkar ge anon eller
--- authenticated en rättighet på tabellen: en restrictive policy som aldrig är
--- sann stoppar varje rad. Ger ingen rättighet i sig. Finns också för att
--- migrations.test.ts kräver minst en policy per tabell; om den ska bytas mot
--- en ändrad testregel är ett öppet beslut för Erik (docs/status.md).
--- join_waitlist påverkas inte: den körs som tabellens ägare, som inte
+-- Stängd tabell (CLOSED_TABLES i migrations.test.ts): RLS på, inga
+-- policyer och inga rättigheter alls för besökare eller inloggade. Bara
+-- join_waitlist nedan når tabellen. Den körs som tabellens ägare, som inte
 -- omfattas av RLS.
-create policy "waitlist: ingen direktåtkomst" on public.waitlist
-  as restrictive for all to anon, authenticated
-  using (false)
-  with check (false);
+revoke all on table public.waitlist from anon, authenticated;
 
 -- Enda vägen att skriva upp sig. security definer: körs med ägarens
 -- rättigheter, eftersom anropande roller saknar rättigheter på tabellen.
