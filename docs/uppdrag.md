@@ -247,7 +247,7 @@ Bygg `/designsystem` som visar alla tokens och komponenter i alla tillstånd. Si
 
 ## 6. Sidor
 
-> **Två lägen.** Skärmarna nedan byggs en gång som delade skärmkomponenter och monteras på två ställen: under `/demo/...` (demoadaptrar, ingen inloggning, demoraden och `DemoDataBadge` synliga) och under `/app/...` (liveadaptrar, kräver inloggning). Onboardingen finns som `/demo/start/...` och `/start/...`. `/app` i listan nedan gäller båda lägena.
+> **Två lägen.** Skärmarna nedan byggs en gång som delade skärmkomponenter och monteras på två ställen: under `/demo/...` (demoadaptrar, ingen inloggning, demoraden och `DemoDataBadge` synliga) och under `/app/...` (liveadaptrar, kräver inloggning). Onboardingen finns som `/demo/start/...` och `/start/...`. `/app` i listan nedan gäller båda lägena. (Sedan 2026-09-26 har demot egna sidor under `/demo/<sida>`, till exempel `/demo/marknad`, i stället för de delade skärmarna. Se `docs/arkitektur.md`.)
 
 ### Publika sidor
 - **`/` Landningssida**, med Fonda-stilen från 5.1:
@@ -391,7 +391,7 @@ Skriv Vitest-tester för taken, det avtagande värdet, motsägelserna, att poän
 ## 9. Demoläget
 
 ### 9.1 Styrning
-- **Start:** via knappen "Starta demo" eller adressen `/demo`. Demot börjar alltid i onboardingen (`/demo/start`, val av ingång, profilsamtal och för Jonas idégenomlysningen) och går därefter in i appen under `/demo/app`. Ingen inloggning krävs.
+- **Start:** via knappen "Starta demo" eller adressen `/demo`. Demot börjar alltid i onboardingen (`/demo/start`, val av ingång, profilsamtal och för Jonas idégenomlysningen) och går därefter in i appen under `/demo` (Hem), med sidorna under `/demo/<sida>`. Ingen inloggning krävs.
 - **Demoraden:** en fast rad nederst i `ink-800`, som kan fällas ihop. Den visar:
   - persona och ingång
   - steg X av 12 och fas

@@ -170,8 +170,8 @@ och `getMarketOverview` börjar i SCB:s lista, `lib/server/scb.ts` kastar
 fortfarande, och `fetchAnnualFigures` (/dokument, iXBRL) är uppskjuten.
 Kontraktstestet är fortfarande grönt **mot mockad transport i en ANTAGEN
 svarsform** (`lib/server/registrySchemas.ts`). **Exponering är spärrad**, se
-"Licensgrind". Demoadaptern är klar och används av `/demo/app/marknad` och
-`/demo/app/kunder` (via Utskick och svar).
+"Licensgrind". Demoadaptern är klar och används av `/demo/marknad` och
+`/demo/validering` (via Utskick och svar).
 
 ## Bolagsverket-transporten (`lib/server/bolagsverket.ts`)
 

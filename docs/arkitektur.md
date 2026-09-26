@@ -14,7 +14,7 @@ Gemini, Tavily, registerkällor) — avgörs av den tunna route-filen som
 monterar skärmen, inte av skärmen själv.
 
 ```
-Route (app/demo/app/page.tsx)          Route (app/(app)/app/page.tsx, /app)
+Route (app/demo/(app)/page.tsx, /demo) Route (app/(app)/app/page.tsx, /app)
         │                                       │
         ▼                                       ▼
 adapters/demo/JourneyRepository.ts     adapters/live/JourneyRepository.ts
@@ -47,7 +47,7 @@ kommande sessioner.
 | Liveadaptrar | `adapters/live/*.ts` | Implementerar portarna. Alla kastar i dag `NotImplementedError` — se avsnitt 4. |
 | Delade skärmar | `screens/AppHome.tsx`, `screens/AppShell.tsx` | Tar emot data via props, ingen kunskap om demo/live. |
 | Formgivet "kommer snart" | `components/ui/ComingSoon.tsx` | Visas av en route i stället för ett fel när en liveadapter kastar `NotImplementedError`. |
-| Demoroute | `app/demo/app/layout.tsx`, `app/demo/app/page.tsx`, `app/demo/app/loading.tsx` | Monterar `AppShell`/`AppHome` med demoadaptrarna på `/demo/app`. |
+| Demoroute | `app/demo/**` (`layout.tsx`, `(app)/layout.tsx`, en sida per vy) | Demot på `/demo` (sedan 2026-09-26, se nedan). Sidorna anropar demoadaptrarna via portarna och har egen markup och egna stilar (`design/site.css`). De monterar **inte** skärmarna i `screens/`. |
 | Plattformsroute | `app/(app)/layout.tsx`, `app/(app)/app/page.tsx` | Monterar samma skärmar med liveadaptrarna på `/app`. |
 
 ## 3. Modulerna (avsnitt 14.3)
@@ -146,22 +146,29 @@ committen).
   poängbricka) tills `ProfileRepository` respektive `EvidenceRepository` är
   byggda live, i stället för att hela `/app` visar "Kommer snart". Det gör
   det synligt när en enskild adapter blir klar, innan alla är det.
+- **Demot har egna sidor, inte de delade skärmarna (2026-09-26).** Det
+  tidigare demot under `/demo/app` monterade `screens/` med demoadaptrarna.
+  Det är borttaget (finns i git-historiken) och ersatt av demot som byggdes
+  på grenen `experiment/landning-fonda`: samma portar och demoadaptrar, men egna sidor
+  i `app/demo/` och egna stilar. Portregeln gäller fortfarande (sidorna
+  läser bara via portarna, demot importerar aldrig liveadaptrar). Det som
+  inte längre gäller för demot är att skärmen är samma komponent som `/app`
+  monterar.
 - **Demoroutens klientkomponenter hämtar data med `useEffect`/`useState`,
   inte `use()`.** Ett första försök använde `use()` med promises memoiserade
   per `locale` via `useMemo`, men det kraschade med "An unknown Component is
   an async Client Component" när språket byttes (varje ny `locale` gav en ny
   promise-identitet till `use()`, vilket React/Next inte hanterade
-  tillförlitligt i en Client Component). `app/demo/app/layout.tsx` och
-  `page.tsx` anropar i stället demoadaptrarna i en `useEffect` med `[locale]`
+  tillförlitligt i en Client Component). `app/demo/(app)/layout.tsx` och
+  sidorna anropar i stället demoadaptrarna i en `useEffect` med `[locale]`
   som beroende och sätter datan i `useState` — standardmönstret för
-  klientdata som kan ändras efter första renderingen. `app/demo/app/loading.tsx`
-  är kvar som Next.js navigeringsladdning, inte som en Suspense-gräns.
+  klientdata som kan ändras efter första renderingen.
 - **Bara Hem är byggd som delad skärm.** Övriga sidor i `docs/uppdrag.md`
   avsnitt 6 (`/app/resan`, `/app/poang`, `/app/marknad`, med flera) byggs i
   senare sessioner, men portarna de kommer behöva finns redan deklarerade.
-- **`lib/demo-data/mock.ts` och `app/demo/page.tsx`** (Eriks ursprungliga
-  scaffolding) rördes inte i den här sessionen — de hör inte till
-  `/demo/app` och ligger utanför uppgiften.
+- **`lib/demo-data/mock.ts`** (Eriks ursprungliga scaffolding) rördes inte
+  i den här sessionen. (`app/demo/page.tsx` från samma tid är borttagen
+  2026-09-26 tillsammans med det gamla demot.)
 
 ## 8. Inloggning: tre lager (Session P1)
 

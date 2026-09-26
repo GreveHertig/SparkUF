@@ -47,7 +47,7 @@ sendMessage(message: string, history: CofounderMessage[], locale: Locale): Promi
 
 `adapters/demo/CofounderAgent.ts`: `sendMessage(message)` ekar tillbaka
 `"(Demo) Chatten är inte kopplad än: \"<meddelande>\""` — ingen skärm
-använder porten. Den **riktiga** demochatten (som syns i `/demo/app/medgrundaren`)
+använder porten. Den **riktiga** demochatten (som syns i `/demo/medgrundaren`)
 är helt skriptad separat i `adapters/demo/cofounderScript.ts` och går inte
 via den här porten alls — demot är förskrivet, inte en levande chatt.
 

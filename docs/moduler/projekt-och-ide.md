@@ -55,7 +55,7 @@ Ingen skärm använder `getProject` i dag.
 `getIdeaScreening` returnerar Jonas fiktiva idégenomlysning (padelhallar,
 uppdrag 9.4) — den enda ingången som är byggd (`/demo/start/ide`, Session
 5). Jonas fulla 12-stegsresa efter genomlysningen är inte byggd, så
-`/demo/app` visar fortfarande bara Saras scenario oavsett vilken ingång
+`/demo` visar fortfarande bara Saras scenario oavsett vilken ingång
 demot startades med (flaggat i `docs/status.md` Session 5).
 
 ## Acceptanskriterier
