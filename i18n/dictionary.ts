@@ -122,6 +122,7 @@ export type Dictionary = {
       legal: string;
       build: string;
       businessPlan: string;
+      marketing: string;
     };
     profileMenuLabel: string;
     /** Undertext under ordmärket i sidomenyn (artefaktens `.brand small`). */
@@ -375,6 +376,39 @@ export type Dictionary = {
       ej_uppfyllt: string;
       ej_tillämpligt: string;
     };
+  };
+  /** Marknadsföring (docs/moduler/marknadsforing.md), används i steg 11. */
+  marketingPage: {
+    title: string;
+    subtitle: string;
+    context: string;
+    messageTitle: string;
+    headlineLabel: string;
+    supportingLabel: string;
+    channelsTitle: string;
+    channelVerdict: {
+      recommended: string;
+      notNow: string;
+    };
+    planTitle: string;
+    /** `{week}` = veckans nummer. */
+    weekLabel: string;
+    draftTitle: string;
+    draftHint: string;
+    draftNote: string;
+    copyLabel: string;
+    copiedLabel: string;
+    basedOnLabel: string;
+    outcomeTitle: string;
+    outcomeEmpty: string;
+    outcomeLabels: {
+      posts: string;
+      replies: string;
+      meetings: string;
+      newCustomers: string;
+    };
+    weekColumn: string;
+    takeawayLabel: string;
   };
   buildPage: {
     title: string;

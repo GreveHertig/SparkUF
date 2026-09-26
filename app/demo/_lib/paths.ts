@@ -16,6 +16,7 @@ export const FONDA_DEMO_PATHS = {
   legal: `${FONDA_DEMO_BASE}/juridik`,
   build: `${FONDA_DEMO_BASE}/bygg`,
   businessPlan: `${FONDA_DEMO_BASE}/affarsplan`,
+  marketing: `${FONDA_DEMO_BASE}/marknadsforing`,
 } as const;
 
 export function journeyStepPath(stepNumber: number): string {

@@ -407,3 +407,7 @@ Playwright (cachad `npx`-installation, samma mönster som tidigare sessioner). K
 - **Tre tillstånd:** formuläret, fältfel (via `TextField`s `error`) eller formulärfel (`text-score-red`, `role="alert"`), och tack-texten (`role="status"`), som ersätter formuläret helt när adressen är mottagen. En dubblett ger samma tack-text som en ny adress, så att ingen kan ta reda på vilka adresser som finns.
 - **GDPR-raden** (`text-xs text-slate-500`) står direkt under knappen, så att den syns innan man skickar. Raden anger också vart man mejlar för att bli borttagen från listan.
 - Ingen ny token och ingen ny komponent i `components/ui/`.
+
+## Marknadsföring (gren `modul/marknadsforing`)
+Sidan `/demo/marknadsforing` återanvänder demots befintliga byggstenar: `PageHead`, `ExampleLabel`, `Locked`, `Pill`, `SourceTag`, `.fdd-rows`, `.fdd-quote` och `.fdd-table`. Enda nya stilen är `.fdd-activity`, en modifierare på `.fd-btn` så att planens aktivitetsknappar radbryts på mobil i stället för att klippas (`.fd-btn` har `white-space: nowrap`). Uppföljningen är en tabell i stället för `Figures` per vecka, som staplades på höjden och tog för mycket plats.
+
