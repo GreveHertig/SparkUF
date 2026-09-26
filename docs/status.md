@@ -2617,7 +2617,8 @@ migreringen.
 ### Återstår
 - **Adaptern:** `adapters/live/PulseProvider.ts` kastar fortfarande
   `NotImplementedError`. Den byggs på `modul/pulsen` enligt "Dagscachen".
-- **Migreringen är inte körd mot SparkUF2.** Kör den när adaptern byggs.
+- **Migreringen är körd** (rättat 2026-09-26): `pulse_fetches` kördes mot
+  SparkUF2 den 26/9. RLS är på och tabellen har sina 3 policyer.
 - **Tak för omförsök av `error`** samma dag bestäms i adaptern (se modul-docen).
 - **RLS-testet mot riktig databas** (`adapters/live/rls.live.test.ts`) täcker
   inte `pulse_fetches` än. Lägg till tabellen när migreringen körs.
@@ -2667,8 +2668,8 @@ Ingen migrering kördes mot databasen.
   build är gröna.
 
 ### Återstår
-- **Migreringen `pulse_fetches` är fortfarande inte körd mot SparkUF2.**
-  Adaptern fungerar inte mot den riktiga databasen förrän den körts.
+- **Migreringen `pulse_fetches` är körd** (rättat 2026-09-26): körd mot
+  SparkUF2 den 26/9, RLS på, 3 policyer.
 - **RLS-testet mot riktig databas** (`adapters/live/rls.live.test.ts`) täcker
   inte `pulse_fetches` än.
 - **Kommentaren i `app/(app)/app/page.tsx`** säger fortfarande att Pulsen är
@@ -2737,6 +2738,16 @@ Landningssidan och demot från `experiment/landning-fonda` är de officiella sid
 ### Kända problem
 - Interna namn säger fortfarande Fonda (`FondaTour`, `FondaDemoBar`, `fondaDemoIsolation`, lagringsnyckeln `spark:fonda-demo-state`). Nyckeln är medvetet kvar så att besökares sparade läge från gamla demot inte läses in.
 
+## Plan: en design för /demo och /app (gren `docs/plan-en-design`, PR mot `prototyp`, bara docs)
+
+### Klart
+- `docs/plan-en-design.md`: planen för att flytta demots sidor in i de delade skärmarna i `screens/`, så att `/demo` och `/app` ser likadana ut och bara skiljer sig i data. Skärmarna som påverkas, skillnaderna mot nuvarande `/app`, hur portregeln, Datalöftet och licensgrinden gäller, pågående arbete (Bruno, Oskar), ordningen i 11 PR:er och storleken. Ingen kod ändrad.
+- Rättat: migreringen `pulse_fetches` är körd mot SparkUF2 den 26/9 (RLS på, 3 policyer).
+
+### Återstår
+- Besluten i planen är förslag. De beslutas med Theo på söndag.
+- Fråga Oskar om `landning-bilder` (nya bilder av det nya demot, eller lägg ner grenen).
+
 ## Marknadsföring: ny modul, demosidan (klar 2026-09-26, gren `modul/marknadsforing`, PR mot `prototyp`)
 Ny, fristående modul som används i steg 11 (Första kunderna). Föreslagen av Kingen, godkänd av Erik 2026-09-26. Se `docs/moduler/marknadsforing.md`.
 
@@ -2754,3 +2765,4 @@ Ny, fristående modul som används i steg 11 (Första kunderna). Föreslagen av 
 - Liveadaptern (Gemini via `lib/server/gemini.ts`) och en Supabase-tabell för planen och utfallen, när de öppna frågorna i moduldokumentet är besvarade.
 - En sida i `/app` (plattformen) för modulen.
 - Rundturen (`tourSteps.ts`) har inget stopp på sidan.
+- `docs/plan-en-design.md`: sidan är byggd som övriga demosidor och flyttas till en skärm i `screens/` på samma sätt när planen genomförs. Planens rad om att `modul/marknadsforing` saknar commits gäller inte längre (Kingens gren).
