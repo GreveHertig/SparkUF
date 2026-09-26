@@ -7,7 +7,7 @@ import { TimeSkip } from "@/components/spark/TimeSkip";
 import { Card } from "@/components/ui/Card";
 import { EditorialHeading } from "@/components/ui/EditorialHeading";
 import { useI18n } from "@/i18n/context";
-import type { TranscriptItem } from "@/adapters/demo/cofounderScript";
+import type { TranscriptItem } from "@/ports/CofounderAgent";
 
 export type CofounderMoment = {
   id: string;

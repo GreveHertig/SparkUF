@@ -9,7 +9,7 @@ import type { DataType } from "@/design/tokens";
 import { useI18n } from "@/i18n/context";
 import { formatCount } from "@/i18n/format";
 import { getScoreLevel } from "@/score/levels";
-import type { Källa, ScoreSnapshot } from "@/core/domain";
+import type { DataKind, Källa, ScoreSnapshot } from "@/core/domain";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
 import type { Simulation } from "@/ports/SimulationProvider";
 import { fill } from "@/i18n/fill";
@@ -138,10 +138,12 @@ export function JourneyStepper({
 /**
  * Synlig etikett på block med påhittade företag, personer eller siffror
  * (Datalöftet, docs/uppdrag.md 1.2: påhittad data får aldrig se ut som
- * registerdata).
+ * registerdata). Visas bara för `dataKind="example"`, som bara demot sätter;
+ * riktig data (`"live"`) får ingen etikett.
  */
-export function ExampleLabel() {
+export function ExampleLabel({ dataKind }: { dataKind: DataKind }) {
   const { t } = useI18n();
+  if (dataKind !== "example") return null;
   return <p className="fdd-example">{t.site.demo.exampleLabel}</p>;
 }
 
