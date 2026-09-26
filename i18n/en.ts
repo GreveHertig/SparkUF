@@ -935,12 +935,20 @@ export const en = {
           body: "The email address you enter and when you entered it. No name, no phone number and no other details.",
         },
         {
+          heading: "Who is responsible",
+          body: "Spark UF is the data controller for the address.",
+        },
+        {
           heading: "Why",
-          body: "So we can let you know when the Spark beta opens. We don't use the address for anything else and we don't share it with anyone.",
+          body: "So we can let you know when the Spark beta opens. We save the address with your consent, which you give when you sign up. We don't use the address for anything else and we don't share it with anyone.",
         },
         {
           heading: "Where it is stored",
-          body: "In Spark's database at Supabase. The founders are the ones who can see the list.",
+          body: "In Spark's database at Supabase, stored within the EU. No one outside the Spark UF team can see the list.",
+        },
+        {
+          heading: "How long",
+          body: "The address is deleted after the launch, or earlier if you ask us to.",
         },
         {
           heading: "Getting removed",

@@ -939,12 +939,20 @@ export const sv = {
           body: "Bara mejladressen du skriver in och när du skrev in den. Inget namn, inget telefonnummer och inga andra uppgifter.",
         },
         {
+          heading: "Vem som ansvarar",
+          body: "Spark UF är personuppgiftsansvarig för adressen.",
+        },
+        {
           heading: "Varför",
-          body: "För att kunna meddela dig när betan av Spark öppnar. Vi använder inte adressen till något annat och delar den inte med någon.",
+          body: "För att kunna meddela dig när betan av Spark öppnar. Vi sparar adressen med ditt samtycke, som du ger när du skriver upp dig. Vi använder inte adressen till något annat och delar den inte med någon.",
         },
         {
           heading: "Var den finns",
-          body: "I Sparks databas hos Supabase. Bara grundarna kan se listan.",
+          body: "I Sparks databas hos Supabase, som lagras inom EU. Bara Spark UF-teamet kan se listan.",
+        },
+        {
+          heading: "Hur länge",
+          body: "Adressen raderas efter lanseringen, eller tidigare om du ber om det.",
         },
         {
           heading: "Bli borttagen",

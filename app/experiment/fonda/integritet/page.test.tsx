@@ -9,7 +9,7 @@ afterEach(() => cleanup());
 beforeEach(() => window.localStorage.removeItem("spark:locale"));
 
 describe("/experiment/fonda/integritet", () => {
-  it("säger vad som sparas, varför och hur man blir borttagen", () => {
+  it("säger vem som ansvarar, vad som sparas, varför, var, hur länge och hur man blir borttagen", () => {
     render(
       <LocaleProvider>
         <FondaPrivacyPage />
@@ -22,6 +22,10 @@ describe("/experiment/fonda/integritet", () => {
       expect(screen.getByRole("heading", { level: 2, name: section.heading })).toBeInTheDocument();
     }
     expect(screen.getByText(/spark\.ai\.uf@gmail\.com/)).toBeInTheDocument();
+    expect(screen.getByText(/Spark UF är personuppgiftsansvarig/)).toBeInTheDocument();
+    expect(screen.getByText(/med ditt samtycke/)).toBeInTheDocument();
+    expect(screen.getByText(/lagras inom EU\. Bara Spark UF-teamet/)).toBeInTheDocument();
+    expect(screen.getByText(/raderas efter lanseringen, eller tidigare om du ber om det/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: copy.back })).toHaveAttribute("href", "/experiment/fonda#besked");
   });
 });
