@@ -2559,6 +2559,11 @@ Grenen hade gått isär: lokalt fanns fjärde varvet (placering, 60 fps, layout)
 - Tester: `actions.test.ts` i fonda (giltig adress via `join_waitlist` och aldrig tabellen, samma svar för dubblett, honeypot sparar inget, spärren efter fem per IP och inte för andra IP, `x-real-ip`, ogiltig adress, databasfel), formulärtesterna i `page.test.tsx` (Server Action mockad) och `integritet/page.test.tsx`.
 - Verifierat: `typecheck`, `lint` (0 fel, 3 gamla varningar i `design-referens/`) och `test` (510 gröna). I produktionsbygget: ogiltig adress stoppas i webbläsaren, ett inskick med ifylld honeypot går hela vägen till Server Action och ger tacket (ingen rad skrivs), och länken öppnar integritetssidan. Ett riktigt inskick mot SparkUF2 är **inte** gjort, för att inte lägga en testadress på listan.
 
+### Server Actions i Codespaces (2026-09-26)
+- Inskick via Codespaces-adressen gav "This page couldn't load" (digest `2329807136@E80`). Serverloggen: `` `x-forwarded-host` header with value `congenial-pancake-…-3200.app.github.dev` does not match `origin` header with value `localhost:3200` from a forwarded Server Actions request. Aborting the action. `` följt av `Error: Invalid Server Actions request.` Codespaces-proxyn skriver om `Origin` till `localhost:<port>` men skickar Codespaces-adressen i `x-forwarded-host`, så Nexts CSRF-skydd stoppade varje Server Action.
+- `next.config.ts`: `experimental.serverActions.allowedOrigins` = `localhost:3000`, `localhost:3200` och `*.<GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN>`, **bara när `CODESPACES` är satt**. På Vercel är variabeln inte satt, och där gäller skyddet oförändrat. Inställningen läses när servern startar, så `next start` måste startas om efter en ändring.
+- Verifierat via Codespaces-adressen (privat port, med `X-Github-Token` och förbi Codespaces varningssida): POST 200, tacket visas, inga fel i serverloggen. Inskicket gjordes med ifylld honeypot, så ingen rad skrevs och Supabase-anropet prövades inte.
+
 ### Återstår
 - Inget i kopian.
 - Väntelistan: prova ett riktigt inskick mot SparkUF2 med en egen adress (och ta bort raden i dashboarden efteråt). Integritetstexten bör läsas av grundarna innan sidan visas publikt (särskilt "delar den inte med någon" och att bara grundarna ser listan).
