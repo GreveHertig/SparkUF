@@ -1,5 +1,10 @@
 # Beslutslogg
 
+> **Not (2026-09-26):** det gamla demot under `/demo/app/...` är borttaget
+> och ersatt av demot på `/demo` (sidorna ligger på `/demo/<sida>`, t.ex.
+> `/demo/marknad`). Rutterna nedan beskriver hur det var när texten skrevs.
+> Det gamla demot finns kvar i git-historiken.
+
 ## 2026-09-19
 
 **Design från artefakten överförs — endast utseendet.**

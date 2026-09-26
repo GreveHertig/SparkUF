@@ -200,8 +200,8 @@ visas för användaren.
   `NotImplementedError`, med hänvisning hit. Den behöver en
   cachningsstrategi innan den anropar Tavily på riktigt.
 
-Demoadaptrarna är klara. Pulsen används av `/demo/app` och
-`/demo/app/pulsen`, Webbresearch av ingen skärm än.
+Demoadaptrarna är klara. Pulsen används av `/demo` och
+`/demo/pulsen`, Webbresearch av ingen skärm än.
 
 Kända begränsningar (Pulsen):
 - "Bransch" härleds ur idéns ord. Det finns ingen riktig branschkolumn, så

@@ -1,382 +1,368 @@
 "use client";
 
-import type { ReactNode } from "react";
-import Link from "next/link";
-import { EditorialHeading } from "@/components/ui/EditorialHeading";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { DataFact } from "@/components/ui/DataFact";
-import { ConceptBadge } from "@/components/ui/ConceptBadge";
-import { NextStepCard } from "@/components/spark/NextStepCard";
-import { ToolRunCard } from "@/components/spark/ToolRunCard";
-import { ChatMessage } from "@/components/spark/ChatMessage";
-import { PulseCard } from "@/components/spark/PulseCard";
-import { VerdictCard } from "@/components/spark/VerdictCard";
-import { LegalMap } from "@/components/spark/LegalMap";
-import { SimulationCard } from "@/components/spark/SimulationCard";
+import { useEffect, useState, type ReactNode } from "react";
+import { Logo } from "@/components/ui/Logo";
+import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
+import { SourceTag } from "@/components/ui/SourceTag";
+import { ALL_PART_IDS, SCORE_PART_WEIGHTS } from "@/core/score";
 import { useI18n } from "@/i18n/context";
-import { formatSek } from "@/i18n/format";
-import type { JuridisktKrav } from "@/core/domain";
-import { WaitlistForm } from "./WaitlistForm";
+import { formatCount, formatSek } from "@/i18n/format";
+import { saraEngine } from "@/adapters/demo/sara";
+import {
+  demoRegistryProvider,
+  saraCompanies,
+  SARA_INDUSTRY_LABEL,
+  SARA_MARKET_SNI_CODE,
+} from "@/adapters/demo/RegistryProvider";
+import type { MarketOverview } from "@/ports/RegistryProvider";
+import { DemoLink } from "./_components/DemoLink";
+import { EmailSignup } from "./_components/EmailSignup";
+import { ScoreProof } from "./_components/ScoreProof";
+import { fill } from "@/i18n/fill";
 
-// Stegen grupperade i faserna (uppdrag 1.5) — bara för layout här, titlarna
-// kommer alltid ur `journeySteps`/`journeyPage.phaseNames`, aldrig hårdkodade.
+// Stegen grupperade i resans fyra faser, samma indelning som startsidan.
+// Titlar och beskrivningar kommer ur i18n (journeySteps, journeyPage).
 const STEP_KEYS = [
   "step1", "step2", "step3", "step4", "step5", "step6",
   "step7", "step8", "step9", "step10", "step11", "step12",
 ] as const;
 
-const JOURNEY_PHASES = [
-  { key: "discover", stepIndexes: [0, 1] },
-  { key: "tryPhase", stepIndexes: [2, 3, 4, 5] },
-  { key: "launch", stepIndexes: [6, 7, 8, 9] },
-  { key: "grow", stepIndexes: [10, 11] },
+const PHASES = [
+  { key: "discover", from: 1, to: 2 },
+  { key: "tryPhase", from: 3, to: 6 },
+  { key: "launch", from: 7, to: 10 },
+  { key: "grow", from: 11, to: 12 },
 ] as const;
 
-function FeatureCard({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** Rubrik i två delar: rak text och en kursiv fortsättning. */
+function Title({
+  as: Tag = "h2",
+  start,
+  em,
+  id,
+  emOnOwnLine = false,
+}: {
+  as?: "h1" | "h2";
+  start: string;
+  em: string;
+  id?: string;
+  emOnOwnLine?: boolean;
+}) {
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-6">
-      <div>
-        <p className="text-xl text-slate-900">{title}</p>
-        <p className="mt-1 text-sm leading-snug text-slate-600">{body}</p>
-      </div>
-      {children}
-    </div>
+    <Tag id={id} className={Tag === "h1" ? "fd-h1" : "fd-h2"}>
+      {start} <em className={emOnOwnLine ? "fd-em fd-em--block" : "fd-em"}>{em}</em>
+    </Tag>
   );
 }
 
-export default function LandningPage() {
+function Section({
+  id,
+  tone = "paper",
+  labelledBy,
+  children,
+}: {
+  id?: string;
+  tone?: "paper" | "white";
+  labelledBy: string;
+  children: ReactNode;
+}) {
+  return (
+    <section id={id} aria-labelledby={labelledBy} className={`fd-section fd-section--${tone}`}>
+      <div className="fd-wrap">{children}</div>
+    </section>
+  );
+}
+
+export default function FondaLandingPage() {
   const { t, locale } = useI18n();
+  const copy = t.site;
 
-  const legalItems: JuridisktKrav[] = [
-    {
-      id: "f-skatt",
-      rubrik: t.landingPage.legal.sampleItems.item1.rubrik,
-      beskrivning: t.landingPage.legal.sampleItems.item1.beskrivning,
-      gällerFör: ["aktiebolag", "enskild_firma"],
-      källa: { namn: "Skatteverket", hämtad: "2026-09-10", url: "https://www.skatteverket.se" },
-      status: "ej_uppfyllt",
-    },
-    {
-      id: "pub-avtal",
-      rubrik: t.landingPage.legal.sampleItems.item2.rubrik,
-      beskrivning: t.landingPage.legal.sampleItems.item2.beskrivning,
-      gällerFör: ["aktiebolag", "enskild_firma"],
-      källa: { namn: "Integritetsskyddsmyndigheten (IMY)", hämtad: "2026-09-10", url: "https://www.imy.se" },
-      status: "uppfyllt",
-    },
-  ];
+  const [market, setMarket] = useState<MarketOverview | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    demoRegistryProvider.getMarketOverview(locale).then((overview) => {
+      if (!cancelled) setMarket(overview);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
 
-  const hiasynthSimulation = {
-    question: t.landingPage.concepts.hiasynth.question,
-    populationSize: 4200,
-    source: { namn: locale === "sv" ? "Hiasynth (koncept)" : "Hiasynth (concept)", hämtad: "2026-09-01" },
-    result: t.landingPage.concepts.hiasynth.result,
-    uncertaintyRangeLabel: t.landingPage.concepts.hiasynth.uncertaintyRangeLabel,
-  };
+  // Medgrundarens kort: det riktiga demots nästa steg efter Domen (steg 06).
+  const verdictBeat = saraEngine.findLatestBeatIndexForStep(6, saraEngine.beats.length - 1) ?? 0;
+  const nextStep = saraEngine.getJourneySummaryForBeat(verdictBeat, locale).nextStep;
+  const sampleCompanies = saraCompanies.slice(0, 3);
 
   return (
-    <>
-      {/* Hero */}
-      <section className="bg-ink-800 px-6 py-20 sm:py-28">
-        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div>
-            <Eyebrow tone="light">{t.landingPage.hero.eyebrow}</Eyebrow>
-            <EditorialHeading as="h1" className="mt-3 text-5xl leading-[1.05] text-paper-50 sm:text-6xl">
-              {t.landingPage.hero.headingBefore}{" "}
-              <EditorialHeading.Em>{t.landingPage.hero.headingEmphasis}</EditorialHeading.Em>{" "}
-              {t.landingPage.hero.headingAfter}
-            </EditorialHeading>
-            <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate-300">{t.landingPage.hero.subtitle}</p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link
-                href="/demo"
-                className="rounded-full bg-accent-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              >
-                {t.landingPage.hero.startDemoCta}
-              </Link>
-              <Link
-                href="/skapa-konto"
-                className="rounded-full border border-slate-500 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors hover:border-slate-300"
-              >
-                {t.landingPage.hero.createAccountCta}
-              </Link>
+    <div className="fd">
+      <header className="fd-nav">
+        <div className="fd-nav__inner">
+          <a href="#top" aria-label={copy.nav.home} className="fd-nav__logo">
+            <Logo height={18} />
+          </a>
+          <nav aria-label={copy.nav.label} className="fd-nav__links">
+            <a href="#resan">{copy.nav.journey}</a>
+            <a href="#registret">{copy.nav.registry}</a>
+            <a href="#poangen">{copy.nav.score}</a>
+            <a href="#pris">{copy.nav.price}</a>
+          </nav>
+          <div className="fd-nav__actions">
+            <LanguageSwitch />
+            <DemoLink compact className="fd-btn--sm" />
+          </div>
+        </div>
+      </header>
+
+      <main>
+        {/* Hero */}
+        <section id="top" aria-labelledby="fd-hero-title" className="fd-hero">
+          <div className="fd-wrap">
+            <div className="fd-hero__copy">
+              <Title as="h1" id="fd-hero-title" start={copy.hero.titleStart} em={copy.hero.titleEm} />
+              <p className="fd-lede fd-hero__lede">{copy.hero.lede}</p>
+              <div className="fd-hero__ctas">
+                <DemoLink />
+                <a href="#besked" className="fd-btn fd-btn--secondary">
+                  {copy.notifyLink}
+                </a>
+              </div>
             </div>
-            <WaitlistForm className="mt-8 max-w-md" />
+            <div className="fd-hero__proof">
+              <ScoreProof />
+            </div>
           </div>
-          <NextStepCard
-            eyebrow={t.landingPage.hero.productCard.eyebrow}
-            title={t.landingPage.hero.productCard.title}
-            why={t.landingPage.hero.productCard.why}
-            maxPoints={t.landingPage.hero.productCard.maxPoints}
-            estimatedTime={t.landingPage.hero.productCard.estimatedTime}
-            doneItems={t.landingPage.hero.productCard.doneItems}
-            actionLabel={t.landingPage.hero.productCard.action}
-            className="shadow-xl"
-          />
-        </div>
-      </section>
+        </section>
 
-      {/* 1. Problemet */}
-      <section className="mx-auto max-w-3xl px-6 py-20 text-center">
-        <Eyebrow>{t.landingPage.problem.eyebrow}</Eyebrow>
-        <EditorialHeading as="h2" className="mt-3 text-3xl sm:text-4xl">
-          {t.landingPage.problem.title}
-        </EditorialHeading>
-        <p className="mt-4 text-lg leading-relaxed text-slate-600">{t.landingPage.problem.body}</p>
-      </section>
+        {/* Resan */}
+        <Section id="resan" labelledBy="fd-journey-title" tone="white">
+          <div className="fd-head">
+            <Title id="fd-journey-title" start={copy.journey.titleStart} em={copy.journey.titleEm} />
+            <p className="fd-lede">{copy.journey.lede}</p>
+          </div>
 
-      {/* 2. Datalöftet */}
-      <section className="bg-white px-6 py-20">
-        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:items-center">
-          <div>
-            <Eyebrow>{t.landingPage.dataPromise.eyebrow}</Eyebrow>
-            <EditorialHeading as="h2" className="mt-3 text-3xl sm:text-4xl">
-              {t.landingPage.dataPromise.title}
-            </EditorialHeading>
-            <p className="mt-4 text-lg leading-relaxed text-slate-600">{t.landingPage.dataPromise.body}</p>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <DataFact
-              label={t.landingPage.dataPromise.companyCountLabel}
-              value={312}
-              source={{ namn: "Bolagsverket", hämtad: "2026-09-14", url: "https://bolagsverket.se" }}
-              className="rounded-lg border border-slate-200 p-4"
-            />
-            <DataFact
-              label={t.landingPage.dataPromise.medianRevenueLabel}
-              value={formatSek(4_200_000, locale)}
-              source={{ namn: "SCB", hämtad: "2026-09-14" }}
-              className="rounded-lg border border-slate-200 p-4"
-            />
-            <DataFact
-              label={t.landingPage.dataPromise.growthShareLabel}
-              value={18}
-              unit="%"
-              source={{ namn: "SCB", hämtad: "2026-09-14" }}
-              className="rounded-lg border border-slate-200 p-4"
-            />
-          </div>
-        </div>
-      </section>
+          <div className="fd-journey">
+            <ol className="fd-stepper" aria-label={copy.journey.stepsListLabel}>
+              {STEP_KEYS.map((key, index) => (
+                <li key={key} className="fd-stepper__item">
+                  <span className="fd-stepper__num">{pad(index + 1)}</span>
+                  <span className="fd-stepper__title">{t.journeySteps[key].title}</span>
+                </li>
+              ))}
+            </ol>
 
-      {/* 3. Resan i rutnät */}
-      <section className="px-6 py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="max-w-2xl">
-            <Eyebrow>{t.landingPage.journey.eyebrow}</Eyebrow>
-            <EditorialHeading as="h2" className="mt-3 text-3xl sm:text-4xl">
-              {t.landingPage.journey.title}
-            </EditorialHeading>
-            <p className="mt-4 text-lg leading-relaxed text-slate-600">{t.landingPage.journey.subtitle}</p>
-          </div>
-          <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {JOURNEY_PHASES.map((phase) => (
-              <div key={phase.key} className="flex flex-col gap-3">
-                <p
-                  className="text-xs font-semibold uppercase text-accent-700"
-                  style={{ letterSpacing: "var(--tracking-label)" }}
-                >
-                  {t.journeyPage.phaseNames[phase.key]}
-                </p>
-                <p className="text-sm italic text-slate-500">&ldquo;{t.landingPage.journey.phaseQuotes[phase.key]}&rdquo;</p>
-                <ul className="flex flex-col gap-2">
-                  {phase.stepIndexes.map((index) => {
-                    const step = t.journeySteps[STEP_KEYS[index]];
-                    return (
-                      <li key={index} className="rounded-md border border-slate-200 bg-white p-3">
-                        <p className="font-numeric text-xs text-slate-400">{String(index + 1).padStart(2, "0")}</p>
-                        <p className="text-sm font-semibold text-slate-900">{step.title}</p>
+            <div className="fd-phases">
+              {PHASES.map((phase) => (
+                <div key={phase.key} className="fd-phase">
+                  <p className="fd-phase__meta">
+                    <span className="fd-phase__name">{t.journeyPage.phaseNames[phase.key]}</span>
+                    <span className="fd-phase__range">
+                      {fill(copy.journey.phaseSteps, { from: pad(phase.from), to: pad(phase.to) })}
+                    </span>
+                  </p>
+                  <ul className="fd-phase__steps">
+                    {STEP_KEYS.slice(phase.from - 1, phase.to).map((key) => (
+                      <li key={key}>
+                        <span className="fd-phase__steptitle">{t.journeySteps[key].title}</span>
+                        <span className="fd-phase__stepline">{t.journeySteps[key].oneLiner}</span>
                       </li>
-                    );
-                  })}
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Section>
+
+        {/* Registret */}
+        <Section id="registret" labelledBy="fd-registry-title">
+          <div className="fd-split">
+            <div className="fd-split__text">
+              <Title id="fd-registry-title" start={copy.registry.titleStart} em={copy.registry.titleEm} />
+              <p className="fd-lede">{copy.registry.body}</p>
+              <ul className="fd-checks">
+                {copy.registry.points.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            </div>
+
+            <figure className="fd-panel fd-register">
+              <div className="fd-register__head">
+                <div>
+                  <p className="fd-register__title">{SARA_INDUSTRY_LABEL[locale]}</p>
+                  <p className="fd-register__sni">{fill(copy.registry.cardSni, { code: SARA_MARKET_SNI_CODE })}</p>
+                </div>
+                <span className="fd-pill fd-pill--fiction">{copy.proof.fictional}</span>
+              </div>
+
+              {market && (
+                <>
+                  <dl className="fd-register__facts">
+                    <div>
+                      <dt>{copy.registry.companies}</dt>
+                      <dd>{formatCount(market.companyCount, locale)}</dd>
+                    </div>
+                    <div>
+                      <dt>{copy.registry.median}</dt>
+                      <dd>{formatSek(market.medianRevenueKsek * 1000, locale)}</dd>
+                    </div>
+                    <div>
+                      <dt>{copy.registry.growth}</dt>
+                      <dd>{market.growthSharePercent} %</dd>
+                    </div>
+                  </dl>
+                  <div className="fd-register__source">
+                    <SourceTag source={market.source} dataType="register" />
+                  </div>
+                  {market.basis && (
+                    <p className="fd-register__basis">
+                      {fill(copy.registry.basis, {
+                        median: formatCount(market.basis.medianRevenueCompanies, locale),
+                        growth: formatCount(market.basis.growthCompanies, locale),
+                        total: formatCount(market.companyCount, locale),
+                      })}
+                    </p>
+                  )}
+                </>
+              )}
+
+              <div className="fd-register__list">
+                <p className="fd-register__listtitle">{copy.registry.sampleTitle}</p>
+                <ul>
+                  {sampleCompanies.map((company) => (
+                    <li key={company.name}>
+                      <span>{company.name}</span>
+                      <span className="fd-register__meta">
+                        {company.employees} {copy.registry.employeesUnit}, {company.county}
+                      </span>
+                    </li>
+                  ))}
                 </ul>
               </div>
-            ))}
+              <figcaption className="fd-note">{copy.registry.fictionalNote}</figcaption>
+            </figure>
           </div>
-        </div>
-      </section>
+        </Section>
 
-      {/* 4. Fyra saker Medgrundaren gör */}
-      <section className="bg-white px-6 py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="max-w-2xl">
-            <Eyebrow>{t.landingPage.cofounder.eyebrow}</Eyebrow>
-            <EditorialHeading as="h2" className="mt-3 text-3xl sm:text-4xl">
-              {t.landingPage.cofounder.title}
-            </EditorialHeading>
-            <p className="mt-4 text-lg leading-relaxed text-slate-600">{t.landingPage.cofounder.subtitle}</p>
+        {/* Poängen */}
+        <Section id="poangen" labelledBy="fd-score-title" tone="white">
+          <div className="fd-head fd-head--center">
+            <Title id="fd-score-title" start={copy.score.titleStart} em={copy.score.titleEm} emOnOwnLine />
+            <p className="fd-lede">{copy.score.lede}</p>
           </div>
-          <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <FeatureCard title={t.landingPage.cofounder.nextStep.title} body={t.landingPage.cofounder.nextStep.body}>
-              <div className="flex items-center gap-3 rounded-md border border-dashed border-slate-300 bg-slate-50 p-3.5">
-                <Eyebrow>{t.landingPage.hero.productCard.eyebrow}</Eyebrow>
-                <span className="text-sm font-medium text-accent-700">
-                  {t.common.upToPointsBefore} <span className="font-numeric">{t.landingPage.hero.productCard.maxPoints}</span>{" "}
-                  {t.common.upToPointsAfter} · <span className="font-numeric">{t.landingPage.hero.productCard.estimatedTime}</span>
+
+          <div className="fd-weights">
+            <p className="fd-weights__label">{copy.score.weightsLabel}</p>
+            <ol
+              className="fd-weights__list"
+              style={{ ["--cols" as string]: ALL_PART_IDS.map((id) => `${SCORE_PART_WEIGHTS[id]}fr`).join(" ") }}
+            >
+              {ALL_PART_IDS.map((id) => (
+                <li
+                  key={id}
+                  className="fd-weight"
+                  style={{ ["--share" as string]: `${(SCORE_PART_WEIGHTS[id] / 18) * 100}%` }}
+                >
+                  <span className="fd-weight__bar" aria-hidden="true" />
+                  <span className="fd-weight__name">{t.score.parts[id]}</span>
+                  <span className="fd-weight__value">{SCORE_PART_WEIGHTS[id]}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <ul className="fd-rules">
+            {copy.score.rules.map((rule) => (
+              <li key={rule.title}>
+                <p className="fd-rules__title">{rule.title}</p>
+                <p className="fd-rules__body">{rule.body}</p>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        {/* Medgrundaren */}
+        <Section labelledBy="fd-cofounder-title">
+          <div className="fd-split fd-split--reverse">
+            <div className="fd-split__text">
+              <Title id="fd-cofounder-title" start={copy.cofounder.titleStart} em={copy.cofounder.titleEm} />
+              <p className="fd-lede">{copy.cofounder.body}</p>
+            </div>
+
+            <figure className="fd-panel fd-nextstep">
+              <div className="fd-nextstep__head">
+                <p className="fd-nextstep__label">{copy.cofounder.cardLabel}</p>
+                <span className="fd-pill fd-pill--fiction">{copy.proof.fictional}</span>
+              </div>
+              <p className="fd-nextstep__eyebrow">{nextStep.eyebrow}</p>
+              <p className="fd-nextstep__title">{nextStep.title}</p>
+              <p className="fd-nextstep__why">{nextStep.why}</p>
+              {nextStep.doneItems.length > 0 && (
+                <div className="fd-nextstep__done">
+                  <p>{copy.cofounder.doneLabel}</p>
+                  <ul className="fd-checks fd-checks--small">
+                    {nextStep.doneItems.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="fd-nextstep__foot">
+                <span className="fd-nextstep__action">{nextStep.actionLabel}</span>
+                <span className="fd-nextstep__points">
+                  {fill(copy.cofounder.pointsTemplate, { points: nextStep.maxPoints })}
                 </span>
               </div>
-            </FeatureCard>
-            <FeatureCard title={t.landingPage.cofounder.toolRun.title} body={t.landingPage.cofounder.toolRun.body}>
-              <ToolRunCard label={t.landingPage.cofounder.toolRun.label} steps={t.landingPage.cofounder.toolRun.steps} />
-            </FeatureCard>
-            <FeatureCard title={t.landingPage.cofounder.honesty.title} body={t.landingPage.cofounder.honesty.body}>
-              <div className="flex flex-col gap-2">
-                <ChatMessage role="founder" text={t.landingPage.cofounder.honesty.founderLine} />
-                <ChatMessage role="cofounder" text={t.landingPage.cofounder.honesty.cofounderLine} />
-              </div>
-            </FeatureCard>
-            <FeatureCard title={t.landingPage.cofounder.pulse.title} body={t.landingPage.cofounder.pulse.body}>
-              <PulseCard
-                category={t.landingPage.cofounder.pulse.category}
-                headline={t.landingPage.cofounder.pulse.headline}
-                whyItMatters={t.landingPage.cofounder.pulse.whyItMatters}
-                timestamp={t.landingPage.cofounder.pulse.timestamp}
-                source={{ namn: "Bolagsverket", hämtad: "2026-09-19" }}
-              />
-            </FeatureCard>
+              <figcaption className="fd-note">{copy.cofounder.fictionalNote}</figcaption>
+            </figure>
           </div>
-        </div>
-      </section>
+        </Section>
 
-      {/* 5. Poängen som mäter bevis */}
-      <section className="px-6 py-20">
-        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:items-center">
-          <div>
-            <Eyebrow>{t.landingPage.score.eyebrow}</Eyebrow>
-            <EditorialHeading as="h2" className="mt-3 text-3xl sm:text-4xl">
-              {t.landingPage.score.title}
-            </EditorialHeading>
-            <p className="mt-4 text-lg leading-relaxed text-slate-600">{t.landingPage.score.body}</p>
+        {/* Pris */}
+        <Section id="pris" labelledBy="fd-price-title" tone="white">
+          <div className="fd-head fd-head--center">
+            <Title id="fd-price-title" start={copy.price.titleStart} em={copy.price.titleEm} />
           </div>
-          <VerdictCard
-            score={54}
-            headline={t.landingPage.score.verdictHeadline}
-            reasoning={t.landingPage.score.verdictReasoning}
-          />
-        </div>
-      </section>
+          <div className="fd-price">
+            <p className="fd-price__name">{copy.price.name}</p>
+            <p className="fd-price__amount">
+              {copy.price.amount}
+              <span>{copy.price.unit}</span>
+            </p>
+            <p className="fd-price__desc">{copy.price.description}</p>
+            <ul className="fd-checks fd-checks--dark">
+              {copy.price.features.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
+            <p className="fd-price__excluded">{copy.price.excluded}</p>
+            <a href="#besked" className="fd-btn fd-btn--light">
+              {copy.notifyLink}
+            </a>
+            <p className="fd-price__note">{copy.price.note}</p>
+          </div>
+        </Section>
 
-      {/* 6. Juridisk koll */}
-      <section className="bg-white px-6 py-20">
-        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:items-center">
-          <div>
-            <Eyebrow>{t.landingPage.legal.eyebrow}</Eyebrow>
-            <EditorialHeading as="h2" className="mt-3 text-3xl sm:text-4xl">
-              {t.landingPage.legal.title}
-            </EditorialHeading>
-            <p className="mt-4 text-lg leading-relaxed text-slate-600">{t.landingPage.legal.body}</p>
-            <p className="mt-4 text-sm text-slate-500">{t.legalPage.disclaimer}</p>
+        {/* Avslut */}
+        <Section id="besked" labelledBy="fd-close-title">
+          <div className="fd-close">
+            <Title id="fd-close-title" start={copy.close.titleStart} em={copy.close.titleEm} emOnOwnLine />
+            <p className="fd-lede">{copy.close.body}</p>
+            <EmailSignup />
+            <DemoLink className="fd-close__demo" />
           </div>
-          <LegalMap krav={legalItems} />
-        </div>
-      </section>
+        </Section>
+      </main>
 
-      {/* 7. Minnet som chattutdrag */}
-      <section className="px-6 py-20">
-        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:items-center">
-          <div>
-            <Eyebrow>{t.landingPage.memory.eyebrow}</Eyebrow>
-            <EditorialHeading as="h2" className="mt-3 text-3xl sm:text-4xl">
-              {t.landingPage.memory.title}
-            </EditorialHeading>
-            <p className="mt-4 text-lg leading-relaxed text-slate-600">{t.landingPage.memory.body}</p>
-          </div>
-          <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-5">
-            <ChatMessage role="founder" text={t.landingPage.memory.founderLine} />
-            <ChatMessage role="cofounder" text={t.landingPage.memory.cofounderLine} />
-          </div>
+      <footer className="fd-footer">
+        <div className="fd-wrap fd-footer__inner">
+          <Logo height={16} />
+          <p>{copy.footer.note}</p>
+          <LanguageSwitch />
         </div>
-      </section>
-
-      {/* 8. Koncept på väg: Hiasynth och Lovable */}
-      <section className="bg-white px-6 py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="max-w-2xl">
-            <Eyebrow>{t.landingPage.concepts.eyebrow}</Eyebrow>
-            <EditorialHeading as="h2" className="mt-3 text-3xl sm:text-4xl">
-              {t.landingPage.concepts.title}
-            </EditorialHeading>
-            <p className="mt-4 text-lg leading-relaxed text-slate-600">{t.landingPage.concepts.body}</p>
-          </div>
-          <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <FeatureCard title={t.landingPage.concepts.hiasynth.title} body={t.landingPage.concepts.hiasynth.body}>
-              <SimulationCard simulation={hiasynthSimulation} />
-            </FeatureCard>
-            <FeatureCard title={t.landingPage.concepts.lovable.title} body={t.landingPage.concepts.lovable.body}>
-              <div className="flex flex-col gap-3">
-                <ConceptBadge />
-                <ToolRunCard label={t.landingPage.concepts.lovable.creditsLabel} steps={t.landingPage.concepts.lovable.buildSteps} />
-              </div>
-            </FeatureCard>
-          </div>
-        </div>
-      </section>
-
-      {/* 9. Priser, FAQ och avslutande uppmaning */}
-      <section className="px-6 py-20">
-        <div className="mx-auto max-w-3xl rounded-lg border border-slate-200 bg-white p-8 text-center">
-          <Eyebrow>{t.landingPage.pricingTeaser.eyebrow}</Eyebrow>
-          <EditorialHeading as="h2" className="mt-3 text-3xl">
-            {t.landingPage.pricingTeaser.title}
-          </EditorialHeading>
-          <p className="mt-3 text-base leading-relaxed text-slate-600">{t.landingPage.pricingTeaser.body}</p>
-          <Link
-            href="/priser"
-            className="mt-6 inline-flex items-center gap-1 rounded-full bg-accent-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            {t.landingPage.pricingTeaser.cta}
-          </Link>
-        </div>
-      </section>
-
-      <section id="faq" className="bg-white px-6 py-20">
-        <div className="mx-auto max-w-3xl">
-          <div className="text-center">
-            <Eyebrow>{t.landingPage.faq.eyebrow}</Eyebrow>
-            <EditorialHeading as="h2" className="mt-3 text-3xl">
-              {t.landingPage.faq.title}
-            </EditorialHeading>
-          </div>
-          <dl className="mt-10 flex flex-col gap-6">
-            {[
-              t.landingPage.faq.q1,
-              t.landingPage.faq.q2,
-              t.landingPage.faq.q3,
-              t.landingPage.faq.q4,
-              t.landingPage.faq.q5,
-            ].map((item) => (
-              <div key={item.question} className="border-b border-slate-200 pb-6">
-                <dt className="text-base font-semibold text-slate-900">{item.question}</dt>
-                <dd className="mt-2 text-sm leading-relaxed text-slate-600">{item.answer}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
-
-      <section className="bg-ink-800 px-6 py-20 text-center">
-        <div className="mx-auto max-w-2xl">
-          <EditorialHeading as="h2" className="text-3xl text-paper-50 sm:text-4xl">
-            {t.landingPage.finalCta.title}
-          </EditorialHeading>
-          <p className="mt-4 text-lg text-slate-300">{t.landingPage.finalCta.body}</p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/demo"
-              className="rounded-full bg-accent-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            >
-              {t.landingPage.finalCta.startDemoCta}
-            </Link>
-            <Link
-              href="/skapa-konto"
-              className="rounded-full border border-slate-500 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors hover:border-slate-300"
-            >
-              {t.landingPage.finalCta.createAccountCta}
-            </Link>
-          </div>
-          <WaitlistForm className="mx-auto mt-10 max-w-md" />
-        </div>
-      </section>
-    </>
+      </footer>
+    </div>
   );
 }

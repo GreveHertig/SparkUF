@@ -241,4 +241,4 @@ steg 05.
   frågor ovan) innan den ens får övervägas.
 - `OutreachPrep` (mejlsökning och utkast): byggd, grindad, ingen liveyta, testad
   mot mockade tjänster. Exponering är spärrad till allowlisten.
-- Demoadapterna är klara; `/demo/app/kunder` använder `OutreachProvider`.
+- Demoadapterna är klara; `/demo/validering` använder `OutreachProvider`.

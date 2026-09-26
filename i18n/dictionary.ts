@@ -759,4 +759,124 @@ export type Dictionary = {
       { title: string; description: string }
     >;
   };
+  /** Startsidan (/), integritetstexten (/integritet) och demot (/demo).
+   * Platshållare: {from}, {to}, {code}, {median}, {growth}, {total},
+   * {points}, {count}, {current}. */
+  site: {
+    nav: { label: string; home: string; journey: string; registry: string; score: string; price: string };
+    demoLink: { label: string; note: string };
+    notifyLink: string;
+    hero: { titleStart: string; titleEm: string; lede: string };
+    proof: {
+      regionLabel: string;
+      idea: string;
+      ideaLine: string;
+      fictional: string;
+      scoreLabel: string;
+      outOf: string;
+      toggle: string;
+      toggleHint: string;
+      sources: { profile: string; calls: string };
+      deltaReason: string;
+      partsLabel: string;
+      lockedCount: string;
+      answersLabel: string;
+      confirms: string;
+      contradicts: string;
+    };
+    journey: { titleStart: string; titleEm: string; lede: string; phaseSteps: string; stepsListLabel: string };
+    registry: {
+      titleStart: string;
+      titleEm: string;
+      body: string;
+      points: string[];
+      cardSni: string;
+      companies: string;
+      median: string;
+      growth: string;
+      basis: string;
+      sampleTitle: string;
+      employeesUnit: string;
+      fictionalNote: string;
+    };
+    score: {
+      titleStart: string;
+      titleEm: string;
+      lede: string;
+      weightsLabel: string;
+      rules: { title: string; body: string }[];
+    };
+    cofounder: {
+      titleStart: string;
+      titleEm: string;
+      body: string;
+      cardLabel: string;
+      doneLabel: string;
+      pointsTemplate: string;
+      fictionalNote: string;
+    };
+    price: {
+      titleStart: string;
+      titleEm: string;
+      name: string;
+      amount: string;
+      unit: string;
+      description: string;
+      features: string[];
+      excluded: string;
+      note: string;
+    };
+    close: {
+      titleStart: string;
+      titleEm: string;
+      body: string;
+      emailLabel: string;
+      placeholder: string;
+      submit: string;
+      submitting: string;
+      /** Honeypot-fältets etikett. Syns aldrig för människor (och döljs för skärmläsare). */
+      honeypotLabel: string;
+      invalid: string;
+      undeliverable: string;
+      /** "Menade du {email}?" med den rättade adressen. */
+      didYouMean: string;
+      joined: string;
+      unexpected: string;
+      rateLimited: string;
+      privacyNote: string;
+      privacyLink: string;
+    };
+    privacy: {
+      title: string;
+      intro: string;
+      sections: { heading: string; body: string }[];
+      back: string;
+    };
+    footer: { note: string };
+    demo: {
+      badge: string;
+      /** Synlig etikett på block med påhittade företag och siffror (Datalöftet). */
+      exampleLabel: string;
+      navLabel: string;
+      backToLanding: string;
+      stepOf: string;
+      nextAction: string;
+      scoreLink: string;
+      /** Rubriken över stegets höjdpunkter på en stegsida i kopian. */
+      stepHighlightsTitle: string;
+      journeyTitle: string;
+      noPulse: string;
+      historyLabel: string;
+      unlocksAfter: string;
+      pointsGain: string;
+      bar: {
+        label: string;
+        back: string;
+        next: string;
+        position: string;
+        reset: string;
+        resetConfirm: string;
+      };
+    };
+  };
 };

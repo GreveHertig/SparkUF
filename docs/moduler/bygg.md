@@ -88,4 +88,4 @@ någonsin skickas vidare till en extern byggtjänst.
 stub, **avsiktligt permanent tills ett Lovable-partnerskap ingås** — samma
 situation som Simuleringar. `adapters/live/BuildProvider.ts` kastar
 `NotImplementedError` för alla tre metoderna. Demoadaptern är klar och
-används av `/demo/app/bygg`.
+används av `/demo/bygg`.
