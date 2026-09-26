@@ -10,18 +10,40 @@ import { TOUR_STEPS } from "@/adapters/demo/tourSteps";
 import { toFondaPath } from "../_lib/paths";
 
 const SPOTLIGHT_PADDING = 8;
+const SPOTLIGHT_RADIUS = 16;
 const RECT_TOLERANCE = 0.5;
 const ESTIMATED_CARD_HEIGHT = 230;
 
 type SpotlightRect = { top: number; left: number; width: number; height: number };
 
+// Hela pixlar: bråkdelar ger kantutjämnade halvpixelkanter runt hålet.
 function toSpotlightRect(domRect: DOMRect): SpotlightRect {
+  const left = Math.round(domRect.left - SPOTLIGHT_PADDING);
+  const top = Math.round(domRect.top - SPOTLIGHT_PADDING);
   return {
-    top: domRect.top - SPOTLIGHT_PADDING,
-    left: domRect.left - SPOTLIGHT_PADDING,
-    width: domRect.width + SPOTLIGHT_PADDING * 2,
-    height: domRect.height + SPOTLIGHT_PADDING * 2,
+    top,
+    left,
+    width: Math.round(domRect.right + SPOTLIGHT_PADDING) - left,
+    height: Math.round(domRect.bottom + SPOTLIGHT_PADDING) - top,
   };
+}
+
+/**
+ * Mörkläggningen är ett enda lager: hela skärmen minus ett rundat hål,
+ * klippt med `evenodd`. Inga rutor som möts, alltså inga skarvar.
+ */
+function scrimClipPath(rect: SpotlightRect | null): string | undefined {
+  if (!rect || rect.width < 1 || rect.height < 1) return undefined;
+  const { top, left, width, height } = rect;
+  const r = Math.min(SPOTLIGHT_RADIUS, width / 2, height / 2);
+  const right = left + width;
+  const bottom = top + height;
+  const hole =
+    `M${left + r} ${top}H${right - r}A${r} ${r} 0 0 1 ${right} ${top + r}` +
+    `V${bottom - r}A${r} ${r} 0 0 1 ${right - r} ${bottom}` +
+    `H${left + r}A${r} ${r} 0 0 1 ${left} ${bottom - r}` +
+    `V${top + r}A${r} ${r} 0 0 1 ${left + r} ${top}Z`;
+  return `path(evenodd, "M-10 -10H100000V100000H-10Z${hole}")`;
 }
 
 function rectsAreClose(a: SpotlightRect, b: SpotlightRect): boolean {
@@ -125,19 +147,7 @@ export function FondaTour() {
 
   return (
     <div className="fdd-tour" role="dialog" aria-modal="true" aria-label={step.title[locale]}>
-      {effectiveSpotlight ? (
-        <div
-          className="fdd-tour__spot"
-          style={{
-            top: effectiveSpotlight.top,
-            left: effectiveSpotlight.left,
-            width: effectiveSpotlight.width,
-            height: effectiveSpotlight.height,
-          }}
-        />
-      ) : (
-        <div className="fdd-tour__scrim" />
-      )}
+      <div className="fdd-tour__scrim" style={{ clipPath: scrimClipPath(effectiveSpotlight) }} />
       <div className="fdd-tour__card" style={cardStyle}>
         <p className="fdd-tour__count">
           {t.tour.stopLabel} {tourStepIndex + 1} {t.tour.ofLabel} {TOUR_STEPS.length}

@@ -3286,19 +3286,6 @@
   background: var(--scrim);
 }
 
-.fdd-tour__spot {
-  position: absolute;
-  pointer-events: none;
-  border: 2px solid var(--accent-300);
-  border-radius: var(--r-lg);
-  box-shadow: 0 0 0 9999px var(--scrim);
-  transition:
-    top 200ms var(--fd-ease),
-    left 200ms var(--fd-ease),
-    width 200ms var(--fd-ease),
-    height 200ms var(--fd-ease);
-}
-
 .fdd-tour__card {
   position: absolute;
   display: flex;
@@ -3352,7 +3339,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fdd-tour__spot,
   .fdd-tour__card,
   .fdd-chevron {
     transition: none;
