@@ -2545,6 +2545,9 @@ Grenen hade gått isär: lokalt fanns fjärde varvet (placering, 60 fps, layout)
 - Placeringen kommer från det lokala spåret: `layoutStop` och `frameStop` i `tourGeometry.ts` väljer hål, kort (bredd, sida, staplat) och skroll inom ytan mellan sidhuvudet och demoraden. `placeCard`, `needsScroll` och `scrollTargetFor` i `tourMotion.ts` finns kvar men används inte av komponenten.
 - Panelerna, locket och ringen från det lokala spåret är borta ur komponenten och CSS:en. `tourGeometry.ts` har kvar sina funktioner för mörkläggningen (`scrimClipPath`, `snapRect`) med test, oanvända.
 - Layoutarbetet (spacing-skalan, Hem, Resan) från det lokala spåret är orört av sammanslagningen.
+- **Reducerad rörelse klipper inte längre.** Grundaren har "Minska rörelse" på i systemet, och `REDUCED_TOUR_TIMINGS` hoppade rakt till nästa mål med en blinkning på 90 ms, vilket såg ut som ett klipp. Nu glider rutan även då, lugnare (320 ms), och kortet tonar (150 ms ut, 220 ms in) utan att glida.
+- **Sidbyte utan ryck:** rutan och skrollen väntar tills den nya sidan är på plats. Förut hittades målet på gamla sidan (samma `data-tour-id`, t.ex. Resan steg 6 → 7), skrollen började och sidbytet ryckte sidan till toppen mitt i svepet.
+- Mätt i produktionsbygget på stopp 7–14, med och utan reducerad rörelse: rutan rör sig över 12–23 bildrutor per övergång, högst 60 px per bildruta, inga hopp.
 - Ett mål som inte går att skrolla fram ovanför demoraden (stopp 8 på 1440 px, sist på sidan) klipptes bort helt av den säkra ytan, så rutan krympte till ingenting och hoppade vid nästa stopp. Då räknas placeringen nu mot hela skärmen. Mätt i produktionsbygget bildruta för bildruta: rutan glider i ett svep (≈ 450 ms) på stopp 7–14, även vid sidbyte och skroll.
 
 ### Återstår

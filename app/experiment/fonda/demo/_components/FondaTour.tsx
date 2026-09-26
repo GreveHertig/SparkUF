@@ -189,6 +189,9 @@ function TourStage({
       viewport: { width: number; height: number },
       safe: SafeArea,
     ): Rect | null | undefined {
+      // Ska stoppet byta sida väntar rutan på den nya sidan. Annars hittas
+      // samma mål på den gamla, skrollen börjar och sidbytet rycker den till toppen.
+      if (window.location.pathname !== toFondaPath(TOUR_STEPS[active].route)) return undefined;
       const targetId = TOUR_STEPS[active].target;
       if (!targetId) return null;
       const el = document.querySelector<HTMLElement>(`[data-tour-id="${targetId}"]`);

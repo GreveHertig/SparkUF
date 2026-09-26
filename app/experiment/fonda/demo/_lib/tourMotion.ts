@@ -38,13 +38,17 @@ export const TOUR_TIMINGS: TourTimings = {
   cardInShift: 7,
 };
 
-/** prefers-reduced-motion: ingen förflyttning, bara en snabb tonövergång. */
+/**
+ * prefers-reduced-motion: lugnare, inte avstängt. Rutan glider fortfarande
+ * (kortare, utan att kortet följer med i sidled), och kortet tonar utan att
+ * glida. Ett hopp rakt till nästa mål såg ut som ett klipp.
+ */
 export const REDUCED_TOUR_TIMINGS: TourTimings = {
-  cardOutMs: 90,
-  holeDelayMs: 90,
-  holeMs: 0,
-  cardInAtProgress: 1,
-  cardInMs: 120,
+  cardOutMs: 150,
+  holeDelayMs: 60,
+  holeMs: 320,
+  cardInAtProgress: 0.8,
+  cardInMs: 220,
   cardOutShift: 0,
   cardInShift: 0,
 };
