@@ -1,21 +1,27 @@
 "use client";
 
-import { useActionState, useId, useState, type FormEvent } from "react";
+import { useActionState, useId, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
 import type { Dictionary } from "@/i18n/dictionary";
 import { joinFondaWaitlist, type FondaWaitlistErrorCode, type FondaWaitlistState } from "../actions";
+import { suggestEmailFix } from "../_lib/emailTypos";
+import { fill } from "../_lib/fill";
 import { HONEYPOT_FIELD } from "../_lib/waitlist";
 
 export const FONDA_PRIVACY_HREF = "/experiment/fonda/integritet";
 
-type MessageKey = keyof Pick<Dictionary["experimentFonda"]["close"], "invalid" | "unexpected" | "rateLimited">;
+type MessageKey = keyof Pick<
+  Dictionary["experimentFonda"]["close"],
+  "invalid" | "undeliverable" | "unexpected" | "rateLimited"
+>;
 
 // Record så att TypeScript vägrar kompilera om en ny felkod läggs till i
 // actions.ts utan en text (samma mönster som app/(marketing)/WaitlistForm.tsx).
 const errorKeys: Record<FondaWaitlistErrorCode, MessageKey> = {
   email_invalid: "invalid",
+  email_undeliverable: "undeliverable",
   unexpected: "unexpected",
   rate_limited: "rateLimited",
 };
@@ -26,7 +32,9 @@ const initialState: FondaWaitlistState = undefined;
  * Väntelistan: ett mejlfält kopplat till Server Action joinFondaWaitlist
  * (../actions.ts), som går via Oskars joinWaitlist och public.join_waitlist.
  * Adressen kontrolleras i webbläsaren innan den skickas; servern
- * kontrollerar den igen. Samma tack oavsett om adressen redan fanns.
+ * kontrollerar den igen och slår upp domänens MX-poster. Vanliga stavfel i
+ * domänen ger ett klickbart "Menade du …?", som aldrig stoppar inskicket.
+ * Samma tack oavsett om adressen redan fanns.
  */
 export function EmailSignup() {
   const { t } = useI18n();
@@ -35,13 +43,15 @@ export function EmailSignup() {
   const [clientInvalid, setClientInvalid] = useState(false);
   // Ett nytt serverfel visas tills besökaren ändrar adressen.
   const [dismissedState, setDismissedState] = useState<FondaWaitlistState>(undefined);
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
   const statusId = useId();
   const privacyId = useId();
 
   const joined = state?.status === "joined";
   const serverError = state?.status === "error" && state !== dismissedState ? state.code : null;
-  const invalid = clientInvalid || serverError === "email_invalid";
+  const invalid = clientInvalid || serverError === "email_invalid" || serverError === "email_undeliverable";
   const message = joined
     ? copy.joined
     : clientInvalid
@@ -63,6 +73,16 @@ export function EmailSignup() {
     setClientInvalid(false);
   }
 
+  function acceptSuggestion() {
+    const input = inputRef.current;
+    if (!input || !suggestion) return;
+    input.value = suggestion;
+    setSuggestion(null);
+    setClientInvalid(false);
+    if (serverError) setDismissedState(state);
+    input.focus();
+  }
+
   return (
     <div className="fd-form">
       {!joined && (
@@ -72,6 +92,7 @@ export function EmailSignup() {
           </label>
           <div className="fd-form__row">
             <input
+              ref={inputRef}
               id={inputId}
               name="email"
               type="email"
@@ -82,7 +103,8 @@ export function EmailSignup() {
               placeholder={copy.placeholder}
               aria-describedby={`${statusId} ${privacyId}`}
               aria-invalid={invalid || undefined}
-              onChange={() => {
+              onChange={(event) => {
+                setSuggestion(suggestEmailFix(event.currentTarget.value));
                 if (clientInvalid) setClientInvalid(false);
                 if (serverError) setDismissedState(state);
               }}
@@ -92,6 +114,13 @@ export function EmailSignup() {
               {pending ? copy.submitting : copy.submit}
             </button>
           </div>
+          {suggestion && (
+            <p className="fd-form__suggest">
+              <button type="button" onClick={acceptSuggestion} className="fd-form__suggest-btn">
+                {fill(copy.didYouMean, { email: suggestion })}
+              </button>
+            </p>
+          )}
           {/* Honeypot: utanför skärmen, inte nåbar med tabb och dold för skärmläsare. */}
           <div className="fd-hp" aria-hidden="true">
             <label>

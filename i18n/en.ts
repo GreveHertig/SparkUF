@@ -920,6 +920,8 @@ export const en = {
       submitting: "Signing you up …",
       honeypotLabel: "Leave this field empty",
       invalid: "Enter a valid email address, for example name@company.se.",
+      undeliverable: "That address doesn't seem able to receive email. Check the spelling.",
+      didYouMean: "Did you mean {email}?",
       joined: "Thanks! We'll be in touch when the beta opens.",
       unexpected: "Something went wrong. Please try again in a moment.",
       rateLimited: "There have been many attempts from here. Please wait a moment and try again.",

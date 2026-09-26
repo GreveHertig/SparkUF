@@ -819,6 +819,9 @@ export type Dictionary = {
       /** Honeypot-fältets etikett. Syns aldrig för människor (och döljs för skärmläsare). */
       honeypotLabel: string;
       invalid: string;
+      undeliverable: string;
+      /** "Menade du {email}?" med den rättade adressen. */
+      didYouMean: string;
       joined: string;
       unexpected: string;
       rateLimited: string;

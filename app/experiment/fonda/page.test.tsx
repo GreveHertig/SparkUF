@@ -136,6 +136,47 @@ describe("/experiment/fonda", () => {
     expect(screen.getByRole("button", { name: copy.submit })).toBeEnabled();
   });
 
+  it("föreslår en rättelse av stavfel i domänen, som byter adressen vid klick", async () => {
+    await renderPage();
+    const copy = sv.experimentFonda.close;
+    const input = screen.getByLabelText(copy.emailLabel) as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: "sara@gmial.com" } });
+    const suggestion = screen.getByRole("button", { name: "Menade du sara@gmail.com?" });
+
+    fireEvent.click(suggestion);
+    expect(input.value).toBe("sara@gmail.com");
+    expect(screen.queryByRole("button", { name: /Menade du/ })).not.toBeInTheDocument();
+  });
+
+  it("stoppar inte inskicket när besökaren inte tar förslaget", async () => {
+    joinMock.mockResolvedValue({ status: "joined" });
+    await renderPage();
+    const copy = sv.experimentFonda.close;
+
+    fireEvent.change(screen.getByLabelText(copy.emailLabel), { target: { value: "sara@hotmial.com" } });
+    expect(screen.getByRole("button", { name: "Menade du sara@hotmail.com?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: copy.submit }));
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(copy.joined));
+    expect((joinMock.mock.calls[0][1] as FormData).get("email")).toBe("sara@hotmial.com");
+  });
+
+  it("visar att adressen inte kan ta emot mejl när servern säger det", async () => {
+    joinMock.mockResolvedValue({ status: "error", code: "email_undeliverable" });
+    await renderPage();
+    const copy = sv.experimentFonda.close;
+    const input = screen.getByLabelText(copy.emailLabel);
+
+    fireEvent.change(input, { target: { value: "sara@finnsinte-exempel.se" } });
+    fireEvent.click(screen.getByRole("button", { name: copy.submit }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Den adressen verkar inte kunna ta emot mejl. Kolla stavningen."),
+    );
+    expect(input).toHaveAttribute("aria-invalid", "true");
+  });
+
   it("räknar om poängen och sänker den när tre kunder säger emot", async () => {
     await renderPage();
     const copy = sv.experimentFonda.proof;

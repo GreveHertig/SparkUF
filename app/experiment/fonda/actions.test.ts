@@ -3,6 +3,7 @@ import { resetRateLimit } from "@/lib/server/rateLimit";
 import { HONEYPOT_FIELD } from "./_lib/waitlist";
 
 const rpcMock = vi.fn();
+const resolveMxMock = vi.hoisted(() => vi.fn());
 const fromMock = vi.fn();
 let requestHeaders = new Headers();
 
@@ -13,6 +14,13 @@ vi.mock("@/lib/server/supabase", () => ({
 vi.mock("next/headers", () => ({
   headers: async () => requestHeaders,
 }));
+
+// DNS mockas alltid: testerna ska aldrig gå ut på nätet.
+vi.mock("node:dns/promises", () => ({ resolveMx: resolveMxMock, default: { resolveMx: resolveMxMock } }));
+
+function dnsError(code: string): NodeJS.ErrnoException {
+  return Object.assign(new Error(`queryMx ${code}`), { code });
+}
 
 function formData(email: string, honeypot = ""): FormData {
   const data = new FormData();
@@ -31,6 +39,7 @@ describe("app/experiment/fonda/actions: joinFondaWaitlist", () => {
     resetRateLimit();
     fromIp("203.0.113.7");
     rpcMock.mockResolvedValue({ data: null, error: null });
+    resolveMxMock.mockResolvedValue([{ exchange: "mx.exempel.se", priority: 10 }]);
   });
 
   it("sparar via Oskars joinWaitlist och join_waitlist, aldrig direkt mot tabellen", async () => {
@@ -95,5 +104,66 @@ describe("app/experiment/fonda/actions: joinFondaWaitlist", () => {
     const state = await joinFondaWaitlist(undefined, formData("sara@exempel.se"));
 
     expect(state).toEqual({ status: "error", code: "unexpected" });
+  });
+
+  describe("MX-kontrollen", () => {
+    it.each(["ENOTFOUND", "ENODATA"])("stoppar en domän utan MX-poster (%s) innan något sparas", async (code) => {
+      resolveMxMock.mockRejectedValue(dnsError(code));
+      const { joinFondaWaitlist } = await import("./actions");
+      const state = await joinFondaWaitlist(undefined, formData("sara@finnsinte-exempel.se"));
+
+      expect(state).toEqual({ status: "error", code: "email_undeliverable" });
+      expect(resolveMxMock).toHaveBeenCalledWith("finnsinte-exempel.se");
+      expect(rpcMock).not.toHaveBeenCalled();
+    });
+
+    it("stoppar en domän med null MX (RFC 7505)", async () => {
+      resolveMxMock.mockResolvedValue([{ exchange: "", priority: 0 }]);
+      const { joinFondaWaitlist } = await import("./actions");
+      expect(await joinFondaWaitlist(undefined, formData("sara@exempel.se"))).toEqual({
+        status: "error",
+        code: "email_undeliverable",
+      });
+    });
+
+    it("släpper igenom gmail.com, som har MX-poster", async () => {
+      resolveMxMock.mockResolvedValue([{ exchange: "gmail-smtp-in.l.google.com", priority: 5 }]);
+      const { joinFondaWaitlist } = await import("./actions");
+      const state = await joinFondaWaitlist(undefined, formData("Sara@Gmail.com"));
+
+      expect(resolveMxMock).toHaveBeenCalledWith("gmail.com");
+      expect(state).toEqual({ status: "joined" });
+      expect(rpcMock).toHaveBeenCalledWith("join_waitlist", { p_email: "sara@gmail.com" });
+    });
+
+    it("släpper igenom när DNS-uppslaget tar mer än 3 sekunder", async () => {
+      vi.useFakeTimers();
+      try {
+        resolveMxMock.mockReturnValue(new Promise(() => {}));
+        const { joinFondaWaitlist } = await import("./actions");
+        const pending = joinFondaWaitlist(undefined, formData("sara@langsam-dns.se"));
+        await vi.advanceTimersByTimeAsync(3000);
+
+        expect(await pending).toEqual({ status: "joined" });
+        expect(rpcMock).toHaveBeenCalledWith("join_waitlist", { p_email: "sara@langsam-dns.se" });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it.each(["ESERVFAIL", "ETIMEOUT", "ECONNREFUSED"])("släpper igenom vid annat DNS-fel (%s)", async (code) => {
+      resolveMxMock.mockRejectedValue(dnsError(code));
+      const { joinFondaWaitlist } = await import("./actions");
+      expect(await joinFondaWaitlist(undefined, formData("sara@exempel.se"))).toEqual({ status: "joined" });
+    });
+
+    it("slår inte upp något för en adress utan domän; den avvisas som ogiltig", async () => {
+      const { joinFondaWaitlist } = await import("./actions");
+      expect(await joinFondaWaitlist(undefined, formData("inte-en-adress"))).toEqual({
+        status: "error",
+        code: "email_invalid",
+      });
+      expect(resolveMxMock).not.toHaveBeenCalled();
+    });
   });
 });

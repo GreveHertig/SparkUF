@@ -1364,6 +1364,26 @@
   cursor: progress;
 }
 
+/* "Menade du …?": ett förslag, inte ett fel. Klick byter adressen i fältet. */
+.fd-form__suggest {
+  font-size: 0.875rem;
+}
+
+.fd-form__suggest-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-700);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.fd-form__suggest-btn:hover {
+  color: var(--ink-900);
+}
+
 .fd-form__done {
   font-weight: 500;
 }

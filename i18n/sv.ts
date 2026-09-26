@@ -924,6 +924,8 @@ export const sv = {
       submitting: "Skriver upp dig …",
       honeypotLabel: "Lämna det här fältet tomt",
       invalid: "Skriv en giltig mejladress, till exempel namn@foretag.se.",
+      undeliverable: "Den adressen verkar inte kunna ta emot mejl. Kolla stavningen.",
+      didYouMean: "Menade du {email}?",
       joined: "Tack! Vi hör av oss när betan öppnar.",
       unexpected: "Något gick fel. Försök igen om en stund.",
       rateLimited: "Det har kommit många försök härifrån. Vänta en stund och försök igen.",
