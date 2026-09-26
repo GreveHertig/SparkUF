@@ -2736,3 +2736,21 @@ Landningssidan och demot från `experiment/landning-fonda` är de officiella sid
 
 ### Kända problem
 - Interna namn säger fortfarande Fonda (`FondaTour`, `FondaDemoBar`, `fondaDemoIsolation`, lagringsnyckeln `spark:fonda-demo-state`). Nyckeln är medvetet kvar så att besökares sparade läge från gamla demot inte läses in.
+
+## Marknadsföring: ny modul, demosidan (klar 2026-09-26, gren `modul/marknadsforing`, PR mot `prototyp`)
+Ny, fristående modul som används i steg 11 (Första kunderna). Föreslagen av Kingen, godkänd av Erik 2026-09-26. Se `docs/moduler/marknadsforing.md`.
+
+### Klart
+- **Port** `ports/MarketingProvider.ts` (`getPlan`, `draftContent`, `reportOutcome`) med kontraktstest `ports/MarketingProvider.contract.test.ts`.
+- **Demoadapter** `adapters/demo/MarketingProvider.ts`: Saras budskap (byggda på citaten ur steg 05), två rekommenderade kanaler och en avrådd, fyra veckors plan, ett utkast per aktivitet och utfall som visas successivt i steg 11.
+- **Liveadapter** `adapters/live/MarketingProvider.ts`: stubbe (`NotImplementedError`), tillagd i `ports/stubStatus.test.ts`.
+- **Demosidan** `/demo/marknadsforing`, egen flik i demomenyn (`paths.ts`, `DemoShell.tsx`). Låst före steg 11. Påhittad data märkt med `ExampleLabel`. Tester i `app/demo/demo.test.tsx` (menyn har nu tolv sidor).
+- **i18n:** `appShell.nav.marketing` och namnrymden `marketingPage` (sv/en).
+- **CSS:** `.fdd-activity` i `design/site.css`, så att planens aktivitetsknappar radbryts på mobil.
+- Inga befintliga moduler eller steg i resan är ändrade.
+- Verifierat: `typecheck`, `lint` (0 fel, 3 gamla varningar i `design-referens/`), `test`, `pnpm build`. Sidan kontrollerad i webbläsare (desktop och mobil, låst och upplåst), inga konsolfel.
+
+### Återstår
+- Liveadaptern (Gemini via `lib/server/gemini.ts`) och en Supabase-tabell för planen och utfallen, när de öppna frågorna i moduldokumentet är besvarade.
+- En sida i `/app` (plattformen) för modulen.
+- Rundturen (`tourSteps.ts`) har inget stopp på sidan.

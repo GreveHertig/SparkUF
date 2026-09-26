@@ -60,6 +60,7 @@ export function DemoShell({ data, children }: { data: DemoShellData; children: R
     { href: FONDA_DEMO_PATHS.legal, label: nav.legal },
     { href: FONDA_DEMO_PATHS.build, label: nav.build },
     { href: FONDA_DEMO_PATHS.businessPlan, label: nav.businessPlan },
+    { href: FONDA_DEMO_PATHS.marketing, label: nav.marketing },
   ];
 
   // Den aktiva fliken ska synas även när flikraden rullar i sidled (mobil).

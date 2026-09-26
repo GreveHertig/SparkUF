@@ -3579,3 +3579,14 @@
     white-space: nowrap;
   }
 }
+
+/* Marknadsföring: aktiviteterna i 30-dagarsplanen är knappar med lång text,
+ * som ska radbrytas på mobil i stället för att klippas. */
+.fdd-activity {
+  max-width: 100%;
+  min-height: 2.25rem;
+  padding-block: var(--space-2);
+  line-height: 1.35;
+  white-space: normal;
+  text-align: left;
+}

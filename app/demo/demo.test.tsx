@@ -14,6 +14,8 @@ import FondaDemoMarketPage from "./(app)/marknad/page";
 import FondaDemoLegalPage from "./(app)/juridik/page";
 import FondaDemoValidationPage from "./(app)/validering/page";
 import FondaDemoPulsePage from "./(app)/pulsen/page";
+import FondaDemoMarketingPage from "./(app)/marknadsforing/page";
+import { findBeatIndexById } from "@/adapters/demo/sara";
 import FondaDemoStartPage from "./start/page";
 import { FONDA_DEMO_KEY, REAL_DEMO_KEY, enterFondaDemo, leaveFondaDemo } from "./_lib/fondaDemoIsolation";
 import { FONDA_DEMO_PATHS } from "./_lib/paths";
@@ -119,11 +121,11 @@ describe("/demo", () => {
     expect(window.localStorage.getItem(REAL_DEMO_KEY)).toBe(realSaved);
   });
 
-  it("menyn har alla elva sidor", async () => {
+  it("menyn har alla tolv sidor", async () => {
     startInApp(0);
     await renderInApp(<FondaDemoHomePage />);
     const nav = screen.getByRole("navigation", { name: sv.site.demo.navLabel });
-    expect(nav.querySelectorAll("a")).toHaveLength(11);
+    expect(nav.querySelectorAll("a")).toHaveLength(12);
     expect(screen.getByRole("link", { name: sv.appShell.nav.businessPlan })).toHaveAttribute(
       "href",
       FONDA_DEMO_PATHS.businessPlan,
@@ -193,5 +195,44 @@ describe("/demo", () => {
       await renderInApp(<FondaDemoHomePage />);
       expect(screen.getByText(sv.site.demo.badge)).toBeInTheDocument();
     });
+  });
+});
+
+describe("/demo/marknadsforing", () => {
+  it("är låst före steg 11, med ledtråden om när den låses upp", async () => {
+    startInApp(0);
+    pathname = FONDA_DEMO_PATHS.marketing;
+    await renderInApp(<FondaDemoMarketingPage />);
+    expect(screen.getByRole("heading", { level: 1, name: sv.marketingPage.title })).toBeInTheDocument();
+    expect(screen.getByText(`${sv.homePage.unlocksAfterStepBefore} 10`)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: sv.marketingPage.messageTitle })).not.toBeInTheDocument();
+  });
+
+  it("i steg 11 visas budskapet, kanalerna och ett utkast, märkt som påhittat", async () => {
+    startInApp(findBeatIndexById("11-forsta-kunderna-fore"));
+    pathname = FONDA_DEMO_PATHS.marketing;
+    await renderInApp(<FondaDemoMarketingPage />);
+    await act(async () => {});
+    expect(screen.getByRole("heading", { name: sv.marketingPage.messageTitle })).toBeInTheDocument();
+    expect(screen.getByText(sv.site.demo.exampleLabel)).toBeInTheDocument();
+    expect(screen.getAllByText(sv.marketingPage.channelVerdict.recommended)).toHaveLength(2);
+    expect(screen.getByText(sv.marketingPage.draftNote)).toBeInTheDocument();
+    // Inga utfall innan planen har börjat köras.
+    expect(screen.getByText(sv.marketingPage.outcomeEmpty)).toBeInTheDocument();
+  });
+
+  it("ett klick på en aktivitet byter utkast, och när steg 11 är klart syns alla fyra veckors utfall", async () => {
+    startInApp(findBeatIndexById("11-forsta-kunderna-efter"));
+    pathname = FONDA_DEMO_PATHS.marketing;
+    const { container } = await renderInApp(<FondaDemoMarketingPage />);
+    await act(async () => {});
+    const buttons = screen.getAllByRole("button", { pressed: false });
+    await act(async () => {
+      fireEvent.click(buttons[0]);
+    });
+    await act(async () => {});
+    expect(buttons[0]).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByText(sv.marketingPage.outcomeEmpty)).not.toBeInTheDocument();
+    expect(container.querySelectorAll(".fdd-table tbody tr")).toHaveLength(4);
   });
 });
