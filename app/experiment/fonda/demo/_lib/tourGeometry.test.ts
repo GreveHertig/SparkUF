@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  SHADE_SIZE,
   cardCoversHole,
   clipToSafeArea,
   frameStop,
   glideDuration,
   holeForPlacement,
   layoutStop,
-  shadeTransforms,
+  roundedRectPath,
+  scrimClipPath,
+  snapRect,
   toDocument,
   type MeasureCard,
 } from "./tourGeometry";
@@ -20,31 +21,30 @@ const mobileSafe = { top: 121, bottom: 737 };
 /** Ett kort med ungefär lika mycket text som rundturens: smalare kort blir högre. */
 const measure: MeasureCard = (width) => Math.round(290 * (380 / width));
 
-/** Talen i en transform, i ordning. */
-function numbers(transform: string): number[] {
-  return (transform.match(/-?\d+(\.\d+)?/g) ?? []).map(Number);
-}
-
 describe("rundturens mörkläggning", () => {
-  it("panelerna ligger kant i kant med hålet", () => {
-    const hole = { top: 200, left: 100, width: 300, height: 120 };
-    const t = shadeTransforms(hole);
-    const [topX, topY] = numbers(t.top);
-    expect(topY + SHADE_SIZE).toBe(200);
-    expect(topX).toBe(100 - SHADE_SIZE / 2);
-    expect(numbers(t.bottom)[1]).toBe(320);
-    const [leftX, leftY, , leftScaleY] = numbers(t.left);
-    expect(leftX + SHADE_SIZE).toBe(100);
-    expect([leftY, leftScaleY]).toEqual([200, 120]);
-    expect(numbers(t.right).slice(0, 2)).toEqual([400, 200]);
-    expect(numbers(t.lid)).toEqual([100, 200, 300, 120]);
+  it("är ett enda lager: hela sidan minus hålet", () => {
+    const clip = scrimClipPath({ width: 1440, height: 3000 }, { top: 200, left: 100, width: 300, height: 120 });
+    expect(clip.startsWith('path(evenodd, "M0 0H1440V3000H0Z M')).toBe(true);
+    expect(clip.match(/M/g)).toHaveLength(2);
   });
 
-  it("hörnbitarna sitter i hålets hörn och krymper med ett litet hål", () => {
-    const t = shadeTransforms({ top: 0, left: 0, width: 300, height: 120 });
-    expect(numbers(t.br)).toEqual([284, 104, 1, 1]);
-    const small = shadeTransforms({ top: 0, left: 0, width: 10, height: 8 });
-    expect(numbers(small.tl).slice(2)).toEqual([0.25, 0.25]);
+  it("utan hål täcker den hela sidan", () => {
+    expect(scrimClipPath({ width: 1440, height: 3000 }, null)).toBe('path(evenodd, "M0 0H1440V3000H0Z")');
+  });
+
+  it("lägger hålets kanter på hela pixlar, så att inga sömmar kan uppstå", () => {
+    expect(snapRect({ top: 330.52, left: 843.91, width: 452.09, height: 240.78 })).toEqual({
+      top: 331,
+      left: 844,
+      width: 452,
+      height: 240,
+    });
+    const path = roundedRectPath({ top: 330.52, left: 843.91, width: 452.09, height: 240.78 }, 16);
+    expect(path).not.toMatch(/\d\.\d/);
+  });
+
+  it("radien kläms till halva sidan", () => {
+    expect(roundedRectPath({ top: 0, left: 0, width: 10, height: 4 }, 16)).toContain("A2 2");
   });
 });
 

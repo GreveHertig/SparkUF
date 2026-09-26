@@ -3316,70 +3316,33 @@
   z-index: 59;
 }
 
-/* Mörkläggningen: fyra enfärgade paneler runt hålet, fyra hörnbitar som
-   rundar det och ett lock som fyller hålet när det är stängt. Alla står i
-   sidans nollpunkt och placeras med transform (demo/_lib/tourGeometry.ts). */
-.fdd-tour__part {
+/* Mörkläggningen: ett enda lager över hela sidan, med hålet utskuret med
+   clip-path i hela pixlar (demo/_lib/tourGeometry.ts). Inga delar som möts,
+   så inga sömmar. Storlek och clip-path sätts från FondaTour.tsx. */
+.fdd-tour__scrim {
   position: absolute;
   top: 0;
   left: 0;
   background: var(--fdd-tour-scrim);
-  transform-origin: 0 0;
+  /* Eget lager: när hålet byts målas bara mörkläggningen om, inte sidan. */
   will-change: transform;
 }
 
-.fdd-tour__part[data-part="top"],
-.fdd-tour__part[data-part="bottom"] {
-  width: 40000px;
-  height: 40000px;
-}
-
-.fdd-tour__part[data-part="left"],
-.fdd-tour__part[data-part="right"] {
-  width: 40000px;
-  height: 1px;
-}
-
-.fdd-tour__part[data-part="lid"] {
-  width: 1px;
-  height: 1px;
+/* Locket fyller hålet när det är stängt. Hålet öppnas och stängs genom att
+   locket tonar; bytet av plats sker medan locket täcker. */
+.fdd-tour__lid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: var(--r-lg);
+  background: var(--fdd-tour-scrim);
+  transform-origin: 0 0;
   opacity: 1;
   transition: opacity 300ms var(--fdd-tour-fade);
 }
 
-.fdd-tour__shade[data-open="true"] .fdd-tour__part[data-part="lid"] {
+.fdd-tour__lid[data-open="true"] {
   opacity: 0;
-}
-
-/* Hörnbitarna: mörka utanför en kvartscirkel med hålets radie (16 px). */
-.fdd-tour__part[data-part="tl"],
-.fdd-tour__part[data-part="tr"],
-.fdd-tour__part[data-part="bl"],
-.fdd-tour__part[data-part="br"] {
-  width: 16px;
-  height: 16px;
-  opacity: 0;
-  transition: opacity 300ms var(--fdd-tour-fade);
-}
-
-.fdd-tour__shade[data-open="true"] .fdd-tour__part:is([data-part="tl"], [data-part="tr"], [data-part="bl"], [data-part="br"]) {
-  opacity: 1;
-}
-
-.fdd-tour__part[data-part="tl"] {
-  background: radial-gradient(circle at 100% 100%, transparent 15.5px, var(--fdd-tour-scrim) 16px);
-}
-
-.fdd-tour__part[data-part="tr"] {
-  background: radial-gradient(circle at 0 100%, transparent 15.5px, var(--fdd-tour-scrim) 16px);
-}
-
-.fdd-tour__part[data-part="bl"] {
-  background: radial-gradient(circle at 100% 0, transparent 15.5px, var(--fdd-tour-scrim) 16px);
-}
-
-.fdd-tour__part[data-part="br"] {
-  background: radial-gradient(circle at 0 0, transparent 15.5px, var(--fdd-tour-scrim) 16px);
 }
 
 /* Ringen runt hålet: placeras när hålet har landat och tonar in. Den glider

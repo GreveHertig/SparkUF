@@ -1,10 +1,10 @@
 /**
  * Geometrin bakom rundturens spotlight (_components/FondaTour.tsx).
  *
- * Mörkläggningen är fyra enfärgade paneler runt hålet och fyra små hörnbitar
- * som rundar det. Allt flyttas med `transform` (compositorn), och enfärgade
- * ytor kostar nästan inget att flytta. (En box-shadow på 200vmax, som förut,
- * måste rastreras om när den flyttas och tappade bildrutor.)
+ * Mörkläggningen är ett enda lager: en enfärgad yta över hela sidan med hålet
+ * utskuret med `clip-path: path(evenodd, …)`. Hålets kanter ligger på hela
+ * pixlar. (Förut bestod den av paneler som möttes vid hålets kanter, och när
+ * en kant hamnade på en halv pixel syntes en ljus söm ut mot skärmkanten.)
  *
  * Placeringen räknas inom den säkra ytan: under sidhuvudet (som är sticky)
  * och ovanför demoraden (som är fixerad). Kortet täcker aldrig hålet.
@@ -193,38 +193,39 @@ export function toDocument(rect: TourRect, scroll: { x: number; y: number }): To
   return { ...rect, top: rect.top + scroll.y, left: rect.left + scroll.x };
 }
 
-/** Panelernas storlek. Enfärgade ytor är billiga oavsett storlek. */
-export const SHADE_SIZE = 40000;
-
-export const SHADE_PARTS = ["top", "bottom", "left", "right", "tl", "tr", "bl", "br", "lid"] as const;
-export type ShadePart = (typeof SHADE_PARTS)[number];
+/** Hålet med alla kanter på hela pixlar, så att det aldrig antialiasas längs en rak kant. */
+export function snapRect(rect: TourRect): TourRect {
+  const left = Math.round(rect.left);
+  const top = Math.round(rect.top);
+  const right = Math.round(rect.left + rect.width);
+  const bottom = Math.round(rect.top + rect.height);
+  return { left, top, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
+}
 
 /**
- * Transformerna som lägger mörkläggningen runt `hole` (sidans koordinater).
- * Topp- och bottenpanelen är SHADE_SIZE i kvadrat, sidopanelerna är SHADE_SIZE
- * breda och 1 px höga och skalas till hålets höjd, hörnbitarna är HOLE_RADIUS
- * i kvadrat, och locket (som fyller hålet när det är stängt) är 1 px och
- * skalas till hålet.
+ * En rundad rektangel i hela pixlar. Radien kläms så att bågarna aldrig blir
+ * större än halva sidan.
  */
-export function shadeTransforms(hole: TourRect): Record<ShadePart, string> {
-  const s = SHADE_SIZE;
-  const r = Math.min(HOLE_RADIUS, hole.width / 2, hole.height / 2);
-  const x = hole.left;
-  const y = hole.top;
-  const right = hole.left + hole.width;
-  const bottom = hole.top + hole.height;
-  const t = (tx: number, ty: number, sx = 1, sy = 1) =>
-    `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
-  const corner = Math.max(0, r) / HOLE_RADIUS;
-  return {
-    top: t(x - s / 2, y - s),
-    bottom: t(x - s / 2, bottom),
-    left: t(x - s, y, 1, Math.max(0, hole.height)),
-    right: t(right, y, 1, Math.max(0, hole.height)),
-    tl: t(x, y, corner, corner),
-    tr: t(right - r, y, corner, corner),
-    bl: t(x, bottom - r, corner, corner),
-    br: t(right - r, bottom - r, corner, corner),
-    lid: t(x, y, Math.max(0, hole.width), Math.max(0, hole.height)),
-  };
+export function roundedRectPath(rect: TourRect, radius: number): string {
+  const { left: x, top: y, width: w, height: h } = snapRect(rect);
+  const r = Math.max(0, Math.min(radius, Math.floor(w / 2), Math.floor(h / 2)));
+  return [
+    `M${x + r} ${y}`,
+    `H${x + w - r}`,
+    `A${r} ${r} 0 0 1 ${x + w} ${y + r}`,
+    `V${y + h - r}`,
+    `A${r} ${r} 0 0 1 ${x + w - r} ${y + h}`,
+    `H${x + r}`,
+    `A${r} ${r} 0 0 1 ${x} ${y + h - r}`,
+    `V${y + r}`,
+    `A${r} ${r} 0 0 1 ${x + r} ${y}`,
+    "Z",
+  ].join(" ");
+}
+
+/** Mörkläggningen: hela ytan (sidans storlek) minus hålet, som ett enda clip-path. */
+export function scrimClipPath(area: Size, hole: TourRect | null, radius = HOLE_RADIUS): string {
+  const outer = `M0 0H${Math.ceil(area.width)}V${Math.ceil(area.height)}H0Z`;
+  if (!hole || hole.width < 1 || hole.height < 1) return `path(evenodd, "${outer}")`;
+  return `path(evenodd, "${outer} ${roundedRectPath(hole, radius)}")`;
 }
