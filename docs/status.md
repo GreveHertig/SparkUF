@@ -2497,6 +2497,12 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 - Skillsen `emil-design-eng` och `animate` fanns inte i den här miljön. Principerna följdes ändå: bara transform, opacity och clip-path, ease-out in, ease-in ut, och avbrytbara övergångar.
 - Känt: på mobil är vissa mål (t.ex. nyckeltalen på Marknad) högre än skärmen, så kortet täcker deras överkant.
 
+### Rundturens rubriker i kopian
+- Nya rubriker på stopp 2–20 (sv och en) i `demo/_lib/tourCopy.ts`, godkända av grundaren. De säger rakt vad stoppet visar, med siffror och namn, till exempel "Poängen sjönk från 47 till 43". Stopp 1 behåller "Välkommen till Spark". `adapters/demo/tourSteps.ts` är orörd, så det riktiga demot har kvar sina rubriker.
+- Stopp 10 har också ny brödtext. Originalet nämnde 4 % svarsfrekvens, men skärmen visar 9 svar av 20.
+- Test: `tourCopy.test.ts` (stopp 1 oförändrat, alla id finns, längd, inga förbjudna ord eller tankstreck). Kontrollerat i produktionsbygget på port 3200 att alla 20 rubriker visas.
+- Rättningen av kortets placering (kortet byter sida, spotlighten klipps mot sidhuvudet) är inte med i den här versionen. Den ligger på den lokala grenen `backup/placering-7f481e7`.
+
 ### Återstår
 - Inget i kopian. Grenen pushas inte förrän grundaren säger till.
 

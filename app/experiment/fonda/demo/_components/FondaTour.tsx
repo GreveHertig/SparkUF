@@ -8,6 +8,7 @@ import { useDemoStore } from "@/adapters/demo/demoStore";
 import { saraBeats } from "@/adapters/demo/sara";
 import { TOUR_STEPS } from "@/adapters/demo/tourSteps";
 import { toFondaPath } from "../_lib/paths";
+import { fondaTourCopy } from "../_lib/tourCopy";
 import {
   CARD_IN_EASE,
   CARD_OUT_EASE,
@@ -286,18 +287,18 @@ function TourStage({
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  const shownStep = TOUR_STEPS[shownIndex];
+  const shownCopy = fondaTourCopy(TOUR_STEPS[shownIndex], locale);
   const shownIsLast = shownIndex === TOUR_STEPS.length - 1;
 
   return (
-    <div className="fdd-tour" role="dialog" aria-modal="true" aria-label={shownStep.title[locale]}>
+    <div className="fdd-tour" role="dialog" aria-modal="true" aria-label={shownCopy.title}>
       <div ref={scrimRef} className="fdd-tour__scrim" />
       <div ref={cardRef} className="fdd-tour__card">
         <p className="fdd-tour__count">
           {t.tour.stopLabel} {shownIndex + 1} {t.tour.ofLabel} {TOUR_STEPS.length}
         </p>
-        <h2 className="fdd-tour__title">{shownStep.title[locale]}</h2>
-        <p className="fdd-tour__body">{shownStep.body[locale]}</p>
+        <h2 className="fdd-tour__title">{shownCopy.title}</h2>
+        <p className="fdd-tour__body">{shownCopy.body}</p>
         <div className="fdd-tour__actions">
           <button type="button" onClick={onSkip} className="fdd-tour__skip">
             {t.tour.skipCta}
