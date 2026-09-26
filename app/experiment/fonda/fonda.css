@@ -3272,22 +3272,35 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Rundturen. */
+/* Rundturen. Rutan (hålet i mörkläggningen) och kortet flyttas av
+   FondaTour med transform, opacity och clip-path; inga CSS-övergångar här,
+   så att en ny position aldrig krockar med en pågående animation. */
 .fdd-tour {
   position: fixed;
   inset: 0;
   z-index: 60;
   font-family: var(--font-sans), Georgia, serif;
+  animation: fdd-tour-in 200ms ease-out both;
+}
+
+@keyframes fdd-tour-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .fdd-tour__scrim {
   position: absolute;
   inset: 0;
   background: var(--scrim);
+  clip-path: path(evenodd, "M-10 -10H100000V100000H-10Z");
 }
 
 .fdd-tour__card {
   position: absolute;
+  top: 0;
+  left: 0;
+  width: min(380px, calc(100vw - 2rem));
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -3295,9 +3308,9 @@
   border-radius: var(--r-lg);
   background: white;
   box-shadow: var(--shadow-lift);
-  transition:
-    top 200ms var(--fd-ease),
-    left 200ms var(--fd-ease);
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, opacity;
 }
 
 .fdd-tour__count {
@@ -3338,8 +3351,26 @@
   color: var(--ink-900);
 }
 
+.fdd-tour__nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Knappens kvittens vid klick: 100 ms, före allt annat. */
+.fdd-tour__card .fd-btn,
+.fdd-tour__skip {
+  transition:
+    transform 100ms ease-out,
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.fdd-tour__card .fd-btn:active,
+.fdd-tour__skip:active {
+  transform: scale(0.97);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .fdd-tour__card,
   .fdd-chevron {
     transition: none;
   }

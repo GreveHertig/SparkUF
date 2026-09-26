@@ -2482,6 +2482,21 @@ en ny sida under `/demo/app`. `core/score.ts`, `adapters/live/`,
 - Tester: `demo/demo.test.tsx` (spärren, ingången sparas bara i kopians läge, Hem, menyn, Poäng mot motorn och koncept-etiketten, Marknad låst för Jonas, Juridikens ansvarsbegränsning) och `demo/_lib/paths.test.ts`.
 - Verifierat: `typecheck`, `lint` (0 fel) och `test` (457 gröna). Playwright på 1440 och 390 px: onboardingen hela vägen till Hem, alla sidor, rundturen med spotlight, engelska. Inga filer utanför `app/experiment/fonda` ändrade i den här omgången, och det riktiga demots lagringsnyckel var orörd under hela genomgången.
 
+### Rundturen i kopian: utan hjälplinjer och med mjuka övergångar
+- **Linjerna:** spotlighten hade en 2 px ljusblå kant (`accent-300`), och mörkläggningen var en `box-shadow` på 9999 px med bråkdelspositioner. Kanten och spot-elementet är borttagna. Mörkläggningen är ett enda lager (`.fdd-tour__scrim`) som klipps med `clip-path: path(evenodd, …)` runt ett rundat hål, och hålets kanter avrundas till hela pixlar.
+- **Övergångarna:** ett scrim-element och ett kort monteras en gång och flyttas av en rAF-loop i `FondaTour.tsx`. Tider och kurvor står i `demo/_lib/tourMotion.ts` (`TOUR_TIMINGS`):
+  - 0 ms: knappen kvitterar med `scale(0.97)` på 100 ms.
+  - 0–150 ms: gamla kortet tonar ut och glider 6 px bort med ease-in `cubic-bezier(0.55, 0, 1, 0.45)`.
+  - 100–550 ms: rutan glider till den nya positionen och storleken med `cubic-bezier(0.32, 0.72, 0, 1)`.
+  - Vid 70 % av rutans sträcka (≈ 200 ms): nya kortet tonar in och glider 7 px på plats med ease-out `cubic-bezier(0.23, 1, 0.32, 1)` på 250 ms, och landar vid ≈ 450 ms.
+  - Med Bakåt är riktningen omvänd.
+- **Skroll:** ligger målet utanför bild räknas skrollpositionen ut innan animationen startar, och sidan skrollas i samma svep som rutan (samma start, kurva och längd). Rutan och kortet siktar på den förväntade slutpositionen. Sidbyten mellan stopp väntar tills gamla kortet tonat ut (150 ms). Snabba klick byter mål mitt i svepet utan att stanna. Stopp utan mål krymper hålet till en punkt mitt på skärmen.
+- **Reducerad rörelse:** kortet tonar ut på 90 ms och in på 120 ms. Rutan och sidan byter läge direkt medan kortet är osynligt, utan förflyttning.
+- Nytt: en Bakåt-knapp i rundturens kort (återanvänder `demoBar.back`), och kortets höjd mäts i stället för att uppskattas, så att det inte längre hamnar över målet eller utanför skärmen.
+- Verifierat mot produktionsbygget på port 3200 med en inspelning per bildruta (rutans och kortets position, opacitet och text) för 1→2, 5→6, 6→7 (skroll), 7→6 (Bakåt), tre snabba klick, 12→13 och 16→20, på 1280×800, 390×844 och med reducerad rörelse. Inga hopp, ingen ruta eller inget kort som saknas, och ingen text byts medan kortet syns. CDP-skärmbilder granskade: inga linjer vid kanterna. `typecheck`, `lint` (0 fel) och `test` (468 gröna).
+- Skillsen `emil-design-eng` och `animate` fanns inte i den här miljön. Principerna följdes ändå: bara transform, opacity och clip-path, ease-out in, ease-in ut, och avbrytbara övergångar.
+- Känt: på mobil är vissa mål (t.ex. nyckeltalen på Marknad) högre än skärmen, så kortet täcker deras överkant.
+
 ### Återstår
 - Inget i kopian. Grenen pushas inte förrän grundaren säger till.
 
