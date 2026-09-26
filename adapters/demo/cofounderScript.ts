@@ -9,12 +9,10 @@
 // teaser i "-fore", själva verktygskörningen/samtalet i "-korning", och en
 // kort sammanfattning i "-efter" (fynden själva visas redan i highlights på
 // Resan/[steg] och Hem — här handlar det bara om vad Medgrundaren säger).
-import type { Locale } from "@/i18n/context";
+import type { TranscriptItem } from "@/ports/CofounderAgent";
 
-export type TranscriptItem =
-  | { kind: "message"; role: "founder" | "cofounder"; text: Record<Locale, string> }
-  | { kind: "tool"; label: Record<Locale, string>; steps: Record<Locale, string[]> }
-  | { kind: "timeSkip"; label: Record<Locale, string> };
+// Typen ligger i porten så att skärmen Cofounder inte importerar demoadaptern.
+export type { TranscriptItem };
 
 function msg(role: "founder" | "cofounder", sv: string, en: string): TranscriptItem {
   return { kind: "message", role, text: { sv, en } };
