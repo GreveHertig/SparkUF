@@ -2518,6 +2518,35 @@ Uppdraget: jämna 60 fps, en ruta som alltid täcker rätt element, proffsig lay
 - Tester: `demo/_lib/tourGeometry.test.ts` (panelerna kant i kant med hålet, hörnbitarna, alla placeringar, skroll, att kortet aldrig täcker hålet).
 - Rubrikerna i rundturen (punkt 4) är inte bytta: förslaget väntar på grundarens ok. Siffror i de nya rubrikerna ska räknas fram ur motorn (`calculateScore` via demoadaptrarna, `PHASE_TOTAL_CAP`), inte skrivas in.
 
+### Rundturen i kopian: utan hjälplinjer och med mjuka övergångar
+- **Linjerna:** spotlighten hade en 2 px ljusblå kant (`accent-300`), och mörkläggningen var en `box-shadow` på 9999 px med bråkdelspositioner. Kanten och spot-elementet är borttagna. Mörkläggningen är ett enda lager (`.fdd-tour__scrim`) som klipps med `clip-path: path(evenodd, …)` runt ett rundat hål, och hålets kanter avrundas till hela pixlar.
+- **Övergångarna:** ett scrim-element och ett kort monteras en gång och flyttas av en rAF-loop i `FondaTour.tsx`. Tider och kurvor står i `demo/_lib/tourMotion.ts` (`TOUR_TIMINGS`):
+  - 0 ms: knappen kvitterar med `scale(0.97)` på 100 ms.
+  - 0–150 ms: gamla kortet tonar ut och glider 6 px bort med ease-in `cubic-bezier(0.55, 0, 1, 0.45)`.
+  - 100–550 ms: rutan glider till den nya positionen och storleken med `cubic-bezier(0.32, 0.72, 0, 1)`.
+  - Vid 70 % av rutans sträcka (≈ 200 ms): nya kortet tonar in och glider 7 px på plats med ease-out `cubic-bezier(0.23, 1, 0.32, 1)` på 250 ms, och landar vid ≈ 450 ms.
+  - Med Bakåt är riktningen omvänd.
+- **Skroll:** ligger målet utanför bild räknas skrollpositionen ut innan animationen startar, och sidan skrollas i samma svep som rutan (samma start, kurva och längd). Rutan och kortet siktar på den förväntade slutpositionen. Sidbyten mellan stopp väntar tills gamla kortet tonat ut (150 ms). Snabba klick byter mål mitt i svepet utan att stanna. Stopp utan mål krymper hålet till en punkt mitt på skärmen.
+- **Reducerad rörelse:** kortet tonar ut på 90 ms och in på 120 ms. Rutan och sidan byter läge direkt medan kortet är osynligt, utan förflyttning.
+- Nytt: en Bakåt-knapp i rundturens kort (återanvänder `demoBar.back`), och kortets höjd mäts i stället för att uppskattas, så att det inte längre hamnar över målet eller utanför skärmen.
+- Verifierat mot produktionsbygget på port 3200 med en inspelning per bildruta (rutans och kortets position, opacitet och text) för 1→2, 5→6, 6→7 (skroll), 7→6 (Bakåt), tre snabba klick, 12→13 och 16→20, på 1280×800, 390×844 och med reducerad rörelse. Inga hopp, ingen ruta eller inget kort som saknas, och ingen text byts medan kortet syns. CDP-skärmbilder granskade: inga linjer vid kanterna. `typecheck`, `lint` (0 fel) och `test` (468 gröna).
+- Skillsen `emil-design-eng` och `animate` fanns inte i den här miljön. Principerna följdes ändå: bara transform, opacity och clip-path, ease-out in, ease-in ut, och avbrytbara övergångar.
+- Känt: på mobil är vissa mål (t.ex. nyckeltalen på Marknad) högre än skärmen, så kortet täcker deras överkant.
+
+### Rundturens rubriker i kopian
+- Nya rubriker på stopp 2–20 (sv och en) i `demo/_lib/tourCopy.ts`, godkända av grundaren. De säger rakt vad stoppet visar, med siffror och namn, till exempel "Poängen sjönk från 47 till 43". Stopp 1 behåller "Välkommen till Spark". `adapters/demo/tourSteps.ts` är orörd, så det riktiga demot har kvar sina rubriker.
+- Stopp 10 har också ny brödtext. Originalet nämnde 4 % svarsfrekvens, men skärmen visar 9 svar av 20.
+- Test: `tourCopy.test.ts` (stopp 1 oförändrat, alla id finns, längd, inga förbjudna ord eller tankstreck). Kontrollerat i produktionsbygget på port 3200 att alla 20 rubriker visas.
+- Rättningen av kortets placering (kortet byter sida, spotlighten klipps mot sidhuvudet) är inte med i den här versionen. Den ligger på den lokala grenen `backup/placering-7f481e7`.
+
+### Sammanslagning av rundturens två spår (2026-09-26)
+Grenen hade gått isär: lokalt fanns fjärde varvet (placering, 60 fps, layout) och ett ocommittat mörkläggningslager med lock, på origin fanns rörelsemotorn i `tourMotion.ts`, Bakåt-knappen och de nya rubrikerna. Grundaren valde origins rörelse.
+- `FondaTour.tsx` är origins rAF-motor (`tourMotion.ts`: svepet, kortets ut/in, skrollen i samma svep, Bakåt, reducerad rörelse) med de nya rubrikerna (`tourCopy.ts`).
+- Placeringen kommer från det lokala spåret: `layoutStop` och `frameStop` i `tourGeometry.ts` väljer hål, kort (bredd, sida, staplat) och skroll inom ytan mellan sidhuvudet och demoraden. `placeCard`, `needsScroll` och `scrollTargetFor` i `tourMotion.ts` finns kvar men används inte av komponenten.
+- Panelerna, locket och ringen från det lokala spåret är borta ur komponenten och CSS:en. `tourGeometry.ts` har kvar sina funktioner för mörkläggningen (`scrimClipPath`, `snapRect`) med test, oanvända.
+- Layoutarbetet (spacing-skalan, Hem, Resan) från det lokala spåret är orört av sammanslagningen.
+- Ett mål som inte går att skrolla fram ovanför demoraden (stopp 8 på 1440 px, sist på sidan) klipptes bort helt av den säkra ytan, så rutan krympte till ingenting och hoppade vid nästa stopp. Då räknas placeringen nu mot hela skärmen. Mätt i produktionsbygget bildruta för bildruta: rutan glider i ett svep (≈ 450 ms) på stopp 7–14, även vid sidbyte och skroll.
+
 ### Återstår
 - Inget i kopian.
 
