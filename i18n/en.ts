@@ -916,10 +916,38 @@ export const en = {
       body: "Leave your email address. Or see the demo first, with fictional data.",
       emailLabel: "Email address",
       placeholder: "name@company.se",
-      submit: "Get notified",
-      help: "The form is not connected yet. Nothing is saved.",
+      submit: "Sign me up",
+      submitting: "Signing you up …",
+      honeypotLabel: "Leave this field empty",
       invalid: "Enter a valid email address, for example name@company.se.",
-      sent: "Thanks. The form is not connected yet, so the address was not saved.",
+      joined: "Thanks! We'll be in touch when the beta opens.",
+      unexpected: "Something went wrong. Please try again in a moment.",
+      rateLimited: "There have been many attempts from here. Please wait a moment and try again.",
+      privacyNote: "We keep the address just to let you know when the beta opens. You can ask us to remove it at any time.",
+      privacyLink: "How we handle your address",
+    },
+    privacy: {
+      title: "How we handle your email address",
+      intro: "When you sign up to hear about the beta, we save your email address. This is what that means.",
+      sections: [
+        {
+          heading: "What we save",
+          body: "The email address you enter and when you entered it. No name, no phone number and no other details.",
+        },
+        {
+          heading: "Why",
+          body: "So we can let you know when the Spark beta opens. We don't use the address for anything else and we don't share it with anyone.",
+        },
+        {
+          heading: "Where it is stored",
+          body: "In Spark's database at Supabase. The founders are the ones who can see the list.",
+        },
+        {
+          heading: "Getting removed",
+          body: "Email spark.ai.uf@gmail.com from the address you signed up with, and we'll remove it.",
+        },
+      ],
+      back: "Back to the home page",
     },
     footer: { note: "Design experiment. The demo shows fictional companies and people." },
     demo: {

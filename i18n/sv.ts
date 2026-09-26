@@ -920,10 +920,38 @@ export const sv = {
       body: "Lämna din mejladress. Eller se demot först, med fiktiv data.",
       emailLabel: "Mejladress",
       placeholder: "namn@foretag.se",
-      submit: "Få besked",
-      help: "Formuläret är inte kopplat än. Inget sparas.",
+      submit: "Skriv upp mig",
+      submitting: "Skriver upp dig …",
+      honeypotLabel: "Lämna det här fältet tomt",
       invalid: "Skriv en giltig mejladress, till exempel namn@foretag.se.",
-      sent: "Tack. Formuläret är inte kopplat än, så adressen sparades inte.",
+      joined: "Tack! Vi hör av oss när betan öppnar.",
+      unexpected: "Något gick fel. Försök igen om en stund.",
+      rateLimited: "Det har kommit många försök härifrån. Vänta en stund och försök igen.",
+      privacyNote: "Vi sparar bara adressen för att kunna meddela dig när betan öppnar. Du kan när som helst be oss ta bort den.",
+      privacyLink: "Så hanterar vi adressen",
+    },
+    privacy: {
+      title: "Så hanterar vi din mejladress",
+      intro: "När du skriver upp dig för besked om betan sparar vi din mejladress. Här står vad det innebär.",
+      sections: [
+        {
+          heading: "Vad vi sparar",
+          body: "Bara mejladressen du skriver in och när du skrev in den. Inget namn, inget telefonnummer och inga andra uppgifter.",
+        },
+        {
+          heading: "Varför",
+          body: "För att kunna meddela dig när betan av Spark öppnar. Vi använder inte adressen till något annat och delar den inte med någon.",
+        },
+        {
+          heading: "Var den finns",
+          body: "I Sparks databas hos Supabase. Bara grundarna kan se listan.",
+        },
+        {
+          heading: "Bli borttagen",
+          body: "Mejla spark.ai.uf@gmail.com från adressen du skrev upp, så tar vi bort den.",
+        },
+      ],
+      back: "Tillbaka till startsidan",
     },
     footer: { note: "Designexperiment. Demot visar fiktiva företag och personer." },
     demo: {

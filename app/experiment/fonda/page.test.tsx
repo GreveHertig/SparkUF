@@ -1,11 +1,17 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { en } from "@/i18n/en";
 import { sv } from "@/i18n/sv";
 import FondaLandingPage from "./page";
 import { FONDA_DEMO_HREF } from "./_components/DemoLink";
+import { FONDA_PRIVACY_HREF } from "./_components/EmailSignup";
+import { HONEYPOT_FIELD } from "./_lib/waitlist";
+
+// Server Action körs på servern; här prövas bara formulärets beteende.
+const joinMock = vi.hoisted(() => vi.fn());
+vi.mock("./actions", () => ({ joinFondaWaitlist: joinMock }));
 
 // Samma matchMedia-stubb som app/(marketing)/page.test.tsx.
 beforeAll(() => {
@@ -23,7 +29,10 @@ beforeAll(() => {
 });
 
 afterEach(() => cleanup());
-beforeEach(() => window.localStorage.removeItem("spark:locale"));
+beforeEach(() => {
+  window.localStorage.removeItem("spark:locale");
+  joinMock.mockReset();
+});
 
 async function renderPage() {
   const result = render(
@@ -61,22 +70,70 @@ describe("/experiment/fonda", () => {
     }
   });
 
-  it("har exakt ett formulärfält, och påstår aldrig att adressen sparats", async () => {
+  it("har ett synligt mejlfält med label, autocomplete och en länk till integritetstexten", async () => {
     const { container } = await renderPage();
     const copy = sv.experimentFonda.close;
-    expect(container.querySelectorAll("input")).toHaveLength(1);
 
+    const visible = [...container.querySelectorAll("input")].filter((input) => input.name !== HONEYPOT_FIELD);
+    expect(visible).toHaveLength(1);
     const input = screen.getByLabelText(copy.emailLabel);
-    const submit = screen.getByRole("button", { name: copy.submit });
+    expect(input).toHaveAttribute("type", "email");
+    expect(input).toHaveAttribute("autocomplete", "email");
+    expect(screen.getByRole("button", { name: copy.submit })).toHaveTextContent("Skriv upp mig");
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByRole("link", { name: copy.privacyLink })).toHaveAttribute("href", FONDA_PRIVACY_HREF);
+
+    // Honeypoten: utanför tabbordningen och dold för skärmläsare.
+    const honeypot = container.querySelector(`input[name="${HONEYPOT_FIELD}"]`);
+    expect(honeypot).toHaveAttribute("tabindex", "-1");
+    expect(honeypot?.closest("[aria-hidden='true']")).not.toBeNull();
+  });
+
+  it("stoppar en ogiltig adress i webbläsaren med ett felmeddelande under fältet", async () => {
+    await renderPage();
+    const copy = sv.experimentFonda.close;
+    const input = screen.getByLabelText(copy.emailLabel);
 
     fireEvent.change(input, { target: { value: "inte-en-adress" } });
-    fireEvent.click(submit);
-    expect(screen.getByText(copy.invalid)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: copy.submit }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(copy.invalid);
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(joinMock).not.toHaveBeenCalled();
 
     fireEvent.change(input, { target: { value: "namn@exempel.se" } });
-    fireEvent.click(submit);
-    expect(screen.getByText(copy.sent)).toBeInTheDocument();
-    expect(screen.getByText(copy.help)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
+  it("inaktiverar knappen medan adressen skickas och tackar sedan", async () => {
+    let resolve: (value: unknown) => void = () => {};
+    joinMock.mockImplementation(() => new Promise((r) => (resolve = r)));
+    await renderPage();
+    const copy = sv.experimentFonda.close;
+
+    fireEvent.change(screen.getByLabelText(copy.emailLabel), { target: { value: "namn@exempel.se" } });
+    fireEvent.click(screen.getByRole("button", { name: copy.submit }));
+
+    const pending = await screen.findByRole("button", { name: copy.submitting });
+    expect(pending).toBeDisabled();
+    expect(joinMock).toHaveBeenCalledTimes(1);
+    expect((joinMock.mock.calls[0][1] as FormData).get("email")).toBe("namn@exempel.se");
+
+    await act(async () => resolve({ status: "joined" }));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(copy.joined));
+    expect(screen.queryByLabelText(copy.emailLabel)).not.toBeInTheDocument();
+  });
+
+  it("visar serverns fel som text och låter besökaren försöka igen", async () => {
+    joinMock.mockResolvedValue({ status: "error", code: "rate_limited" });
+    await renderPage();
+    const copy = sv.experimentFonda.close;
+
+    fireEvent.change(screen.getByLabelText(copy.emailLabel), { target: { value: "namn@exempel.se" } });
+    fireEvent.click(screen.getByRole("button", { name: copy.submit }));
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(copy.rateLimited));
+    expect(screen.getByRole("button", { name: copy.submit })).toBeEnabled();
   });
 
   it("räknar om poängen och sänker den när tre kunder säger emot", async () => {

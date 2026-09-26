@@ -1351,6 +1351,69 @@
   color: var(--bad);
 }
 
+/* Formuläret inuti .fd-form (statusraden och integritetsraden ligger utanför,
+   så att de står kvar när formuläret byts mot tacket). */
+.fd-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fd-form .fd-btn:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.fd-form__done {
+  font-weight: 500;
+}
+
+.fd-form__link {
+  color: var(--accent-700);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.fd-form__link:hover {
+  color: var(--ink-900);
+}
+
+/* Honeypot: utanför skärmen (inte display: none, som en del botar hoppar över). */
+.fd-hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ---------- Integritetstexten (/experiment/fonda/integritet) ---------- */
+
+.fd-privacy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 40rem;
+}
+
+.fd-privacy__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--fd-muted);
+  line-height: 1.6;
+}
+
+.fd-privacy__heading {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--ink-900);
+}
+
+.fd-privacy__back {
+  align-self: flex-start;
+}
+
 /* ---------- Sidfot ---------- */
 
 .fd-footer {

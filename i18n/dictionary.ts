@@ -815,9 +815,21 @@ export type Dictionary = {
       emailLabel: string;
       placeholder: string;
       submit: string;
-      help: string;
+      submitting: string;
+      /** Honeypot-fältets etikett. Syns aldrig för människor (och döljs för skärmläsare). */
+      honeypotLabel: string;
       invalid: string;
-      sent: string;
+      joined: string;
+      unexpected: string;
+      rateLimited: string;
+      privacyNote: string;
+      privacyLink: string;
+    };
+    privacy: {
+      title: string;
+      intro: string;
+      sections: { heading: string; body: string }[];
+      back: string;
     };
     footer: { note: string };
     demo: {
