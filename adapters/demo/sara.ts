@@ -417,7 +417,7 @@ const [step03Fore, step03Korning, step03Efter] = makeStepBeats({
   deltaReasonAfter: { sv: "efter registerdata", en: "after registry data" },
   highlightsAfter: {
     sv: [
-      "312 redovisningsbyråer med 5–20 anställda (SNI 69.201).",
+      "312 redovisningsbyråer med 5–19 anställda (SNI 69.201).",
       "Medianomsättning 4,2 Mkr.",
       "18 % växte mer än 10 % förra året.",
       "31 % finns i Stockholms län.",
@@ -425,7 +425,7 @@ const [step03Fore, step03Korning, step03Efter] = makeStepBeats({
       "Simulering (Hiasynth, koncept): ~6,5 h/mån per anställd går åt till underlagsjakt, intervall 4–9 h.",
     ],
     en: [
-      "312 accounting firms with 5–20 employees (SNI 69.201).",
+      "312 accounting firms with 5–19 employees (SNI 69.201).",
       "Median revenue SEK 4.2M.",
       "18% grew more than 10% last year.",
       "31% are located in the Stockholm region.",
@@ -447,7 +447,7 @@ const step04NextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 04 · KUNDEN",
     title: "Se kundprofilen och listan på namngivna företag",
-    why: "Kundprofil ur registret: SNI 69.201, 5–20 anställda, 3–15 Mkr i omsättning. Resultatet är en lista på namngivna företag.",
+    why: "Kundprofil ur registret: SNI 69.201, 5–19 anställda, 3–15 Mkr i omsättning. Resultatet är en lista på namngivna företag.",
     maxPoints: 8,
     estimatedTime: "~5 min",
     doneItems: ["Profilsamtalet klart", "Idé vald", "Marknadsbilden klar"],
@@ -456,7 +456,7 @@ const step04NextStep: Record<Locale, NextStep> = {
   en: {
     eyebrow: "STEP 04 · THE CUSTOMER",
     title: "See the customer profile and the list of named companies",
-    why: "Customer profile from the registry: SNI 69.201, 5–20 employees, SEK 3–15M revenue. The result is a list of named companies.",
+    why: "Customer profile from the registry: SNI 69.201, 5–19 employees, SEK 3–15M revenue. The result is a list of named companies.",
     maxPoints: 8,
     estimatedTime: "~5 min",
     doneItems: ["Profile chat done", "Idea chosen", "Market picture done"],
@@ -503,13 +503,13 @@ const [step04Fore, step04Korning, step04Efter] = makeStepBeats({
   deltaReasonAfter: { sv: "efter kundprofilen", en: "after the customer profile" },
   highlightsAfter: {
     sv: [
-      "Kundprofil: SNI 69.201, 5–20 anställda, 3–15 Mkr i omsättning.",
+      "Kundprofil: SNI 69.201, 5–19 anställda, 3–15 Mkr i omsättning.",
       "Lista över de 40 snabbast växande fiktiva byråerna som matchar profilen.",
       "Konkurrentbilden fördjupad i samma veva som kundlistan togs fram.",
       "Nästa steg: bygga kontaktlista och skriva outreach.",
     ],
     en: [
-      "Customer profile: SNI 69.201, 5–20 employees, SEK 3–15M revenue.",
+      "Customer profile: SNI 69.201, 5–19 employees, SEK 3–15M revenue.",
       "List of the 40 fastest-growing fictional firms matching the profile.",
       "The competitor picture deepened alongside the customer list.",
       "Next: build the contact list and write the outreach.",
@@ -782,7 +782,7 @@ const step05bEfter: Beat = {
 const step06NextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 06 · DOMEN",
-    title: "Förfina: snäva segmentet till 10–20 anställda",
+    title: "Förfina: snäva segmentet till 10–19 anställda",
     why: "7 av 9 bekräftar problemet. 3 av 9 tycker att 2 000 kr är för dyrt, median 900 kr. Alla som sa ja har 10+ anställda.",
     maxPoints: 18,
     estimatedTime: "~15 min",
@@ -797,7 +797,7 @@ const step06NextStep: Record<Locale, NextStep> = {
   },
   en: {
     eyebrow: "STEP 06 · THE VERDICT",
-    title: "Refine: narrow the segment to 10–20 employees",
+    title: "Refine: narrow the segment to 10–19 employees",
     why: "7 of 9 confirm the problem. 3 of 9 think SEK 2,000 is too expensive, median SEK 900. Everyone who said yes has 10+ employees.",
     maxPoints: 18,
     estimatedTime: "~15 min",
@@ -869,18 +869,18 @@ const [step06Fore, step06Korning, step06Efter] = makeStepBeats({
   highlightsAfter: {
     sv: [
       "Utslag: Förfina — inte kör, inte pivotera.",
-      "Nytt segment: 10–20 anställda i stället för 5–20.",
+      "Nytt segment: 10–19 anställda i stället för 5–19.",
       "Simulering av priskänslighet (Hiasynth, koncept) stöder 1 000–1 300 kr i det nya segmentet.",
     ],
     en: [
       "Verdict: Refine — not go, not pivot.",
-      "New segment: 10–20 employees instead of 5–20.",
+      "New segment: 10–19 employees instead of 5–19.",
       "Price-sensitivity simulation (Hiasynth, concept) supports SEK 1,000–1,300 in the new segment.",
     ],
   },
   traceSummaryAfter: {
-    sv: "Domen: Förfina. Nytt segment 10–20 anställda, ny prissimulering stöder 1 000–1 300 kr.",
-    en: "Verdict: Refine. New segment 10–20 employees, new price simulation supports SEK 1,000–1,300.",
+    sv: "Domen: Förfina. Nytt segment 10–19 anställda, ny prissimulering stöder 1 000–1 300 kr.",
+    en: "Verdict: Refine. New segment 10–19 employees, new price simulation supports SEK 1,000–1,300.",
   },
   verdictAfter: {
     sv: {

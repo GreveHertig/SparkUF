@@ -1,0 +1,3581 @@
+/*
+ * Startsidan (/), /integritet och demot (/demo).
+ * Bara projektets egna tokens (design/tokens.css) och typsnitt (Castoro,
+ * Instrument Serif Italic). Allt är skopat under .fd så att inget läcker ut
+ * till resten av appen.
+ */
+
+.fd {
+  --fd-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --fd-gutter: clamp(1rem, 4vw, 2.5rem);
+  --fd-section-y: clamp(5rem, 11vw, 9.5rem);
+  --fd-ink: var(--ink-900);
+  --fd-muted: var(--slate-700);
+  --fd-quiet: var(--slate-600);
+  --fd-line: var(--slate-200);
+
+  min-height: 100dvh;
+  background: var(--paper-50);
+  color: var(--fd-ink);
+  font-family: var(--font-sans), Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.fd ::selection {
+  background: var(--accent-100);
+  color: var(--ink-900);
+}
+
+.fd :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.fd-wrap {
+  width: 100%;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: var(--fd-gutter);
+}
+
+.fd-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Typografi ---------- */
+
+.fd-h1,
+.fd-h2 {
+  font-weight: 400;
+  color: var(--fd-ink);
+  text-wrap: balance;
+  letter-spacing: -0.025em;
+}
+
+.fd-h1 {
+  font-size: clamp(2.15rem, 6.4vw, 5.5rem);
+  line-height: 1.02;
+}
+
+.fd-h2 {
+  font-size: clamp(2.1rem, 4.6vw, 3.9rem);
+  line-height: 1.05;
+}
+
+/* Kursiv fortsättning i Instrument Serif. Lite extra luft under raden så att
+   nedstaplar (g, j, p, y) inte klipps. */
+.fd-em--block {
+  display: block;
+}
+
+.fd-em {
+  font-family: var(--font-serif-italic), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent-600);
+  letter-spacing: -0.01em;
+  padding-bottom: 0.06em;
+}
+
+.fd-lede {
+  max-width: 38rem;
+  font-size: clamp(1.075rem, 1.4vw, 1.25rem);
+  line-height: 1.6;
+  color: var(--fd-muted);
+  text-wrap: pretty;
+}
+
+.fd-note {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--fd-quiet);
+}
+
+/* ---------- Knappar ---------- */
+
+.fd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 3rem;
+  padding: 0 var(--space-6);
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  font-size: 1rem;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 160ms var(--fd-ease),
+    background-color 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.fd-btn:active {
+  transform: scale(0.97);
+}
+
+.fd-btn--sm {
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  font-size: 0.9375rem;
+}
+
+.fd-btn--primary {
+  background: var(--ink-900);
+  color: var(--paper-50);
+  box-shadow: var(--shadow-soft);
+}
+
+.fd-btn--secondary {
+  background: white;
+  color: var(--ink-900);
+  border-color: var(--fd-line);
+}
+
+.fd-btn--light {
+  background: var(--paper-50);
+  color: var(--ink-900);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fd-btn--primary:hover {
+    background: var(--navy);
+  }
+  .fd-btn--secondary:hover {
+    border-color: var(--slate-300);
+    background: var(--slate-50);
+  }
+  .fd-btn--light:hover {
+    background: white;
+  }
+}
+
+/* "Se demot" bär alltid märkningen om fiktiv data. */
+.fd-demolink__note {
+  padding-left: 0.75rem;
+  border-left: 1px solid color-mix(in srgb, var(--paper-50) 30%, transparent);
+  font-size: 0.8125rem;
+  color: var(--slate-300);
+}
+
+/* ---------- Etiketter ---------- */
+
+.fd-pill {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 1.5rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--r-pill);
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.fd-pill--fiction {
+  border: 1px dashed var(--slate-400);
+  color: var(--slate-700);
+  background: white;
+}
+
+.fd-level {
+  display: inline-flex;
+  align-items: center;
+  height: 1.75rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--r-pill);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+/* ---------- Sidhuvud ---------- */
+
+.fd-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--paper-50);
+  border-bottom: 1px solid color-mix(in srgb, var(--slate-200) 80%, transparent);
+}
+
+.fd-nav__inner {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  height: 4.25rem;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: var(--fd-gutter);
+}
+
+.fd-nav__logo {
+  display: inline-flex;
+  color: var(--ink-900);
+}
+
+.fd-nav__links {
+  display: none;
+  gap: 1.75rem;
+  font-size: 0.9375rem;
+}
+
+.fd-nav__links a {
+  color: var(--slate-700);
+  text-decoration: none;
+  transition: color 200ms ease;
+}
+
+.fd-nav__links a:hover {
+  color: var(--ink-900);
+}
+
+.fd-nav__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+@media (min-width: 960px) {
+  .fd-nav__links {
+    display: flex;
+  }
+}
+
+@media (max-width: 420px) {
+  .fd-nav__inner {
+    gap: 0.75rem;
+  }
+  .fd-nav__actions .fd-btn--sm {
+    padding: 0 0.8rem;
+  }
+}
+
+/* ---------- Sektioner ---------- */
+
+.fd-section {
+  padding-block: var(--fd-section-y);
+  scroll-margin-top: 4.25rem;
+}
+
+.fd-section--white {
+  background: white;
+}
+
+.fd-section--paper {
+  background: var(--paper-50);
+}
+
+.fd-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 52rem;
+  margin-bottom: clamp(3rem, 6vw, 5rem);
+}
+
+.fd-head--center {
+  align-items: center;
+  margin-inline: auto;
+  text-align: center;
+}
+
+/* ---------- Hero ---------- */
+
+.fd-hero {
+  position: relative;
+  padding-top: clamp(3.5rem, 8vw, 6rem);
+  padding-bottom: var(--fd-section-y);
+  background:
+    radial-gradient(60rem 28rem at 50% -6rem, var(--accent-soft), transparent 70%),
+    var(--paper-50);
+}
+
+.fd-hero__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+  max-width: 60rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.fd-hero__lede {
+  max-width: 40rem;
+}
+
+.fd-hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.fd-hero__proof {
+  max-width: 64rem;
+  margin: clamp(3.5rem, 7vw, 5.5rem) auto 0;
+}
+
+/* Laddningsögonblicket: rubrik, ingress, knappar och panel kommer in i tur
+   och ordning. Innehållet är synligt från början om rörelse är avslaget. */
+@media (prefers-reduced-motion: no-preference) {
+  .fd-hero__copy > *,
+  .fd-hero__proof {
+    animation: fd-rise 700ms var(--fd-ease) both;
+  }
+  .fd-hero__copy > :nth-child(2) {
+    animation-delay: 70ms;
+  }
+  .fd-hero__copy > :nth-child(3) {
+    animation-delay: 140ms;
+  }
+  .fd-hero__proof {
+    animation-delay: 240ms;
+  }
+}
+
+@keyframes fd-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* ---------- Poängpanelen i hero ---------- */
+
+.fd-proof {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: white;
+  box-shadow: var(--shadow-lift);
+  text-align: left;
+}
+
+@media (min-width: 880px) {
+  .fd-proof {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
+}
+
+.fd-proof__idea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  background: var(--sunk);
+  border-bottom: 1px solid var(--fd-line);
+}
+
+@media (min-width: 880px) {
+  .fd-proof__idea {
+    border-bottom: 0;
+    border-right: 1px solid var(--fd-line);
+  }
+}
+
+.fd-proof__ideahead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fd-proof__name {
+  font-size: 1.75rem;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.fd-proof__line {
+  color: var(--fd-muted);
+}
+
+.fd-proof__control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 1.5rem;
+}
+
+/* Sex kundsvar: bock för bekräftar, streck för säger emot. Tre av dem slår
+   om när besökaren slår på motsägelserna, i tur och ordning. */
+.fd-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1.75rem;
+  padding: 1.25rem;
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-md);
+  background: white;
+}
+
+.fd-answers__label {
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fd-answers__list {
+  display: flex;
+  gap: clamp(0.4rem, 1.5vw, 0.6rem);
+}
+
+.fd-answer {
+  position: relative;
+  flex: 1 1 0;
+  max-width: 2.5rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--score-green-bg);
+  transition: background-color 260ms ease calc(var(--i) * 40ms - 120ms);
+}
+
+.fd-answer::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 0.5rem;
+  height: 0.85rem;
+  border: solid var(--score-green);
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+  transition:
+    transform 320ms var(--fd-ease) calc(var(--i) * 40ms - 120ms),
+    border-color 260ms ease calc(var(--i) * 40ms - 120ms),
+    width 320ms var(--fd-ease) calc(var(--i) * 40ms - 120ms),
+    height 320ms var(--fd-ease) calc(var(--i) * 40ms - 120ms);
+}
+
+.fd-answer--against {
+  background: var(--score-red-bg);
+}
+
+.fd-answer--against::after {
+  top: 50%;
+  width: 0.95rem;
+  height: 0;
+  border-color: var(--score-red);
+  border-width: 0 0 2px 0;
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.fd-answers__legend {
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--fd-quiet);
+}
+
+.fd-answers__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.fd-answers__key::before {
+  content: "";
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--score-green);
+}
+
+.fd-answers__key--against::before {
+  background: var(--score-red);
+}
+
+.fd-proof__hint {
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fd-proof__delta {
+  min-height: 3rem;
+  font-size: 0.9375rem;
+  color: var(--fd-muted);
+}
+
+.fd-proof__deltanum {
+  color: var(--score-red);
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-proof__score {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.fd-proof__total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1.25rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--fd-line);
+}
+
+.fd-proof__label {
+  width: 100%;
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fd-proof__number {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: clamp(3.5rem, 7vw, 5rem);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-proof__number > span:first-child {
+  display: inline-block;
+}
+
+.fd-proof__outof {
+  font-size: 1rem;
+  letter-spacing: 0;
+  color: var(--fd-quiet);
+}
+
+.fd-proof__number + .fd-level {
+  margin-bottom: var(--space-1);
+}
+
+.fd-proof__partslabel {
+  margin: 1.25rem 0 0.25rem;
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fd-proof__locked {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fd-answer,
+  .fd-answer::after,
+  .fd-part__bar > span {
+    transition-duration: 0ms;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fd-recount {
+    animation: fd-recount 420ms var(--fd-ease);
+  }
+}
+
+@keyframes fd-recount {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(0.18em);
+  }
+}
+
+/* Delarna: namn, poäng av vikt, ett tunt streck och källan. */
+.fd-parts {
+  display: flex;
+  flex-direction: column;
+}
+
+.fd-part {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 11.5rem;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--hair-2);
+}
+
+/* Demots källor är längre ("Kundsamtal, steg 06"). */
+.fdd .fd-part {
+  grid-template-columns: minmax(0, 1fr) 14.5rem;
+}
+
+.fd-part__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.fd-part__points {
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-part__weight {
+  color: var(--fd-quiet);
+}
+
+.fd-part__bar {
+  grid-column: 1;
+  display: block;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--slate-100);
+  overflow: hidden;
+}
+
+.fd-part__bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent-600);
+  transform-origin: left center;
+  transition: transform 420ms var(--fd-ease);
+}
+
+.fd-part__source {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .fd-part,
+  .fdd .fd-part {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fd-part__source {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+  }
+}
+
+/* ---------- Omkopplare ---------- */
+
+.fd-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: fit-content;
+  padding: 0.35rem 0;
+  font-size: 1.0625rem;
+  color: var(--ink-900);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.fd-switch__track {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 1.6rem;
+  border-radius: var(--r-pill);
+  background: var(--slate-300);
+  transition: background-color 200ms ease;
+}
+
+.fd-switch__thumb {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 2px rgba(14, 32, 51, 0.2);
+  transition: transform 240ms var(--fd-ease);
+}
+
+.fd-switch[aria-checked="true"] .fd-switch__track {
+  background: var(--accent-600);
+}
+
+.fd-switch[aria-checked="true"] .fd-switch__thumb {
+  transform: translateX(1.15rem);
+}
+
+.fd-switch:active .fd-switch__thumb {
+  width: 1.35rem;
+}
+
+/* ---------- Resan ---------- */
+
+.fd-journey {
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: var(--sunk);
+}
+
+.fd-stepper {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(4.75rem, 1fr));
+  overflow-x: auto;
+  padding: var(--space-8) clamp(var(--space-4), 2.5vw, var(--space-8)) var(--space-8);
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: var(--slate-300) transparent;
+}
+
+.fd-stepper__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+  scroll-snap-align: start;
+}
+
+/* Linjen mellan stegen. */
+.fd-stepper__item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 1.25rem;
+  left: calc(50% + 1.5rem);
+  right: calc(-50% + 1.5rem);
+  height: 1px;
+  background: var(--slate-300);
+}
+
+.fd-stepper__num {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--accent-600);
+  border-radius: 50%;
+  background: white;
+  color: var(--accent-700);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-stepper__title {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--fd-muted);
+  padding-inline: var(--space-1);
+}
+
+.fd-phases {
+  display: grid;
+  gap: 1px;
+  background: var(--fd-line);
+  border-top: 1px solid var(--fd-line);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  overflow: hidden;
+}
+
+@media (min-width: 720px) {
+  .fd-phases {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .fd-phases {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.fd-phase {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: clamp(1.5rem, 2.5vw, 2rem);
+  background: white;
+}
+
+.fd-phase__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fd-phase__name {
+  font-family: var(--font-serif-italic), Georgia, serif;
+  font-style: italic;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--accent-600);
+}
+
+.fd-phase__range {
+  font-size: 0.8125rem;
+  color: var(--fd-quiet);
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-phase__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fd-phase__steps li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.fd-phase__steptitle {
+  font-size: 1.0625rem;
+}
+
+.fd-phase__stepline {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--fd-quiet);
+}
+
+/* ---------- Delad layout: text + panel ---------- */
+
+.fd-split {
+  display: grid;
+  gap: clamp(2.5rem, 6vw, 5rem);
+  align-items: center;
+}
+
+@media (min-width: 960px) {
+  .fd-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .fd-split--reverse .fd-split__text {
+    order: 2;
+  }
+}
+
+.fd-split__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.fd-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: clamp(var(--space-6), 3vw, var(--space-8));
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: white;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Bock-lista. Bocken ritas med CSS, inga ikonfiler. */
+.fd-checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.fd-checks li {
+  position: relative;
+  padding-left: var(--space-8);
+  color: var(--fd-muted);
+}
+
+.fd-checks li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.15em;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+}
+
+.fd-checks li::after {
+  content: "";
+  position: absolute;
+  left: 0.44rem;
+  top: calc(0.15em + 0.3rem);
+  width: 0.36rem;
+  height: 0.6rem;
+  border: solid var(--accent-600);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+
+.fd-checks--small {
+  gap: var(--space-2);
+  margin-top: 0;
+  font-size: 0.9375rem;
+}
+
+.fd-checks--dark li {
+  color: var(--slate-200);
+}
+
+.fd-checks--dark li::before {
+  background: color-mix(in srgb, var(--accent-300) 22%, transparent);
+}
+
+.fd-checks--dark li::after {
+  border-color: var(--accent-200);
+}
+
+/* ---------- Registret ---------- */
+
+.fd-register__head,
+.fd-nextstep__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fd-register__title {
+  font-size: 1.5rem;
+  line-height: 1.15;
+}
+
+.fd-register__sni {
+  margin-top: 0.2rem;
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-register__facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1.25rem 0;
+  border-block: 1px solid var(--hair-2);
+}
+
+.fd-register__facts dt {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--fd-quiet);
+}
+
+.fd-register__facts dd {
+  margin-top: 0.4rem;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-register__basis {
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fd-register__list {
+  padding: 1rem 1.25rem;
+  border-radius: var(--r-md);
+  background: var(--sunk);
+}
+
+.fd-register__listtitle {
+  margin-bottom: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--fd-quiet);
+}
+
+.fd-register__list ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fd-register__list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.15rem 1rem;
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 520px) {
+  .fd-register__list li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.fd-register__meta {
+  color: var(--fd-quiet);
+}
+
+/* ---------- Poängens vikter ---------- */
+
+.fd-weights {
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+.fd-weights__label {
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+  text-align: center;
+}
+
+/* Mobil: en rad per del, strecket i proportion till vikten. */
+.fd-weights__list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.fd-weight {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 1rem;
+  align-items: baseline;
+}
+
+.fd-weight__bar {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  height: 0.5rem;
+  width: var(--share);
+  border-radius: 2px;
+  background: var(--accent-600);
+}
+
+.fd-weight__value {
+  font-variant-numeric: tabular-nums;
+  color: var(--fd-muted);
+}
+
+/* Desktop: en enda remsa där varje del tar plats efter sin vikt (summa 100). */
+@media (min-width: 900px) {
+  .fd-weights__list {
+    grid-template-columns: var(--cols);
+    gap: 3px;
+  }
+  .fd-weight {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+  .fd-weight__bar {
+    order: -1;
+    width: 100%;
+    height: 3.25rem;
+    border-radius: 0;
+  }
+  .fd-weight:first-child .fd-weight__bar {
+    border-radius: var(--r-md) 0 0 var(--r-md);
+  }
+  .fd-weight:last-child .fd-weight__bar {
+    border-radius: 0 var(--r-md) var(--r-md) 0;
+  }
+  .fd-weight {
+    position: relative;
+  }
+  .fd-weight__name {
+    font-size: 0.875rem;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+  /* Den sista (smala) delen högerställs så att namnet ryms. */
+  .fd-weight:last-child {
+    align-items: flex-end;
+  }
+  .fd-weight__value {
+    position: absolute;
+    top: 0.85rem;
+    left: 0.75rem;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: white;
+  }
+  .fd-weight:last-child .fd-weight__value {
+    left: auto;
+    right: 0.75rem;
+  }
+}
+
+.fd-rules {
+  display: grid;
+  gap: 2rem;
+  max-width: 72rem;
+  margin: clamp(3rem, 6vw, 4.5rem) auto 0;
+  padding-top: clamp(2rem, 4vw, 3rem);
+  border-top: 1px solid var(--fd-line);
+}
+
+@media (min-width: 800px) {
+  .fd-rules {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3rem;
+  }
+}
+
+.fd-rules__title {
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.fd-rules__body {
+  margin-top: 0.5rem;
+  color: var(--fd-muted);
+}
+
+/* ---------- Medgrundarens kort ---------- */
+
+.fd-nextstep__label {
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fd-nextstep__eyebrow {
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-label);
+  color: var(--accent-700);
+}
+
+.fd-nextstep__title {
+  margin-top: -0.5rem;
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.fd-nextstep__why {
+  color: var(--fd-muted);
+}
+
+.fd-nextstep__done {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--r-md);
+  background: var(--sunk);
+}
+
+.fd-nextstep__done > p {
+  font-size: 0.8125rem;
+  color: var(--fd-quiet);
+}
+
+.fd-nextstep__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--hair-2);
+}
+
+.fd-nextstep__action {
+  display: inline-flex;
+  align-items: center;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  color: var(--accent-700);
+  font-size: 0.9375rem;
+}
+
+.fd-nextstep__points {
+  font-size: 0.9375rem;
+  color: var(--ok);
+}
+
+/* ---------- Pris ---------- */
+
+.fd-price {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 34rem;
+  margin-inline: auto;
+  padding: clamp(2rem, 4vw, 3rem);
+  border-radius: calc(var(--r-lg) * 1.25);
+  background: var(--navy);
+  color: var(--paper-50);
+  box-shadow: var(--shadow-lift);
+}
+
+.fd-price__name {
+  font-size: 0.875rem;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--slate-300);
+}
+
+.fd-price__amount {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: clamp(3.25rem, 7vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.fd-price__amount span {
+  font-size: 1.125rem;
+  letter-spacing: 0;
+  color: var(--slate-300);
+}
+
+.fd-price__desc {
+  font-size: 1.125rem;
+  color: var(--slate-200);
+}
+
+.fd-price .fd-checks {
+  padding-block: 1.25rem;
+  border-block: 1px solid color-mix(in srgb, var(--paper-50) 16%, transparent);
+}
+
+.fd-price__excluded,
+.fd-price__note {
+  font-size: 0.875rem;
+  color: var(--slate-300);
+}
+
+.fd-price .fd-btn {
+  margin-top: 0.5rem;
+}
+
+/* ---------- Avslut ---------- */
+
+.fd-close {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 44rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.fd-close__demo {
+  margin-top: 0.5rem;
+}
+
+.fd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 32rem;
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.fd-form__label {
+  font-size: 0.9375rem;
+  color: var(--ink-900);
+}
+
+.fd-form__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+@media (min-width: 560px) {
+  .fd-form__row {
+    flex-direction: row;
+  }
+}
+
+.fd-input {
+  flex: 1;
+  min-width: 0;
+  height: 3rem;
+  padding: 0 1rem;
+  border: 1px solid var(--slate-300);
+  border-radius: var(--r-md);
+  background: white;
+  color: var(--ink-900);
+  font: inherit;
+  font-size: 1rem;
+  caret-color: var(--accent-600);
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.fd-input::placeholder {
+  color: var(--slate-600);
+}
+
+.fd-input:focus {
+  outline: none;
+  border-color: var(--accent-600);
+  box-shadow: 0 0 0 3px var(--accent-100);
+}
+
+.fd-input--invalid {
+  border-color: var(--bad);
+}
+
+.fd-form__help {
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fd-form__status {
+  min-height: 1.4rem;
+  font-size: 0.875rem;
+  color: var(--ink-900);
+}
+
+.fd-form__error {
+  color: var(--bad);
+}
+
+/* Formuläret inuti .fd-form (statusraden och integritetsraden ligger utanför,
+   så att de står kvar när formuläret byts mot tacket). */
+.fd-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fd-form .fd-btn:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* "Menade du …?": ett förslag, inte ett fel. Klick byter adressen i fältet. */
+.fd-form__suggest {
+  font-size: 0.875rem;
+}
+
+.fd-form__suggest-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-700);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.fd-form__suggest-btn:hover {
+  color: var(--ink-900);
+}
+
+.fd-form__done {
+  font-weight: 500;
+}
+
+.fd-form__link {
+  color: var(--accent-700);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.fd-form__link:hover {
+  color: var(--ink-900);
+}
+
+/* Honeypot: utanför skärmen (inte display: none, som en del botar hoppar över). */
+.fd-hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Datalöftet: etikett på block med påhittad data i demot. */
+.fdd-example {
+  display: inline-flex;
+  align-self: flex-start;
+  margin-bottom: var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  border: 1px dashed var(--slate-300);
+  border-radius: 999px;
+  background: white;
+  color: var(--fd-muted);
+  font-size: 0.8125rem;
+}
+
+/* ---------- Integritetstexten (/integritet) ---------- */
+
+.fd-privacy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 40rem;
+}
+
+.fd-privacy__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--fd-muted);
+  line-height: 1.6;
+}
+
+.fd-privacy__heading {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--ink-900);
+}
+
+.fd-privacy__back {
+  align-self: flex-start;
+}
+
+/* ---------- Sidfot ---------- */
+
+.fd-footer {
+  padding-block: 2.5rem;
+  border-top: 1px solid var(--fd-line);
+  background: var(--paper-50);
+}
+
+.fd-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 2rem;
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fd-footer__inner > :last-child {
+  margin-left: auto;
+}
+
+/* =====================================================================
+ * Demokopian (/demo). Samma typografi, ytor och radier
+ * som landningssidan, men tätare: här ska man arbeta, inte övertygas.
+ * ===================================================================== */
+
+.fdd {
+  min-height: 100dvh;
+  padding-bottom: 9rem;
+}
+
+.fdd-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--paper-50);
+  border-bottom: 1px solid var(--fd-line);
+}
+
+.fdd-top__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-6);
+  max-width: 76rem;
+  min-height: 4.25rem;
+  margin-inline: auto;
+  padding: var(--space-3) var(--fd-gutter);
+}
+
+.fdd-top__end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+
+.fdd-top__step {
+  display: none;
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+  white-space: nowrap;
+}
+
+@media (min-width: 1100px) {
+  .fdd-top__step {
+    display: block;
+  }
+}
+
+.fdd-avatar {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--paper-50);
+  font-size: 0.8125rem;
+}
+
+.fdd-main {
+  max-width: 76rem;
+  margin-inline: auto;
+  padding: clamp(var(--space-12), 5vw, var(--space-16)) var(--fd-gutter) 0;
+}
+
+.fdd-page {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(var(--space-12), 5vw, var(--space-16));
+}
+
+.fdd-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.fdd-head__date {
+  font-size: 0.9375rem;
+  color: var(--fd-quiet);
+}
+
+.fdd-hero {
+  display: grid;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+/* Två kort med jämförbart innehåll (Hem): lika höga, så att underkanterna
+   och knapparna linjerar. Inte där ena kolumnen är mycket längre. */
+.fdd-hero--even {
+  align-items: stretch;
+}
+
+@media (min-width: 960px) {
+  .fdd-hero {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  }
+}
+
+.fdd-next__title {
+  margin-top: calc(-1 * var(--space-2));
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.fdd-label {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--fd-quiet);
+}
+
+.fdd-muted {
+  color: var(--fd-quiet);
+  font-size: 0.9375rem;
+}
+
+.fdd-figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2) var(--space-4);
+}
+
+.fdd-figure .fd-level {
+  margin-bottom: var(--space-1);
+}
+
+.fdd-delta {
+  font-size: 0.9375rem;
+  color: var(--fd-muted);
+}
+
+.fdd-delta__up {
+  color: var(--ok);
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-delta__down {
+  color: var(--score-red);
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-scorecard__link {
+  align-self: flex-start;
+  /* Knappen står längst ner, i linje med knappen i kortet bredvid. */
+  margin-top: auto;
+}
+
+.fdd-scorehead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--fd-line);
+}
+
+.fdd-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fdd-block__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.fdd-block__title {
+  font-size: clamp(1.5rem, 2.4vw, 1.9rem);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.fdd-two {
+  display: grid;
+  gap: var(--space-12);
+}
+
+@media (min-width: 960px) {
+  .fdd-two {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-8);
+  }
+}
+
+/* Stegraden med status. */
+.fdd-stepper .fd-stepper__num {
+  transition:
+    background-color 240ms ease,
+    color 240ms ease,
+    border-color 240ms ease;
+}
+
+.fdd-step--done .fd-stepper__num {
+  background: var(--accent-600);
+  border-color: var(--accent-600);
+  color: white;
+}
+
+.fdd-step--current .fd-stepper__num {
+  box-shadow: 0 0 0 4px var(--accent-100);
+}
+
+.fdd-step--current .fd-stepper__title {
+  color: var(--ink-900);
+}
+
+.fdd-step--locked .fd-stepper__num {
+  border-color: var(--slate-300);
+  color: var(--slate-600);
+}
+
+/* Vad som hänt sedan sist. */
+.fdd-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: var(--fd-line);
+}
+
+.fdd-facts > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  background: white;
+}
+
+.fdd-facts > div > :last-child {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+@media (max-width: 420px) {
+  .fdd-facts > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fdd-facts > div > :last-child {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+  }
+}
+
+.fdd-facts dt {
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fdd-facts dd {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-facts dd span {
+  font-size: 0.9375rem;
+  letter-spacing: 0;
+  color: var(--fd-quiet);
+}
+
+.fdd-facts__foot {
+  font-size: 0.875rem;
+}
+
+.fdd-signal {
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.fdd-signal__category {
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--accent-700);
+}
+
+.fdd-signal__headline {
+  font-size: 1.25rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* Låsta delar i poänglistan. */
+.fd-part--locked .fd-part__name {
+  color: var(--slate-600);
+}
+
+.fd-part__lockedlabel {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  font-size: 0.8125rem;
+  color: var(--fd-quiet);
+}
+
+@media (max-width: 520px) {
+  .fd-part__lockedlabel {
+    grid-column: 1;
+    justify-self: start;
+  }
+}
+
+/* Historiken. */
+.fdd-history svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fdd-history__grid {
+  stroke: var(--slate-200);
+  stroke-width: 1;
+}
+
+.fdd-history__line {
+  fill: none;
+  stroke: var(--accent-600);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.fdd-history__dot {
+  fill: var(--accent-600);
+}
+
+/* Höj din poäng. */
+.fdd-suggestions {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: white;
+}
+
+.fdd-suggestion {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-6) clamp(var(--space-4), 2.5vw, var(--space-8));
+}
+
+.fdd-suggestion + .fdd-suggestion {
+  border-top: 1px solid var(--hair-2);
+}
+
+@media (min-width: 760px) {
+  .fdd-suggestion {
+    grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+.fdd-suggestion__gain {
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--accent-600);
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-suggestion__label {
+  font-size: 1.125rem;
+}
+
+.fdd-suggestion__meta {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+@media (min-width: 760px) {
+  .fdd-suggestion__meta {
+    grid-column: 3;
+    justify-content: flex-end;
+  }
+}
+
+.fdd-gap {
+  display: inline-flex;
+  align-items: center;
+  height: 1.6rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--r-pill);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.fdd-gap--insufficient {
+  background: var(--slate-100);
+  color: var(--slate-700);
+}
+
+.fdd-gap--contradicting {
+  background: var(--score-orange-bg);
+  color: var(--score-orange);
+}
+
+.fdd-gap--structural {
+  background: var(--score-yellow-bg);
+  color: var(--score-yellow);
+}
+
+/* Demoraden. */
+.fdd-bar {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 30;
+  background: var(--navy);
+  color: var(--paper-50);
+}
+
+.fdd-bar__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 76rem;
+  min-height: 3.5rem;
+  margin-inline: auto;
+  padding: var(--space-2) var(--fd-gutter);
+}
+
+.fdd-bar__position {
+  font-size: 0.875rem;
+  color: var(--slate-200);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fdd-bar__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-inline: auto;
+}
+
+.fdd-bar__btn,
+.fdd-bar__reset {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 2.5rem;
+  padding: 0 var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--paper-50) 22%, transparent);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--paper-50);
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition:
+    transform 160ms var(--fd-ease),
+    background-color 200ms ease;
+}
+
+.fdd-bar__btn:active:not(:disabled),
+.fdd-bar__reset:active {
+  transform: scale(0.97);
+}
+
+.fdd-bar__btn--next {
+  background: var(--paper-50);
+  color: var(--ink-900);
+  border-color: var(--paper-50);
+}
+
+.fdd-bar__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fdd-bar__reset {
+  border-color: transparent;
+  color: var(--slate-200);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fdd-bar__btn:not(:disabled):not(.fdd-bar__btn--next):hover,
+  .fdd-bar__reset:hover {
+    background: color-mix(in srgb, var(--paper-50) 10%, transparent);
+  }
+}
+
+.fdd-bar :focus-visible {
+  outline-color: var(--accent-300);
+}
+
+
+.fdd-suggestion__concept {
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 520px) {
+  .fdd-avatar {
+    display: none;
+  }
+  .fdd-top__inner {
+    gap: var(--space-2) var(--space-3);
+  }
+}
+
+/* =====================================================================
+ * Demokopian, andra omgången: menyn, onboardingen och resten av sidorna.
+ * ===================================================================== */
+
+/* Flikraden under sidhuvudet. Rullar i sidled när den inte ryms. */
+.fdd-tabs {
+  border-top: 1px solid var(--hair-2);
+}
+
+.fdd-tabs__inner {
+  position: relative;
+  display: flex;
+  gap: var(--space-1);
+  max-width: 76rem;
+  margin-inline: auto;
+  padding: var(--space-2) var(--fd-gutter);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.fdd-tabs__inner::-webkit-scrollbar {
+  display: none;
+}
+
+.fdd-tab {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--r-md);
+  color: var(--slate-700);
+  font-size: 0.9375rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fdd-tab:hover {
+    color: var(--ink-900);
+    background: var(--slate-100);
+  }
+}
+
+.fdd-tab--active {
+  background: white;
+  color: var(--ink-900);
+  box-shadow: inset 0 0 0 1px var(--fd-line);
+}
+
+.fdd-main--narrow {
+  max-width: 52rem;
+}
+
+/* Sidhuvud på undersidor. */
+.fdd-head__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-8);
+}
+
+.fdd-head__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  max-width: 50rem;
+}
+
+.fdd-head--center {
+  align-items: center;
+  text-align: center;
+}
+
+.fdd-back {
+  align-self: flex-start;
+  margin-bottom: calc(-1 * var(--space-6));
+  color: var(--fd-quiet);
+  font-size: 0.9375rem;
+  text-decoration: none;
+}
+
+.fdd-back:hover {
+  color: var(--ink-900);
+}
+
+.fdd-body {
+  color: var(--fd-muted);
+}
+
+.fdd-note {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--r-md);
+  background: var(--sunk);
+  color: var(--fd-muted);
+  font-size: 0.9375rem;
+}
+
+.fdd-nowrap {
+  white-space: nowrap;
+}
+
+.fdd-self-start {
+  align-self: flex-start;
+}
+
+.fdd-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.fdd-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.fdd-stack--tight {
+  gap: var(--space-2);
+}
+
+.fdd-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.fdd-panel__title {
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.fdd-link {
+  color: var(--accent-700);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Etiketter. Samma form överallt: rund, liten, aldrig versaler. */
+.fdd-pill {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 1.6rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--r-pill);
+  font-size: 0.8125rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.fdd-pill--green {
+  background: var(--score-green-bg);
+  color: var(--score-green);
+}
+
+.fdd-pill--orange {
+  background: var(--score-orange-bg);
+  color: var(--score-orange);
+}
+
+.fdd-pill--yellow {
+  background: var(--score-yellow-bg);
+  color: var(--score-yellow);
+}
+
+.fdd-pill--neutral,
+.fdd-pill--status-locked {
+  background: var(--slate-100);
+  color: var(--slate-700);
+}
+
+.fdd-pill--accent,
+.fdd-pill--status-current {
+  background: var(--accent-100);
+  color: var(--accent-800);
+}
+
+.fdd-pill--status-done {
+  background: var(--score-green-bg);
+  color: var(--score-green);
+}
+
+.fdd-pill--register {
+  background: var(--data-register-bg);
+  color: var(--data-register);
+}
+
+.fdd-pill--customer {
+  background: var(--data-customer-bg);
+  color: var(--data-customer);
+}
+
+.fdd-pill--simulation {
+  background: var(--data-simulation-bg);
+  color: var(--data-simulation);
+}
+
+.fdd-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Låst: streckad, lugn, med ett litet hänglås ritat i CSS. */
+.fdd-locked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-6);
+  border: 1px dashed var(--slate-300);
+  border-radius: var(--r-md);
+  background: var(--sunk);
+}
+
+.fdd-locked__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  color: var(--slate-700);
+}
+
+.fdd-locked__hint {
+  font-size: 0.9375rem;
+  color: var(--fd-quiet);
+}
+
+.fdd-lock {
+  position: relative;
+  width: 0.7rem;
+  height: 0.55rem;
+  margin-top: var(--space-1);
+  border-radius: 2px;
+  background: var(--slate-600);
+}
+
+.fdd-lock::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 0.45rem;
+  height: 0.4rem;
+  border: 1.5px solid var(--slate-600);
+  border-bottom: 0;
+  border-radius: 0.3rem 0.3rem 0 0;
+  transform: translateX(-50%);
+}
+
+/* Nyckeltal. */
+.fdd-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: var(--fd-line);
+}
+
+.fdd-figures__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-6);
+  background: white;
+}
+
+.fdd-figures__item dt {
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fdd-figures__item dd {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-figures__item dd span {
+  font-size: 0.9375rem;
+  letter-spacing: 0;
+  color: var(--fd-quiet);
+}
+
+.fdd-figures__desc {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--fd-quiet);
+}
+
+/* Rader med en dom eller status till höger. */
+.fdd-rows {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: white;
+}
+
+.fdd-rows__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+  padding: var(--space-4) clamp(var(--space-4), 2.5vw, var(--space-6));
+}
+
+.fdd-rows__item + .fdd-rows__item {
+  border-top: 1px solid var(--hair-2);
+}
+
+.fdd-rows__main {
+  display: flex;
+  flex: 1 1 22rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.fdd-rows__title {
+  font-size: 1.125rem;
+  line-height: 1.35;
+}
+
+/* Simulering: alltid visuellt åtskild från registret. */
+.fdd-sim {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-6);
+  border: 1px dashed var(--data-simulation);
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--data-simulation-bg) 45%, white);
+}
+
+.fdd-sim__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.fdd-sim__question {
+  margin-top: var(--space-1);
+  color: var(--fd-muted);
+}
+
+.fdd-sim__result {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-sim__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-1);
+}
+
+/* Domen. */
+.fdd-verdict {
+  gap: var(--space-3);
+}
+
+.fdd-verdict__headline {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.fdd-delta--large {
+  font-size: 1.125rem;
+  color: var(--ink-900);
+}
+
+/* Samtalet. */
+.fdd-conversation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.fdd-conversation__pair {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.fdd-chat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: min(36rem, 88%);
+}
+
+.fdd-chat--cofounder {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.fdd-chat--founder {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.fdd-chat__bubble {
+  padding: var(--space-3) var(--space-4);
+  border-radius: 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.fdd-chat--cofounder .fdd-chat__bubble {
+  border: 1px solid var(--fd-line);
+  border-bottom-left-radius: 0.3rem;
+  background: white;
+  color: var(--ink-900);
+}
+
+.fdd-chat--founder .fdd-chat__bubble {
+  border-bottom-right-radius: 0.3rem;
+  background: var(--navy);
+  color: var(--paper-50);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fdd-chat {
+    animation: fd-rise 420ms var(--fd-ease) both;
+  }
+}
+
+.fdd-tool {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+  border: 1px dashed var(--slate-300);
+  border-radius: var(--r-md);
+  background: var(--sunk);
+}
+
+.fdd-tool__label {
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fdd-skip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-1) 0;
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+.fdd-skip::before,
+.fdd-skip::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--fd-line);
+}
+
+.fdd-cofounder {
+  gap: var(--space-6);
+}
+
+.fdd-prompt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-md);
+  background: var(--sunk);
+}
+
+.fdd-prompt__input {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: var(--fd-muted);
+  font: inherit;
+  cursor: not-allowed;
+}
+
+.fdd-prompt__input::placeholder {
+  color: var(--slate-600);
+}
+
+.fdd-prompt .fd-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fdd-context {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fdd-context__list {
+  display: flex;
+  flex-direction: column;
+  counter-reset: fdd-context;
+}
+
+.fdd-context__list li {
+  position: relative;
+  padding: var(--space-3) 0 var(--space-3) var(--space-6);
+  border-bottom: 1px solid var(--hair-2);
+  color: var(--fd-muted);
+  font-size: 0.9375rem;
+}
+
+.fdd-context__list li::before {
+  content: "";
+  position: absolute;
+  left: 0.2rem;
+  top: 1.2rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--accent-600);
+}
+
+/* Onboardingen. */
+.fdd-onboarding {
+  padding-top: clamp(0rem, 3vw, var(--space-8));
+}
+
+.fdd-entries {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 680px) {
+  .fdd-entries {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fdd-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: clamp(var(--space-6), 3vw, var(--space-8));
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: white;
+  box-shadow: var(--shadow-soft);
+  color: var(--ink-900);
+  text-decoration: none;
+  transition:
+    transform 200ms var(--fd-ease),
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+
+.fdd-entry:active {
+  transform: scale(0.99);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fdd-entry:hover {
+    border-color: var(--accent-300);
+    box-shadow: var(--shadow-lift);
+  }
+}
+
+.fdd-entry__title {
+  font-size: 1.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.fdd-entry__body {
+  color: var(--fd-muted);
+}
+
+.fdd-entry__cta {
+  margin-top: auto;
+  padding-top: var(--space-2);
+  color: var(--accent-700);
+}
+
+.fdd-onboarding__grid {
+  display: grid;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (min-width: 820px) {
+  .fdd-onboarding__grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+  .fdd-profilebuild {
+    position: sticky;
+    top: 6rem;
+  }
+}
+
+.fdd-sharper {
+  gap: var(--space-2);
+}
+
+.fdd-sharper__name {
+  font-size: 1.75rem;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+/* Resan. */
+.fdd-stepper__link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fdd-stepper__link:hover .fd-stepper__num {
+    box-shadow: 0 0 0 4px var(--accent-100);
+  }
+}
+
+.fdd-phases {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(var(--space-8), 4vw, var(--space-12));
+}
+
+.fdd-phase {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fdd-phase__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.fdd-phase__head .fd-phase__name {
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.fdd-stepcards {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .fdd-stepcards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .fdd-stepcards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.fdd-stepcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-6);
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: white;
+  color: var(--ink-900);
+  text-decoration: none;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fdd-stepcard:hover {
+    border-color: var(--accent-300);
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+.fdd-stepcard--current {
+  border-color: var(--accent-600);
+  box-shadow: 0 0 0 3px var(--accent-100);
+}
+
+.fdd-stepcard--locked {
+  border-style: dashed;
+  background: var(--sunk);
+}
+
+.fdd-stepcard__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.fdd-stepcard__num {
+  font-size: 0.8125rem;
+  color: var(--fd-quiet);
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-stepcard__title {
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.fdd-stepcard__line {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--fd-muted);
+}
+
+.fdd-stepcard__points {
+  margin-top: auto;
+  padding-top: var(--space-2);
+  font-size: 0.8125rem;
+  color: var(--fd-quiet);
+}
+
+.fdd-bullets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fdd-bullets li {
+  position: relative;
+  padding-left: var(--space-6);
+  color: var(--fd-muted);
+}
+
+.fdd-bullets li::before {
+  content: "";
+  position: absolute;
+  left: 0.2rem;
+  top: 0.7em;
+  width: 0.4rem;
+  height: 1px;
+  background: var(--slate-500);
+}
+
+/* Marknad. */
+.fdd-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.fdd-bars__row {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 9rem) minmax(0, 1fr) 2.5rem;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.fdd-bars__label {
+  font-size: 0.9375rem;
+  color: var(--fd-muted);
+}
+
+.fdd-bars__track {
+  display: block;
+  height: 0.75rem;
+}
+
+.fdd-bars__track > span {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 2px;
+  background: var(--accent-600);
+}
+
+.fdd-bars__value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-pairs {
+  display: flex;
+  flex-direction: column;
+}
+
+.fdd-pairs > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--hair-2);
+}
+
+.fdd-pairs dt {
+  color: var(--fd-muted);
+}
+
+.fdd-pairs dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-layers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fdd-layers li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.fdd-layers__name {
+  font-size: 1.125rem;
+}
+
+.fdd-cells {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: var(--fd-line);
+}
+
+@media (min-width: 760px) {
+  .fdd-cells {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.fdd-cells li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-6);
+  background: white;
+}
+
+.fdd-cells__title {
+  font-size: 1.125rem;
+}
+
+/* Validering. */
+.fdd-quotes {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 760px) {
+  .fdd-quotes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fdd-quote {
+  gap: var(--space-3);
+}
+
+.fdd-quote__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.fdd-quote__text {
+  font-family: var(--font-serif-italic), Georgia, serif;
+  font-style: italic;
+  font-size: 1.25rem;
+  line-height: 1.35;
+  color: var(--ink-900);
+}
+
+.fdd-table {
+  overflow-x: auto;
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: white;
+}
+
+.fdd-table table {
+  width: 100%;
+  min-width: 38rem;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.fdd-table th {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--fd-line);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  text-align: left;
+  color: var(--fd-quiet);
+}
+
+.fdd-table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--hair-2);
+}
+
+.fdd-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.fdd-num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pulsen. */
+.fdd-signals {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 760px) {
+  .fdd-signals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .fdd-signals {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.fdd-signal__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+}
+
+/* Minnet. */
+.fdd-memory {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.fdd-segmented {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--fd-line);
+  border-radius: calc(var(--r-md) + 0.25rem);
+  background: var(--sunk);
+}
+
+.fdd-segmented__item {
+  height: 2.25rem;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--slate-700);
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.fdd-segmented__item[data-state="active"] {
+  background: white;
+  color: var(--ink-900);
+  box-shadow: var(--shadow-soft);
+}
+
+.fdd-memory__panel:focus-visible {
+  outline-offset: 6px;
+}
+
+.fdd-textarea {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--slate-300);
+  border-radius: var(--r-md);
+  background: white;
+  color: var(--ink-900);
+  font: inherit;
+  line-height: 1.55;
+  resize: vertical;
+  caret-color: var(--accent-600);
+}
+
+.fdd-textarea:focus {
+  outline: none;
+  border-color: var(--accent-600);
+  box-shadow: 0 0 0 3px var(--accent-100);
+}
+
+.fdd-trace {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--fd-line);
+  margin-left: var(--space-2);
+}
+
+.fdd-trace li {
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+  padding: 0 0 var(--space-6) var(--space-6);
+}
+
+.fdd-trace li::before {
+  content: "";
+  position: absolute;
+  left: -0.35rem;
+  top: 0.35rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 2px solid var(--paper-50);
+  border-radius: 50%;
+  background: var(--accent-600);
+}
+
+.fdd-trace__date {
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+}
+
+/* Juridik. */
+.fdd-disclaimer {
+  padding: var(--space-4) var(--space-6);
+  border: 1px dashed var(--slate-300);
+  border-radius: var(--r-md);
+  background: var(--sunk);
+  color: var(--fd-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Bygg. */
+.fdd-gate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-6);
+  padding: var(--space-4) var(--space-6);
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: white;
+}
+
+.fdd-gate--building {
+  border-color: color-mix(in srgb, var(--score-yellow) 40%, white);
+  background: color-mix(in srgb, var(--score-yellow-bg) 55%, white);
+}
+
+.fdd-gate--published {
+  border-color: color-mix(in srgb, var(--score-green) 35%, white);
+  background: color-mix(in srgb, var(--score-green-bg) 55%, white);
+}
+
+.fdd-gate__credits {
+  margin-left: auto;
+  color: var(--fd-muted);
+  font-size: 0.9375rem;
+}
+
+.fdd-build {
+  display: grid;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .fdd-build {
+    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  }
+}
+
+.fdd-browser {
+  overflow: hidden;
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: white;
+  box-shadow: var(--shadow-soft);
+}
+
+.fdd-browser__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--hair-2);
+  background: var(--sunk);
+}
+
+.fdd-browser__url {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--fd-quiet);
+}
+
+.fdd-browser__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: clamp(var(--space-6), 3vw, var(--space-8));
+}
+
+.fdd-evidence {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fdd-evidence li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--hair-2);
+}
+
+/* Affärsplanen. */
+.fdd-maturity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+
+.fdd-maturity__value {
+  font-size: 2.5rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-plan {
+  display: grid;
+  gap: var(--space-6);
+}
+
+@media (min-width: 960px) {
+  .fdd-plan {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fdd-plansection {
+  gap: var(--space-4);
+}
+
+.fdd-claims {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.fdd-claim {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.fdd-claim__value {
+  color: var(--fd-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-contradiction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4);
+  border: 1px dashed var(--score-orange);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--score-orange-bg) 55%, white);
+}
+
+.fdd-contradiction__label {
+  font-size: 0.875rem;
+  color: var(--score-orange);
+}
+
+/* Demoraden: persona, läge, knappar och fäll ihop. */
+.fdd-bar__inner {
+  flex-wrap: wrap;
+  row-gap: var(--space-2);
+}
+
+.fdd-bar__info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  min-width: 0;
+}
+
+.fdd-bar__persona {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--paper-50) 12%, transparent);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.fdd-bar__position {
+  display: inline;
+  font-size: 0.875rem;
+  color: var(--slate-200);
+}
+
+.fdd-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.fdd-bar__btn--quiet {
+  border-color: transparent;
+  color: var(--slate-200);
+}
+
+.fdd-bar__btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent-300) 22%, transparent);
+  color: var(--paper-50);
+}
+
+.fdd-bar__collapse {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--slate-200);
+  cursor: pointer;
+}
+
+.fdd-bar__collapse:hover {
+  background: color-mix(in srgb, var(--paper-50) 10%, transparent);
+}
+
+.fdd-chevron {
+  width: 0.55rem;
+  height: 0.55rem;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 200ms var(--fd-ease);
+}
+
+.fdd-chevron--up {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+@media (max-width: 720px) {
+  .fdd-bar__inner {
+    padding-block: var(--space-2);
+  }
+  .fdd-bar__info {
+    flex: 1 1 auto;
+  }
+  .fdd-bar__actions {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .fdd-bar__actions > * {
+    flex-shrink: 0;
+  }
+  .fdd-bar__position {
+    display: inline;
+  }
+}
+
+/* Hoppa till steg. */
+.fdd-jump {
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: min(70vh, 32rem);
+  overflow-y: auto;
+  padding: var(--space-2);
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-lg);
+  background: white;
+  box-shadow: var(--shadow-lift);
+  font-family: var(--font-sans), Georgia, serif;
+  transform-origin: var(--radix-popover-content-transform-origin);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fdd-jump[data-state="open"] {
+    animation: fdd-pop 180ms var(--fd-ease);
+  }
+}
+
+@keyframes fdd-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.fdd-jump__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--slate-700);
+  font: inherit;
+  font-size: 0.9375rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fdd-jump__item:hover {
+  background: var(--slate-100);
+  color: var(--ink-900);
+}
+
+.fdd-jump__item--current {
+  background: var(--accent-100);
+  color: var(--accent-800);
+}
+
+.fdd-jump__step {
+  width: 1.5rem;
+  flex-shrink: 0;
+  color: var(--fd-quiet);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rundturen. Rutan (hålet i mörkläggningen) och kortet flyttas av
+   FondaTour med transform, opacity och clip-path; inga CSS-övergångar här,
+   så att en ny position aldrig krockar med en pågående animation. */
+.fdd-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  font-family: var(--font-sans), Georgia, serif;
+  animation: fdd-tour-in 200ms ease-out both;
+}
+
+@keyframes fdd-tour-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.fdd-tour__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  clip-path: path(evenodd, "M-10 -10H100000V100000H-10Z");
+}
+
+/* Bredden sätts av FondaTour (layoutStop kan välja ett smalare kort bredvid målet). */
+.fdd-tour__card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: min(380px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border-radius: var(--r-lg);
+  background: white;
+  box-shadow: var(--shadow-lift);
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, opacity;
+}
+
+/* Smal skärm: kortet är ett ark längst ner och tar så lite höjd som möjligt. */
+@media (max-width: 520px) {
+  .fdd-tour__card {
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-6) var(--space-4);
+  }
+  .fdd-tour__title {
+    font-size: 1.25rem;
+  }
+  .fdd-tour__body {
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+}
+
+.fdd-tour__count {
+  font-size: 0.875rem;
+  color: var(--accent-700);
+}
+
+.fdd-tour__title {
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.fdd-tour__body {
+  color: var(--fd-muted);
+  line-height: 1.55;
+}
+
+.fdd-tour__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-1);
+}
+
+.fdd-tour__skip {
+  border: 0;
+  background: none;
+  color: var(--fd-quiet);
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.fdd-tour__skip:hover {
+  color: var(--ink-900);
+}
+
+.fdd-tour__nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Knappens kvittens vid klick: 100 ms, före allt annat. */
+.fdd-tour__card .fd-btn,
+.fdd-tour__skip {
+  transition:
+    transform 100ms ease-out,
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.fdd-tour__card .fd-btn:active,
+.fdd-tour__skip:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fdd-chevron {
+    transition: none;
+  }
+}
+
+.fdd-bar__btn--next:disabled {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--paper-50) 22%, transparent);
+  color: var(--paper-50);
+}
+
+/* Layoutgenomgången: källan står längst ner i kort som ligger bredvid
+   varandra, så att källpillerna linjerar även när texten är olika lång. */
+.fdd-figures__item > :last-child,
+.fdd-cells li > :last-child,
+.fdd-signal > :last-child {
+  margin-top: auto;
+}
+
+/* En rubricerad del som följer kort i samma kolumn får samma luft ovanför
+   som en sektion på sidan, inte bara avståndet mellan två kort. */
+.fdd-stack > .fdd-block:not(:first-child) {
+  margin-top: var(--space-6);
+}
+
+/* Flikraden på smal skärm: kanten tonar ut, så att det syns att raden går
+   att skrolla. */
+@media (max-width: 720px) {
+  .fdd-tabs__inner {
+    mask-image: linear-gradient(to right, black calc(100% - var(--space-8)), transparent);
+  }
+}
+
+/* Demoraden på bred skärm: en rad. Lägesraden kortas hellre än att raden bryts. */
+@media (min-width: 721px) {
+  .fdd-bar__inner {
+    flex-wrap: nowrap;
+    max-width: none;
+  }
+  .fdd-bar__info {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+  .fdd-bar__position {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .fdd-bar__actions {
+    flex: none;
+    flex-wrap: nowrap;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1180px) {
+  .fdd-bar__persona {
+    display: none;
+  }
+}
+
+.fdd-context__concept {
+  display: flex;
+  margin-top: var(--space-2);
+}
+
+/* Rubriker som kommer ur data och är långa (t.ex. byggspecens sammanfattning). */
+.fdd-h1--long {
+  font-size: clamp(1.75rem, 3.2vw, 2.6rem);
+  line-height: 1.12;
+}
+
+/* Demoraden på mobil: läget och fäll ihop på en rad, knapparna på nästa. */
+@media (max-width: 720px) {
+  .fdd-bar__persona {
+    display: none;
+  }
+  .fdd-bar__info {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .fdd-bar__position {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

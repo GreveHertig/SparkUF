@@ -1,14 +1,11 @@
 import type { ReactNode } from "react";
-import { PublicHeader } from "@/components/spark/PublicHeader";
-import { PublicFooter } from "@/components/spark/PublicFooter";
+import "@/design/site.css";
 
-/** Delad ram för de publika sidorna (/, /priser) — se docs/uppdrag.md avsnitt 6. */
+/**
+ * De publika sidorna. Startsidan (/) och /integritet har egna sidhuvuden och
+ * sidfötter (design/site.css, skopat under .fd). /priser behåller den delade
+ * ramen, se priser/layout.tsx.
+ */
 export default function MarketingLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex min-h-screen flex-col">
-      <PublicHeader />
-      <main className="flex-1">{children}</main>
-      <PublicFooter />
-    </div>
-  );
+  return children;
 }
