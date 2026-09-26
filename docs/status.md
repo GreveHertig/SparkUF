@@ -2697,6 +2697,16 @@ Ingen migrering kördes mot databasen.
 - **Nätverksfel från Tavily** ger tomläge. Konfigurationsfel (t.ex. saknad
   nyckel) kastas vidare så att de syns.
 
+## Licens (klar 2026-09-25, gren `docs/licens`, PR mot `prototyp`)
+
+### Klart
+- `LICENSE` i repots rot: proprietär kod, alla rättigheter förbehållna Spark UF, på engelska och svenska.
+- `package.json`: `"license": "UNLICENSED"` tillagd. `"private": true` fanns redan. Inga andra ändringar.
+- `README.md`: en rad överst som hänvisar till `LICENSE`.
+
+### Beslut nästa session behöver känna till
+- Repot är proprietärt. Nya beroenden och kopierad kod måste ha licenser som tillåter användning i sluten kod.
+
 ## Ny startsida och nytt demo (klar 2026-09-26, gren `landning-ny-startsida`, PR mot `prototyp`)
 Landningssidan och demot från `experiment/landning-fonda` är de officiella sidorna.
 
