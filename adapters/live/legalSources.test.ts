@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { KURERADE_KÄLLOR, LEGAL_TOPICS, LEGAL_TOPIC_IDS } from "@/adapters/live/legalSources";
+import {
+  KURERADE_KÄLLOR,
+  LEGAL_TOPICS,
+  LEGAL_TOPIC_IDS,
+  getLegalTopicsFor,
+  type KällId,
+} from "@/adapters/live/legalSources";
 
 const BOLAGSFORMER = ["enskild_firma", "aktiebolag", "handelsbolag", "ekonomisk_forening"] as const;
 
@@ -41,5 +47,49 @@ describe("legalSources — kuraterad data", () => {
       const matchande = LEGAL_TOPICS.filter((topic) => topic.gällerFör.includes(bolagsform));
       expect(matchande.length).toBeGreaterThan(0);
     }
+  });
+
+  it("varje källa pekar på rätt myndighets domän", () => {
+    const domänFör = (id: KällId): string => {
+      if (id.startsWith("bolagsverket")) return "bolagsverket.se";
+      if (id.startsWith("verksamt")) return "verksamt.se";
+      if (id.startsWith("bfn")) return "www.bfn.se";
+      return {
+        skatteverket: "www.skatteverket.se",
+        imy: "www.imy.se",
+        eurlex_gdpr: "eur-lex.europa.eu",
+        konsumentverket: "www.konsumentverket.se",
+        riksdagen: "www.riksdagen.se",
+      }[id as string]!;
+    };
+    for (const [id, källa] of Object.entries(KURERADE_KÄLLOR) as [KällId, (typeof KURERADE_KÄLLOR)[KällId]][]) {
+      expect(new URL(källa.url!).hostname, id).toBe(domänFör(id));
+    }
+  });
+
+  it("källorna som en människa kontrollerat (Bolagsverket, verksamt.se, BFN) pekar på en undersida, inte startsidan", () => {
+    const kontrollerade = Object.entries(KURERADE_KÄLLOR).filter(([id]) =>
+      /^(bolagsverket|verksamt|bfn)_/.test(id),
+    );
+    expect(kontrollerade.length).toBeGreaterThan(0);
+    for (const [id, källa] of kontrollerade) {
+      expect(new URL(källa.url!).pathname.length, id).toBeGreaterThan(1);
+    }
+  });
+
+  it("aktiebolag och ekonomisk förening får var sin årsredovisningskälla", () => {
+    const ab = getLegalTopicsFor("aktiebolag").map((topic) => topic.id);
+    const ek = getLegalTopicsFor("ekonomisk_forening").map((topic) => topic.id);
+    expect(ab).toContain("arsredovisning_ab");
+    expect(ab).not.toContain("arsredovisning_ek_forening");
+    expect(ek).toContain("arsredovisning_ek_forening");
+    expect(ek).not.toContain("arsredovisning_ab");
+  });
+
+  it("aktiebolag har bolagsordning, styrelse och revisor som tre ämnen med var sin källa", () => {
+    const ämnen = LEGAL_TOPICS.filter((topic) => ["bolagsordning", "styrelse", "revisor"].includes(topic.id));
+    expect(ämnen).toHaveLength(3);
+    expect(new Set(ämnen.map((topic) => KURERADE_KÄLLOR[topic.källId].url)).size).toBe(3);
+    for (const topic of ämnen) expect(topic.gällerFör).toEqual(["aktiebolag"]);
   });
 });

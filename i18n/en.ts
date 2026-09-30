@@ -1,6 +1,10 @@
 import type { Dictionary } from "./dictionary";
 
 export const en = {
+  meta: {
+    title: "Spark – the AI co-founder from idea to first customer",
+    description: "Test your business idea one step at a time, with real Swedish company data. Free for a week.",
+  },
   common: {
     languageSwitch: {
       sv: "SV",

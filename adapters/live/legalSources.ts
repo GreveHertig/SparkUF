@@ -11,46 +11,90 @@ import type { Bolagsform, Källa } from "@/core/domain";
  * modellens svar. Se adapters/live/legalSchema.ts och
  * adapters/live/LegalAdvisor.ts för hur det verkställs i kod.
  *
- * VERIFIERINGSSTATUS (2026-09-17, av Claude Code i den här sessionen):
- * - Hämtade och bekräftade innehållsmässigt via WebFetch samma dag:
- *   Skatteverket, IMY, EUR-Lex (GDPR-förordningen), Konsumentverket,
- *   Riksdagen.
- * - KUNDE INTE hämtas i den här sessionen (nätverksfel/blockering från
- *   verktyget, inget som tyder på att adresserna är fel — det är Sveriges
- *   officiella, mångåriga myndighetsadresser): Bolagsverket, verksamt.se,
- *   Bokföringsnämnden (BFN). Kontrollera manuellt innan lansering.
- * - INTE juridiskt sakgranskat: vilka ämnen som faktiskt gäller per
- *   bolagsform, exakta avgifter, deadlines och lagrum. Se
- *   docs/moduler/juridisk-koll.md, "TODO (jag verifierar detta)". Därför har
- *   `LegalTopic` medvetet inga `kostnadKr`/`deadline`/`myndighet` ännu — lägg
- *   bara till dem med en verifierad källa för just den siffran.
+ * VERIFIERINGSSTATUS (se verifieringsloggen i docs/moduler/juridisk-koll.md):
+ * - KONTROLLERADE AV EN MÄNNISKA i webbläsaren 2026-09-30: alla källor från
+ *   Bolagsverket, verksamt.se och Bokföringsnämnden (BFN). De pekar på de
+ *   undersidor där uppgiften står, inte på startsidorna. Två ämnen stämde
+ *   bara delvis och har fått nya texter: `aktiekapital` (bankintyg eller
+ *   revisorsyttrande beror på om aktierna betalas med pengar eller egendom,
+ *   det är inget fritt val) och `bolagsavtal` (rekommenderas, inget formellt
+ *   krav).
+ * - BARA MASKINELLT HÄMTADE (av Claude Code via WebFetch 2026-09-17, inte
+ *   kontrollerade av en människa, fortfarande startsidor): Skatteverket, IMY,
+ *   EUR-Lex (GDPR-förordningen), Konsumentverket, Riksdagen.
+ * - INGENTING ÄR JURISTGRANSKAT: vilka ämnen som gäller per bolagsform,
+ *   avgifter, deadlines och lagrum. Därför har `LegalTopic` medvetet inga
+ *   `kostnadKr`/`deadline`/`myndighet` — lägg bara till dem med en verifierad
+ *   källa för just den siffran.
  */
 
 export type KällId =
-  | "bolagsverket"
+  | "bolagsverket_foretagsnamn"
+  | "bolagsverket_starta_ab"
+  | "bolagsverket_bolagsordning"
+  | "bolagsverket_styrelse"
+  | "bolagsverket_revisor"
+  | "bolagsverket_arsredovisning_ab"
+  | "bolagsverket_arsredovisning_ek_forening"
+  | "bolagsverket_starta_ek_forening"
   | "skatteverket"
-  | "verksamt"
+  | "verksamt_handelsbolag"
   | "imy"
   | "eurlex_gdpr"
   | "konsumentverket"
-  | "bfn"
+  | "bfn_bokforing"
   | "riksdagen";
 
 export const KURERADE_KÄLLOR: Record<KällId, Källa> = {
-  bolagsverket: {
-    namn: "Bolagsverket",
-    hämtad: "2026-09-17",
-    url: "https://bolagsverket.se",
+  bolagsverket_foretagsnamn: {
+    namn: "Bolagsverket — företagsnamn",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/foretagsnamn.1153.html",
+  },
+  bolagsverket_starta_ab: {
+    namn: "Bolagsverket — starta aktiebolag",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/aktiebolag/startaaktiebolag.479.html",
+  },
+  bolagsverket_bolagsordning: {
+    namn: "Bolagsverket — bolagsordning för aktiebolag",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/aktiebolag/startaaktiebolag/bolagsordningforaktiebolag.483.html",
+  },
+  bolagsverket_styrelse: {
+    namn: "Bolagsverket — styrelse och verkställande direktör i aktiebolag",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/aktiebolag/startaaktiebolag/styrelseochverkstallandedirektoriaktiebolag.505.html",
+  },
+  bolagsverket_revisor: {
+    namn: "Bolagsverket — revisor i aktiebolag",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/aktiebolag/startaaktiebolag/revisoriaktiebolag.521.html",
+  },
+  bolagsverket_arsredovisning_ab: {
+    namn: "Bolagsverket — årsredovisningsguiden för aktiebolag",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/aktiebolag/arsredovisningforaktiebolag/arsredovisningsguidenforaktiebolag.5550.html",
+  },
+  bolagsverket_arsredovisning_ek_forening: {
+    namn: "Bolagsverket — årsredovisningsguiden för ekonomisk förening",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/forening/ekonomiskforening/arsredovisningforekonomiskforening/arsredovisningsguidenforekonomiskforening.5538.html",
+  },
+  bolagsverket_starta_ek_forening: {
+    namn: "Bolagsverket — starta ekonomisk förening",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/forening/ekonomiskforening/startaekonomiskforening.1335.html",
   },
   skatteverket: {
     namn: "Skatteverket",
     hämtad: "2026-09-17",
     url: "https://www.skatteverket.se",
   },
-  verksamt: {
-    namn: "verksamt.se (Bolagsverket, Skatteverket och Tillväxtverket)",
-    hämtad: "2026-09-17",
-    url: "https://www.verksamt.se",
+  verksamt_handelsbolag: {
+    namn: "verksamt.se (Bolagsverket, Skatteverket och Tillväxtverket) — handelsbolag",
+    hämtad: "2026-09-30",
+    url: "https://verksamt.se/starta-foretag/valj-foretagsform/handelsbolag",
   },
   imy: {
     namn: "Integritetsskyddsmyndigheten (IMY)",
@@ -67,10 +111,10 @@ export const KURERADE_KÄLLOR: Record<KällId, Källa> = {
     hämtad: "2026-09-17",
     url: "https://www.konsumentverket.se",
   },
-  bfn: {
-    namn: "Bokföringsnämnden (BFN)",
-    hämtad: "2026-09-17",
-    url: "https://www.bfn.se",
+  bfn_bokforing: {
+    namn: "Bokföringsnämnden (BFN) — allmänna bokföringsfrågor",
+    hämtad: "2026-09-30",
+    url: "https://www.bfn.se/fragor-och-svar/bokforing/allmanna-bokforingsfragor/",
   },
   riksdagen: {
     namn: "Sveriges riksdag (svensk författningssamling)",
@@ -93,8 +137,11 @@ export type LegalTopicId =
   | "bokforing"
   | "arbetsgivare"
   | "aktiekapital"
-  | "bolagsordning_styrelse"
-  | "arsredovisning"
+  | "bolagsordning"
+  | "styrelse"
+  | "revisor"
+  | "arsredovisning_ab"
+  | "arsredovisning_ek_forening"
   | "bolagsavtal"
   | "stadgar_medlemmar"
   | "gdpr_personuppgifter"
@@ -114,7 +161,7 @@ export type LegalTopic = {
 export const LEGAL_TOPICS: readonly LegalTopic[] = [
   {
     id: "registrering",
-    källId: "bolagsverket",
+    källId: "bolagsverket_foretagsnamn",
     gällerFör: ALLA_BOLAGSFORMER,
     hint: "Registrera företaget och skydda företagsnamnet hos Bolagsverket.",
   },
@@ -132,9 +179,9 @@ export const LEGAL_TOPICS: readonly LegalTopic[] = [
   },
   {
     id: "bokforing",
-    källId: "bfn",
+    källId: "bfn_bokforing",
     gällerFör: ALLA_BOLAGSFORMER,
-    hint: "Bokföringsskyldighet enligt bokföringslagen, löpande bokföring och arkivering.",
+    hint: "Bokföringsskyldighet enligt bokföringslagen, löpande bokföring och arkivering i sju år.",
   },
   {
     id: "arbetsgivare",
@@ -144,33 +191,51 @@ export const LEGAL_TOPICS: readonly LegalTopic[] = [
   },
   {
     id: "aktiekapital",
-    källId: "bolagsverket",
+    källId: "bolagsverket_starta_ab",
     gällerFör: ["aktiebolag"],
-    hint: "Aktiekapital och bankintyg (eller revisorsintyg) vid bildande av aktiebolag.",
+    hint: "Aktiekapital, minst 25 000 kr för privat aktiebolag. Betalas aktierna med pengar krävs bankintyg; betalas de med egendom (apport) krävs ett yttrande från revisor.",
   },
   {
-    id: "bolagsordning_styrelse",
-    källId: "bolagsverket",
+    id: "bolagsordning",
+    källId: "bolagsverket_bolagsordning",
     gällerFör: ["aktiebolag"],
-    hint: "Bolagsordning, styrelse och eventuellt revisorskrav för aktiebolag.",
+    hint: "Bolagsordning för aktiebolag.",
   },
   {
-    id: "arsredovisning",
-    källId: "bolagsverket",
-    gällerFör: ["aktiebolag", "ekonomisk_forening"],
-    hint: "Årsredovisning som ska skickas in till Bolagsverket varje räkenskapsår.",
+    id: "styrelse",
+    källId: "bolagsverket_styrelse",
+    gällerFör: ["aktiebolag"],
+    hint: "Styrelse och eventuell verkställande direktör i aktiebolag.",
+  },
+  {
+    id: "revisor",
+    källId: "bolagsverket_revisor",
+    gällerFör: ["aktiebolag"],
+    hint: "Eventuellt revisorskrav för aktiebolag.",
+  },
+  {
+    id: "arsredovisning_ab",
+    källId: "bolagsverket_arsredovisning_ab",
+    gällerFör: ["aktiebolag"],
+    hint: "Årsredovisning som aktiebolaget ska skicka in till Bolagsverket varje räkenskapsår.",
+  },
+  {
+    id: "arsredovisning_ek_forening",
+    källId: "bolagsverket_arsredovisning_ek_forening",
+    gällerFör: ["ekonomisk_forening"],
+    hint: "Årsredovisning som den ekonomiska föreningen ska skicka in till Bolagsverket varje räkenskapsår.",
   },
   {
     id: "bolagsavtal",
-    källId: "verksamt",
+    källId: "verksamt_handelsbolag",
     gällerFör: ["handelsbolag"],
-    hint: "Bolagsavtal mellan bolagsmän och solidariskt ansvar i handelsbolag.",
+    hint: "Bolagsmännen i ett handelsbolag har solidariskt ansvar för bolagets skulder. Ett skriftligt bolagsavtal rekommenderas men är inget formellt krav.",
   },
   {
     id: "stadgar_medlemmar",
-    källId: "bolagsverket",
+    källId: "bolagsverket_starta_ek_forening",
     gällerFör: ["ekonomisk_forening"],
-    hint: "Stadgar och minsta antal medlemmar för en ekonomisk förening.",
+    hint: "Stadgar och minst tre medlemmar för en ekonomisk förening.",
   },
   {
     id: "gdpr_personuppgifter",
