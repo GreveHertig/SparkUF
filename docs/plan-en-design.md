@@ -6,13 +6,20 @@ enda skillnaden ska vara datan: appen visar riktig data via
 samma skärmar i `screens/`.
 
 Skriven 2026-09-26 efter PR #25 (ny startsida och nytt demo). PR 1–3 är
-gjorda (egna grenar och PR:er mot `prototyp`); PR 4, 5, 7, 8, 9 och 10 är gjorda på
+gjorda (egna grenar och PR:er mot `prototyp`); PR 4, 5, 7, 8, 9, 10 och 11 är gjorda på
 `design/en-design` enligt avsnittet "Arbetsordning" nedan. Läget per PR står
 i `docs/status.md`.
 
+**Migrationen är klar (2026-09-30, PR 11).** Alla skärmar utom Pulsen
+delas av `/demo` och `/app`, och demots sidor är tunna hämtare. Pulsen är
+steg 6 och Brunos: skärmen `screens/Pulse.tsx`, demots sida och
+`/app/pulsen` flyttas av honom. När `/app/pulsen` finns tas `"pulsen"` bort
+ur `UNAVAILABLE_TABS` i `app/(app)/layout.tsx`, så att fliken tänds. Vad som
+återstår utanför själva migrationen står under "PR 11" i `docs/status.md`.
+
 ## Nuläge
 
-Uppdaterat 2026-09-30, efter PR 10. Ögonblicksbilden från 2026-09-26 (före
+Uppdaterat 2026-09-30, efter PR 11. Ögonblicksbilden från 2026-09-26 (före
 PR 1) finns i historiken för den här filen.
 
 - **Delat av `/demo` och `/app`:** skalet (`AppShell`, PR 2, med poängen i
@@ -20,24 +27,25 @@ PR 1) finns i historiken för den här filen.
   Minnet (`Memory`, PR 5), Juridik (`Legal`, PR 5), Validering
   (`Validation`, PR 7), Marknad (`Market`, PR 8), Resan och steget
   (`Journey`, `JourneyStep`, PR 9), Medgrundaren (`Cofounder`), Bygg
-  (`Build`) och Affärsplanen (`BusinessPlan`, alla tre PR 10). Demots sidor för dem
-  är tunna hämtare utan markup.
+  (`Build`) och Affärsplanen (`BusinessPlan`, alla tre PR 10) och
+  onboardingen (`OnboardingEntry`, `OnboardingIdea`, `OnboardingProfile`,
+  PR 11). Demots sidor för dem är tunna hämtare utan markup.
 - **`/app`-rutter:** `/app` (Hem), `/app/poang`, `/app/minnet`,
   `/app/juridik`, `/app/validering`, `/app/marknad`, `/app/resan`,
   `/app/resan/[steg]`, `/app/medgrundaren`, `/app/bygg` och `/app/affarsplan`, plus onboardingen på `/start` (`OnboardingEntry`,
-  `OnboardingIdea`, `OnboardingProfile`). Flikarna i `/app` är fortfarande
-  inerta (ingen `navBasePath`), eftersom Pulsen saknas.
-- **Oanvända skärmar i `screens/`** (väntar på sitt steg): `Pulse`. `components/spark/JourneyRail` är
-  oanvänd (städas i PR 11).
+  `OnboardingIdea`, `OnboardingProfile`, samma skärmar som `/demo/start`
+  sedan PR 11). Flikarna i `/app` länkar till sina sidor (PR 11); bara
+  Pulsen är inaktiv tills `/app/pulsen` finns.
+- **Oanvända skärmar i `screens/`** (väntar på sitt steg): `Pulse`.
+  Oanvända komponenter togs bort i PR 11.
 - **Delade byggstenar** ligger i `screens/blocks/`: `ScoreFigure.tsx` (PR 4),
   `PageBlocks.tsx` (`PageHead`, `Locked`, `Pill`, PR 5) och
   `DataBlocks.tsx` (`ExampleLabel`, `Figures`, `SimulationBlock`,
   `VerdictBlock`, PR 7), `JourneyStepper.tsx` (PR 9, delad av Hem och
   Resan) och `ChatBlocks.tsx` (`ChatLine`, `ToolRun`, `TimeSkipLine`, PR 10).
-  `app/demo/_components/DemoBlocks.tsx` exporterar de senare vidare åt
-  demosidor som inte är flyttade än.
-- **Demots egna sidor kvar att flytta:** Pulsen och onboardingen på
-  `/demo/start`.
+  `app/demo/_components/DemoBlocks.tsx` exporterar bara `PageHead` vidare,
+  åt demots Pulsen-sida.
+- **Demots egna sidor kvar att flytta:** Pulsen (Bruno).
 - **Liveadaptrarna:** byggda är Evidens, Juridik, Minnet, OutreachPrep,
   Utskick, Pulsen och Registret (bakom licensgrinden). Helt eller delvis
   stubbar (`NotImplementedError`) är Build, Medgrundaren, Resan
@@ -61,7 +69,7 @@ PR 1) finns i historiken för den här filen.
 | Juridik | `juridik` | `Legal` | ja, PR 5 (bolagsformen väljs av användaren) | byggd, inget juristgranskat |
 | Bygg | `bygg` | `Build` | ja, PR 10 (låst till steg 07 ur Resans steg; tomläge när porten saknar spec) | stubbe |
 | Affärsplan | `affarsplan` | `BusinessPlan` | ja, PR 10 (ingen hopsamling i `/app`: Kommer snart i varje avsnitt) | ingen port, sammansätts i `core/businessPlan`; hopsamlingen finns bara i demot |
-| Onboarding (tre vyer) | `start/*` | `Onboarding*` | ja, `/start` | Profil och Projekt stubbar |
+| Onboarding (tre vyer) | `start/*` | `Onboarding*` | ja, `/start`, PR 11 (Kommer snart per sektion) | Profil och Projekt stubbar |
 
 ## Vad som skiljer demot från nuvarande /app (gäller alla skärmar)
 
@@ -196,7 +204,8 @@ likadant ut före och efter, kontrollerat med skärmbilder.
     bara påståenden med egen källa (se PR 10 i `docs/status.md`).
 11. **Onboarding** (`/start` och `/demo/start`) och städning: ta bort
     oanvända `components/spark` och `components/ui`, `DemoBar` och
-    `TourOverlay`, och Fonda-namnen i koden.
+    `TourOverlay`, och Fonda-namnen i koden. Gjort, tillsammans med flikarna
+    i `/app` och demots exempelkällor (se PR 11 i `docs/status.md`).
 
 PR 1–3 i ordning. PR 4–10 är i stort sett oberoende och kan delas upp.
 

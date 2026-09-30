@@ -13,14 +13,17 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
    riktiga appen (`/app`) ska se likadana ut. Skillnaden är bara datan:
    appen visar riktig data via `adapters/live`, demot exempeldata via
    `adapters/demo`.
-2. **`components/spark` fasas ut.** Inga nya komponenter där. Skärmarna i
-   `screens/` flyttas en i taget till demots stil (PR 2–10 i planen). Det
-   som finns kvar används bara av det nuvarande skalet och Hem i `/app`
-   (tills PR 2–3) och av `/priser` (`PublicHeader`/`PublicFooter`).
-3. **`components/ui` får vara kvar till PR 11.** Komponenter där som
-   fortfarande används (`SourceTag`, `ConceptBadge`, `Logo`,
-   `LanguageSwitch`, `ComingSoon`, `TextField` med flera) används som de
-   är. I PR 11 flyttas de som behövs in i demots stil, och resten tas bort.
+2. **`components/spark` fasas ut.** Inga nya komponenter där. Alla skärmar
+   i `screens/` utom `Pulse` har demots stil (PR 2–11). PR 11 tog bort det
+   som inte längre importerades. Kvar finns `SignOutButton` (skalet),
+   `PublicHeader`/`PublicFooter` (`/priser`), `PulseCard` (`screens/Pulse.tsx`,
+   Brunos) och `NextStepCard`, `ScoreBadge`, `VerdictCard`, som bara
+   `/designsystem` visar.
+3. **`components/ui` används som den är.** `SourceTag`, `ConceptBadge`,
+   `ComingSoon`, `Logo`, `LanguageSwitch`, `TextField`, `Eyebrow` och
+   `EditorialHeading` används av skärmarna, inloggningen och `/priser`.
+   `DataFact`, `DemoDataBadge` och `LockedState` används bara av
+   `/designsystem`. `BarChart`, `Card` och `Sparkline` togs bort i PR 11.
 4. **Vyer utan liveadapter visar "Kommer snart"** (`ComingSoon`) och syns i
    menyn, så att appen och demot har samma meny och samma vyer.
 
@@ -32,8 +35,8 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
   - `.fdd` är arbetsytan (demot, och appen när skärmarna flyttat): skalet
     med flikraden, block, nyckeltal, låsta lägen, simuleringar, samtalet,
     onboardingen, en del per vy, demoraden och rundturen.
-  - Klassprefixen `fd-`/`fdd-` behålls tills vidare. Ett byte beslutas
-    senast i PR 11.
+  - Klassprefixen `fd-`/`fdd-` behålls (PR 11). Ett byte hade rört hundratals
+    klasser utan synlig skillnad. Fonda-namnen i koden är borta.
 - **`design/tokens.css`**: färger, radier, skuggor och avstånd
   (`--space-*`). Inga hårdkodade värden i `site.css` där en token finns.
 - **Typsnitt**: Castoro (`--font-sans`) för brödtext och rubriker,
@@ -92,20 +95,36 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
 - **Val av bolagsform i `/app/juridik`** (PR 5): länkar (`?bolagsform=…`) i
   samma segmenterade kontroll som Minnets flikar (`.fdd-segmented--wrap`,
   radbryter på smala skärmar). Demot har inget val.
-- **Bara egen källa på affärsplanen** (PR 10): ett påstående visas bara med
-  sin egen, verkliga källa. En text som saknar källa i sin port (stegens
-  höjdpunkter, förslagens förklaringar, antaganden, konkurrenternas
-  beskrivningar) visas inte alls, i stället för att låna en poängdels eller
-  registrets källa. Avsnittet får då en lucka ("Underlag saknas — kommer från
-  steg N") och en lägre status. Andelar bär "%", och urvalet anger varje
+- **Bara egen källa** (PR 10 och 11): ett påstående lånar aldrig en
+  poängdels eller registrets källa. Andelar bär "%", och urvalet anger varje
   andels underlag av helheten ("tillväxt: 171 av 312, region: 308 av 312").
-- **Färdighetsgraden** (PR 10, "1/9") bär ingen källmärkning. Den räknas av
+- **Exempelkällor, bara i demot** (PR 11, beslut av grundaren): påhittad
+  data som saknar källa i sin port (stegens höjdpunkter, förslagens
+  förklaringar, antaganden, konkurrenternas beskrivningar, Byggs credits,
+  siffrorna i Medgrundarens samtal) får en egen exempelkälla,
+  `adapters/demo/exampleSource.ts`: "Påhittad data, steg 04" med scenariots
+  datum. Den visas med datatypen `"example"`: `SourceTag` sätter den synliga
+  etiketten "Exempel ·" först, som "Simulering ·", med fiktionsmärkets
+  streckade kant på vit botten (`.fd-pill--fiction`). Den har aldrig
+  registrets gråa färg och aldrig ett myndighetsnamn. I `/app` och `/start`
+  finns inga exempel: saknas verkligt underlag visas luckan
+  (`app/(app)/app/noExampleSources.test.ts`).
+- **Luckan i affärsplanen**: ett steg som inte är klart ger det låsta läget
+  "Underlag saknas — kommer från steg N". Ett klart steg som ändå inte gav
+  något påstående med källa ger en dämpad rad, "Steg N är klart, men gav
+  inget underlag med källa till det här avsnittet." (PR 11).
+- **Färdighetsgraden** (PR 10, "8/9") bär ingen källmärkning. Den räknas av
   `buildBusinessPlan` ur de nio avsnitten på samma sida (undantaget i
   `CLAUDE.md`). Utan plan visas luckan "—".
 - **Tre lägen för en sektion i `/app`** (tydligast i Bygg, PR 10): en
   stubbe ger "Kommer snart" (`ComingSoon`), portens eget "inget än" ger ett
   tomläge med egen text ("Ingen spec än."), och Resans steg ger det låsta
   läget (`Locked`). De blandas aldrig ihop.
+- **Flikarna i `/app`** (PR 11) länkar till sina sidor. En flik vars sida
+  saknas i läget visas inaktiv (`unavailableTabs`, `.fdd-tab--disabled`), i
+  dag bara Pulsen.
+- **Onboardingen** (PR 11): `/start` har samma topprad som `/demo/start`
+  (`DemoTopBar` med `dataKind="live"` och utloggning), utan flikrad.
 - **Poängen i sidhuvudet** (PR 4): en liten textsiffra, "Poäng 24", i
   toppradens typsnitt och storlek (`.fdd-top__score`), länkad till Poäng
   och synlig på alla bredder. Ingen ring och ingen nivåfärg i sidhuvudet;
