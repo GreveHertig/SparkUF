@@ -8,7 +8,7 @@ import { Legal, type LegalLock } from "@/screens/Legal";
 
 /** Juridik: tunn hämtare (PR 5, docs/plan-en-design.md) — all markup ligger i
  * den delade screens/Legal.tsx. */
-export default function FondaDemoLegalPage() {
+export default function DemoLegalPage() {
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);
   const [krav, setKrav] = useState<JuridisktKrav[] | null>(null);

@@ -5,10 +5,10 @@ import { useI18n } from "@/i18n/context";
 import { demoProjectRepository } from "@/adapters/demo/ProjectRepository";
 import type { IdeaScreening } from "@/ports/ProjectRepository";
 import { OnboardingIdea } from "@/screens/OnboardingIdea";
-import { FONDA_DEMO_PATHS } from "../../_lib/paths";
+import { DEMO_PATHS } from "../../_lib/paths";
 
 /** Idégenomlysningen (ingång B): hämtar demots genomlysning. Markupen ligger i skärmen. */
-export default function FondaDemoIdeaPage() {
+export default function DemoIdeaPage() {
   const { locale } = useI18n();
   const [screening, setScreening] = useState<IdeaScreening | null>(null);
 
@@ -23,5 +23,5 @@ export default function FondaDemoIdeaPage() {
   }, [locale]);
 
   if (!screening) return null;
-  return <OnboardingIdea data={{ screening }} continueHref={FONDA_DEMO_PATHS.startProfile} />;
+  return <OnboardingIdea data={{ screening }} continueHref={DEMO_PATHS.startProfile} />;
 }

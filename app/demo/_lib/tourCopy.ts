@@ -11,7 +11,7 @@ import type { TourStep } from "@/adapters/demo/tourSteps";
 
 type Copy = Record<Locale, string>;
 
-export const FONDA_TOUR_TITLES: Record<string, Copy> = {
+export const TOUR_TITLES: Record<string, Copy> = {
   "tva-ingangar": { sv: "Börja med eller utan idé", en: "Start with or without an idea" },
   "medgrundaren-verktyg": {
     sv: "Medgrundaren hämtar siffror från Bolagsverket",
@@ -36,7 +36,7 @@ export const FONDA_TOUR_TITLES: Record<string, Copy> = {
   avslutning: { sv: "Klart. Nu kan du utforska själv", en: "Done. Now explore on your own" },
 };
 
-export const FONDA_TOUR_BODIES: Record<string, Copy> = {
+export const TOUR_BODIES: Record<string, Copy> = {
   "svarsdata-forsvarsvall": {
     sv: "Svaren citeras rakt av, med namn. Med egen svarsdata kan Spark jämföra Saras svarsfrekvens med andra utskick i samma bransch, en jämförelse ingen konkurrent har underlag för.",
     en: "Responses are quoted verbatim, by name. With its own response data, Spark can compare Sara's response rate with other outreach in the same industry, a comparison no competitor has the data for.",
@@ -44,9 +44,9 @@ export const FONDA_TOUR_BODIES: Record<string, Copy> = {
 };
 
 /** Rubrik och brödtext för ett stopp i demot. */
-export function fondaTourCopy(step: TourStep, locale: Locale): { title: string; body: string } {
+export function demoTourCopy(step: TourStep, locale: Locale): { title: string; body: string } {
   return {
-    title: (FONDA_TOUR_TITLES[step.id] ?? step.title)[locale],
-    body: (FONDA_TOUR_BODIES[step.id] ?? step.body)[locale],
+    title: (TOUR_TITLES[step.id] ?? step.title)[locale],
+    body: (TOUR_BODIES[step.id] ?? step.body)[locale],
   };
 }

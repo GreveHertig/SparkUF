@@ -10,7 +10,7 @@ import { engineFor } from "@/adapters/demo/journeyEngine";
 import { saraProfile } from "@/adapters/demo/sara";
 import { jonasProfile } from "@/adapters/demo/jonas";
 import { fill } from "@/i18n/fill";
-import { FONDA_DEMO_PATHS, isStartPath } from "../_lib/paths";
+import { DEMO_PATHS, isStartPath } from "../_lib/paths";
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -23,7 +23,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
  * byt ingång, börja om och fäll ihop, plus ← → T R på tangentbordet. Styr
  * samma demo-lager, men under demots egen lagringsnyckel.
  */
-export function FondaDemoBar() {
+export function DemoBar() {
   const { locale, t } = useI18n();
   const copy = t.site.demo.bar;
   const d = t.demoBar;
@@ -55,7 +55,7 @@ export function FondaDemoBar() {
   function jumpToStep(index: number) {
     goTo(index);
     if (!onboardingDone) completeOnboarding();
-    if (!inApp) router.push(FONDA_DEMO_PATHS.home);
+    if (!inApp) router.push(DEMO_PATHS.home);
   }
 
   function confirmReset() {

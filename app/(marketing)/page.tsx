@@ -75,7 +75,7 @@ function Section({
   );
 }
 
-export default function FondaLandingPage() {
+export default function LandingPage() {
   const { t, locale } = useI18n();
   const copy = t.site;
 

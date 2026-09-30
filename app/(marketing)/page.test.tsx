@@ -4,9 +4,9 @@ import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { en } from "@/i18n/en";
 import { sv } from "@/i18n/sv";
-import FondaLandingPage from "./page";
-import { FONDA_DEMO_HREF } from "./_components/DemoLink";
-import { FONDA_PRIVACY_HREF } from "./_components/EmailSignup";
+import LandingPage from "./page";
+import { DEMO_HREF } from "./_components/DemoLink";
+import { PRIVACY_HREF } from "./_components/EmailSignup";
 import { HONEYPOT_FIELD } from "./_lib/waitlist";
 
 // Server Action körs på servern; här prövas bara formulärets beteende.
@@ -37,7 +37,7 @@ beforeEach(() => {
 async function renderPage() {
   const result = render(
     <LocaleProvider>
-      <FondaLandingPage />
+      <LandingPage />
     </LocaleProvider>,
   );
   // Registerkortet hämtar sin data i en effekt.
@@ -65,7 +65,7 @@ describe("/", () => {
     const demoLinks = screen.getAllByRole("link", { name: new RegExp(copy.demoLink.label) });
     expect(demoLinks.length).toBeGreaterThan(0);
     for (const link of demoLinks) {
-      expect(link).toHaveAttribute("href", FONDA_DEMO_HREF);
+      expect(link).toHaveAttribute("href", DEMO_HREF);
       expect(link).toHaveTextContent(copy.demoLink.note);
     }
   });
@@ -81,7 +81,7 @@ describe("/", () => {
     expect(input).toHaveAttribute("autocomplete", "email");
     expect(screen.getByRole("button", { name: copy.submit })).toHaveTextContent("Skriv upp mig");
     expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
-    expect(screen.getByRole("link", { name: copy.privacyLink })).toHaveAttribute("href", FONDA_PRIVACY_HREF);
+    expect(screen.getByRole("link", { name: copy.privacyLink })).toHaveAttribute("href", PRIVACY_HREF);
 
     // Honeypoten: utanför tabbordningen och dold för skärmläsare.
     const honeypot = container.querySelector(`input[name="${HONEYPOT_FIELD}"]`);

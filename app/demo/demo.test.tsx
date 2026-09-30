@@ -4,32 +4,31 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
-import { useDemoStore } from "@/adapters/demo/demoStore";
+import { DEMO_STATE_KEY, useDemoStore } from "@/adapters/demo/demoStore";
 import { saraEngine } from "@/adapters/demo/sara";
 import { jonasBeats } from "@/adapters/demo/jonas";
 import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { demoBuildProvider } from "@/adapters/demo/BuildProvider";
 import { getBusinessPlan } from "@/adapters/demo/businessPlan";
-import FondaDemoLayout from "./layout";
-import FondaDemoAppLayout from "./(app)/layout";
-import FondaDemoHomePage from "./(app)/page";
-import FondaDemoScorePage from "./(app)/poang/page";
-import FondaDemoMarketPage from "./(app)/marknad/page";
-import FondaDemoLegalPage from "./(app)/juridik/page";
-import FondaDemoMemoryPage from "./(app)/minnet/page";
-import FondaDemoValidationPage from "./(app)/validering/page";
-import FondaDemoPulsePage from "./(app)/pulsen/page";
-import FondaDemoJourneyPage from "./(app)/resan/page";
-import FondaDemoJourneyStepPage from "./(app)/resan/[steg]/page";
-import FondaDemoCofounderPage from "./(app)/medgrundaren/page";
-import FondaDemoBuildPage from "./(app)/bygg/page";
-import FondaDemoBusinessPlanPage from "./(app)/affarsplan/page";
-import FondaDemoStartPage from "./start/page";
-import FondaDemoIdeaPage from "./start/ide/page";
-import FondaDemoProfilePage from "./start/profil/page";
+import DemoLayout from "./layout";
+import DemoAppLayout from "./(app)/layout";
+import DemoHomePage from "./(app)/page";
+import DemoScorePage from "./(app)/poang/page";
+import DemoMarketPage from "./(app)/marknad/page";
+import DemoLegalPage from "./(app)/juridik/page";
+import DemoMemoryPage from "./(app)/minnet/page";
+import DemoValidationPage from "./(app)/validering/page";
+import DemoPulsePage from "./(app)/pulsen/page";
+import DemoJourneyPage from "./(app)/resan/page";
+import DemoJourneyStepPage from "./(app)/resan/[steg]/page";
+import DemoCofounderPage from "./(app)/medgrundaren/page";
+import DemoBuildPage from "./(app)/bygg/page";
+import DemoBusinessPlanPage from "./(app)/affarsplan/page";
+import DemoStartPage from "./start/page";
+import DemoIdeaPage from "./start/ide/page";
+import DemoProfilePage from "./start/profil/page";
 import { demoProjectRepository } from "@/adapters/demo/ProjectRepository";
-import { FONDA_DEMO_KEY, REAL_DEMO_KEY, enterFondaDemo, leaveFondaDemo } from "./_lib/fondaDemoIsolation";
-import { FONDA_DEMO_PATHS } from "./_lib/paths";
+import { DEMO_PATHS } from "./_lib/paths";
 
 const router = { push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() };
 let pathname = "/demo";
@@ -39,6 +38,8 @@ vi.mock("next/navigation", () => ({
   useRouter: () => router,
 }));
 
+// Det gamla demots nyckel (före #25). Demot får aldrig läsa eller skriva den.
+const OLD_DEMO_KEY = "spark:demo-state";
 const realSaved = JSON.stringify({
   state: { beatIndex: 7, entry: "noIdea", onboardingDone: true, tourOn: false, tourStepIndex: 0, collapsed: false },
   version: 0,
@@ -61,23 +62,20 @@ beforeAll(() => {
 
 beforeEach(() => {
   window.localStorage.clear();
-  window.localStorage.setItem(REAL_DEMO_KEY, realSaved);
-  useDemoStore.persist.setOptions({ name: REAL_DEMO_KEY });
-  useDemoStore.setState({ beatIndex: 7, entry: "noIdea", onboardingDone: true, tourOn: false });
+  window.localStorage.setItem(OLD_DEMO_KEY, realSaved);
+  useDemoStore.getState().reset();
   router.push.mockReset();
   router.replace.mockReset();
-  pathname = FONDA_DEMO_PATHS.home;
+  pathname = DEMO_PATHS.home;
 });
 
 afterEach(async () => {
   cleanup();
-  leaveFondaDemo();
   await act(async () => {});
 });
 
 /** Demots läge med onboardingen avklarad, som efter profilsamtalet. */
 function startInApp(beatIndex = 0) {
-  enterFondaDemo();
   useDemoStore.getState().completeOnboarding();
   useDemoStore.getState().goTo(beatIndex);
 }
@@ -85,9 +83,9 @@ function startInApp(beatIndex = 0) {
 async function renderInApp(page: ReactNode) {
   const result = render(
     <LocaleProvider>
-      <FondaDemoLayout>
-        <FondaDemoAppLayout>{page}</FondaDemoAppLayout>
-      </FondaDemoLayout>
+      <DemoLayout>
+        <DemoAppLayout>{page}</DemoAppLayout>
+      </DemoLayout>
     </LocaleProvider>,
   );
   await act(async () => {});
@@ -96,56 +94,54 @@ async function renderInApp(page: ReactNode) {
 
 describe("/demo", () => {
   it("skickar en ny besökare till onboardingen, som det riktiga demot", async () => {
-    await renderInApp(<FondaDemoHomePage />);
-    expect(router.replace).toHaveBeenCalledWith(FONDA_DEMO_PATHS.start);
-    expect(window.localStorage.getItem(REAL_DEMO_KEY)).toBe(realSaved);
+    await renderInApp(<DemoHomePage />);
+    expect(router.replace).toHaveBeenCalledWith(DEMO_PATHS.start);
+    expect(window.localStorage.getItem(OLD_DEMO_KEY)).toBe(realSaved);
   });
 
   it("onboardingens val av ingång sparas bara i demots läge", async () => {
-    pathname = FONDA_DEMO_PATHS.start;
+    pathname = DEMO_PATHS.start;
     render(
       <LocaleProvider>
-        <FondaDemoLayout>
-          <FondaDemoStartPage />
-        </FondaDemoLayout>
+        <DemoLayout>
+          <DemoStartPage />
+        </DemoLayout>
       </LocaleProvider>,
     );
     await act(async () => {});
     fireEvent.click(screen.getByRole("link", { name: new RegExp(sv.onboarding.entry.hasIdea.title) }));
     expect(useDemoStore.getState().entry).toBe("hasIdea");
-    expect(JSON.parse(window.localStorage.getItem(FONDA_DEMO_KEY) ?? "{}").state.entry).toBe("hasIdea");
-    expect(window.localStorage.getItem(REAL_DEMO_KEY)).toBe(realSaved);
+    expect(JSON.parse(window.localStorage.getItem(DEMO_STATE_KEY) ?? "{}").state.entry).toBe("hasIdea");
+    expect(window.localStorage.getItem(OLD_DEMO_KEY)).toBe(realSaved);
   });
 
   it("idégenomlysningen (tunn hämtare, PR 11) visar demots genomlysning och länkar till profilsamtalet", async () => {
-    pathname = FONDA_DEMO_PATHS.startIdea;
-    enterFondaDemo();
+    pathname = DEMO_PATHS.startIdea;
     useDemoStore.getState().setEntry("hasIdea");
     const screening = await demoProjectRepository.getIdeaScreening("sv");
     render(
       <LocaleProvider>
-        <FondaDemoLayout>
-          <FondaDemoIdeaPage />
-        </FondaDemoLayout>
+        <DemoLayout>
+          <DemoIdeaPage />
+        </DemoLayout>
       </LocaleProvider>,
     );
     await act(async () => {});
     expect(screen.getByText(screening.originalIdea)).toBeInTheDocument();
     expect(screen.getByText(screening.sharperIdea.name)).toBeInTheDocument();
     expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: sv.onboarding.idea.continueCta })).toHaveAttribute("href", FONDA_DEMO_PATHS.startProfile);
+    expect(screen.getByRole("link", { name: sv.onboarding.idea.continueCta })).toHaveAttribute("href", DEMO_PATHS.startProfile);
   });
 
   it("profilsamtalet (tunn hämtare, PR 11) spelar upp demots samtal och markerar onboardingen klar", async () => {
     vi.useFakeTimers();
     try {
-      pathname = FONDA_DEMO_PATHS.startProfile;
-      enterFondaDemo();
-      render(
+      pathname = DEMO_PATHS.startProfile;
+        render(
         <LocaleProvider>
-          <FondaDemoLayout>
-            <FondaDemoProfilePage />
-          </FondaDemoLayout>
+          <DemoLayout>
+            <DemoProfilePage />
+          </DemoLayout>
         </LocaleProvider>,
       );
       await act(async () => {});
@@ -156,7 +152,7 @@ describe("/demo", () => {
         });
       }
       const continueLink = screen.getByRole("link", { name: sv.onboarding.profile.continueCta });
-      expect(continueLink).toHaveAttribute("href", FONDA_DEMO_PATHS.home);
+      expect(continueLink).toHaveAttribute("href", DEMO_PATHS.home);
       expect(useDemoStore.getState().onboardingDone).toBe(false);
       fireEvent.click(continueLink);
       expect(useDemoStore.getState().onboardingDone).toBe(true);
@@ -167,7 +163,7 @@ describe("/demo", () => {
 
   it("Hem visar första steget, och knappen spelar upp nästa moment i demots eget läge", async () => {
     startInApp(0);
-    await renderInApp(<FondaDemoHomePage />);
+    await renderInApp(<DemoHomePage />);
     const first = saraEngine.getJourneySummaryForBeat(0, "sv").nextStep;
     expect(screen.getByRole("heading", { level: 2, name: first.title })).toBeInTheDocument();
     expect(screen.getAllByText(sv.site.demo.badge).length).toBeGreaterThan(0);
@@ -176,36 +172,36 @@ describe("/demo", () => {
       fireEvent.click(screen.getByRole("button", { name: first.actionLabel }));
     });
     expect(useDemoStore.getState().beatIndex).toBe(1);
-    expect(JSON.parse(window.localStorage.getItem(FONDA_DEMO_KEY) ?? "{}").state.beatIndex).toBe(1);
-    expect(window.localStorage.getItem(REAL_DEMO_KEY)).toBe(realSaved);
+    expect(JSON.parse(window.localStorage.getItem(DEMO_STATE_KEY) ?? "{}").state.beatIndex).toBe(1);
+    expect(window.localStorage.getItem(OLD_DEMO_KEY)).toBe(realSaved);
   });
 
   it("menyn har alla elva sidor", async () => {
     startInApp(0);
-    await renderInApp(<FondaDemoHomePage />);
+    await renderInApp(<DemoHomePage />);
     const nav = screen.getByRole("navigation", { name: sv.site.demo.navLabel });
     expect(nav.querySelectorAll("a")).toHaveLength(11);
     expect(screen.getByRole("link", { name: sv.appShell.nav.businessPlan })).toHaveAttribute(
       "href",
-      FONDA_DEMO_PATHS.businessPlan,
+      DEMO_PATHS.businessPlan,
     );
   });
 
   it("Poäng visar samma poäng som demots motor, och Lovable-förslaget bär koncept-etiketten", async () => {
     startInApp(19);
-    pathname = FONDA_DEMO_PATHS.score;
-    await renderInApp(<FondaDemoScorePage />);
+    pathname = DEMO_PATHS.score;
+    await renderInApp(<DemoScorePage />);
     const expected = saraEngine.getScoreSnapshotForBeat(19, "sv");
     expect(screen.getAllByText(String(expected.total)).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: sv.scorePage.suggestionsTitle })).toBeInTheDocument();
     expect(screen.getAllByText(sv.common.conceptBadge).length).toBeGreaterThan(0);
-    expect(window.localStorage.getItem(REAL_DEMO_KEY)).toBe(realSaved);
+    expect(window.localStorage.getItem(OLD_DEMO_KEY)).toBe(realSaved);
   });
 
   it("Poäng (tunn hämtare, PR 4) visar delarna med källa, de låsta delarna och historiken — ingen Kommer snart", async () => {
     startInApp(8);
-    pathname = FONDA_DEMO_PATHS.score;
-    const { container } = await renderInApp(<FondaDemoScorePage />);
+    pathname = DEMO_PATHS.score;
+    const { container } = await renderInApp(<DemoScorePage />);
     const expected = saraEngine.getScoreSnapshotForBeat(8, "sv");
     expect(container.querySelectorAll(".fd-part:not(.fd-part--locked)")).toHaveLength(expected.parts.length);
     expect(container.querySelectorAll(".fd-part--locked")).toHaveLength(expected.lockedParts.length);
@@ -216,15 +212,15 @@ describe("/demo", () => {
   it("Marknad är låst i Jonas scenario, som i originalet", async () => {
     startInApp(0);
     useDemoStore.getState().setEntry("hasIdea");
-    pathname = FONDA_DEMO_PATHS.market;
-    await renderInApp(<FondaDemoMarketPage />);
+    pathname = DEMO_PATHS.market;
+    await renderInApp(<DemoMarketPage />);
     expect(screen.getByText(sv.homePage.notInThisScenario)).toBeInTheDocument();
   });
 
   it("Juridik visar ansvarsbegränsningen", async () => {
     startInApp(19);
-    pathname = FONDA_DEMO_PATHS.legal;
-    const { container } = await renderInApp(<FondaDemoLegalPage />);
+    pathname = DEMO_PATHS.legal;
+    const { container } = await renderInApp(<DemoLegalPage />);
     expect(screen.getByText(sv.legalPage.disclaimer)).toBeInTheDocument();
     // Demots källor är lika overifierade som appens (PR 5): en märkning per krav.
     const rows = container.querySelectorAll(".fdd-rows__item");
@@ -234,19 +230,19 @@ describe("/demo", () => {
 
   it("Juridik (tunn hämtare, PR 5) är låst före steg 05 och utanför Jonas scenario", async () => {
     startInApp(0);
-    pathname = FONDA_DEMO_PATHS.legal;
-    await renderInApp(<FondaDemoLegalPage />);
+    pathname = DEMO_PATHS.legal;
+    await renderInApp(<DemoLegalPage />);
     expect(screen.getByText(`${sv.homePage.unlocksAfterStepBefore} 04`)).toBeInTheDocument();
     cleanup();
     useDemoStore.getState().setEntry("hasIdea");
-    await renderInApp(<FondaDemoLegalPage />);
+    await renderInApp(<DemoLegalPage />);
     expect(screen.getByText(sv.homePage.notInThisScenario)).toBeInTheDocument();
   });
 
   it("Minnet (tunn hämtare, PR 5) visar Saras profil och demots ledtråd i Hjärnan", async () => {
     startInApp(8);
-    pathname = FONDA_DEMO_PATHS.memory;
-    await renderInApp(<FondaDemoMemoryPage />);
+    pathname = DEMO_PATHS.memory;
+    await renderInApp(<DemoMemoryPage />);
     expect(screen.getByRole("heading", { level: 1, name: /Sara Lindqvist/ })).toBeInTheDocument();
     fireEvent.mouseDown(screen.getByRole("tab", { name: sv.memoryPage.tabs.brain }), { button: 0 });
     expect(screen.getByText(sv.memoryPage.brainHint)).toBeInTheDocument();
@@ -254,31 +250,31 @@ describe("/demo", () => {
   });
   it("Resan (tunn hämtare, PR 9) visar demots steg med länkar under /demo/resan", async () => {
     startInApp(9);
-    pathname = FONDA_DEMO_PATHS.journey;
-    await renderInApp(<FondaDemoJourneyPage />);
+    pathname = DEMO_PATHS.journey;
+    await renderInApp(<DemoJourneyPage />);
     const steps = await demoJourneyRepository.getSteps("sv");
     const current = steps.find((step) => step.status === "current")!;
     expect(screen.getByRole("heading", { level: 1, name: current.title })).toBeInTheDocument();
     const stepper = screen.getByRole("list", { name: sv.site.journey.stepsListLabel });
     expect(stepper.querySelectorAll("a.fdd-stepper__link")).toHaveLength(12);
-    expect(stepper.querySelector("a.fdd-stepper__link")).toHaveAttribute("href", `${FONDA_DEMO_PATHS.journey}/1`);
+    expect(stepper.querySelector("a.fdd-stepper__link")).toHaveAttribute("href", `${DEMO_PATHS.journey}/1`);
     expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
   });
 
   it("steget (tunn hämtare, PR 9) visar domen i steg 06 och låst läge för ett senare steg", async () => {
     startInApp(saraEngine.beats.length - 1);
-    pathname = `${FONDA_DEMO_PATHS.journey}/6`;
+    pathname = `${DEMO_PATHS.journey}/6`;
     const detail = await demoJourneyRepository.getStepDetail(6, "sv");
     await renderInApp(
       <Suspense>
-        <FondaDemoJourneyStepPage params={Promise.resolve({ steg: "6" })} />
+        <DemoJourneyStepPage params={Promise.resolve({ steg: "6" })} />
       </Suspense>,
     );
     expect(await screen.findByRole("heading", { level: 1, name: detail!.title })).toBeInTheDocument();
     expect(screen.getByText(detail!.verdict!.headline)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: new RegExp(sv.journeyPage.backToJourney) })).toHaveAttribute(
       "href",
-      FONDA_DEMO_PATHS.journey,
+      DEMO_PATHS.journey,
     );
     expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
     cleanup();
@@ -286,7 +282,7 @@ describe("/demo", () => {
     useDemoStore.getState().goTo(0);
     await renderInApp(
       <Suspense>
-        <FondaDemoJourneyStepPage params={Promise.resolve({ steg: "5" })} />
+        <DemoJourneyStepPage params={Promise.resolve({ steg: "5" })} />
       </Suspense>,
     );
     expect(await screen.findByText(`${sv.homePage.unlocksAfterStepBefore} 04`)).toBeInTheDocument();
@@ -316,8 +312,8 @@ describe("/demo", () => {
 
   it("Medgrundaren (tunn hämtare, PR 10) visar momentet ur manuset och det som redan är känt", async () => {
     startInApp(9);
-    pathname = FONDA_DEMO_PATHS.cofounder;
-    await renderInApp(<FondaDemoCofounderPage />);
+    pathname = DEMO_PATHS.cofounder;
+    await renderInApp(<DemoCofounderPage />);
     const beat = saraEngine.getBeatAt(9);
     const label = `${String(beat.stepNumber).padStart(2, "0")} · ${beat.momentLabel.sv}`;
     expect(screen.getByRole("heading", { level: 2, name: label })).toBeInTheDocument();
@@ -329,20 +325,20 @@ describe("/demo", () => {
 
     // Första momentet: inget känt än, så spalten döljs.
     useDemoStore.getState().goTo(0);
-    await renderInApp(<FondaDemoCofounderPage />);
+    await renderInApp(<DemoCofounderPage />);
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
     expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
   });
 
   it("Bygg (tunn hämtare, PR 10) är låst före steg 08, visar specen efter, och är utanför Jonas scenario", async () => {
     startInApp(0);
-    pathname = FONDA_DEMO_PATHS.build;
-    await renderInApp(<FondaDemoBuildPage />);
+    pathname = DEMO_PATHS.build;
+    await renderInApp(<DemoBuildPage />);
     expect(await screen.findByText(`${sv.homePage.unlocksAfterStepBefore} 07`)).toBeInTheDocument();
     cleanup();
 
     useDemoStore.getState().goTo(saraEngine.beats.length - 1);
-    await renderInApp(<FondaDemoBuildPage />);
+    await renderInApp(<DemoBuildPage />);
     const spec = await demoBuildProvider.getSpec("sv");
     expect(await screen.findByRole("heading", { level: 1, name: spec!.sammanfattning })).toBeInTheDocument();
     expect(screen.getByText(sv.buildPage.status.published)).toBeInTheDocument();
@@ -351,14 +347,14 @@ describe("/demo", () => {
     cleanup();
 
     useDemoStore.getState().setEntry("hasIdea");
-    await renderInApp(<FondaDemoBuildPage />);
+    await renderInApp(<DemoBuildPage />);
     expect(await screen.findByText(sv.homePage.notInThisScenario)).toBeInTheDocument();
   });
 
   it("Affärsplanen (tunn hämtare, PR 10) visar samma mognad och avsnitt som hopsamlingen, med källa på varje påstående", async () => {
     startInApp(saraEngine.beats.length - 1);
-    pathname = FONDA_DEMO_PATHS.businessPlan;
-    await renderInApp(<FondaDemoBusinessPlanPage />);
+    pathname = DEMO_PATHS.businessPlan;
+    await renderInApp(<DemoBusinessPlanPage />);
     const plan = await getBusinessPlan("sv");
     expect(
       await screen.findByText(`${plan.maturity.solidCount}/${plan.maturity.totalCount}`),
@@ -378,8 +374,8 @@ describe("/demo", () => {
 
     it("märker de påhittade företagen i Validering och visar storleksklass, inte exakt antal (punkt 13, 20)", async () => {
       startInApp(lastBeat);
-      pathname = FONDA_DEMO_PATHS.validation;
-      await renderInApp(<FondaDemoValidationPage />);
+      pathname = DEMO_PATHS.validation;
+      await renderInApp(<DemoValidationPage />);
 
       expect(screen.getAllByText(label)).toHaveLength(2);
       const table = screen.getByRole("table");
@@ -391,16 +387,16 @@ describe("/demo", () => {
     it("Validering följer demots moment: låst, simulering från steg 04, domen från steg 06, aldrig Kommer snart (PR 7)", async () => {
       const v = sv.validationPage;
       const firstBeatOf = (step: number) => saraEngine.beats.findIndex((beat) => beat.stepNumber === step);
-      pathname = FONDA_DEMO_PATHS.validation;
+      pathname = DEMO_PATHS.validation;
 
       startInApp(0);
-      await renderInApp(<FondaDemoValidationPage />);
+      await renderInApp(<DemoValidationPage />);
       expect(screen.getByText(`${sv.homePage.unlocksAfterStepBefore} 03`)).toBeInTheDocument();
       expect(screen.queryByRole("table")).not.toBeInTheDocument();
       cleanup();
 
       startInApp(firstBeatOf(4));
-      await renderInApp(<FondaDemoValidationPage />);
+      await renderInApp(<DemoValidationPage />);
       expect(screen.getByRole("table")).toBeInTheDocument();
       expect(screen.getByText(v.simulationTitle)).toBeInTheDocument();
       expect(screen.queryByText(v.verdictTitle)).not.toBeInTheDocument();
@@ -408,7 +404,7 @@ describe("/demo", () => {
       cleanup();
 
       startInApp(lastBeat);
-      await renderInApp(<FondaDemoValidationPage />);
+      await renderInApp(<DemoValidationPage />);
       expect(screen.getByText(v.verdictTitle)).toBeInTheDocument();
       expect(screen.getByText(v.openRateLabel)).toBeInTheDocument();
       expect(screen.getByText(new RegExp(`^${v.confidencePrefix} \\d+ av \\d+`))).toBeInTheDocument();
@@ -418,31 +414,31 @@ describe("/demo", () => {
     it("Validering för Jonas säger att den inte finns i scenariot (PR 7)", async () => {
       startInApp(0);
       useDemoStore.setState({ entry: "hasIdea" });
-      pathname = FONDA_DEMO_PATHS.validation;
-      await renderInApp(<FondaDemoValidationPage />);
+      pathname = DEMO_PATHS.validation;
+      await renderInApp(<DemoValidationPage />);
       expect(screen.getByText(sv.homePage.notInThisScenario)).toBeInTheDocument();
       expect(screen.queryByRole("table")).not.toBeInTheDocument();
     });
 
     it("märker registersiffrorna och konkurrenterna på Marknad", async () => {
       startInApp(lastBeat);
-      pathname = FONDA_DEMO_PATHS.market;
-      await renderInApp(<FondaDemoMarketPage />);
+      pathname = DEMO_PATHS.market;
+      await renderInApp(<DemoMarketPage />);
 
       expect(screen.getAllByText(label)).toHaveLength(2);
     });
 
     it("Marknad (tunn hämtare, PR 8) följer demots moment och visar ingen Kommer snart", async () => {
       const firstBeatOf = (step: number) => saraEngine.beats.findIndex((beat) => beat.stepNumber === step);
-      pathname = FONDA_DEMO_PATHS.market;
+      pathname = DEMO_PATHS.market;
 
       startInApp(0);
-      await renderInApp(<FondaDemoMarketPage />);
+      await renderInApp(<DemoMarketPage />);
       expect(screen.getByText(`${sv.homePage.unlocksAfterStepBefore} 02`)).toBeInTheDocument();
       cleanup();
 
       startInApp(firstBeatOf(3));
-      const { container } = await renderInApp(<FondaDemoMarketPage />);
+      const { container } = await renderInApp(<DemoMarketPage />);
       expect(screen.getByRole("heading", { level: 1, name: /anställda$/ })).toBeInTheDocument();
       expect(container.querySelectorAll(".fdd-bars__row")).toHaveLength(5);
       expect(screen.getByText("Konkurrenter")).toBeInTheDocument();
@@ -451,16 +447,16 @@ describe("/demo", () => {
 
     it("medianomsättningen och kontaktlistans omsättning visas inte utan räkenskapsår (PR 8)", async () => {
       startInApp(lastBeat);
-      pathname = FONDA_DEMO_PATHS.market;
-      await renderInApp(<FondaDemoMarketPage />);
+      pathname = DEMO_PATHS.market;
+      await renderInApp(<DemoMarketPage />);
       // Demodatan bär inga räkenskapsår: luckan i stället för "4,2 Mkr".
       const median = screen.getByText(sv.marketPage.medianRevenueLabel).parentElement!;
       expect(median).toHaveTextContent(sv.common.fiscalYearMissing);
       expect(median).not.toHaveTextContent(/Mkr/);
       cleanup();
 
-      pathname = FONDA_DEMO_PATHS.validation;
-      await renderInApp(<FondaDemoValidationPage />);
+      pathname = DEMO_PATHS.validation;
+      await renderInApp(<DemoValidationPage />);
       const revenueCells = [...screen.getByRole("table").querySelectorAll("tbody tr")].map((row) => row.children[3]);
       expect(revenueCells.length).toBeGreaterThan(0);
       for (const cell of revenueCells) {
@@ -471,8 +467,8 @@ describe("/demo", () => {
 
     it("Pulsen visar inga fasta relativa tider som inte stämmer med källans datum (punkt 11)", async () => {
       startInApp(lastBeat);
-      pathname = FONDA_DEMO_PATHS.pulse;
-      const { container } = await renderInApp(<FondaDemoPulsePage />);
+      pathname = DEMO_PATHS.pulse;
+      const { container } = await renderInApp(<DemoPulsePage />);
 
       expect(container.querySelectorAll(".fdd-signal").length).toBeGreaterThan(0);
       expect(container.textContent).not.toMatch(/sedan|Uppdaterad \d/);
@@ -480,15 +476,15 @@ describe("/demo", () => {
 
     it("sidhuvudet visar demots poäng, samma som motorn räknar (PR 4)", async () => {
       startInApp(8);
-      await renderInApp(<FondaDemoHomePage />);
+      await renderInApp(<DemoHomePage />);
       const expected = saraEngine.getScoreSnapshotForBeat(8, "sv");
       const link = screen.getByRole("link", { name: new RegExp(`^Poäng ${expected.total}`) });
-      expect(link).toHaveAttribute("href", FONDA_DEMO_PATHS.score);
+      expect(link).toHaveAttribute("href", DEMO_PATHS.score);
     });
 
     it("sidhuvudet på varje sida säger att datan är påhittad", async () => {
       startInApp(lastBeat);
-      await renderInApp(<FondaDemoHomePage />);
+      await renderInApp(<DemoHomePage />);
       expect(screen.getByText(sv.site.demo.badge)).toBeInTheDocument();
     });
   });

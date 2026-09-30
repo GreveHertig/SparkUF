@@ -7,10 +7,10 @@ import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import type { JourneyStepDetail } from "@/ports/JourneyRepository";
 import { JourneyStep } from "@/screens/JourneyStep";
-import { FONDA_DEMO_PATHS } from "../../../_lib/paths";
+import { DEMO_PATHS } from "../../../_lib/paths";
 
 /** Demots steg: hämtar stegets data för det aktuella momentet och lämnar över till skärmen (PR 9). */
-export default function FondaDemoJourneyStepPage({ params }: { params: Promise<{ steg: string }> }) {
+export default function DemoJourneyStepPage({ params }: { params: Promise<{ steg: string }> }) {
   const { steg } = use(params);
   const stepNumber = Number(steg);
   const isValidStep = Number.isInteger(stepNumber);
@@ -34,5 +34,5 @@ export default function FondaDemoJourneyStepPage({ params }: { params: Promise<{
   if (data === undefined) return null;
   if (data === null) notFound();
 
-  return <JourneyStep data={data} stepNumber={stepNumber} journeyHref={FONDA_DEMO_PATHS.journey} />;
+  return <JourneyStep data={data} stepNumber={stepNumber} journeyHref={DEMO_PATHS.journey} />;
 }

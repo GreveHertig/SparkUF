@@ -128,12 +128,9 @@ export const sv = {
       build: "Bygg",
       businessPlan: "Affärsplanen",
     },
-    profileMenuLabel: "Profil",
     navMenuLabel: "Meny",
     headerScoreLabel: "Poäng",
     headerScoreMissing: "Poängen saknas än",
-    tagline: "AI-medgrundare",
-    restartDemo: "Börja om demonstrationen",
   },
   homePage: {
     actNowLabel: "Gör det här nu",
@@ -206,7 +203,6 @@ export const sv = {
       grow: "Växa",
     },
     stepLabel: "Steg",
-    openStep: "Öppna steget",
     backToJourney: "Tillbaka till Resan",
     whatHappened: "Vad som gjorts",
     whatsNext: "Vad som återstår",
@@ -402,7 +398,6 @@ export const sv = {
     personaBLabel: "Persona B",
     stepLabel: "Steg",
     stepOf: "av 12",
-    phaseLabel: "Fas",
     phases: {
       discover: "Upptäck",
       tryBeforeCalls: "Pröva",
@@ -429,7 +424,6 @@ export const sv = {
   },
   onboarding: {
     entry: {
-      eyebrow: "KOM IGÅNG",
       title: "Var står du idag?",
       subtitle: "Två ingångar till samma resa. Medgrundaren möter dig där du är.",
       noIdea: {
@@ -444,14 +438,12 @@ export const sv = {
       },
     },
     profile: {
-      eyebrow: "PROFILSAMTALET",
       title: "Berätta om dig",
       subtitle: "Klicka på svaret för att gå vidare — det bygger profilen Spark utgår från.",
       buildingTitle: "Din profil så här långt",
       continueCta: "Fortsätt",
     },
     idea: {
-      eyebrow: "IDÉGENOMLYSNINGEN",
       title: "Idén, granskad",
       founderIntroLabel: "Din idé",
       assumptionsTitle: "Antaganden idén bygger på",

@@ -9,7 +9,7 @@ import type { PulseSignal } from "@/core/domain";
 import { PageHead } from "../../_components/DemoBlocks";
 
 /** Pulsen: signalflödet, nyast först. Rubriken är den senaste signalen. */
-export default function FondaDemoPulsePage() {
+export default function DemoPulsePage() {
   const { t, locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);

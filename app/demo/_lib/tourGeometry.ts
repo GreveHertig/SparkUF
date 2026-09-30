@@ -1,5 +1,5 @@
 /**
- * Geometrin bakom rundturens spotlight (_components/FondaTour.tsx).
+ * Geometrin bakom rundturens spotlight (_components/DemoTour.tsx).
  *
  * Mörkläggningen är ett enda lager: en enfärgad yta över hela sidan med hålet
  * utskuret med `clip-path: path(evenodd, …)`. Hålets kanter ligger på hela
@@ -62,7 +62,7 @@ function clamp(value: number, min: number, max: number): number {
 /**
  * Hålet beskuret till den säkra ytan, så att det aldrig går in under
  * sidhuvudet eller demoraden. Ett mål som fortsätter utanför ytan når ända
- * fram till kanten (FondaTour gör de hörnen raka).
+ * fram till kanten (DemoTour gör de hörnen raka).
  */
 export function clipToSafeArea(rect: TourRect, safe: SafeArea): TourRect {
   const top = Math.max(rect.top, safe.top);

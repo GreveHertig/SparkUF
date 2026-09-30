@@ -6,10 +6,10 @@ import { demoProfileRepository } from "@/adapters/demo/ProfileRepository";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import type { OnboardingScript } from "@/ports/ProfileRepository";
 import { OnboardingProfile } from "@/screens/OnboardingProfile";
-import { FONDA_DEMO_PATHS } from "../../_lib/paths";
+import { DEMO_PATHS } from "../../_lib/paths";
 
 /** Profilsamtalet: hämtar samtalet för vald ingång. Markupen ligger i skärmen. */
-export default function FondaDemoProfilePage() {
+export default function DemoProfilePage() {
   const { locale } = useI18n();
   const entry = useDemoStore((state) => state.entry);
   const completeOnboarding = useDemoStore((state) => state.completeOnboarding);
@@ -31,7 +31,7 @@ export default function FondaDemoProfilePage() {
     <OnboardingProfile
       key={entry}
       data={{ script }}
-      continueHref={FONDA_DEMO_PATHS.home}
+      continueHref={DEMO_PATHS.home}
       onContinue={completeOnboarding}
     />
   );

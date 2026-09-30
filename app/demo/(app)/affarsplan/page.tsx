@@ -13,7 +13,7 @@ import { BusinessPlan } from "@/screens/BusinessPlan";
  * `buildBusinessPlan`) och lämnar över till skärmen (PR 10,
  * docs/plan-en-design.md).
  */
-export default function FondaDemoBusinessPlanPage() {
+export default function DemoBusinessPlanPage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);

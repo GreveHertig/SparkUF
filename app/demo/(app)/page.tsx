@@ -7,11 +7,11 @@ import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
 import { demoPulseProvider } from "@/adapters/demo/PulseProvider";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import { AppHome, type AppHomeData } from "@/screens/AppHome";
-import { FONDA_DEMO_PATHS } from "../_lib/paths";
+import { DEMO_PATHS } from "../_lib/paths";
 
 /** Hem: tunn hämtare (PR 3, docs/plan-en-design.md) — all markup ligger i
  * den delade screens/AppHome.tsx. */
-export default function FondaDemoHomePage() {
+export default function DemoHomePage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);
@@ -47,8 +47,8 @@ export default function FondaDemoHomePage() {
       data={data}
       dataKind="example"
       onNextStep={next}
-      journeyBasePath={FONDA_DEMO_PATHS.journey}
-      scoreHref={FONDA_DEMO_PATHS.score}
+      journeyBasePath={DEMO_PATHS.journey}
+      scoreHref={DEMO_PATHS.score}
     />
   );
 }

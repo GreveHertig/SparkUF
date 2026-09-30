@@ -132,7 +132,6 @@ export type Dictionary = {
       build: string;
       businessPlan: string;
     };
-    profileMenuLabel: string;
     /** `aria-label` på flikraden i /app (PR 2, skalet) — `site.demo.navLabel`
      * ("Demomeny") används bara när `dataKind` är `"example"`. */
     navMenuLabel: string;
@@ -142,12 +141,6 @@ export type Dictionary = {
     /** Skärmläsartext när poängen inte gick att hämta. Luckan visas som "—",
      * aldrig som en nolla eller ett påhittat värde. */
     headerScoreMissing: string;
-    /** Undertext under ordmärket i sidomenyn (artefaktens `.brand small`). */
-    tagline: string;
-    /** Sidomenyns sidfot (artefaktens `.side-foot .restart`) — bara i demot,
-     * se `components/spark/SidebarRestart.tsx`. Skild från `demoBar.reset`/
-     * `resetConfirm`, som är kortare ord för samma knapp i demoraden. */
-    restartDemo: string;
   };
   homePage: {
     /** Pillen ovanpå handlingskortet (artefaktens `actHTML`: "Gör det här nu"). */
@@ -226,7 +219,6 @@ export type Dictionary = {
       grow: string;
     };
     stepLabel: string;
-    openStep: string;
     backToJourney: string;
     whatHappened: string;
     whatsNext: string;
@@ -457,7 +449,6 @@ export type Dictionary = {
     personaBLabel: string;
     stepLabel: string;
     stepOf: string;
-    phaseLabel: string;
     phases: {
       discover: string;
       tryBeforeCalls: string;
@@ -491,21 +482,18 @@ export type Dictionary = {
    * idégenomlysningen. Delade skärmar, monterade under /demo/start och /start. */
   onboarding: {
     entry: {
-      eyebrow: string;
       title: string;
       subtitle: string;
       noIdea: { title: string; body: string; cta: string };
       hasIdea: { title: string; body: string; cta: string };
     };
     profile: {
-      eyebrow: string;
       title: string;
       subtitle: string;
       buildingTitle: string;
       continueCta: string;
     };
     idea: {
-      eyebrow: string;
       title: string;
       founderIntroLabel: string;
       assumptionsTitle: string;

@@ -128,12 +128,9 @@ export const en = {
       build: "Build",
       businessPlan: "Business plan",
     },
-    profileMenuLabel: "Profile",
     navMenuLabel: "Menu",
     headerScoreLabel: "Score",
     headerScoreMissing: "No score yet",
-    tagline: "AI co-founder",
-    restartDemo: "Restart the demonstration",
   },
   homePage: {
     actNowLabel: "Do this now",
@@ -206,7 +203,6 @@ export const en = {
       grow: "Grow",
     },
     stepLabel: "Step",
-    openStep: "Open the step",
     backToJourney: "Back to the journey",
     whatHappened: "What's been done",
     whatsNext: "What's left",
@@ -402,7 +398,6 @@ export const en = {
     personaBLabel: "Persona B",
     stepLabel: "Step",
     stepOf: "of 12",
-    phaseLabel: "Phase",
     phases: {
       discover: "Discover",
       tryBeforeCalls: "Try",
@@ -429,7 +424,6 @@ export const en = {
   },
   onboarding: {
     entry: {
-      eyebrow: "GET STARTED",
       title: "Where are you today?",
       subtitle: "Two entry points into the same journey. The co-founder meets you where you are.",
       noIdea: {
@@ -444,14 +438,12 @@ export const en = {
       },
     },
     profile: {
-      eyebrow: "THE PROFILE CHAT",
       title: "Tell us about yourself",
       subtitle: "Click the answer to move on — it builds the profile Spark works from.",
       buildingTitle: "Your profile so far",
       continueCta: "Continue",
     },
     idea: {
-      eyebrow: "THE IDEA SCREENING",
       title: "The idea, screened",
       founderIntroLabel: "Your idea",
       assumptionsTitle: "Assumptions the idea rests on",

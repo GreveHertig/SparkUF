@@ -8,7 +8,7 @@ import { Memory, type MemoryData } from "@/screens/Memory";
 
 /** Minnet: tunn hämtare (PR 5, docs/plan-en-design.md) — all markup ligger i
  * den delade screens/Memory.tsx. */
-export default function FondaDemoMemoryPage() {
+export default function DemoMemoryPage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);

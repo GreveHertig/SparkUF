@@ -8,7 +8,7 @@ import { Score, type ScoreData } from "@/screens/Score";
 
 /** Poäng: tunn hämtare (PR 4, docs/plan-en-design.md) — all markup ligger i
  * den delade screens/Score.tsx. */
-export default function FondaDemoScorePage() {
+export default function DemoScorePage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);

@@ -9,7 +9,7 @@ import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import { AppShell, type AppShellCurrentStep } from "@/screens/AppShell";
 import type { Profile } from "@/core/domain";
-import { FONDA_DEMO_PATHS } from "../_lib/paths";
+import { DEMO_PATHS } from "../_lib/paths";
 
 type ShellData = { profile: Profile; currentStep: AppShellCurrentStep | null; score: number };
 
@@ -23,7 +23,7 @@ type ShellData = { profile: Profile; currentStep: AppShellCurrentStep | null; sc
  * delade `screens/AppShell.tsx`. Hämtar profil, steg och totalpoängen för
  * sidhuvudet (PR 4) — samma snapshot som Hem och Poäng visar.
  */
-export default function FondaDemoAppLayout({ children }: { children: ReactNode }) {
+export default function DemoAppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
@@ -32,7 +32,7 @@ export default function FondaDemoAppLayout({ children }: { children: ReactNode }
   const [data, setData] = useState<ShellData | null>(null);
 
   useEffect(() => {
-    if (!onboardingDone) router.replace(FONDA_DEMO_PATHS.start);
+    if (!onboardingDone) router.replace(DEMO_PATHS.start);
   }, [onboardingDone, router]);
 
   // Samma useEffect/useState-mönster som det riktiga demots layout.
@@ -57,8 +57,8 @@ export default function FondaDemoAppLayout({ children }: { children: ReactNode }
 
   return (
     <AppShell
-      homeHref={FONDA_DEMO_PATHS.home}
-      navBasePath={FONDA_DEMO_PATHS.home}
+      homeHref={DEMO_PATHS.home}
+      navBasePath={DEMO_PATHS.home}
       dataKind="example"
       profile={data.profile}
       currentStep={data.currentStep}

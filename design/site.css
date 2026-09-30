@@ -3412,7 +3412,7 @@
 }
 
 /* Rundturen. Rutan (hålet i mörkläggningen) och kortet flyttas av
-   FondaTour med transform, opacity och clip-path; inga CSS-övergångar här,
+   DemoTour med transform, opacity och clip-path; inga CSS-övergångar här,
    så att en ny position aldrig krockar med en pågående animation. */
 .fdd-tour {
   position: fixed;
@@ -3435,7 +3435,7 @@
   clip-path: path(evenodd, "M-10 -10H100000V100000H-10Z");
 }
 
-/* Bredden sätts av FondaTour (layoutStop kan välja ett smalare kort bredvid målet). */
+/* Bredden sätts av DemoTour (layoutStop kan välja ett smalare kort bredvid målet). */
 .fdd-tour__card {
   position: absolute;
   top: 0;

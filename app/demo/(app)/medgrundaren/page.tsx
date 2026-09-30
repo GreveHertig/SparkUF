@@ -14,7 +14,7 @@ import { Cofounder, type CofounderData } from "@/screens/Cofounder";
  * till skärmen (PR 10, docs/plan-en-design.md). Manuset stannar här, i demots
  * sida — skärmen vet inte att samtalet är förskrivet.
  */
-export default function FondaDemoCofounderPage() {
+export default function DemoCofounderPage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
 
-export const FONDA_DEMO_HREF = "/demo";
+export const DEMO_HREF = "/demo";
 
 /** "Se demot", alltid med märkningen att demot visar fiktiv data. */
 export function DemoLink({ className, compact = false }: { className?: string; compact?: boolean }) {
@@ -12,7 +12,7 @@ export function DemoLink({ className, compact = false }: { className?: string; c
   const copy = t.site.demoLink;
 
   return (
-    <Link href={FONDA_DEMO_HREF} className={cn("fd-btn fd-btn--primary fd-demolink", className)}>
+    <Link href={DEMO_HREF} className={cn("fd-btn fd-btn--primary fd-demolink", className)}>
       <span>{copy.label}</span>
       <span className={cn("fd-demolink__note", compact && "fd-sr-only")}>{copy.note}</span>
     </Link>

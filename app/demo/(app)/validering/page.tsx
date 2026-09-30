@@ -22,7 +22,7 @@ import { Validation, type ValidationData, type ValidationLock } from "@/screens/
  * förut: simuleringen från steg 04, utskickets period och öppningsfrekvens
  * från steg 05, domen från steg 06. En tom kontaktlista betyder låst.
  */
-export default function FondaDemoValidationPage() {
+export default function DemoValidationPage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);

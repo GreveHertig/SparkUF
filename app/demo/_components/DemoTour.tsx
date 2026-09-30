@@ -7,8 +7,8 @@ import { useI18n } from "@/i18n/context";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import { saraBeats } from "@/adapters/demo/sara";
 import { TOUR_STEPS } from "@/adapters/demo/tourSteps";
-import { toFondaPath } from "../_lib/paths";
-import { fondaTourCopy } from "../_lib/tourCopy";
+import { toDemoPath } from "../_lib/paths";
+import { demoTourCopy } from "../_lib/tourCopy";
 import { cutBetweenUnits, frameStop, layoutStop, type SafeArea, type TourUnit } from "../_lib/tourGeometry";
 import {
   CARD_IN_EASE,
@@ -85,7 +85,7 @@ function tourUnits(root: HTMLElement): TourUnit[] {
  * Demots sidor bär samma `data-tour-id` som tourSteps.ts pekar på, så
  * spotlighten hittar samma innehåll.
  */
-export function FondaTour() {
+export function DemoTour() {
   const router = useRouter();
   const pathname = usePathname();
   const tourOn = useDemoStore((state) => state.tourOn);
@@ -95,7 +95,7 @@ export function FondaTour() {
   const goTo = useDemoStore((state) => state.goTo);
 
   const step = TOUR_STEPS[tourStepIndex];
-  const route = toFondaPath(step.route);
+  const route = toDemoPath(step.route);
 
   const reducedMotion = usePrefersReducedMotion();
 
@@ -228,7 +228,7 @@ function TourStage({
     ): Rect | null | undefined {
       // Ska stoppet byta sida väntar rutan på den nya sidan. Annars hittas
       // samma mål på den gamla, skrollen börjar och sidbytet rycker den till toppen.
-      if (window.location.pathname !== toFondaPath(TOUR_STEPS[active].route)) return undefined;
+      if (window.location.pathname !== toDemoPath(TOUR_STEPS[active].route)) return undefined;
       const targetId = TOUR_STEPS[active].target;
       if (!targetId) return null;
       const el = document.querySelector<HTMLElement>(`[data-tour-id="${targetId}"]`);
@@ -403,7 +403,7 @@ function TourStage({
     };
   }, []);
 
-  const shownCopy = fondaTourCopy(TOUR_STEPS[shownIndex], locale);
+  const shownCopy = demoTourCopy(TOUR_STEPS[shownIndex], locale);
   const shownIsLast = shownIndex === TOUR_STEPS.length - 1;
 
   return (

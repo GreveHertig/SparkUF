@@ -6,10 +6,10 @@ import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
 import { Journey } from "@/screens/Journey";
-import { FONDA_DEMO_PATHS } from "../../_lib/paths";
+import { DEMO_PATHS } from "../../_lib/paths";
 
 /** Demots Resan: hämtar stegen för det aktuella momentet och lämnar över till skärmen (PR 9). */
-export default function FondaDemoJourneyPage() {
+export default function DemoJourneyPage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);
@@ -27,5 +27,5 @@ export default function FondaDemoJourneyPage() {
 
   if (!steps) return null;
 
-  return <Journey data={{ steps }} basePath={FONDA_DEMO_PATHS.journey} />;
+  return <Journey data={{ steps }} basePath={DEMO_PATHS.journey} />;
 }

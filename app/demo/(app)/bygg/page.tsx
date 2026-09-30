@@ -14,7 +14,7 @@ const UNLOCKS_AFTER_STEP = 7;
  * över till skärmen (PR 10, docs/plan-en-design.md). Samma låsning som förut:
  * ingen spec ger låst till steg 07, och Jonas får "inte i scenariot".
  */
-export default function FondaDemoBuildPage() {
+export default function DemoBuildPage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);

@@ -13,7 +13,7 @@ import { Market, type MarketData, type MarketLock } from "@/screens/Market";
  * Markupen ligger i `screens/Market.tsx`. Demodatan bär inga räkenskapsår, så
  * medianomsättningen visas som en lucka (se skärmen).
  */
-export default function FondaDemoMarketPage() {
+export default function DemoMarketPage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);
