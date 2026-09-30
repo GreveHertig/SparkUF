@@ -194,7 +194,7 @@ export default function FondaDemoValidationPage() {
           <h2 id="fdd-val-responses" className="fdd-block__title">
             {v.responsesTitle}
           </h2>
-          <ExampleLabel />
+          <ExampleLabel dataKind="example" />
           <ul className="fdd-quotes" data-tour-id="validation-responses">
             {data.responses.map((response) => (
               <li key={response.companyName} className="fd-panel fdd-quote">
@@ -224,7 +224,7 @@ export default function FondaDemoValidationPage() {
         <h2 id="fdd-val-table" className="fdd-block__title">
           {v.tableTitle}
         </h2>
-        <ExampleLabel />
+        <ExampleLabel dataKind="example" />
         <div className="fdd-table">
           <table>
             <thead>

@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { Validation, type ValidationData } from "./Validation";
 import type { CampaignRow } from "@/ports/OutreachProvider";
-import type { ResponseCard, ValidationAssumption } from "@/adapters/demo/OutreachProvider";
+import type { ResponseCard, ValidationAssumption } from "@/ports/OutreachProvider";
 
 // jsdom saknar matchMedia — VerdictCard (via ScoreBadge/usePrefersReducedMotion)
 // behöver den, se app/(marketing)/page.test.tsx för samma mönster.

@@ -20,6 +20,13 @@ export type Profile = {
  * duplicerar typen. */
 export type OnboardingEntry = "noIdea" | "hasIdea";
 
+/**
+ * Vilken sorts data en vy visar (Datalöftet, docs/uppdrag.md 1.2):
+ * "example" är demots påhittade exempeldata och ska märkas synligt,
+ * "live" är riktig data. Bara demot sätter "example" (docs/plan-en-design.md).
+ */
+export type DataKind = "example" | "live";
+
 /** En del av poängens nedbrytning (avsnitt 7.2), redan upplåst. */
 export type ScorePart = {
   name: string;

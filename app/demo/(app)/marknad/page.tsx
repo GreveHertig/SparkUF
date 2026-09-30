@@ -111,7 +111,7 @@ export default function FondaDemoMarketPage() {
         <h2 id="fdd-market-kpi" className="fdd-block__title">
           {m.kpiTitle}
         </h2>
-        <ExampleLabel />
+        <ExampleLabel dataKind="example" />
         <Figures
           tourId="market-kpi"
           items={[
@@ -247,7 +247,7 @@ export default function FondaDemoMarketPage() {
         <h2 id="fdd-market-comp" className="fdd-block__title">
           {m.competitorsTitle}
         </h2>
-        <ExampleLabel />
+        <ExampleLabel dataKind="example" />
         <ul className="fdd-cells">
           {overview.competitors.map((competitor) => (
             <li key={competitor.name}>

@@ -16,7 +16,7 @@ import type { Källa } from "@/core/domain";
 import type { CampaignRow, OutreachStatus } from "@/ports/OutreachProvider";
 import type { JourneyStepVerdict } from "@/ports/JourneyRepository";
 import type { Simulation } from "@/ports/SimulationProvider";
-import type { ResponseCard, ValidationAssumption } from "@/adapters/demo/OutreachProvider";
+import type { ResponseCard, ValidationAssumption } from "@/ports/OutreachProvider";
 
 export type ValidationData = {
   /** Hela kontaktlistan (avsnitt 6, tidigare Kunder) — inget tappas i

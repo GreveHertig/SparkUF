@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+// Demots stil är appens stil (docs/plan-en-design.md, DESIGN.md). Skopad
+// under .fd/.fdd, så inget ändras förrän skärmarna använder klasserna.
+import "@/design/site.css";
 import { AppShell, type AppShellCurrentStep } from "@/screens/AppShell";
 import { SignOutButton } from "@/components/spark/SignOutButton";
 import { requireUser } from "@/lib/server/session";
