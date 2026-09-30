@@ -57,7 +57,8 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
   grinden är stängd, aldrig demodata.
 - **Delade byggstenar mellan skärmar** ligger i `screens/blocks/` (PR 4:
   `ScoreFigure`, `ScoreDelta`, `levelTone`, `formatDelta`; PR 5:
-  `PageHead`, `Locked`, `Pill` i `PageBlocks.tsx`). Samma portregel
+  `PageHead`, `Locked`, `Pill` i `PageBlocks.tsx`; PR 7: `ExampleLabel`,
+  `Figures`, `SimulationBlock`, `VerdictBlock` i `DataBlocks.tsx`). Samma portregel
   som skärmarna. Demots `app/demo/_components/DemoBlocks.tsx` importerar
   därifrån i stället för att ha egna kopior.
 - **Overifierade källor på Juridik** (PR 5): varje krav visar sin källa och
@@ -67,6 +68,9 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
   att inget är granskat av en jurist. Ingen källa visas som verifierad förrän
   en adapter skickar en verifieringsstatus som data. Saknas källnamn eller
   datum visas luckan ("Källa saknas").
+- **Anställda som storleksklass** (PR 7): skärmarna visar SCB:s klass
+  (`core/sizeClass.ts`, "5–9"), aldrig det exakta antalet, i både `/demo`
+  och `/app`.
 - **Val av bolagsform i `/app/juridik`** (PR 5): länkar (`?bolagsform=…`) i
   samma segmenterade kontroll som Minnets flikar (`.fdd-segmented--wrap`,
   radbryter på smala skärmar). Demot har inget val.

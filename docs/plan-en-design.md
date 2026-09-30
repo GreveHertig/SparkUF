@@ -6,32 +6,34 @@ enda skillnaden ska vara datan: appen visar riktig data via
 samma skärmar i `screens/`.
 
 Skriven 2026-09-26 efter PR #25 (ny startsida och nytt demo). PR 1–3 är
-gjorda (egna grenar och PR:er mot `prototyp`); PR 4 och 5 är gjorda på
+gjorda (egna grenar och PR:er mot `prototyp`); PR 4, 5 och 7 är gjorda på
 `design/en-design` enligt avsnittet "Arbetsordning" nedan. Läget per PR står
 i `docs/status.md`.
 
 ## Nuläge
 
-Uppdaterat 2026-09-30, efter PR 5. Ögonblicksbilden från 2026-09-26 (före
+Uppdaterat 2026-09-30, efter PR 7. Ögonblicksbilden från 2026-09-26 (före
 PR 1) finns i historiken för den här filen.
 
 - **Delat av `/demo` och `/app`:** skalet (`AppShell`, PR 2, med poängen i
   sidhuvudet från PR 4), Hem (`AppHome`, PR 3), Poäng (`Score`, PR 4),
-  Minnet (`Memory`, PR 5) och Juridik (`Legal`, PR 5). Demots sidor för dem
+  Minnet (`Memory`, PR 5), Juridik (`Legal`, PR 5) och Validering
+  (`Validation`, PR 7). Demots sidor för dem
   är tunna hämtare utan markup.
-- **`/app`-rutter:** `/app` (Hem), `/app/poang`, `/app/minnet` och
-  `/app/juridik`, plus onboardingen på `/start` (`OnboardingEntry`,
+- **`/app`-rutter:** `/app` (Hem), `/app/poang`, `/app/minnet`,
+  `/app/juridik` och `/app/validering`, plus onboardingen på `/start` (`OnboardingEntry`,
   `OnboardingIdea`, `OnboardingProfile`). Flikarna i `/app` är fortfarande
-  inerta (ingen `navBasePath`), eftersom sju av sidorna saknas.
+  inerta (ingen `navBasePath`), eftersom sex av sidorna saknas.
 - **Oanvända skärmar i `screens/`** (väntar på sina steg): `Build`,
-  `BusinessPlan`, `Cofounder`, `JourneyStep`, `Market`, `Pulse` och
-  `Validation`. `Journey` används bara via `components/spark/JourneyRail`.
-- **Delade byggstenar** ligger i `screens/blocks/`: `ScoreFigure.tsx` (PR 4)
-  och `PageBlocks.tsx` (`PageHead`, `Locked`, `Pill`, PR 5).
+  `BusinessPlan`, `Cofounder`, `JourneyStep`, `Market` och `Pulse`. `Journey` används bara via `components/spark/JourneyRail`.
+- **Delade byggstenar** ligger i `screens/blocks/`: `ScoreFigure.tsx` (PR 4),
+  `PageBlocks.tsx` (`PageHead`, `Locked`, `Pill`, PR 5) och
+  `DataBlocks.tsx` (`ExampleLabel`, `Figures`, `SimulationBlock`,
+  `VerdictBlock`, PR 7).
   `app/demo/_components/DemoBlocks.tsx` exporterar de senare vidare åt
   demosidor som inte är flyttade än.
 - **Demots egna sidor kvar att flytta:** Resan och steget, Marknad,
-  Validering, Pulsen, Medgrundaren, Bygg, Affärsplan och onboardingen på
+  Pulsen, Medgrundaren, Bygg, Affärsplan och onboardingen på
   `/demo/start`.
 - **Liveadaptrarna:** byggda är Evidens, Juridik, Minnet, OutreachPrep,
   Utskick, Pulsen och Registret (bakom licensgrinden). Helt eller delvis
@@ -48,7 +50,7 @@ PR 1) finns i historiken för den här filen.
 | Resan och steget | `resan`, `resan/[steg]` | `Journey`, `JourneyStep` | nej | stubbe |
 | Poäng | `poang` | `Score` | ja, PR 4 | byggd |
 | Marknad | `marknad` | `Market` | nej | Registret, bakom licensgrinden |
-| Validering | `validering` | `Validation` | nej | Utskick byggt |
+| Validering | `validering` | `Validation` | ja, PR 7 (låst till steg 03 ur Resans steg) | Utskick: sändspärren ger "Kommer snart"; läser inte Registret |
 | Pulsen | `pulsen` | `Pulse` | nej | byggd |
 | Medgrundaren | `medgrundaren` | `Cofounder` | nej | stubbe |
 | Minnet | `minnet` | `Memory` | ja, PR 5 | byggd |
@@ -93,8 +95,10 @@ PR 1) finns i historiken för den här filen.
   prop, `dataKind: "example" | "live"`, som bara demot sätter. Appen faller
   aldrig tillbaka på demodata. Saknad data ger tomläge eller `ComingSoon`.
   Varje siffra har källa, som i demot i dag.
-- **Licensgrinden.** I appen använder Marknad och Validering det riktiga
-  Registret. Stängd grind kastar `RegistryLockedError`, som redan räknas
+- **Licensgrinden.** I appen använder Marknad det riktiga Registret.
+  (Validering var tänkt att göra det, men sidan har inga registersiffror:
+  kontaktlistan kommer ur Utskick. `/app/validering` anropar inte
+  Registret, och ett test bevisar det. Se PR 7 i `docs/status.md`.) Stängd grind kastar `RegistryLockedError`, som redan räknas
   som platshållarfel (`isPlaceholderError`). Skärmarna får ett eget låst
   läge ("Registret är inte öppet än") i stället för bara `ComingSoon`.
   Inga registersiffror visas för den som inte står på allowlisten. Ett
