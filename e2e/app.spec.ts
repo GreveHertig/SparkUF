@@ -28,6 +28,8 @@ const PAGES = [
   { path: "/app/medgrundaren", heading: "Medgrundaren" },
   // Bygg: testkontot står på steg 01, så sidan är låst till steg 07.
   { path: "/app/bygg", heading: "Bygg" },
+  // Affärsplanen: ingen hopsamling i /app än, Kommer snart i varje avsnitt.
+  { path: "/app/affarsplan", heading: "Affärsplanen" },
 ] as const;
 
 async function logIn(page: Page) {

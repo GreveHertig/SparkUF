@@ -9,6 +9,7 @@ import { saraEngine } from "@/adapters/demo/sara";
 import { jonasBeats } from "@/adapters/demo/jonas";
 import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { demoBuildProvider } from "@/adapters/demo/BuildProvider";
+import { getBusinessPlan } from "@/adapters/demo/businessPlan";
 import FondaDemoLayout from "./layout";
 import FondaDemoAppLayout from "./(app)/layout";
 import FondaDemoHomePage from "./(app)/page";
@@ -22,6 +23,7 @@ import FondaDemoJourneyPage from "./(app)/resan/page";
 import FondaDemoJourneyStepPage from "./(app)/resan/[steg]/page";
 import FondaDemoCofounderPage from "./(app)/medgrundaren/page";
 import FondaDemoBuildPage from "./(app)/bygg/page";
+import FondaDemoBusinessPlanPage from "./(app)/affarsplan/page";
 import FondaDemoStartPage from "./start/page";
 import { FONDA_DEMO_KEY, REAL_DEMO_KEY, enterFondaDemo, leaveFondaDemo } from "./_lib/fondaDemoIsolation";
 import { FONDA_DEMO_PATHS } from "./_lib/paths";
@@ -300,6 +302,23 @@ describe("/demo", () => {
     useDemoStore.getState().setEntry("hasIdea");
     await renderInApp(<FondaDemoBuildPage />);
     expect(await screen.findByText(sv.homePage.notInThisScenario)).toBeInTheDocument();
+  });
+
+  it("Affärsplanen (tunn hämtare, PR 10) visar samma mognad och avsnitt som hopsamlingen, med källa på varje påstående", async () => {
+    startInApp(saraEngine.beats.length - 1);
+    pathname = FONDA_DEMO_PATHS.businessPlan;
+    await renderInApp(<FondaDemoBusinessPlanPage />);
+    const plan = await getBusinessPlan("sv");
+    expect(
+      await screen.findByText(`${plan.maturity.solidCount}/${plan.maturity.totalCount}`),
+    ).toBeInTheDocument();
+    expect(document.querySelectorAll("h2[id^='fdd-plan-']")).toHaveLength(plan.sections.length);
+    const claims = plan.sections.reduce((sum, s) => sum + s.claims.length + s.contradictions.length * 2, 0);
+    expect(document.querySelectorAll(".fdd-claim")).toHaveLength(claims);
+    for (const item of document.querySelectorAll(".fdd-claim")) {
+      expect(item.querySelector(".fdd-inline")?.textContent).not.toBe("");
+    }
+    expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
   });
 
   describe("Datalöftet och buggrapporten (docs/buggar-2026-09.md)", () => {

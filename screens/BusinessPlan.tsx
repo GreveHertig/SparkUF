@@ -1,130 +1,147 @@
 "use client";
 
-import { Card } from "@/components/ui/Card";
-import { EditorialHeading } from "@/components/ui/EditorialHeading";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { LockedState } from "@/components/ui/LockedState";
+import type { ReactNode } from "react";
+import { ComingSoon } from "@/components/ui/ComingSoon";
+import { ConceptBadge } from "@/components/ui/ConceptBadge";
 import { SourceTag } from "@/components/ui/SourceTag";
-import { KpiRow } from "@/components/spark/KpiRow";
-import { KpiTile } from "@/components/spark/KpiTile";
-import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
-import type { BusinessPlan, BusinessPlanClaim, BusinessPlanSection, BusinessPlanStatus } from "@/core/businessPlan";
+import { fill } from "@/i18n/fill";
+import {
+  BUSINESS_PLAN_SECTION_ORDER,
+  type BusinessPlan as BusinessPlanModel,
+  type BusinessPlanClaim,
+  type BusinessPlanSection,
+  type BusinessPlanSectionId,
+  type BusinessPlanStatus,
+} from "@/core/businessPlan";
+import { mentionsConcept } from "@/core/concepts";
+import { Locked, PageHead, Pill, type PillTone } from "./blocks/PageBlocks";
 
-export type BusinessPlanData = {
-  plan: BusinessPlan;
+/**
+ * `null` betyder att planen inte kan sättas samman (ingen hopsamling i /app
+ * än): varje avsnitt visar sin rubrik och "Kommer snart", och mognaden visas
+ * som luckan "—", aldrig som 0.
+ */
+export type BusinessPlanData = { plan: BusinessPlanModel | null };
+
+const statusTone: Record<BusinessPlanStatus, PillTone> = {
+  solid: "green",
+  thin: "yellow",
+  missing: "neutral",
 };
 
-const statusToneClasses: Record<BusinessPlanStatus, string> = {
-  solid: "border-score-green bg-score-green-bg text-score-green",
-  thin: "border-score-yellow bg-score-yellow-bg text-score-yellow",
-  missing: "border-dashed border-slate-300 bg-slate-50 text-slate-500",
-};
-
-function ClaimRow({ claim }: { claim: BusinessPlanClaim }) {
+function Claim({ claim }: { claim: BusinessPlanClaim }) {
   return (
-    <div className="flex flex-col gap-1">
-      {claim.value !== undefined ? (
-        <p className="text-sm text-slate-800">
-          <span className="font-medium">{claim.text}</span>{" "}
-          <span className="font-numeric text-slate-600">{claim.value}</span>
-        </p>
-      ) : (
-        <p className="text-sm text-slate-800">{claim.text}</p>
-      )}
-      <SourceTag source={claim.source} dataType={claim.dataType} />
-    </div>
+    <li className="fdd-claim">
+      <p>
+        {claim.text}
+        {claim.value !== undefined && <span className="fdd-claim__value"> {claim.value}</span>}
+      </p>
+      <span className="fdd-inline">
+        <SourceTag source={claim.source} dataType={claim.dataType} />
+        {mentionsConcept(claim.text) && <ConceptBadge />}
+      </span>
+    </li>
   );
 }
 
-function SectionCard({ section }: { section: BusinessPlanSection }) {
+function SectionShell({
+  id,
+  pill,
+  children,
+}: {
+  id: BusinessPlanSectionId;
+  pill?: ReactNode;
+  children: ReactNode;
+}) {
   const { t } = useI18n();
-  const copy = t.businessPlanPage.sections[section.id];
+  const text = t.businessPlanPage.sections[id];
+  return (
+    <section className="fd-panel fdd-plansection" aria-labelledby={`fdd-plan-${id}`}>
+      <div className="fdd-panel__head">
+        <h2 id={`fdd-plan-${id}`} className="fdd-panel__title">
+          {text.title}
+        </h2>
+        {pill}
+      </div>
+      <p className="fdd-muted">{text.description}</p>
+      {children}
+    </section>
+  );
+}
+
+function Section({ section }: { section: BusinessPlanSection }) {
+  const { t } = useI18n();
+  const copy = t.businessPlanPage;
 
   return (
-    <Card
-      title={copy.title}
-      right={
-        <span
-          className={cn("rounded-pill border px-2 py-0.5 text-xs font-semibold uppercase", statusToneClasses[section.status])}
-          style={{ letterSpacing: "var(--tracking-label)" }}
-        >
-          {t.businessPlanPage.status[section.status]}
-        </span>
-      }
-    >
-      <p className="mb-3 text-sm text-slate-600">{copy.description}</p>
-
+    <SectionShell id={section.id} pill={<Pill tone={statusTone[section.status]}>{copy.status[section.status]}</Pill>}>
       {section.claims.length > 0 && (
-        <div className="flex flex-col gap-3">
+        <ul className="fdd-claims">
           {section.claims.map((claim, index) => (
-            <ClaimRow key={index} claim={claim} />
+            <Claim key={index} claim={claim} />
           ))}
-        </div>
+        </ul>
       )}
 
-      {section.contradictions.length > 0 && (
-        <div className="mt-3 flex flex-col gap-2">
-          {section.contradictions.map((contradiction, index) => (
-            <div key={index} className="rounded-md border border-dashed border-score-orange bg-score-orange-bg p-3">
-              <Eyebrow tone="warning">{t.businessPlanPage.contradictionLabel}</Eyebrow>
-              <div className="mt-2 flex flex-col gap-2">
-                <ClaimRow claim={contradiction.a} />
-                <ClaimRow claim={contradiction.b} />
-              </div>
-            </div>
-          ))}
+      {section.contradictions.map((contradiction, index) => (
+        <div key={index} className="fdd-contradiction">
+          <p className="fdd-contradiction__label">{copy.contradictionLabel}</p>
+          <ul className="fdd-claims">
+            <Claim claim={contradiction.a} />
+            <Claim claim={contradiction.b} />
+          </ul>
         </div>
-      )}
+      ))}
 
-      {section.gaps.length > 0 && (
-        <div className={cn("flex flex-col gap-2", section.claims.length > 0 && "mt-3")}>
-          {section.gaps.map((gap, index) => (
-            <LockedState
-              key={index}
-              unlockHint={t.businessPlanPage.requiresStepTemplate.replace("{step}", String(gap.requiredStepNumber))}
-            />
-          ))}
-        </div>
-      )}
+      {section.gaps.map((gap, index) => (
+        <Locked key={index} hint={fill(copy.requiresStepTemplate, { step: gap.requiredStepNumber })} />
+      ))}
 
       {section.lockedParts.length > 0 && (
-        <div className="mt-3 flex flex-col gap-2">
-          <Eyebrow>{t.businessPlanPage.lockedPartsTitle}</Eyebrow>
+        <div className="fdd-stack fdd-stack--tight">
+          <p className="fdd-label">{copy.lockedPartsTitle}</p>
           {section.lockedParts.map((part) => (
-            <LockedState key={part.name} unlockHint={`${part.name} · ${t.homePage.unlocksAfterStepBefore} ${part.unlocksAfterStep}`} />
+            <Locked key={part.name} hint={`${part.name} · ${t.homePage.unlocksAfterStepBefore} ${part.unlocksAfterStep}`} />
           ))}
         </div>
       )}
-    </Card>
+    </SectionShell>
   );
 }
 
 /**
- * Affärsplanen (docs/uppdrag.md avsnitt 15): sätts samman i kod ur det
- * grundaren redan bevisat, aldrig genererad. Samma kortskal, typografiska
- * skala och källchips som resten av /demo/app — ett avsnitt utan underlag
- * visas som ett ärligt tomt läge (LockedState), inte en tom ruta.
+ * Affärsplanen (PR 10): sammansatt i kod ur det som redan är belagt, aldrig
+ * genererad. Skärmen visar bara vad `buildBusinessPlan` (core/businessPlan.ts)
+ * returnerar.
  */
 export function BusinessPlan({ data }: { data: BusinessPlanData }) {
   const { t } = useI18n();
-  const { maturity, sections } = data.plan;
+  const copy = t.businessPlanPage;
+  const { plan } = data;
 
   return (
-    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
-      <div>
-        <EditorialHeading as="h1">{t.businessPlanPage.title}</EditorialHeading>
-        <p className="mt-2 text-sm text-slate-600">{t.businessPlanPage.subtitle}</p>
-      </div>
-
-      <KpiRow>
-        <KpiTile label={t.businessPlanPage.maturityLabel} value={`${maturity.solidCount}/${maturity.totalCount}`} />
-      </KpiRow>
-
-      <div className="flex flex-col gap-[18px]">
-        {sections.map((section) => (
-          <SectionCard key={section.id} section={section} />
-        ))}
+    <div className="fdd-page">
+      <PageHead
+        title={copy.title}
+        lede={copy.subtitle}
+        aside={
+          <p className="fdd-maturity">
+            <span className="fdd-maturity__value">
+              {plan ? `${plan.maturity.solidCount}/${plan.maturity.totalCount}` : "—"}
+            </span>
+            <span className="fdd-muted">{copy.maturityLabel}</span>
+          </p>
+        }
+      />
+      <div className="fdd-plan">
+        {plan
+          ? plan.sections.map((section) => <Section key={section.id} section={section} />)
+          : BUSINESS_PLAN_SECTION_ORDER.map((id) => (
+              <SectionShell key={id} id={id}>
+                <ComingSoon />
+              </SectionShell>
+            ))}
       </div>
     </div>
   );
