@@ -123,6 +123,7 @@ export const sv = {
       businessPlan: "Affärsplanen",
     },
     profileMenuLabel: "Profil",
+    navMenuLabel: "Meny",
     tagline: "AI-medgrundare",
     restartDemo: "Börja om demonstrationen",
   },
