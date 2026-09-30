@@ -1,6 +1,11 @@
 /** Typad form för översättningarna. sv.ts och en.ts måste båda uppfylla den
  * här — saknas en nyckel i endera filen larmar TypeScript. */
 export type Dictionary = {
+  /** Sidtitel och förhandsvisning när länken delas (app/layout.tsx). */
+  meta: {
+    title: string;
+    description: string;
+  };
   common: {
     languageSwitch: {
       sv: string;

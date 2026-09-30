@@ -1,0 +1,10 @@
+# docs/status.md är en fil alla sessioner/grenar lägger till text i (varje
+# session/PR skriver ett eget avsnitt längst ner) — den har gett samma typ
+# av merge-konflikt flera gånger (två grenar lägger till varsitt avsnitt på
+# samma plats). merge=union löser det automatiskt genom att behålla BÅDA
+# sidornas rader i stället för att stoppa med en konflikt. Det förutsätter
+# att sessioner bara lägger till nya avsnitt längst ner och inte redigerar
+# någon annan sessions befintliga text — om någon någonsin redigerar en
+# äldre sektion kan union-strategin duplicera eller radordna fel, så
+# granska alltid resultatet efter en merge även om den gick "grönt".
+docs/status.md merge=union
