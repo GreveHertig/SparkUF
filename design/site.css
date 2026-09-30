@@ -2668,7 +2668,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .fdd-stepper__link:hover .fd-stepper__num {
+  a.fdd-stepper__link:hover .fd-stepper__num {
     box-shadow: 0 0 0 4px var(--accent-100);
   }
 }

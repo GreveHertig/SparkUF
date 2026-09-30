@@ -367,6 +367,7 @@ export const sv = {
     empty: "Inga krav hittades för bolagsformen.",
     bolagsformPickerLabel: "Bolagsform",
     bolagsformPrompt: "Välj en bolagsform för att se den juridiska kartan.",
+    loadFailed: "Kartan kunde inte hämtas just nu. Försök igen om en stund.",
   },
   buildPage: {
     title: "Bygg",

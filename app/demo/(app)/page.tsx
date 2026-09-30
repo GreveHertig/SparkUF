@@ -7,7 +7,7 @@ import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
 import { demoPulseProvider } from "@/adapters/demo/PulseProvider";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import { AppHome, type AppHomeData } from "@/screens/AppHome";
-import { FONDA_DEMO_PATHS, journeyStepPath } from "../_lib/paths";
+import { FONDA_DEMO_PATHS } from "../_lib/paths";
 
 /** Hem: tunn hämtare (PR 3, docs/plan-en-design.md) — all markup ligger i
  * den delade screens/AppHome.tsx. */
@@ -47,7 +47,7 @@ export default function FondaDemoHomePage() {
       data={data}
       dataKind="example"
       onNextStep={next}
-      journeyStepHref={journeyStepPath}
+      journeyBasePath={FONDA_DEMO_PATHS.journey}
       scoreHref={FONDA_DEMO_PATHS.score}
     />
   );

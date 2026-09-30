@@ -367,6 +367,7 @@ export const en = {
     empty: "No requirements found for the company form.",
     bolagsformPickerLabel: "Company form",
     bolagsformPrompt: "Choose a company form to see the legal map.",
+    loadFailed: "The map could not be loaded right now. Try again in a moment.",
   },
   buildPage: {
     title: "Build",

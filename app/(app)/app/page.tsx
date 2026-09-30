@@ -39,6 +39,8 @@ export default async function LiveAppHomePage() {
   const data: AppHomeData = { todayIso, score, homeSummary, pulseSignals, journeySteps };
 
   return (
-    <AppHome data={data} dataKind="live" journeyStepHref={(stepNumber) => `/app/resan/${stepNumber}`} scoreHref="/app/poang" />
+    // Resans sidor finns inte i /app än (PR 9): stegen visas utan länk, i
+    // stället för tolv länkar till 404.
+    <AppHome data={data} dataKind="live" journeyBasePath={null} scoreHref="/app/poang" />
   );
 }

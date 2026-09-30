@@ -51,6 +51,21 @@ async function renderPage() {
 }
 
 describe("/app Hem (PR 3)", () => {
+  it("skickar inga funktioner till klientskärmen (Next vägrar det vid rendering)", async () => {
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getStepsMock.mockResolvedValue(steps);
+    getSignalsMock.mockResolvedValue(signals);
+
+    const { default: LiveAppHomePage } = await import("./page");
+    const tree = await LiveAppHomePage();
+
+    const functionProps = Object.entries(tree.props as Record<string, unknown>)
+      .filter(([, value]) => typeof value === "function")
+      .map(([name]) => name);
+    expect(functionProps).toEqual([]);
+  });
+
   it("visar Kommer snart bara i handlingskortets/'sedan sist'-rutan när Resan är en stub, men riktig poäng och Resan-raden", async () => {
     getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
     getScoreSnapshotMock.mockResolvedValue(snapshot);
@@ -61,7 +76,9 @@ describe("/app Hem (PR 3)", () => {
 
     expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(2);
     expect(screen.getByText(String(snapshot.total))).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Om dig/ })).toHaveAttribute("href", "/app/resan/1");
+    // Resans sidor finns inte i /app än: steget visas, men utan länk till en 404.
+    expect(screen.getByText("Om dig")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Om dig/ })).not.toBeInTheDocument();
   });
 
   it("visar Kommer snart bara i poängrutan när kontot saknar bevis", async () => {

@@ -14,6 +14,8 @@ import { Locked, PageHead, Pill, type PillTone } from "./blocks/PageBlocks";
  */
 export type LegalData = {
   krav: JuridisktKrav[] | null;
+  /** Kartan kunde inte hämtas (t.ex. Gemini nere). Visas i kartans ruta i stället för "Kommer snart". */
+  loadFailed?: boolean;
 };
 
 /** Låst läge för hela kartan. Demot räknar ut det ur sitt moment; /app ur Resans steg när den finns. */
@@ -93,7 +95,11 @@ export function Legal({
               </h2>
               {krav && krav.length > 0 && <p className="fdd-muted">{copy.notReviewedNote}</p>}
             </div>
-            {krav === null ? (
+            {data.loadFailed ? (
+              <p className="fdd-muted" role="alert">
+                {copy.loadFailed}
+              </p>
+            ) : krav === null ? (
               <ComingSoon />
             ) : krav.length === 0 ? (
               <p className="fdd-muted">{copy.empty}</p>

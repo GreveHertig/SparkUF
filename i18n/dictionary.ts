@@ -407,6 +407,7 @@ export type Dictionary = {
     empty: string;
     bolagsformPickerLabel: string;
     bolagsformPrompt: string;
+    loadFailed: string;
   };
   buildPage: {
     title: string;

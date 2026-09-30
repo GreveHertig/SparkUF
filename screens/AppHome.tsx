@@ -38,13 +38,25 @@ export type AppHomeData = {
 // PR 4). JourneyStepper finns fortfarande i två exemplar (här och i
 // app/demo/_components/DemoBlocks.tsx) tills Resan konverteras (PR 9).
 
+function StepContent({ step }: { step: JourneyStepView }) {
+  const { t } = useI18n();
+  return (
+    <>
+      <span className="fd-stepper__num">{String(step.stepNumber).padStart(2, "0")}</span>
+      <span className="fd-stepper__title">{step.title}</span>
+      <span className="fd-sr-only">{t.journeyPage.status[step.status]}</span>
+    </>
+  );
+}
+
 /** Resan som en kompakt stegrad: klara steg fyllda, det aktuella markerat. */
 function JourneyStepper({
   steps,
   stepHref,
 }: {
   steps: JourneyStepView[];
-  stepHref: (stepNumber: number) => string;
+  /** `null`: stegen visas utan länk (sidorna finns inte än). */
+  stepHref: ((stepNumber: number) => string) | null;
 }) {
   const { t } = useI18n();
   return (
@@ -55,11 +67,15 @@ function JourneyStepper({
           className={cn("fd-stepper__item", `fdd-step--${step.status}`)}
           aria-current={step.status === "current" ? "step" : undefined}
         >
-          <Link href={stepHref(step.stepNumber)} className="fdd-stepper__link">
-            <span className="fd-stepper__num">{String(step.stepNumber).padStart(2, "0")}</span>
-            <span className="fd-stepper__title">{step.title}</span>
-            <span className="fd-sr-only">{t.journeyPage.status[step.status]}</span>
-          </Link>
+          {stepHref ? (
+            <Link href={stepHref(step.stepNumber)} className="fdd-stepper__link">
+              <StepContent step={step} />
+            </Link>
+          ) : (
+            <span className="fdd-stepper__link">
+              <StepContent step={step} />
+            </span>
+          )}
         </li>
       ))}
     </ol>
@@ -78,13 +94,19 @@ export function AppHome({
   data,
   dataKind,
   onNextStep,
-  journeyStepHref,
+  journeyBasePath,
   scoreHref,
 }: {
   data: AppHomeData;
   dataKind: DataKind;
   onNextStep?: () => void;
-  journeyStepHref: (stepNumber: number) => string;
+  /**
+   * Resans bas-väg (t.ex. `/demo/resan`); stegets länk blir `<bas>/<nummer>`.
+   * En sträng, inte en funktion: `/app`-rutten är en Server Component, och
+   * Next vägrar skicka funktioner till en klientkomponent. `null` när Resans
+   * sidor inte finns (i `/app` tills PR 9): stegen visas utan länk.
+   */
+  journeyBasePath: string | null;
   scoreHref: string;
 }) {
   const { t, locale } = useI18n();
@@ -171,7 +193,7 @@ export function AppHome({
           {copy.demo.journeyTitle}
         </h2>
         <div className="fd-journey">
-          <JourneyStepper steps={data.journeySteps} stepHref={journeyStepHref} />
+          <JourneyStepper steps={data.journeySteps} stepHref={journeyBasePath === null ? null : (stepNumber) => `${journeyBasePath}/${stepNumber}`} />
         </div>
       </section>
 

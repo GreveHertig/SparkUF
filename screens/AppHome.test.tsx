@@ -64,7 +64,7 @@ function renderHome(data: AppHomeData, opts: { dataKind?: "example" | "live"; on
         data={data}
         dataKind={opts.dataKind ?? "example"}
         onNextStep={opts.onNextStep}
-        journeyStepHref={(n) => `/demo/resan/${n}`}
+        journeyBasePath="/demo/resan"
         scoreHref="/demo/poang"
       />
     </LocaleProvider>,
@@ -102,7 +102,7 @@ describe("AppHome (PR 3, Hem)", () => {
     expect(screen.queryByText(String(baseSnapshot.total))).not.toBeInTheDocument();
   });
 
-  it("Resan-raden länkar via journeyStepHref oavsett om homeSummary/score saknas", () => {
+  it("Resan-raden länkar via journeyBasePath oavsett om homeSummary/score saknas", () => {
     renderHome(baseData({ homeSummary: null, score: null }));
     expect(screen.getByRole("link", { name: /Marknaden/ })).toHaveAttribute("href", "/demo/resan/3");
   });
