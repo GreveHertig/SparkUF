@@ -3219,3 +3219,36 @@ Engelska texterna ändrades likadant. Inget ställe fick ett år, eftersom inget
 - **Planen sade "liveadaptern stubbe"** för PR 9. `getSteps` och `getStepDetail` är byggda; bara `getHomeSummary` är en stubbe. Rättat i planen.
 - **`levelTone` finns två gånger**: `screens/blocks/ScoreFigure.tsx` och `app/(marketing)/_components/ScoreProof.tsx` (landningssidan, #25). Inte en PR 3-dubblett; landningssidan hör till `prototyp-landning`.
 - **Landningssidan** hör enligt `CLAUDE.md` till grenen `prototyp-landning`, men medianen ändrades här på uppdrag, i den egna commiten `49e87f0`.
+
+## PR 10: Medgrundaren, Bygg och Affärsplan (2026-09-30, direkt på `design/en-design`, pågår)
+Tionde steget i `docs/plan-en-design.md`. `origin/prototyp` fanns redan i grenen. Sessionen avbröts av användningsgränsen efter första sidan.
+
+### Klart
+- **Medgrundaren** (`032a12f`): `screens/Cofounder.tsx` är ersatt av demots markup. `CofounderData = { moment; context }` är nullbara var för sig (platshållare per sektion). En tom `context` döljer spalten som i demot. `ChatLine`, `ToolRun` och `TimeSkipLine` är flyttade till `screens/blocks/ChatBlocks.tsx`, och `DemoBlocks` exporterar dem vidare åt onboardingen. Demots sida är en tunn hämtare, och manuset stannar där.
+- **`/app/medgrundaren`**: ingen port ger moment eller kontext (`CofounderAgent` har bara `sendMessage`, stubbe), så båda sektionerna visar "Kommer snart". Inget anrop görs, och promptfältet är avstängt.
+- **Tester:** `screens/Cofounder.test.tsx` (6), `app/(app)/app/medgrundaren/page.test.tsx` (3), ett nytt i `app/demo/demo.test.tsx`, och `/app/medgrundaren` ligger i `PAGES` i e2e.
+- **Skärmbilder:** baslinjen är tagen för `/demo`, `/demo/medgrundaren`, `/demo/bygg` och `/demo/affarsplan` i 1440 och 390 px, för Sara (beat 0, 9, 17, 25, 30, 37) och Jonas (0, 10, sista), alltså 72 bilder. Efter flytten är alla 72 identiska (AE 0).
+- Verifierat: typecheck, lint (0 fel), `pnpm test` (772 gröna, 35 skippade), build och `pnpm test:e2e` (30 av 30).
+
+### Återstår i PR 10
+- **Bygg.** Beslutat: låst till steg 07 ur Resans `getSteps`. `getStatus` och `getSpec` fångas var för sig. Porten svarar `null` för spec → ett eget tomläge (ny i18n-text), och en stubbe → "Kommer snart".
+- **Affärsplan.** Beslutat: `/app/affarsplan` får `plan: null`, och alla nio avsnitt visar "Kommer snart" och mognaden "—".
+- **Rättningarna av affärsplanens demodata, i en egen commit** (beslut av grundaren):
+  1. Urvalet ska skrivas "tillväxt: 171 av 312, region: 308 av 312". I dag står "Baserat på 171/308", vilket ser ut som ett urval men blandar två underlag.
+  2. Tillväxt 18 och region 31 saknar %.
+  3. Mognaden "8/9" har ingen källa. Undantaget i `CLAUDE.md` ska utökas snävt till uträknade sammanfattningar vars delar visas på samma sida eller länkas dit, aldrig till hämtade siffror.
+  4. Jonas antaganden bär registrets källa (`lastFact.source`).
+  5. Stegens höjdpunkter bär en poängdels källa (`partSources.*`), fast de inte kommer därifrån.
+
+  Regel: saknas en verklig källa visas ingen källa. En källa hittas aldrig på. `BusinessPlanClaim.source` är obligatorisk i `core/businessPlan.ts`, som inte får röras, så ett påstående utan verklig källa kan inte bli ett claim. Det måste lösas i hopsamlingen (`adapters/demo/businessPlan.ts`).
+- **Påståenden med fel källa, sedda i baslinjebilden** (beat 37), fler av samma slag som punkt 4–5:
+  - "Nästa steg: bygga kontaktlista och skriva outreach.", "Konkurrentbilden fördjupad …" och "Lista över de 40 …" märks "Bolagsverket och SCB" (steg 04:s höjdpunkter med registrets källa).
+  - "Almi och Vinnova …" och "Slutvy: Bevisad affär." märks "Bolagsverket" (poängdelen `feasibility`).
+  - "Tre idéer föreslagna ur profilen och registret" märks "Bolagsverket" (poängdelen `market`).
+  - Alla tre sidor är inte genomgångna än.
+- **Bygg:** "Credits använda: 40/62" visas utan källa (ett fiktivt tal i `adapters/demo/BuildProvider.ts`), och webbläsarraden har en hårdkodad reserv-URL "lovable.dev/projects/spark" i markupen. Rapporteras, inte rättat.
+- **Medgrundaren:** manusets siffror (till exempel "312 byråer, 18 %") visas i chattbubblor utan `SourceTag`. Rapporteras, inte rättat.
+- `/security-review`, `docs/plan-en-design.md` ("Nuläge", tabellen) och `DESIGN.md` för PR 10.
+
+### Kända problem
+- **Skärmbildsfällan igen:** en `next start` som lever kvar gav 72 av 72 falska skillnader. Döda `next-server` före nytt bygge. Demots läge ligger i `localStorage` under `spark:fonda-demo-state`, inte `spark:demo-state`.
