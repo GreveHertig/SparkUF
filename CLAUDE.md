@@ -32,7 +32,16 @@ Repot hade redan ett Next.js-projekt. Läs `AGENTS.md`, bygg i den befintliga st
 
 ## Produktregler
 - **Källa på varje siffra** via `DataFact` eller `SourceTag`.
-  - **Ett dokumenterat undantag: poängen i skalets sidhuvud** (`screens/AppShell.tsx`, "Poäng 24") bär ingen källmärkning. Den är en sammanfattning av delarna, inte ett eget påstående, och den länkar till Poäng-sidan, där varje del visar sin källa ett klick bort. Undantaget gäller bara den siffran. Det kan inte åberopas för någon annan siffra, inte heller för andra sammanfattningar som länkar till en sida med källor: varje annan siffra bär sin egen källa där den visas.
+  - **Ett dokumenterat undantag: uträknade sammanfattningar av delar som själva visas med källa.** En sådan siffra bär ingen källmärkning om alla tre villkoren gäller:
+    1. Den räknas i kod enbart ur delar som redan visas i appen, till exempel en summa eller ett antal. Den hämtas aldrig från en port, ett register, en modell eller en användare.
+    2. Varje del visas med sin egen källa, antingen på samma sida eller på en sida som siffran länkar till.
+    3. Den säger inget utöver delarna.
+
+    I dag gäller undantaget två siffror:
+    - poängen i skalets sidhuvud (`screens/AppShell.tsx`, "Poäng 24"), som räknas av `calculateScore` och länkar till Poäng-sidan
+    - affärsplanens färdighetsgrad (`screens/BusinessPlan.tsx`, till exempel "2/9"), som `buildBusinessPlan` räknar ur de nio avsnitten på samma sida
+
+    En hämtad siffra omfattas aldrig, även om den ser ut som en sammanfattning: medianer, andelar, antal bolag och underlag kommer ur datan och bär alltid sin egen källa där de visas. En ny siffra under undantaget läggs till i listan ovan.
 - **Ingen hårdkodad text.** Allt ligger i i18n-filerna (sv/en).
 - **Poängen räknas alltid** av `calculateScore` och hårdkodas aldrig.
 - **Simuleringar** märks "Simulering" och ger aldrig poäng.

@@ -808,6 +808,10 @@ export type Dictionary = {
     maturityLabel: string;
     status: { solid: string; thin: string; missing: string };
     requiresStepTemplate: string;
+    /** En andel i planen, t.ex. "18 %". */
+    percentValueTemplate: string;
+    /** Urvalet bakom andelarna: varje andel med sitt eget underlag av helheten. */
+    coverageValueTemplate: string;
     contradictionLabel: string;
     lockedPartsTitle: string;
     sections: Record<

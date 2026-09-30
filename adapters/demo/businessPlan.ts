@@ -1,7 +1,8 @@
 // Affärsplanen (docs/uppdrag.md avsnitt 15) — hopsamlingen ur de befintliga
 // portsnapshotsen som core/businessPlan.ts sedan avgör status på. Ingen ny
-// port, ingen ny datakälla: bara Resan, Bevisen, Registret, Domen, Projektet
-// och Bygget, precis som redan används av Hem/Marknad/Validering/Bygg.
+// port, ingen ny datakälla: bara Bevisen, Registret, Domen, Projektet och
+// Bygget, precis som redan används av Hem/Marknad/Validering/Bygg. Resans
+// höjdpunkter används inte längre: de bär ingen egen källa (se källregeln nedan).
 //
 // Två portar är i dag hårdkodade mot en enda persona vardera
 // (RegistryProvider mot Sara, ProjectRepository.getIdeaScreening mot Jonas —
@@ -13,9 +14,9 @@ import type { Locale } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
 import { en } from "@/i18n/en";
 import type { Dictionary } from "@/i18n/dictionary";
-import type { Källa, ScoreSnapshot, LockedScorePart, ByggBrief } from "@/core/domain";
-import type { DataType } from "@/design/tokens";
-import { ALL_PART_IDS, type ScorePartId, type ScoreSuggestion } from "@/core/score";
+import { fill } from "@/i18n/fill";
+import { formatCount } from "@/i18n/format";
+import type { Källa, LockedScorePart, ByggBrief } from "@/core/domain";
 import {
   buildBusinessPlan,
   type BusinessPlan,
@@ -23,11 +24,9 @@ import {
   type BusinessPlanClaim,
   type BusinessPlanSectionInput,
 } from "@/core/businessPlan";
-import type { JourneyStepDetail } from "@/ports/JourneyRepository";
 import type { MarketOverview } from "@/ports/RegistryProvider";
 import type { VerdictReport } from "@/ports/VerdictProvider";
 import type { IdeaScreening } from "@/ports/ProjectRepository";
-import { demoJourneyRepository } from "./JourneyRepository";
 import { demoEvidenceRepository } from "./EvidenceRepository";
 import { demoRegistryProvider } from "./RegistryProvider";
 import { demoVerdictProvider } from "./VerdictProvider";
@@ -37,104 +36,83 @@ import { useDemoStore } from "./demoStore";
 
 const dictionaries: Record<Locale, Dictionary> = { sv, en };
 
-/** Stegen planens nio avsnitt (15.2) hämtar highlights ur. */
-const STEP_NUMBERS = [1, 2, 4, 5, 6, 7, 8, 11, 12] as const;
-type PlanStepNumber = (typeof STEP_NUMBERS)[number];
-type StepMap = Partial<Record<PlanStepNumber, JourneyStepDetail>>;
+// Källregeln (PR 10, docs/status.md): ett påstående visas bara med sin egen,
+// verkliga källa. Stegens höjdpunkter (`JourneyStepDetail.highlights`),
+// förslagens förklaringar (`ScoreSuggestion.explanation`), den skarpare
+// idéns motivering och idégenomlysningens antaganden bär ingen källa i sina
+// portar. De lånade tidigare en poängdels eller registrets källa, vilket fick
+// dem att se belagda ut. Nu tas de inte med: kontrollpunkten står kvar utan
+// påståenden, så avsnittets status sjunker och luckan visas ("Underlag saknas
+// — kommer från steg N"). Ingen källa hittas på för att rädda ett avsnitt.
+// `BusinessPlanClaim.source` är obligatorisk (core/businessPlan.ts), så ett
+// påstående utan källa kan inte visas alls.
 
-type PartSource = { source: Källa; dataType: DataType };
-type PartSources = Partial<Record<ScorePartId, PartSource>>;
-
-/** `ScoreSnapshot.parts` bär bara den redan lokaliserade etiketten (`name`),
- * inte ett stabilt `ScorePartId` (score.ts:s `ScorePart`-form, orörd här) —
- * matchar tillbaka mot `t.score.parts` för att hitta rätt dels källa. */
-function partSourcesFrom(snapshot: ScoreSnapshot, locale: Locale): PartSources {
-  const labels = dictionaries[locale].score.parts;
-  const sources: PartSources = {};
-  for (const partId of ALL_PART_IDS) {
-    const part = snapshot.parts.find((p) => p.name === labels[partId]);
-    if (part) sources[partId] = { source: part.source, dataType: part.dataType };
-  }
-  return sources;
+/** En kontrollpunkt vars underlag saknar egen källa i porten — alltid en lucka. */
+function unsourced(requiredStepNumber: number): BusinessPlanCheck {
+  return { claims: [], requiredStepNumber };
 }
 
-function highlightClaims(step: JourneyStepDetail | undefined, partSource: PartSource | undefined): BusinessPlanClaim[] {
-  if (!step || step.highlights.length === 0 || !partSource) return [];
-  return step.highlights.map((text) => ({ text, source: partSource.source, dataType: partSource.dataType }));
-}
-
-function verdictSource(report: VerdictReport, partSources: PartSources): PartSource | undefined {
-  const quoteSource = report.quotes[0]?.source;
-  if (quoteSource) return { source: quoteSource, dataType: "customer" };
-  return partSources.willingnessToPay ?? partSources.problem;
-}
-
-// --- Avsnitt 1: Affärsidén (steg 01–02, eller idégenomlysningens skarpare idé) ---
-function ideaSection(steps: StepMap, partSources: PartSources, ideaScreening: IdeaScreening | null): BusinessPlanSectionInput {
-  const checks: BusinessPlanCheck[] = [{ claims: highlightClaims(steps[1], partSources.fit), requiredStepNumber: 1 }];
-
-  const lastFact = ideaScreening?.registerFacts.at(-1);
-  if (ideaScreening && lastFact) {
-    checks.push({
-      claims: [
-        { text: ideaScreening.sharperIdea.why, value: ideaScreening.sharperIdea.name, source: lastFact.source, dataType: "register" },
-        ...ideaScreening.registerFacts.map((fact) => ({
-          text: fact.label,
-          value: fact.value,
-          source: fact.source,
-          dataType: "register" as const,
-        })),
-      ],
-      requiredStepNumber: 2,
-    });
-  } else {
-    checks.push({ claims: highlightClaims(steps[2], partSources.market), requiredStepNumber: 2 });
-  }
-
-  return { id: "idea", checks };
+// --- Avsnitt 1: Affärsidén (steg 01–02, eller idégenomlysningens registerfakta) ---
+function ideaSection(ideaScreening: IdeaScreening | null): BusinessPlanSectionInput {
+  // Registerfakta bär var sin källa. Den skarpare idéns motivering gör det inte.
+  const registerClaims: BusinessPlanClaim[] = (ideaScreening?.registerFacts ?? []).map((fact) => ({
+    text: fact.label,
+    value: fact.value,
+    source: fact.source,
+    dataType: "register",
+  }));
+  return {
+    id: "idea",
+    checks: [unsourced(1), ideaScreening ? { claims: registerClaims, requiredStepNumber: 2 } : unsourced(2)],
+  };
 }
 
 // --- Avsnitt 2: Kunden och problemet (steg 04 kundprofil, steg 05 svaren) ---
-function customerAndProblemSection(
-  steps: StepMap,
-  market: MarketOverview | null,
-  verdictReport: VerdictReport | null,
-): BusinessPlanSectionInput {
-  const profileClaims: BusinessPlanClaim[] =
-    market && steps[4] && steps[4].highlights.length > 0
-      ? steps[4].highlights.map((text) => ({ text, source: market.source, dataType: "register" as const }))
-      : [];
+function customerAndProblemSection(verdictReport: VerdictReport | null): BusinessPlanSectionInput {
+  // Citaten bär utskickets källa. Kundprofilen (steg 04:s höjdpunkter) har ingen egen.
   const quoteClaims: BusinessPlanClaim[] = verdictReport
     ? verdictReport.quotes.map((quote) => ({ text: quote.quote, value: quote.companyName, source: quote.source, dataType: "customer" as const }))
     : [];
 
   return {
     id: "customerAndProblem",
-    checks: [
-      { claims: profileClaims, requiredStepNumber: 4 },
-      { claims: quoteClaims, requiredStepNumber: 5 },
-    ],
+    checks: [unsourced(4), { claims: quoteClaims, requiredStepNumber: 5 }],
   };
 }
 
 // --- Avsnitt 3: Marknaden (steg 03, registret, alltid med täckning) ---
-function marketSection(t: Dictionary, market: MarketOverview | null, ideaScreening: IdeaScreening | null): BusinessPlanSectionInput {
+function marketSection(t: Dictionary, locale: Locale, market: MarketOverview | null, ideaScreening: IdeaScreening | null): BusinessPlanSectionInput {
   let overviewClaims: BusinessPlanClaim[] = [];
   let coverageClaims: BusinessPlanClaim[] = [];
+  const copy = t.businessPlanPage;
+  const percent = (value: number) => fill(copy.percentValueTemplate, { value: formatCount(value, locale) });
 
   if (market) {
+    const basis = market.basis;
     overviewClaims = [
-      { text: t.marketPage.companyCountLabel, value: market.companyCount, source: market.source, dataType: "register" },
+      { text: t.marketPage.companyCountLabel, value: formatCount(market.companyCount, locale), source: market.source, dataType: "register" },
       // Medianomsättningen tas inte med: demodatan bär inget räkenskapsår, och
       // utan år visas luckan, aldrig siffran (PR 8 och 9, docs/plan-en-design.md).
-      { text: t.marketPage.growthShareLabel, value: market.growthSharePercent, source: market.source, dataType: "register" },
-      { text: t.marketPage.regionShareLabel, value: market.regionSharePercent, source: market.source, dataType: "register" },
     ];
-    if (market.basis) {
+    // Ett underlag på 0 bolag betyder "okänt" (RegistryProvider): andelen visas inte.
+    if (basis?.growthCompanies !== 0) {
+      overviewClaims.push({ text: t.marketPage.growthShareLabel, value: percent(market.growthSharePercent), source: market.source, dataType: "register" });
+    }
+    if (basis?.regionCompanies !== 0) {
+      overviewClaims.push({ text: t.marketPage.regionShareLabel, value: percent(market.regionSharePercent), source: market.source, dataType: "register" });
+    }
+    if (basis && basis.growthCompanies > 0 && basis.regionCompanies > 0) {
+      // Varje andel har sitt eget urval av helheten, t.ex. "tillväxt: 171 av
+      // 312, region: 308 av 312" — aldrig "171/308", som ser ut som ett urval
+      // men blandar två.
       coverageClaims = [
         {
           text: t.marketPage.basedOnLabel,
-          value: `${market.basis.growthCompanies}/${market.basis.regionCompanies}`,
+          value: fill(copy.coverageValueTemplate, {
+            growth: formatCount(basis.growthCompanies, locale),
+            region: formatCount(basis.regionCompanies, locale),
+            total: formatCount(market.companyCount, locale),
+          }),
           source: market.source,
           dataType: "register",
         },
@@ -162,125 +140,80 @@ function marketSection(t: Dictionary, market: MarketOverview | null, ideaScreeni
   };
 }
 
-// --- Avsnitt 4: Konkurrensen (steg 03, registret) ---
-function competitionSection(market: MarketOverview | null): BusinessPlanSectionInput {
-  const claims: BusinessPlanClaim[] =
-    market && market.competitors.length > 0
-      ? market.competitors.map((competitor) => ({ text: competitor.description, value: competitor.name, source: market.source, dataType: "register" as const }))
-      : [];
-  return { id: "competition", checks: [{ claims, requiredStepNumber: 3 }] };
+// --- Avsnitt 4: Konkurrensen (steg 03) ---
+// Konkurrenternas beskrivningar ("dyrt och tungt att införa") är bedömningar,
+// inte registeruppgifter, men bar registrets källa. Ingen annan källa finns i
+// porten, så de tas inte med.
+function competitionSection(): BusinessPlanSectionInput {
+  return { id: "competition", checks: [unsourced(3)] };
+}
+
+/** Domen bygger på utskickets svar: citatens källa är dess källa. Utan citat finns ingen. */
+function verdictSource(report: VerdictReport): Källa | undefined {
+  return report.quotes[0]?.source;
 }
 
 // --- Avsnitt 5: Erbjudandet och priset (steg 07, prövat mot steg 05) ---
-function offerAndPriceSection(steps: StepMap, partSources: PartSources, verdictReport: VerdictReport | null): BusinessPlanSectionInput {
-  const priceClaims = highlightClaims(steps[7], partSources.willingnessToPay);
-
+function offerAndPriceSection(verdictReport: VerdictReport | null): BusinessPlanSectionInput {
   const stats = verdictReport?.verdict.stats;
   const priceTested = stats ? stats.priceAccepted + stats.priceDeclined : 0;
-  const validationSource = verdictReport ? verdictSource(verdictReport, partSources) : undefined;
+  const source = verdictReport ? verdictSource(verdictReport) : undefined;
   const validationClaims: BusinessPlanClaim[] =
-    verdictReport && priceTested > 0 && validationSource
-      ? [{ text: verdictReport.presentation.reasoning, value: verdictReport.presentation.headline, source: validationSource.source, dataType: validationSource.dataType }]
+    verdictReport && priceTested > 0 && source
+      ? [{ text: verdictReport.presentation.reasoning, value: verdictReport.presentation.headline, source, dataType: "customer" }]
       : [];
 
+  // Steg 07:s kalkyl (höjdpunkterna) har ingen egen källa.
   return {
     id: "offerAndPrice",
-    checks: [
-      { claims: priceClaims, requiredStepNumber: 7 },
-      { claims: validationClaims, requiredStepNumber: 5 },
-    ],
+    checks: [unsourced(7), { claims: validationClaims, requiredStepNumber: 5 }],
   };
 }
 
 // --- Avsnitt 6: Beviset (domen i steg 06, antagandena med utfall) ---
-function evidenceSection(
-  steps: StepMap,
-  partSources: PartSources,
-  verdictReport: VerdictReport | null,
-  ideaScreening: IdeaScreening | null,
-): BusinessPlanSectionInput {
-  let verdictClaims: BusinessPlanClaim[] = [];
-  const beatVerdict = steps[6]?.verdict;
-  const fallbackSource = partSources.problem ?? partSources.willingnessToPay;
-
-  if (verdictReport) {
-    const source = verdictSource(verdictReport, partSources);
-    if (source) {
-      verdictClaims = [
-        { text: verdictReport.presentation.reasoning, value: verdictReport.presentation.headline, source: source.source, dataType: source.dataType },
-        ...verdictReport.quotes.map((quote) => ({ text: quote.quote, value: quote.companyName, source: quote.source, dataType: "customer" as const })),
-      ];
-    }
-  } else if (beatVerdict && fallbackSource) {
-    verdictClaims = [
-      { text: beatVerdict.reasoning, value: beatVerdict.headline, source: fallbackSource.source, dataType: fallbackSource.dataType },
-    ];
-  }
-
-  const lastFact = ideaScreening?.registerFacts.at(-1);
-  const assumptionClaims: BusinessPlanClaim[] =
-    ideaScreening && lastFact
-      ? ideaScreening.assumptions.map((assumption) => ({ text: assumption.text, source: lastFact.source, dataType: "register" as const }))
+function evidenceSection(verdictReport: VerdictReport | null): BusinessPlanSectionInput {
+  const source = verdictReport ? verdictSource(verdictReport) : undefined;
+  const verdictClaims: BusinessPlanClaim[] =
+    verdictReport && source
+      ? [
+          { text: verdictReport.presentation.reasoning, value: verdictReport.presentation.headline, source, dataType: "customer" },
+          ...verdictReport.quotes.map((quote) => ({ text: quote.quote, value: quote.companyName, source: quote.source, dataType: "customer" as const })),
+        ]
       : [];
 
+  // Idégenomlysningens antaganden bar registrets källa, men är inga
+  // registeruppgifter. Ingen annan källa finns, så de tas inte med.
   return {
     id: "evidence",
-    checks: [
-      { claims: verdictClaims, requiredStepNumber: 6 },
-      { claims: assumptionClaims, requiredStepNumber: 6 },
-    ],
+    checks: [{ claims: verdictClaims, requiredStepNumber: 6 }, unsourced(6)],
   };
 }
 
 // --- Avsnitt 7: Genomförandet (steg 08 omfånget, steg 11 planen) ---
-function executionSection(steps: StepMap, partSources: PartSources, buildSpec: ByggBrief | null): BusinessPlanSectionInput {
-  const scopeClaims: BusinessPlanClaim[] =
-    buildSpec && buildSpec.underlag.length > 0
-      ? buildSpec.underlag.map((bevis) => ({ text: bevis.påstående, source: bevis.källa, dataType: "customer" as const }))
-      : highlightClaims(steps[8], partSources.product);
-  const planClaims = highlightClaims(steps[11], partSources.traction);
+function executionSection(buildSpec: ByggBrief | null): BusinessPlanSectionInput {
+  // Byggspecens underlag bär var sin källa (kundsamtalen). Steg 11:s plan gör det inte.
+  const scopeClaims: BusinessPlanClaim[] = (buildSpec?.underlag ?? []).map((bevis) => ({
+    text: bevis.påstående,
+    source: bevis.källa,
+    dataType: "customer" as const,
+  }));
 
   return {
     id: "execution",
-    checks: [
-      { claims: scopeClaims, requiredStepNumber: 8 },
-      { claims: planClaims, requiredStepNumber: 11 },
-    ],
+    checks: [{ claims: scopeClaims, requiredStepNumber: 8 }, unsourced(11)],
   };
 }
 
 // --- Avsnitt 8: Ekonomin (steg 07 kalkylen, steg 12) ---
-function economySection(steps: StepMap, partSources: PartSources): BusinessPlanSectionInput {
-  return {
-    id: "economy",
-    checks: [
-      { claims: highlightClaims(steps[7], partSources.willingnessToPay), requiredStepNumber: 7 },
-      { claims: highlightClaims(steps[12], partSources.feasibility), requiredStepNumber: 12 },
-    ],
-  };
+function economySection(): BusinessPlanSectionInput {
+  return { id: "economy", checks: [unsourced(7), unsourced(12)] };
 }
 
 // --- Avsnitt 9: Riskerna (motsagda antaganden, låsta poängdelar) ---
-function risksSection(suggestions: ScoreSuggestion[], partSources: PartSources, lockedParts: LockedScorePart[]): BusinessPlanSectionInput {
-  const claimFor = (suggestion: ScoreSuggestion): BusinessPlanClaim | null => {
-    const partSource = partSources[suggestion.partId];
-    if (!partSource) return null;
-    return { text: suggestion.explanation, value: suggestion.label, source: partSource.source, dataType: partSource.dataType };
-  };
-  const byGap = (gapType: ScoreSuggestion["gapType"]) =>
-    suggestions.filter((s) => s.gapType === gapType).flatMap((s) => {
-      const claim = claimFor(s);
-      return claim ? [claim] : [];
-    });
-
-  return {
-    id: "risks",
-    checks: [
-      { claims: byGap("contradicting"), requiredStepNumber: 5 },
-      { claims: byGap("structural"), requiredStepNumber: 6 },
-    ],
-    lockedParts,
-  };
+// Förslagens förklaringar ("3 av 9 säger nej till priset …") bar poängdelens
+// källa, inte sin egen. De tas inte med; de låsta delarna visas som förut.
+function risksSection(lockedParts: LockedScorePart[]): BusinessPlanSectionInput {
+  return { id: "risks", checks: [unsourced(5), unsourced(6)], lockedParts };
 }
 
 /**
@@ -292,16 +225,8 @@ export async function getBusinessPlan(locale: Locale): Promise<BusinessPlan> {
   const { entry } = useDemoStore.getState();
   const t = dictionaries[locale];
 
-  const stepDetails = await Promise.all(STEP_NUMBERS.map((stepNumber) => demoJourneyRepository.getStepDetail(stepNumber, locale)));
-  const steps: StepMap = {};
-  STEP_NUMBERS.forEach((stepNumber, index) => {
-    const detail = stepDetails[index];
-    if (detail) steps[stepNumber] = detail;
-  });
-
-  const [scoreSnapshot, suggestions, buildSpec, verdictReport] = await Promise.all([
+  const [scoreSnapshot, buildSpec, verdictReport] = await Promise.all([
     demoEvidenceRepository.getScoreSnapshot(locale),
-    demoEvidenceRepository.getSuggestions(locale),
     demoBuildProvider.getSpec(locale),
     demoVerdictProvider.getVerdictReport(locale),
   ]);
@@ -309,17 +234,15 @@ export async function getBusinessPlan(locale: Locale): Promise<BusinessPlan> {
   const market = entry === "hasIdea" ? null : await demoRegistryProvider.getMarketOverview(locale);
   const ideaScreening = entry === "hasIdea" ? await demoProjectRepository.getIdeaScreening(locale) : null;
 
-  const partSources = partSourcesFrom(scoreSnapshot, locale);
-
   return buildBusinessPlan([
-    ideaSection(steps, partSources, ideaScreening),
-    customerAndProblemSection(steps, market, verdictReport),
-    marketSection(t, market, ideaScreening),
-    competitionSection(market),
-    offerAndPriceSection(steps, partSources, verdictReport),
-    evidenceSection(steps, partSources, verdictReport, ideaScreening),
-    executionSection(steps, partSources, buildSpec),
-    economySection(steps, partSources),
-    risksSection(suggestions, partSources, scoreSnapshot.lockedParts),
+    ideaSection(ideaScreening),
+    customerAndProblemSection(verdictReport),
+    marketSection(t, locale, market, ideaScreening),
+    competitionSection(),
+    offerAndPriceSection(verdictReport),
+    evidenceSection(verdictReport),
+    executionSection(buildSpec),
+    economySection(),
+    risksSection(scoreSnapshot.lockedParts),
   ]);
 }

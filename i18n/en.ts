@@ -821,6 +821,8 @@ export const en = {
       missing: "Missing",
     },
     requiresStepTemplate: "No evidence yet — comes from step {step}",
+    percentValueTemplate: "{value}%",
+    coverageValueTemplate: "growth: {growth} of {total}, region: {region} of {total}",
     contradictionLabel: "Contradiction — both sides shown",
     lockedPartsTitle: "Not yet proven",
     sections: {

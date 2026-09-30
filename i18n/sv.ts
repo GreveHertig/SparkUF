@@ -825,6 +825,8 @@ export const sv = {
       missing: "Saknas",
     },
     requiresStepTemplate: "Underlag saknas — kommer från steg {step}",
+    percentValueTemplate: "{value} %",
+    coverageValueTemplate: "tillväxt: {growth} av {total}, region: {region} av {total}",
     contradictionLabel: "Motsägelse — båda sidor visas",
     lockedPartsTitle: "Ännu inte bevisat",
     sections: {
