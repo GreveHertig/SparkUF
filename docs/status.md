@@ -2901,3 +2901,21 @@ Gren `design/pr2-skalet` skapades ur `adc4f24`; `prototyp` hann få två egna PR
 ### Kända problem
 - `swagger.json` saknar `servers`. Bas-URL:en är härledd och bekräftad med anrop, inte angiven i kontraktet.
 - Gränsen 5 anrop/s är Sekundärt: den står i SCB:s dokumentation enligt Erik, inte i swagger.json, och inga rate limit-headers syntes.
+
+## Pulsen: live-routen `/app/pulsen` (klar 2026-09-30, gren `modul/pulsen-app`, PR mot `prototyp`)
+
+### Klart
+- **`app/(app)/app/pulsen/page.tsx`:** async Server Component som hämtar `livePulseProvider.getSignals("sv")`. Samma mönster som Hem: `isPlaceholderError` ger `<ComingSoon />`, riktiga fel kastas vidare. Inget aktivt projekt ger en tom lista och skärmens tomläge.
+- **`screens/PulseFeed.tsx`:** demosidans markup flyttad oförändrad till en delad skärm. `/demo/pulsen` och `/app/pulsen` renderar samma sak; demon hämtar fortfarande bara från demoadaptern. Den gamla, oanvända `screens/Pulse.tsx` rördes inte.
+- **`AppShell`:** ny valfri prop `enabledTabs` (fulla href:ar). Utan den beter sig skalet som förut. `app/(app)/layout.tsx` skickar `["/app/pulsen"]`, så Pulsen-fliken länkar i `/app` medan övriga flikar är inerta.
+- **Kommentaren i `app/(app)/app/page.tsx`** om att Pulsen är en stubbe är rättad.
+- **Tester:** `app/(app)/app/pulsen/page.test.tsx` (signaler, tomläge, stubbe/tomt konto, riktigt fel), nytt fall i `screens/AppShell.test.tsx`, `app/(app)/layout.test.tsx` uppdaterat (två länkar: Hem + Pulsen).
+- typecheck, lint (3 gamla varningar i `design-referens/`), test (621 gröna) och build gröna. Bygget kräver Supabase-variablerna, som förut.
+- Säkerhet: sidan ligger under `(app)`-layouten (`requireUser`), inga nycklar i klientkod, liveadaptern oförändrad (RLS som tidigare). `/security-review` fanns inte i den här miljön — granskat manuellt.
+
+### Återstår
+- **Inte klickad i en riktig webbläsare mot riktig Supabase/Tavily** (ingen `.env.local` här). Logga in och öppna `/app/pulsen` innan merge.
+- Hems första visning per svensk dag väntar fortfarande på Tavily (samma kända problem som ovan). `/app/pulsen` gör samma anrop men dagscachen gör att bara det första anropet per dag söker.
+
+### Beslut nästa session behöver känna till
+- **Ny `/app`-sida?** Lägg till dess href i `LIVE_TABS` i `app/(app)/layout.tsx` så att fliken blir klickbar.

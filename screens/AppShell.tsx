@@ -70,8 +70,9 @@ export function DemoTopBar({
  * och visar sin egen poäng, t.ex. Hems poängkort).
  *
  * `navBasePath` styr om flikarna länkar (t.ex. "/demo") eller förblir inerta
- * `<span>`-element (utelämnad — /app har inga undersidor än, se
- * docs/arkitektur.md 7). Demoraden och rundturen hör INTE hemma här — de
+ * `<span>`-element (utelämnad — /app har bara några undersidor än, se
+ * docs/arkitektur.md 7). `enabledTabs` låter /app länka just de flikar vars
+ * sida finns (t.ex. Pulsen). Demoraden och rundturen hör INTE hemma här — de
  * stannar i demots egen layout (`app/demo/layout.tsx`), som redan renderar
  * dem som syskon till det här skalets innehåll.
  *
@@ -82,6 +83,7 @@ export function DemoTopBar({
 export function AppShell({
   homeHref,
   navBasePath,
+  enabledTabs,
   dataKind,
   profile,
   currentStep,
@@ -90,6 +92,9 @@ export function AppShell({
 }: {
   homeHref: string;
   navBasePath?: string;
+  /** Utan `navBasePath`: flikar (fulla href:ar, t.ex. "/app/pulsen") som
+   * ändå länkar eftersom sidan finns. Övriga förblir inerta. */
+  enabledTabs?: readonly string[];
   dataKind: DataKind;
   profile: Profile;
   currentStep?: AppShellCurrentStep | null;
@@ -160,7 +165,7 @@ export function AppShell({
         <nav aria-label={dataKind === "example" ? copy.navLabel : t.appShell.navMenuLabel} className="fdd-tabs">
           <div ref={tabsRef} className="fdd-tabs__inner">
             {tabs.map((tab) => {
-              if (tab.href !== homeHref && !navBasePath) {
+              if (tab.href !== homeHref && !navBasePath && !enabledTabs?.includes(tab.href)) {
                 return (
                   <span key={tab.href} className="fdd-tab fdd-tab--disabled">
                     {tab.label}

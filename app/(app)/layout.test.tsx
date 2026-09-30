@@ -69,14 +69,15 @@ describe("/app-skalet (PR 2)", () => {
     expect(stepPill.textContent).toContain("Marknaden");
   });
 
-  it("inerta flikar utan navBasePath (undersidorna finns inte än)", async () => {
+  it("bara flikar med en byggd /app-sida länkar (Hem, Pulsen), resten är inerta", async () => {
     getProfileMock.mockRejectedValue(new NotImplementedError("Profil", "docs/moduler/profil.md"));
     getStepsMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
 
     await renderLayout();
 
     const nav = screen.getByRole("navigation", { name: sv.appShell.navMenuLabel });
-    expect(nav.querySelectorAll("a")).toHaveLength(1);
+    expect(nav.querySelectorAll("a")).toHaveLength(2);
+    expect(screen.getByRole("link", { name: sv.appShell.nav.pulse })).toHaveAttribute("href", "/app/pulsen");
     expect(screen.getByText(sv.appShell.nav.businessPlan).tagName).toBe("SPAN");
   });
 

@@ -21,6 +21,9 @@ import type { Profile } from "@/core/domain";
 // Hem-sidan (app/(app)/app/page.tsx) hämtar redan sin egen.
 const FALLBACK_PROFILE: Profile = { name: "—", initials: "—" };
 
+// Flikar vars /app-sida finns. Lägg till här när nästa sida byggs.
+const LIVE_TABS = ["/app/pulsen"] as const;
+
 export default async function LiveAppShellLayout({ children }: { children: ReactNode }) {
   // Bindande sessionskontroll (docs/arkitektur.md) — proxy.ts har redan
   // omdirigerat de flesta obehöriga tidigare, men den här är den som gäller.
@@ -47,6 +50,7 @@ export default async function LiveAppShellLayout({ children }: { children: React
       <div className="fdd">
         <AppShell
           homeHref="/app"
+          enabledTabs={LIVE_TABS}
           dataKind="live"
           profile={profile}
           currentStep={currentStep}

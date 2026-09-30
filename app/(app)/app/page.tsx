@@ -5,9 +5,9 @@ import { liveEvidenceRepository } from "@/adapters/live/EvidenceRepository";
 import { livePulseProvider } from "@/adapters/live/PulseProvider";
 import { isPlaceholderError } from "@/core/errors";
 
-// Pulsen är fortfarande en stub (docs/moduler/webbresearch-och-pulsen.md,
-// NotImplementedError). Resan och Evidens kan vara klara men ändå sakna
-// data för ett nytt konto (EmptyStateError — t.ex. inga bevis samlade än).
+// Liveadaptrarna kan fortfarande vara stubbar (NotImplementedError) eller
+// klara men sakna data för ett nytt konto (EmptyStateError — t.ex. inga
+// bevis samlade än). Pulsen är byggd (docs/moduler/webbresearch-och-pulsen.md).
 // Båda felen visar "Kommer snart" i stället för att krascha
 // (isPlaceholderError, core/errors.ts). JSX konstrueras aldrig inuti
 // try/catch (react-hooks/error-boundaries).

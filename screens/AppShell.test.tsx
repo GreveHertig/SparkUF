@@ -71,6 +71,23 @@ describe("AppShell (PR 2, skalet)", () => {
     expect(screen.getByText(sv.appShell.nav.businessPlan).tagName).toBe("SPAN");
   });
 
+  it("enabledTabs gör just de flikarna klickbara utan navBasePath", () => {
+    pathname = "/app/pulsen";
+    render(
+      <LocaleProvider>
+        <AppShell homeHref="/app" enabledTabs={["/app/pulsen"]} dataKind="live" profile={profile}>
+          <p>innehåll</p>
+        </AppShell>
+      </LocaleProvider>,
+    );
+    const nav = screen.getByRole("navigation", { name: sv.appShell.navMenuLabel });
+    expect(nav.querySelectorAll("a")).toHaveLength(2);
+    const pulse = screen.getByRole("link", { name: sv.appShell.nav.pulse });
+    expect(pulse).toHaveAttribute("href", "/app/pulsen");
+    expect(pulse).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText(sv.appShell.nav.businessPlan).tagName).toBe("SPAN");
+  });
+
   it("visar stegpillen bara när currentStep finns", () => {
     const { rerender } = render(
       <LocaleProvider>
