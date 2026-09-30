@@ -53,6 +53,23 @@ const PARTIELLA_STUBBAR: { module: string; metod: string; call: () => Promise<un
     metod: "getOnboardingScript",
     call: () => liveProfileRepository.getOnboardingScript("noIdea", "sv"),
   },
+  // Tillfälligt: porten fick metoderna i PR 1 av onboardingen, live byggs i
+  // PR 2 (docs/status.md). Raderna tas bort i samma PR.
+  {
+    module: "Profil",
+    metod: "getOnboardingStatus",
+    call: () => liveProfileRepository.getOnboardingStatus(),
+  },
+  {
+    module: "Profil",
+    metod: "completeOnboarding",
+    call: () => liveProfileRepository.completeOnboarding({ entry: "noIdea", answers: [] }),
+  },
+  {
+    module: "Projekt och idé",
+    metod: "createProject",
+    call: () => liveProjectRepository.createProject({ name: "Test", oneLiner: "Test" }),
+  },
   {
     module: "Projekt och idé",
     metod: "getIdeaScreening",

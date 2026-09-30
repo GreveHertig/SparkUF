@@ -70,13 +70,13 @@ function ProfileConversation({ script }: { script: OnboardingScript }) {
           {answered.map((question) => (
             <div key={question.id} className="fdd-conversation__pair">
               <ChatLine role="cofounder" text={question.cofounderText} />
-              <ChatLine role="founder" text={question.suggestedAnswer} />
+              {question.suggestedAnswer !== null && <ChatLine role="founder" text={question.suggestedAnswer} />}
             </div>
           ))}
           {current && (
             <div className="fdd-conversation__pair">
               <ChatLine role="cofounder" text={current.cofounderText} />
-              {answerRevealed && <ChatLine role="founder" text={current.suggestedAnswer} />}
+              {answerRevealed && current.suggestedAnswer !== null && <ChatLine role="founder" text={current.suggestedAnswer} />}
             </div>
           )}
           {allAnswered && <ChatLine role="cofounder" text={script.closingMessage} />}

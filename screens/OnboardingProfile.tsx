@@ -72,14 +72,16 @@ export function OnboardingProfile({ data }: { data: OnboardingProfileData }) {
         {answered.map((question) => (
           <div key={question.id} className="flex flex-col gap-2">
             <ChatMessage role="cofounder" text={question.cofounderText} />
-            <ChatMessage role="founder" text={question.suggestedAnswer} />
+            {question.suggestedAnswer !== null && <ChatMessage role="founder" text={question.suggestedAnswer} />}
           </div>
         ))}
 
         {current && (
           <div className="flex flex-col gap-2">
             <ChatMessage role="cofounder" text={current.cofounderText} />
-            {answerRevealed && <ChatMessage role="founder" text={current.suggestedAnswer} />}
+            {answerRevealed && current.suggestedAnswer !== null && (
+              <ChatMessage role="founder" text={current.suggestedAnswer} />
+            )}
           </div>
         )}
 

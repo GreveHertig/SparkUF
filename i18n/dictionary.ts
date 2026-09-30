@@ -469,6 +469,13 @@ export type Dictionary = {
       sharperWhyLabel: string;
       continueCta: string;
     };
+    /** Plattformens fasta profilfrågor (docs/moduler/profil.md), en per fält i
+     * core/onboarding.ts's PROFILE_QUESTIONS_BY_ENTRY. Demot har egna frågor
+     * i adapters/demo/ProfileRepository.ts. */
+    profileQuestions: {
+      noIdea: { role: string; bio: string; time: string; money: string; risk: string; closingMessage: string };
+      hasIdea: { role: string; time: string; money: string; closingMessage: string };
+    };
   };
   /** De 12 officiella stegens titel/ingress (uppdrag 1.5) — produktkonstanter,
    * en enda källa för liveadaptern (adapters/live/JourneyRepository.ts,

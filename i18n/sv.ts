@@ -435,6 +435,24 @@ export const sv = {
       sharperWhyLabel: "Varför",
       continueCta: "Fortsätt till profilsamtalet",
     },
+    // Förslag, granskas av Theo (PR 1 av onboardingen).
+    profileQuestions: {
+      noIdea: {
+        role: "Innan vi börjar behöver jag veta vem du är. Vad gör du i dag?",
+        bio: "Vad kan du, och vilka känner du? Berätta om erfarenheter, intressen och människor du kan nå.",
+        time: "Hur många timmar i veckan kan du lägga på det här?",
+        money: "Hur mycket pengar kan du lägga in själv, om något?",
+        risk: "Hur mycket är du beredd att riskera, i tid och pengar, om det inte går som du tänkt?",
+        closingMessage:
+          "Tack. Det här är profilen resten av resan utgår från. Nästa steg är att hitta möjligheter som passar dig.",
+      },
+      hasIdea: {
+        role: "Du har redan en idé, så vi fokuserar på passform. Vad gör du i dag, och vad har du gjort som hör ihop med idén?",
+        time: "Hur många timmar i veckan kan du lägga på idén?",
+        money: "Hur mycket pengar kan du lägga in själv, om något?",
+        closingMessage: "Tack. Nästa steg är idégenomlysningen: vi bryter ner idén i antaganden och prövar dem.",
+      },
+    },
   },
   journeySteps: {
     step1: {

@@ -39,5 +39,9 @@ export type IdeaScreening = {
 /** Modul: Projekt och idé (avsnitt 14.3). Liveadapter bygger på Supabase. */
 export interface ProjectRepository {
   getProject(): Promise<Project | null>;
+  /** Sparar grundarens egen idé som aktivt projekt (ingång B, `/start/ide`).
+   * En grundare har ett aktivt projekt i taget: finns det redan ett kastar
+   * liveadaptern i stället för att skriva över det. */
+  createProject(input: { name: string; oneLiner: string }): Promise<Project>;
   getIdeaScreening(locale: Locale): Promise<IdeaScreening>;
 }

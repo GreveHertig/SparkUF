@@ -435,6 +435,24 @@ export const en = {
       sharperWhyLabel: "Why",
       continueCta: "Continue to the profile chat",
     },
+    // Proposal, reviewed by Theo (onboarding PR 1).
+    profileQuestions: {
+      noIdea: {
+        role: "Before we start, I need to know who you are. What do you do today?",
+        bio: "What are you good at, and who do you know? Tell me about experience, interests and people you can reach.",
+        time: "How many hours a week can you put into this?",
+        money: "How much money can you put in yourself, if any?",
+        risk: "How much are you prepared to risk, in time and money, if it doesn't go as planned?",
+        closingMessage:
+          "Thanks. This is the profile the rest of the journey builds on. The next step is finding opportunities that fit you.",
+      },
+      hasIdea: {
+        role: "You already have an idea, so let's focus on fit. What do you do today, and what have you done that relates to the idea?",
+        time: "How many hours a week can you put into the idea?",
+        money: "How much money can you put in yourself, if any?",
+        closingMessage: "Thanks. The next step is the idea review: we break the idea down into assumptions and test them.",
+      },
+    },
   },
   journeySteps: {
     step1: {

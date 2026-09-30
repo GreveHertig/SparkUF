@@ -110,4 +110,20 @@ export const demoProfileRepository: ProfileRepository = {
   async getOnboardingScript(entry, locale) {
     return scriptsByEntry[entry][locale];
   },
+  // Status och avslut går via demoStore (Zustand, localStorage i webbläsaren),
+  // samma tillstånd som /demo/start redan använder. Det här tillståndet får
+  // bara användas av demot och av tester, ALDRIG av en serverrutt: det är
+  // inte per användare, och på servern skulle det delas mellan alla
+  // besökare. Plattformen (/app, /start) går alltid via liveadaptern.
+  async getOnboardingStatus() {
+    const { entry, onboardingDone } = useDemoStore.getState();
+    return { entry: onboardingDone ? entry : null, completed: onboardingDone };
+  },
+  // Demot sparar inte svaren: personan och hennes profil är fiktiva och
+  // redan skrivna (sara.ts, jonas.ts).
+  async completeOnboarding({ entry }) {
+    const store = useDemoStore.getState();
+    if (store.entry !== entry) store.setEntry(entry);
+    store.completeOnboarding();
+  },
 };

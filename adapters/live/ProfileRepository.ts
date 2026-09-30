@@ -35,4 +35,14 @@ export const liveProfileRepository: ProfileRepository = {
   async getOnboardingScript() {
     throw new NotImplementedError("Profil", DOC);
   },
+
+  // Porten fick metoderna i PR 1 av onboardingen (docs/status.md), live byggs
+  // i PR 2 när migreringen 20260930120000_onboarding.sql är körd.
+  async getOnboardingStatus() {
+    throw new NotImplementedError("Profil", DOC);
+  },
+
+  async completeOnboarding() {
+    throw new NotImplementedError("Profil", DOC);
+  },
 };
