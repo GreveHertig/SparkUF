@@ -32,7 +32,7 @@ export const FONDA_TOUR_TITLES: Record<string, Copy> = {
   "juridisk-koll": { sv: "Juridiken för just Saras bolag", en: "The legal checks for Sara's company" },
   lovable: { sv: "Lovable bygger sidan sist", en: "Lovable builds the page last" },
   pulsen: { sv: "Dagliga marknadssignaler om Saras bransch", en: "Daily market signals for Sara's industry" },
-  affarsmodellen: { sv: "199 kr i månaden, bygget kostar extra", en: "SEK 199 a month, the build costs extra" },
+  affarsmodellen: { sv: "249 kr i månaden, bygget ingår", en: "SEK 249 a month, the build included" },
   avslutning: { sv: "Klart. Nu kan du utforska själv", en: "Done. Now explore on your own" },
 };
 
