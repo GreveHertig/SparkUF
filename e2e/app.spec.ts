@@ -24,6 +24,8 @@ const PAGES = [
   { path: "/app/resan", heading: /./ },
   { path: "/app/resan/1", heading: /./ },
   { path: "/app/resan/12", heading: /./ },
+  // PR 10: Medgrundaren (ingen port för samtalet, Kommer snart per sektion).
+  { path: "/app/medgrundaren", heading: "Medgrundaren" },
 ] as const;
 
 async function logIn(page: Page) {

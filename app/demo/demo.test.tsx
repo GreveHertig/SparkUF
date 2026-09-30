@@ -19,6 +19,7 @@ import FondaDemoValidationPage from "./(app)/validering/page";
 import FondaDemoPulsePage from "./(app)/pulsen/page";
 import FondaDemoJourneyPage from "./(app)/resan/page";
 import FondaDemoJourneyStepPage from "./(app)/resan/[steg]/page";
+import FondaDemoCofounderPage from "./(app)/medgrundaren/page";
 import FondaDemoStartPage from "./start/page";
 import { FONDA_DEMO_KEY, REAL_DEMO_KEY, enterFondaDemo, leaveFondaDemo } from "./_lib/fondaDemoIsolation";
 import { FONDA_DEMO_PATHS } from "./_lib/paths";
@@ -256,6 +257,26 @@ describe("/demo", () => {
       }
     }
     expect(empty).toEqual([]);
+  });
+
+  it("Medgrundaren (tunn hämtare, PR 10) visar momentet ur manuset och det som redan är känt", async () => {
+    startInApp(9);
+    pathname = FONDA_DEMO_PATHS.cofounder;
+    await renderInApp(<FondaDemoCofounderPage />);
+    const beat = saraEngine.getBeatAt(9);
+    const label = `${String(beat.stepNumber).padStart(2, "0")} · ${beat.momentLabel.sv}`;
+    expect(screen.getByRole("heading", { level: 2, name: label })).toBeInTheDocument();
+    const known = saraEngine.beats.slice(0, 9).filter((b) => b.momentKind === "after");
+    expect(known.length).toBeGreaterThan(0);
+    expect(screen.getByRole("complementary").querySelectorAll("li")).toHaveLength(known.length);
+    expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+    cleanup();
+
+    // Första momentet: inget känt än, så spalten döljs.
+    useDemoStore.getState().goTo(0);
+    await renderInApp(<FondaDemoCofounderPage />);
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+    expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
   });
 
   describe("Datalöftet och buggrapporten (docs/buggar-2026-09.md)", () => {
