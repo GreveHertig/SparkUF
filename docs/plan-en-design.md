@@ -6,33 +6,33 @@ enda skillnaden ska vara datan: appen visar riktig data via
 samma skärmar i `screens/`.
 
 Skriven 2026-09-26 efter PR #25 (ny startsida och nytt demo). PR 1–3 är
-gjorda (egna grenar och PR:er mot `prototyp`); PR 4, 5 och 7 är gjorda på
+gjorda (egna grenar och PR:er mot `prototyp`); PR 4, 5, 7 och 8 är gjorda på
 `design/en-design` enligt avsnittet "Arbetsordning" nedan. Läget per PR står
 i `docs/status.md`.
 
 ## Nuläge
 
-Uppdaterat 2026-09-30, efter PR 7. Ögonblicksbilden från 2026-09-26 (före
+Uppdaterat 2026-09-30, efter PR 8. Ögonblicksbilden från 2026-09-26 (före
 PR 1) finns i historiken för den här filen.
 
 - **Delat av `/demo` och `/app`:** skalet (`AppShell`, PR 2, med poängen i
   sidhuvudet från PR 4), Hem (`AppHome`, PR 3), Poäng (`Score`, PR 4),
-  Minnet (`Memory`, PR 5), Juridik (`Legal`, PR 5) och Validering
-  (`Validation`, PR 7). Demots sidor för dem
+  Minnet (`Memory`, PR 5), Juridik (`Legal`, PR 5), Validering
+  (`Validation`, PR 7) och Marknad (`Market`, PR 8). Demots sidor för dem
   är tunna hämtare utan markup.
 - **`/app`-rutter:** `/app` (Hem), `/app/poang`, `/app/minnet`,
-  `/app/juridik` och `/app/validering`, plus onboardingen på `/start` (`OnboardingEntry`,
+  `/app/juridik`, `/app/validering` och `/app/marknad`, plus onboardingen på `/start` (`OnboardingEntry`,
   `OnboardingIdea`, `OnboardingProfile`). Flikarna i `/app` är fortfarande
-  inerta (ingen `navBasePath`), eftersom sex av sidorna saknas.
+  inerta (ingen `navBasePath`), eftersom fem av sidorna saknas.
 - **Oanvända skärmar i `screens/`** (väntar på sina steg): `Build`,
-  `BusinessPlan`, `Cofounder`, `JourneyStep`, `Market` och `Pulse`. `Journey` används bara via `components/spark/JourneyRail`.
+  `BusinessPlan`, `Cofounder`, `JourneyStep` och `Pulse`. `Journey` används bara via `components/spark/JourneyRail`.
 - **Delade byggstenar** ligger i `screens/blocks/`: `ScoreFigure.tsx` (PR 4),
   `PageBlocks.tsx` (`PageHead`, `Locked`, `Pill`, PR 5) och
   `DataBlocks.tsx` (`ExampleLabel`, `Figures`, `SimulationBlock`,
   `VerdictBlock`, PR 7).
   `app/demo/_components/DemoBlocks.tsx` exporterar de senare vidare åt
   demosidor som inte är flyttade än.
-- **Demots egna sidor kvar att flytta:** Resan och steget, Marknad,
+- **Demots egna sidor kvar att flytta:** Resan och steget,
   Pulsen, Medgrundaren, Bygg, Affärsplan och onboardingen på
   `/demo/start`.
 - **Liveadaptrarna:** byggda är Evidens, Juridik, Minnet, OutreachPrep,
@@ -49,7 +49,7 @@ PR 1) finns i historiken för den här filen.
 | Hem | `(app)/page.tsx` | `AppHome` | ja | Resan stubbe, Evidens och Pulsen byggda |
 | Resan och steget | `resan`, `resan/[steg]` | `Journey`, `JourneyStep` | nej | stubbe |
 | Poäng | `poang` | `Score` | ja, PR 4 | byggd |
-| Marknad | `marknad` | `Market` | nej | Registret, bakom licensgrinden |
+| Marknad | `marknad` | `Market` | ja, PR 8 (branschen väljs i adressen, låst till steg 02) | Registret, bakom licensgrinden; transporterna är inte skrivna, så även Theo och Erik får felrutan |
 | Validering | `validering` | `Validation` | ja, PR 7 (låst till steg 03 ur Resans steg) | Utskick: sändspärren ger "Kommer snart"; läser inte Registret |
 | Pulsen | `pulsen` | `Pulse` | nej | byggd |
 | Medgrundaren | `medgrundaren` | `Cofounder` | nej | stubbe |
@@ -78,7 +78,8 @@ PR 1) finns i historiken för den här filen.
    importerar `cofounderScript`, `journeyEngine`, `businessPlan` och
    `demoStore` direkt ur `adapters/demo`. De får bara användas i demots
    rutt-filer, aldrig i skärmarna.
-5. **Logik i sidorna.** Marknads storleksfördelning och rubrik och
+5. **Logik i sidorna.** Marknads storleksfördelning och rubrik (PR 8:
+   `core/market.ts`) och
    Valideringens nyckeltal räknas i sidan. De flyttas till `core/` så att
    demot och appen räknar likadant.
 6. **Rundturen.** `data-tour-id` kan stå kvar i skärmarna (ofarligt i
@@ -102,7 +103,17 @@ PR 1) finns i historiken för den här filen.
   som platshållarfel (`isPlaceholderError`). Skärmarna får ett eget låst
   läge ("Registret är inte öppet än") i stället för bara `ComingSoon`.
   Inga registersiffror visas för den som inte står på allowlisten. Ett
-  test per rutt bevisar att stängd grind aldrig visar data.
+  test per rutt bevisar att stängd grind aldrig visar data. PR 8:
+  `/app/marknad` frågar grinden (`assertRegistryAccessAllowed`) innan den
+  anropar Registret och visar då låsläget i varje registersektion. Det
+  bevisas av `app/(app)/app/marknad/licensgrind.test.tsx` med den riktiga
+  grinden och den riktiga adaptern.
+- **Omsättning bär sitt räkenskapsår** (PR 8). Per bolag visas året,
+  och för en median spannet av år den bygger på ("4,2 Mkr (räkenskapsår
+  2023–2024)"). Saknas året i datan visas luckan, aldrig siffran. I dag
+  bär ingen port året (`CampaignRow`, `RegistryCompany`, `MarketOverview`),
+  så luckan syns både i `/demo` och `/app` tills Registrets ägare lägger
+  till det.
 - **Platshållare per sektion** (infört av PR 3). Ett kort/en sektion visar
   `ComingSoon` bara när just DEN datan saknas — inte hela sidan bara för att
   ett enda anrop misslyckas. Är två fält beroende av samma anrop (t.ex. ett
@@ -227,3 +238,10 @@ PR 1–3 i ordning. PR 4–10 är i stort sett oberoende och kan delas upp.
      Valet får inte finnas på två ställen, i adressen och i porten, som
      kan säga olika saker. Adressparametern tas då bort eller blir bara ett
      sätt att byta värdet i porten.
+   - **Samma öppna uppgift som branschen i `/app/marknad` (PR 8).** Ingen
+     port ger användarens bransch, så användaren skriver en SNI-kod
+     (`?sni=69.201`, vitlistad med samma form som Registret kräver). Valet
+     har exakt samma brist: det finns bara i adressen och försvinner när
+     sidan öppnas utan parametern. Bolagsformen och branschen ska lösas
+     tillsammans, med samma lagring, när en port bär användarens val. Inte
+     löst i PR 8.

@@ -54,11 +54,16 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
   (`dataKind: "example" | "live"`, typen `DataKind` i `core/domain.ts`).
   Bara demot sätter `"example"`; med `"live"` visas ingen etikett.
 - **Licensgrinden**: vyer som läser Registret visar ett låst läge när
-  grinden är stängd, aldrig demodata.
+  grinden är stängd, aldrig demodata. På Marknad (PR 8) står "Registret är
+  inte öppet än" (`Locked`) i varje registersektion (nyckeltalen,
+  fördelningen, konkurrenterna); utskicket, datalagret och simuleringen
+  visar sina egna lägen. Branschväljaren visas inte när grinden är stängd.
 - **Delade byggstenar mellan skärmar** ligger i `screens/blocks/` (PR 4:
   `ScoreFigure`, `ScoreDelta`, `levelTone`, `formatDelta`; PR 5:
   `PageHead`, `Locked`, `Pill` i `PageBlocks.tsx`; PR 7: `ExampleLabel`,
-  `Figures`, `SimulationBlock`, `VerdictBlock` i `DataBlocks.tsx`). Samma portregel
+  `Figures`, `SimulationBlock`, `VerdictBlock` i `DataBlocks.tsx`). Marknads
+  räkning (fördelning, vanligaste klass, spann) ligger i `core/market.ts` och
+  räkenskapsåren i `core/fiscalYear.ts` (PR 8). Samma portregel
   som skärmarna. Demots `app/demo/_components/DemoBlocks.tsx` importerar
   därifrån i stället för att ha egna kopior.
 - **Overifierade källor på Juridik** (PR 5): varje krav visar sin källa och
@@ -71,6 +76,15 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
 - **Anställda som storleksklass** (PR 7): skärmarna visar SCB:s klass
   (`core/sizeClass.ts`, "5–9"), aldrig det exakta antalet, i både `/demo`
   och `/app`.
+- **Omsättning bär sitt räkenskapsår** (PR 8): "4 200 tkr (räkenskapsår
+  2024)" per bolag, och spannet för en median som bygger på flera bolag,
+  "4,2 Mkr (räkenskapsår 2023–2024)". Saknas året i datan visas luckan: "—"
+  i nyckeltalet med texten "Räkenskapsåret saknas i underlaget, så siffran
+  visas inte.", "–" i tabellen med samma text för skärmläsare. Samma lucka
+  när portens underlag är 0 bolag ("Underlaget saknas"). Aldrig en nolla.
+- **Val av bransch i `/app/marknad`** (PR 8): ett vanligt GET-formulär
+  (`?sni=69.201`, `.fdd-sni`, `.fdd-input` i Hjärnans textfältsstil) i
+  stället för länkar, eftersom SNI-koderna är för många. Demot har inget val.
 - **Val av bolagsform i `/app/juridik`** (PR 5): länkar (`?bolagsform=…`) i
   samma segmenterade kontroll som Minnets flikar (`.fdd-segmented--wrap`,
   radbryter på smala skärmar). Demot har inget val.

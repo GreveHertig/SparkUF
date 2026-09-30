@@ -129,8 +129,8 @@ Först när alla tre är klara får `REGISTRY_ALLOWED_USER_IDS` utökas eller
 grinden tas bort, i en commit som också uppdaterar det här avsnittet.
 
 **Mekanism (fyra lager, inget ensamt tillräckligt):**
-1. Ingen liveyta: ingen `/app/marknad`-route finns, `screens/` och routes rörs inte. Demon använder fiktiv data.
-2. `lib/server/registryAccess.ts`: kräver både `REGISTRY_LIVE_ENABLED=true` och att inloggad `user.id` finns i `REGISTRY_ALLOWED_USER_IDS`. Avstängd som standard. Anropas som första sats i båda portmetoderna. Nekat ger `RegistryLockedError` (visas som `ComingSoon`) innan något externt anrop görs.
+1. ~~Ingen liveyta~~ **Borta sedan PR 8 (2026-09-30), enligt `docs/plan-en-design.md`:** `/app/marknad` finns och anropar `liveRegistryProvider`. Rutten frågar grinden först och visar "Registret är inte öppet än" i varje registersektion när den är stängd; ingen cache runt registeranropen. Bevisas av `app/(app)/app/marknad/licensgrind.test.tsx` (riktig grind, riktig adapter, bara sessionen och transporterna utbytta). Demon använder fortfarande fiktiv data. Kvar är lager 2–4.
+2. `lib/server/registryAccess.ts`: kräver både `REGISTRY_LIVE_ENABLED=true` och att inloggad `user.id` finns i `REGISTRY_ALLOWED_USER_IDS`. Avstängd som standard. Anropas som första sats i båda portmetoderna. Nekat ger `RegistryLockedError` (visas som `ComingSoon`, på `/app/marknad` som låsläget "Registret är inte öppet än") innan något externt anrop görs.
 3. CI-vakt i `ports/stubStatus.test.ts` (blocket "Licensvakt: Registret nekar utan öppen grind"): testerna blir röda om grinden tas bort eller försvagas.
 4. Ingen lagring: inget skrivs till `public.companies` förrän licensen är Verifierat.
 
