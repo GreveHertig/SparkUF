@@ -347,6 +347,8 @@ export const sv = {
     profileBackgroundLabel: "Bakgrund",
     profileResourcesLabel: "Resurser",
     brainHint: "Det här skrev Sara i profilsamtalet. Går att redigera.",
+    brainHintLive: "Dina egna anteckningar. De sparas när du lämnar fältet.",
+    brainSaveFailed: "Anteckningarna kunde inte sparas. Försök igen.",
     traceEmpty: "Inga händelser än.",
   },
   legalPage: {
@@ -359,6 +361,12 @@ export const sv = {
       ej_uppfyllt: "Ej uppfyllt",
       ej_tillämpligt: "Ej tillämpligt",
     },
+    unverifiedSource: "Overifierad",
+    notReviewedNote: "Ingenting här är granskat av en jurist. Varje källa är overifierad tills den är det.",
+    sourceMissing: "Källa saknas",
+    empty: "Inga krav hittades för bolagsformen.",
+    bolagsformPickerLabel: "Bolagsform",
+    bolagsformPrompt: "Välj en bolagsform för att se den juridiska kartan.",
   },
   buildPage: {
     title: "Bygg",

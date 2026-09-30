@@ -3615,3 +3615,15 @@
     white-space: nowrap;
   }
 }
+
+/* Juridik i /app (PR 5): valet av bolagsform är länkar i samma segmenterade
+   kontroll som Minnets flikar, och får radbryta på smala skärmar. */
+.fdd-segmented--wrap {
+  flex-wrap: wrap;
+}
+
+a.fdd-segmented__item {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}

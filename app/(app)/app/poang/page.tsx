@@ -1,15 +1,6 @@
 import { Score, type ScoreData } from "@/screens/Score";
 import { liveEvidenceRepository } from "@/adapters/live/EvidenceRepository";
-import { isPlaceholderError } from "@/core/errors";
-
-/** Ett platshållarfel (stubbe eller tomt konto) blir `null` — skärmen visar
- * då "Kommer snart" i just det kortet. Ett äkta fel kastas vidare. */
-function orNull<T>(promise: Promise<T>): Promise<T | null> {
-  return promise.catch((error) => {
-    if (isPlaceholderError(error)) return null;
-    throw error;
-  });
-}
+import { orNull } from "../_lib/orNull";
 
 /**
  * Poäng i /app (PR 4, docs/plan-en-design.md). Evidens är byggd, men ett nytt

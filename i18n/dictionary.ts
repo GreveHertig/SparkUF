@@ -386,6 +386,9 @@ export type Dictionary = {
     profileBackgroundLabel: string;
     profileResourcesLabel: string;
     brainHint: string;
+    /** Ledtråden i /app, där anteckningarna är användarens egna (inte Saras). */
+    brainHintLive: string;
+    brainSaveFailed: string;
     traceEmpty: string;
   };
   legalPage: {
@@ -397,6 +400,13 @@ export type Dictionary = {
       ej_uppfyllt: string;
       ej_tillämpligt: string;
     };
+    /** Märkningen bredvid varje källa: ingen källa visas som verifierad. */
+    unverifiedSource: string;
+    notReviewedNote: string;
+    sourceMissing: string;
+    empty: string;
+    bolagsformPickerLabel: string;
+    bolagsformPrompt: string;
   };
   buildPage: {
     title: string;

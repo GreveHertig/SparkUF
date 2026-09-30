@@ -347,6 +347,8 @@ export const en = {
     profileBackgroundLabel: "Background",
     profileResourcesLabel: "Resources",
     brainHint: "This is what Sara wrote in the profile chat. It can be edited.",
+    brainHintLive: "Your own notes. They are saved when you leave the field.",
+    brainSaveFailed: "The notes could not be saved. Try again.",
     traceEmpty: "No events yet.",
   },
   legalPage: {
@@ -359,6 +361,12 @@ export const en = {
       ej_uppfyllt: "Not met",
       ej_tillämpligt: "Not applicable",
     },
+    unverifiedSource: "Unverified",
+    notReviewedNote: "Nothing here has been reviewed by a lawyer. Every source is unverified until it is.",
+    sourceMissing: "Source missing",
+    empty: "No requirements found for the company form.",
+    bolagsformPickerLabel: "Company form",
+    bolagsformPrompt: "Choose a company form to see the legal map.",
   },
   buildPage: {
     title: "Build",

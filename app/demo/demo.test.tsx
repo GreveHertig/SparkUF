@@ -12,6 +12,7 @@ import FondaDemoHomePage from "./(app)/page";
 import FondaDemoScorePage from "./(app)/poang/page";
 import FondaDemoMarketPage from "./(app)/marknad/page";
 import FondaDemoLegalPage from "./(app)/juridik/page";
+import FondaDemoMemoryPage from "./(app)/minnet/page";
 import FondaDemoValidationPage from "./(app)/validering/page";
 import FondaDemoPulsePage from "./(app)/pulsen/page";
 import FondaDemoStartPage from "./start/page";
@@ -165,6 +166,27 @@ describe("/demo", () => {
     pathname = FONDA_DEMO_PATHS.legal;
     await renderInApp(<FondaDemoLegalPage />);
     expect(screen.getByText(sv.legalPage.disclaimer)).toBeInTheDocument();
+  });
+
+  it("Juridik (tunn hämtare, PR 5) är låst före steg 05 och utanför Jonas scenario", async () => {
+    startInApp(0);
+    pathname = FONDA_DEMO_PATHS.legal;
+    await renderInApp(<FondaDemoLegalPage />);
+    expect(screen.getByText(`${sv.homePage.unlocksAfterStepBefore} 04`)).toBeInTheDocument();
+    cleanup();
+    useDemoStore.getState().setEntry("hasIdea");
+    await renderInApp(<FondaDemoLegalPage />);
+    expect(screen.getByText(sv.homePage.notInThisScenario)).toBeInTheDocument();
+  });
+
+  it("Minnet (tunn hämtare, PR 5) visar Saras profil och demots ledtråd i Hjärnan", async () => {
+    startInApp(8);
+    pathname = FONDA_DEMO_PATHS.memory;
+    await renderInApp(<FondaDemoMemoryPage />);
+    expect(screen.getByRole("heading", { level: 1, name: /Sara Lindqvist/ })).toBeInTheDocument();
+    fireEvent.mouseDown(screen.getByRole("tab", { name: sv.memoryPage.tabs.brain }), { button: 0 });
+    expect(screen.getByText(sv.memoryPage.brainHint)).toBeInTheDocument();
+    expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
   });
   describe("Datalöftet och buggrapporten (docs/buggar-2026-09.md)", () => {
     const lastBeat = saraEngine.beats.length - 1;
