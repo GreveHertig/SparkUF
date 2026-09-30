@@ -393,6 +393,7 @@
 
 .fd-proof__ideahead {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -721,6 +722,9 @@
 /* ---------- Resan ---------- */
 
 .fd-journey {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   border: 1px solid var(--fd-line);
   border-radius: var(--r-lg);
   background: var(--sunk);
@@ -853,6 +857,7 @@
 
 .fd-split {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(2.5rem, 6vw, 5rem);
   align-items: center;
 }
@@ -943,6 +948,7 @@
 .fd-register__head,
 .fd-nextstep__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
