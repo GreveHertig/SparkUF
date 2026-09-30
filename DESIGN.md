@@ -61,7 +61,9 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
 - **Delade byggstenar mellan skärmar** ligger i `screens/blocks/` (PR 4:
   `ScoreFigure`, `ScoreDelta`, `levelTone`, `formatDelta`; PR 5:
   `PageHead`, `Locked`, `Pill` i `PageBlocks.tsx`; PR 7: `ExampleLabel`,
-  `Figures`, `SimulationBlock`, `VerdictBlock` i `DataBlocks.tsx`). Marknads
+  `Figures`, `SimulationBlock`, `VerdictBlock` i `DataBlocks.tsx`; PR 9:
+  `JourneyStepper`, stegraden som Hem och Resan delar, med `basePath:
+  string | null` så att en Server Component kan skicka den). Marknads
   räkning (fördelning, vanligaste klass, spann) ligger i `core/market.ts` och
   räkenskapsåren i `core/fiscalYear.ts` (PR 8). Samma portregel
   som skärmarna. Demots `app/demo/_components/DemoBlocks.tsx` importerar

@@ -6,39 +6,43 @@ enda skillnaden ska vara datan: appen visar riktig data via
 samma skärmar i `screens/`.
 
 Skriven 2026-09-26 efter PR #25 (ny startsida och nytt demo). PR 1–3 är
-gjorda (egna grenar och PR:er mot `prototyp`); PR 4, 5, 7 och 8 är gjorda på
+gjorda (egna grenar och PR:er mot `prototyp`); PR 4, 5, 7, 8 och 9 är gjorda på
 `design/en-design` enligt avsnittet "Arbetsordning" nedan. Läget per PR står
 i `docs/status.md`.
 
 ## Nuläge
 
-Uppdaterat 2026-09-30, efter PR 8. Ögonblicksbilden från 2026-09-26 (före
+Uppdaterat 2026-09-30, efter PR 9. Ögonblicksbilden från 2026-09-26 (före
 PR 1) finns i historiken för den här filen.
 
 - **Delat av `/demo` och `/app`:** skalet (`AppShell`, PR 2, med poängen i
   sidhuvudet från PR 4), Hem (`AppHome`, PR 3), Poäng (`Score`, PR 4),
   Minnet (`Memory`, PR 5), Juridik (`Legal`, PR 5), Validering
-  (`Validation`, PR 7) och Marknad (`Market`, PR 8). Demots sidor för dem
+  (`Validation`, PR 7), Marknad (`Market`, PR 8) och Resan och steget
+  (`Journey`, `JourneyStep`, PR 9). Demots sidor för dem
   är tunna hämtare utan markup.
 - **`/app`-rutter:** `/app` (Hem), `/app/poang`, `/app/minnet`,
-  `/app/juridik`, `/app/validering` och `/app/marknad`, plus onboardingen på `/start` (`OnboardingEntry`,
+  `/app/juridik`, `/app/validering`, `/app/marknad`, `/app/resan` och
+  `/app/resan/[steg]`, plus onboardingen på `/start` (`OnboardingEntry`,
   `OnboardingIdea`, `OnboardingProfile`). Flikarna i `/app` är fortfarande
-  inerta (ingen `navBasePath`), eftersom fem av sidorna saknas.
+  inerta (ingen `navBasePath`), eftersom fyra av sidorna saknas.
 - **Oanvända skärmar i `screens/`** (väntar på sina steg): `Build`,
-  `BusinessPlan`, `Cofounder`, `JourneyStep` och `Pulse`. `Journey` används bara via `components/spark/JourneyRail`.
+  `BusinessPlan`, `Cofounder` och `Pulse`. `components/spark/JourneyRail` är
+  oanvänd (städas i PR 11).
 - **Delade byggstenar** ligger i `screens/blocks/`: `ScoreFigure.tsx` (PR 4),
   `PageBlocks.tsx` (`PageHead`, `Locked`, `Pill`, PR 5) och
   `DataBlocks.tsx` (`ExampleLabel`, `Figures`, `SimulationBlock`,
-  `VerdictBlock`, PR 7).
+  `VerdictBlock`, PR 7) och `JourneyStepper.tsx` (PR 9, delad av Hem och
+  Resan).
   `app/demo/_components/DemoBlocks.tsx` exporterar de senare vidare åt
   demosidor som inte är flyttade än.
-- **Demots egna sidor kvar att flytta:** Resan och steget,
-  Pulsen, Medgrundaren, Bygg, Affärsplan och onboardingen på
+- **Demots egna sidor kvar att flytta:** Pulsen, Medgrundaren, Bygg, Affärsplan och onboardingen på
   `/demo/start`.
 - **Liveadaptrarna:** byggda är Evidens, Juridik, Minnet, OutreachPrep,
   Utskick, Pulsen och Registret (bakom licensgrinden). Helt eller delvis
   stubbar (`NotImplementedError`) är Build, Medgrundaren, Resan
-  (`getSteps` byggd, `getHomeSummary` stubbe), Profil, Projekt, Domen,
+  (`getSteps` och `getStepDetail` byggda, `getHomeSummary` stubbe; ingen
+  dom, poängändring eller upplåsta delar än), Profil, Projekt, Domen,
   Research och Simulering.
 
 ## Skärmar som påverkas
@@ -47,7 +51,7 @@ PR 1) finns i historiken för den här filen.
 |---|---|---|---|---|
 | Skal (sidhuvud, meny, poäng) | `_components/DemoShell` | `AppShell` | ja | Profil och Resan är stubbar |
 | Hem | `(app)/page.tsx` | `AppHome` | ja | Resan stubbe, Evidens och Pulsen byggda |
-| Resan och steget | `resan`, `resan/[steg]` | `Journey`, `JourneyStep` | nej | stubbe |
+| Resan och steget | `resan`, `resan/[steg]` | `Journey`, `JourneyStep` | ja, PR 9 (steget vitlistat 1–12, låst ur stegets status) | `getSteps`/`getStepDetail` byggda, `getHomeSummary` stubbe |
 | Poäng | `poang` | `Score` | ja, PR 4 | byggd |
 | Marknad | `marknad` | `Market` | ja, PR 8 (branschen väljs i adressen, låst till steg 02) | Registret, bakom licensgrinden; transporterna är inte skrivna, så även Theo och Erik får felrutan |
 | Validering | `validering` | `Validation` | ja, PR 7 (låst till steg 03 ur Resans steg) | Utskick: sändspärren ger "Kommer snart"; läser inte Registret |
@@ -182,11 +186,11 @@ likadant ut före och efter, kontrollerat med skärmbilder.
 6. **Pulsen**: Bruno, på den nya skärmen (beslut 3).
 7. **Validering** (Utskick byggt, låst läge för Registret).
 8. **Marknad** (Registret bakom licensgrinden, tester för stängd grind).
-9. **Resan och steget** (liveadaptern stubbe: "Kommer snart" tills den
-   är klar). **Tar samtidigt bort dubbletten:** samma sak för
+9. **Resan och steget** (gjort; `getSteps` och `getStepDetail` är byggda,
+   det som saknas i datan visar "Kommer snart" per sektion). **Tar samtidigt bort dubbletten:** samma sak för
    `JourneyStepper` (`app/demo/_components/DemoBlocks.tsx` vs.
-   `screens/AppHome.tsx`s lokala kopia, PR 3) — Resan-sidan äger den enda
-   kvarvarande versionen efter den här PR:n.
+   `screens/AppHome.tsx`s lokala kopia, PR 3). Gjort: den enda versionen
+   ligger i `screens/blocks/JourneyStepper.tsx`, delad av Hem och Resan.
 10. **Medgrundaren**, **Bygg** och **Affärsplan** (stubbar i appen;
     Medgrundaren kräver att demots manus flyttas ut ur sidan).
 11. **Onboarding** (`/start` och `/demo/start`) och städning: ta bort
