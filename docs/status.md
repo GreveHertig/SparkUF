@@ -2890,3 +2890,37 @@ Tredje PR:en i `docs/plan-en-design.md`. Demots Hem-sida (`app/demo/(app)/page.t
 - **`AppHome`s props är nu**: `{ data: AppHomeData; dataKind: DataKind; onNextStep?: () => void; journeyStepHref; scoreHref }`. `journeyStepHref`/`scoreHref` är obligatoriska strängar/funktioner — ingen skärm ska anta en specifik bas-väg.
 - **`ScoreFigure`/`ScoreDelta`/`JourneyStepper` finns nu på två ställen** (`app/demo/_components/DemoBlocks.tsx` och `screens/AppHome.tsx`, medvetet duplicerade) — när Poäng (PR 4) och Resan (PR 9) konverteras, avgör då om `DemoBlocks.tsx`s versioner kan tas bort helt eller om en gemensam, icke-demo-bunden plats behövs.
 - **PR 4 (Poäng)** är nästa enligt planen.
+
+## PR 4: Poäng (2026-09-30, direkt på `design/en-design`, ingen egen PR)
+Fjärde steget i `docs/plan-en-design.md`, det första enligt "Arbetsordning" (commits direkt på `design/en-design`). `origin/prototyp` (med Eriks merge av PR 2, #31) togs in först, utan konflikter. Två commits: flytten och dubbletterna (`ce5a58d`), och poängen i sidhuvudet (`9d8fc02`, egen commit så den kan backas separat).
+
+### Klart
+- **`screens/Score.tsx`** skriven om: den gamla Tailwind-skärmen (`KpiRow`/`KpiTile`/`ScorePanel`/`SuggestionList`, oanvänd sedan #25) ersatt av markupen från `app/demo/(app)/poang/page.tsx`, flyttad rakt av. `PartsList` och `ScoreHistory` flyttade med in i skärmen (bara Poäng använder dem); `app/demo/_components/ScoreHistory.tsx` borttagen.
+- **`ScoreData = { snapshot; suggestions; history }`, alla tre nullbara var för sig** (platshållare per sektion): `null` ger `ComingSoon` bara i det kortet (nedbrytningen, historiken, "Höj din poäng"). En tom lista är ett ärligt tomläge med egen text (`scorePage.noHistory`, `scorePage.noSuggestions`), inte "Kommer snart". Utan poäng blir rubriken sidans namn ("Poäng") i stället för en nivå.
+- **Demots poängsida** är en tunn hämtare (tre demoanrop → `<Score data>`), ingen markup kvar.
+- **Ny rutt `app/(app)/app/poang/page.tsx`**: `liveEvidenceRepository` (`getScoreSnapshot`, `getSuggestions`, `getScoreHistory`), varje anrop fångat för sig med `isPlaceholderError`; äkta fel kastas vidare. Hems "Se poängen"-länk (`/app/poang`) pekar nu på en sida som finns.
+- **Dubbletten från PR 3 borta:** `ScoreFigure`, `ScoreDelta`, `levelTone` och `formatDelta` finns bara i `screens/blocks/ScoreFigure.tsx` (DemoBlocks-versionen). `screens/AppHome.tsx` och `screens/Score.tsx` importerar därifrån; `DemoBlocks.tsx` (`VerdictBlock`) och `resan/[steg]` likaså. `JourneyStepper` är orörd, fortfarande i två exemplar (PR 9).
+- **`mentionsConcept` flyttad** från `app/demo/_lib/concepts.ts` till `core/concepts.ts` (ren logik; skärmen behövde den och får inte importera från `app/`). Fyra demosidor pekar om.
+- **Poängen i skalets sidhuvud** (egen commit): `AppShell` tar `score?: number | null` och visar "Poäng 24" i toppradens typsnitt och storlek (`.fdd-top__score`), länkad till `…/poang`, på alla bredder. `null`/utelämnad visar "—" med skärmläsartexten "Poängen saknas än", aldrig en nolla. Demots layout hämtar `getScoreSnapshot` (samma snapshot som Hem och Poäng, följer `beatIndex`); `/app`-layouten hämtar den igen och fångar platshållarfel. Nya i18n-nycklar `appShell.headerScoreLabel`/`headerScoreMissing`.
+- **Tester:** `screens/Score.test.tsx` (6), `app/(app)/app/poang/page.test.tsx` (4), två nya i `app/demo/demo.test.tsx` (Poäng-sidans delar/låsta/historik, sidhuvudets poäng = motorns), tre nya i `screens/AppShell.test.tsx` och tre nya i `app/(app)/layout.test.tsx` (siffra, lucka, äkta fel).
+- **Skärmbilder** (Playwright, 1440 och 390 px, beat 0 och 8, `/demo` och `/demo/poang`): efter del 1–2 alla 16 pixel för pixel identiska med före (AE 0). Efter del 3 skiljer sig bara sidhuvudet (diffen på hela sidan är exakt lika stor som diffen på sidhuvudet): "Poäng 24" bredvid steget på 1440, i andra raden bredvid språkväxeln på 390. Sidhuvudets höjd är oförändrad.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (644 gröna, 35 skippade), `pnpm build` (grönt, bara den kända `metadataBase`-varningen). `screens/noAdapters.guard.test.ts` grön.
+
+### Vad som inte var en ren flytt (innehållsbeslut)
+- **Tomlägen på Poäng:** två nya texter ("Ingen poäng sparad än.", "Inga förslag än.") för `/app`. Liveadapterns `getSuggestions` returnerar medvetet `[]` tills förslagstexterna skrivs, så "Höj din poäng" är alltid tom i `/app` just nu. Sorteringsnoten visas bara när det finns förslag.
+- **Rubriken utan poäng** blir "Poäng" (ingen kontextrad, ingen ingress), i stället för en nivå.
+- **Låst läge:** Poäng har inget låst läge för hela sidan; de låsta delarna ("Låses upp efter steg 05") i nedbrytningen är det låsta läget, samma som i demot.
+- **Sidhuvudets poäng har ingen `SourceTag`.** Den är en sammanfattning av delarna och länkar till Poäng, där varje del har sin källa.
+- **Flikarna i `/app` är fortfarande inerta** (ingen `navBasePath`), fast `/app/poang` finns. Att tända dem skulle länka till nio sidor som inte finns än. Poängen i sidhuvudet och Hems poängkort länkar dit.
+
+### Beslut nästa session behöver känna till
+- **Delade byggstenar mellan skärmar ligger i `screens/blocks/`** (se `DESIGN.md`, "Skärmar och data"). `JourneyStepper` kan flytta dit i PR 9.
+- **`AppShell`s props:** `homeHref`, `navBasePath?`, `dataKind`, `profile`, `currentStep?`, `score?`, `headerRight?`, `children`.
+- **`/app`-layouten gör nu ett extra `getScoreSnapshot` per sidladdning** (Hem och Poäng hämtar det också). Billigt, men om det blir ett problem kan layouten och sidan dela på ett cachat anrop (`React.cache`).
+- Tidigare `app/demo/_lib/concepts.ts` heter nu `core/concepts.ts`.
+
+### Kända problem / docs som inte stämmer
+- `docs/uppdrag.md` avsnitt 6, "Appen (`/app/*`)", beskriver fortfarande "mörk sidomeny till vänster" (nu en flikrad), och komponenttabellen säger `ScoreBadge` "kompakt i sidhuvud" (nu en textsiffra). Kravet "sidhuvudet visar poängen alltid" är det som återställts. Det finns inget avsnitt 11.6 i `uppdrag.md`.
+- `CLAUDE.md` säger att allt arbete sker på `prototyp`; migrationen sker på `design/en-design` enligt `docs/plan-en-design.md`.
+- "Nuläge" i `docs/plan-en-design.md` är en ögonblicksbild från 2026-09-26 (säger att `/app` bara har Hem).
+- `/app` efter inloggning är fortfarande inte fotograferat (inget testkonto); täckt av rutttesterna.

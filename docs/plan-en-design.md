@@ -5,8 +5,9 @@ enda skillnaden ska vara datan: appen visar riktig data via
 `adapters/live`, demot exempeldata via `adapters/demo`. Båda ska använda
 samma skärmar i `screens/`.
 
-Skriven 2026-09-26 efter PR #25 (ny startsida och nytt demo). Ingen kod är
-ändrad än. Besluten längst ner är **förslag, beslutas med Theo på söndag**.
+Skriven 2026-09-26 efter PR #25 (ny startsida och nytt demo). PR 1–3 är
+gjorda (egna grenar och PR:er mot `prototyp`); från PR 4 gäller
+avsnittet "Arbetsordning" nedan. Läget per PR står i `docs/status.md`.
 
 ## Nuläge
 
@@ -126,9 +127,13 @@ migrationen — de rör varken `screens/` eller `design/site.css`.
 - `modul/marknadsforing` finns men har inga egna commits. Fråga i teamet
   vems den är.
 
-## Ordning, i små PR:er
+## Ordning, i små steg
 
-Varje PR: flytta markupen från demots sida till skärmen i `screens/`
+"PR 4", "PR 5" osv. är namn på stegen, inte egna pull requests: från PR 4
+är varje steg en eller flera commits direkt på `design/en-design` (se
+"Arbetsordning"). PR 1–3 var egna PR:er.
+
+Varje steg: flytta markupen från demots sida till skärmen i `screens/`
 (ersätter den gamla), gör demots sida till en tunn hämtare av demodata,
 lägg till `/app`-rutten med liveadaptern, platshållarfel och låst läge,
 och tester (skärmtest, demotest, ruttest för `/app`). Demot ska se
@@ -169,20 +174,24 @@ PR 1–3 i ordning. PR 4–10 är i stort sett oberoende och kan delas upp.
 - Cirka 2 800 rader av demots sidor och komponenter flyttas in och
   ersätter cirka 2 000 rader skärmar och 13 skärmtester.
 - Nytt: 11 `/app`-rutter med platshållarfel, låsta lägen och tester.
-- Grovt: 11–12 PR:er på 300–900 ändrade rader, runt 6 000–8 000 rader
-  totalt inklusive tester. Med en session per PR ungefär 2–3 veckor för
+- Grovt: 11–12 steg på 300–900 ändrade rader, runt 6 000–8 000 rader
+  totalt inklusive tester. Med en session per steg ungefär 2–3 veckor för
   en person, kortare om PR 4–10 delas upp.
 - Störst risk: stilbytet i PR 1–2 (rör allt `/app` visar), Marknad
   (licensgrinden) och Medgrundaren (manuset ligger i sidan).
 
-## Beslut (förslag, beslutas med Theo på söndag)
+## Beslut
 
-1. **Demots stil ersätter `components/spark`.** `DESIGN.md` skrivs om i
-   PR 1. Komponenter i `components/ui` som fortfarande används får vara
-   kvar till PR 11.
+1. **Demots stil ersätter `components/spark`.** Gällande; `DESIGN.md`
+   skrevs om i PR 1. Komponenter i `components/ui` som fortfarande används
+   får vara kvar till PR 11.
 2. **Vyer utan liveadapter visar `ComingSoon`, märkt "Kommer snart", och
-   syns i menyn**, så att appen och demot ser likadana ut.
-3. **Bruno bygger `/app/pulsen` på den nya skärmen efter PR 1–2.** Innan
-   dess gör han RLS-testet och cachen för `pulse_fetches`.
-4. **Oskars `landning-bilder`:** fråga Oskar om han vill ta nya bilder av
-   det nya demot eller lägga ner grenen.
+   syns i menyn**, så att appen och demot ser likadana ut. Skärpt av PR 3:
+   `ComingSoon` visas per sektion, inte för hela sidan (se "Platshållare
+   per sektion").
+3. **Bruno bygger `/app/pulsen` på den nya skärmen (steg 6)**, men enligt
+   "Arbetsordning": på `design/en-design`, och bara när ingen annan rör
+   `screens/` och `design/site.css`. Fram till dess jobbar han i sin modul
+   (`adapters/live/PulseProvider`, `pulse_fetches`).
+4. **Öppen fråga — Oskars `landning-bilder`:** fråga Oskar om han vill ta
+   nya bilder av det nya demot eller lägga ner grenen.

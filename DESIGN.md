@@ -55,6 +55,15 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
   Bara demot sätter `"example"`; med `"live"` visas ingen etikett.
 - **Licensgrinden**: vyer som läser Registret visar ett låst läge när
   grinden är stängd, aldrig demodata.
+- **Delade byggstenar mellan skärmar** ligger i `screens/blocks/` (PR 4:
+  `ScoreFigure`, `ScoreDelta`, `levelTone`, `formatDelta`). Samma portregel
+  som skärmarna. Demots `app/demo/_components/DemoBlocks.tsx` importerar
+  därifrån i stället för att ha egna kopior.
+- **Poängen i sidhuvudet** (PR 4): en liten textsiffra, "Poäng 24", i
+  toppradens typsnitt och storlek (`.fdd-top__score`), länkad till Poäng
+  och synlig på alla bredder. Ingen ring och ingen nivåfärg i sidhuvudet;
+  den stora siffran med nivån finns på Hem och Poäng. Saknas poängen
+  visas "—" med skärmläsartexten "Poängen saknas än", aldrig en nolla.
 
 ## Historik
 
