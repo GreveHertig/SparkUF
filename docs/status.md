@@ -2775,6 +2775,52 @@ Grundaren såg att rundturens ruta (spotlighten) inte täckte hela målet på vi
 ### Kända problem / beslut
 - Mål som är högre än skärmen (svaren på stopp 10, juridiken, poänglistan, pulsen) kan inte visas hela samtidigt som kortet. De kortas till de hela rader som ryms. På 1920×1080 gäller det bara stopp 10. Ska de synas hela måste stoppen peka på mindre delar av sidorna (ett innehållsbeslut, inte gjort).
 
+## Nya priser (klar 2026-09-30, direkt på `prototyp`)
+Priserna på sajten och i demot följer nu prisplanen som Kingen (marknad/sälj) tog fram. Allt är fortfarande märkt som förslag.
+
+### Klart
+- `/priser`: Gratis blev **Provvecka** (0 kr i 7 dagar, kort krävs, steg 01–04, begränsad Puls). **Grundare** kostar 249 kr/mån (årsvis 2 490 kr) och innehåller hela resan 01–12, även bygget, med 3 miljoner gnistor i månaden. Bygg-credits blev **Gnistpaket**: 2 miljoner gnistor för 99 kr, 5 miljoner för 229 kr.
+- Startsidans priskort, pristeasern och FAQ-svaret "Vad kostar det?" säger samma sak. Raden "Steg 10, bygget, ingår inte" är ersatt med provvecka, årspris och gnistpaket.
+- Rundturens stopp 19 och `docs/demo-manus.md`: "249 kr i månaden, bygget ingår". `docs/uppdrag.md` avsnittet om `/priser` uppdaterat.
+- Bara texter i `i18n/sv.ts` och `i18n/en.ts` (plus `tourCopy.ts`); inga komponenter eller nycklar ändrade.
+- Kontroll: `typecheck` (efter `next typegen`), `lint` (0 fel), `test` (601 gröna).
+
+### Beslut
+- Gnistor är Sparks krediter: 1 input-token = 1 gnista, 1 output-token = 5 gnistor. Då kostar en gnista lika mycket oavsett användning och påfyllning går aldrig med förlust.
+- Ingen permanent gratisnivå. Provveckan har AI-tak 10 kr per konto och 500 kr/mån totalt.
+- Marknadsföringsmodulen säljs inte som tillägg för 99 kr (struket).
+
+### Återstår
+- Momsen: bekräfta med UF-rådgivaren att Spark varken tar ut eller drar av moms. Kalkylen bygger på det.
+- Priset är ännu inte testat mot väntelistan (fyra prisfrågor).
+- `pnpm typecheck` kräver att `next typegen` har körts (typen `LayoutProps` i `app/layout.tsx` genereras av Next). Värt att lägga in i skriptet.
+
+## Modul: Juridisk koll — källorna kontrollerade (klar 2026-09-30, gren `modul/juridisk-koll-kallor`)
+
+### Klart
+- **Källorna från Bolagsverket, verksamt.se och Bokföringsnämnden är nu kontrollerade av en människa** (i webbläsaren 2026-09-30). Hela kontrollistan med adresser står som verifieringslogg i `docs/moduler/juridisk-koll.md`. **Ingenting är juristgranskat.**
+- `adapters/live/legalSources.ts`:
+  - En källa per undersida i stället för startsidor för Bolagsverket, verksamt.se och BFN, `hämtad: "2026-09-30"`. Skatteverket, IMY, EUR-Lex, Konsumentverket och Riksdagen är oförändrade (2026-09-17, startsidor).
+  - De två DELVIS-punkterna har nya texter: `aktiekapital` (minst 25 000 kr för privat AB; bankintyg vid betalning med pengar, revisorns yttrande vid apport) och `bolagsavtal` (rekommenderas men inget formellt krav; solidariskt ansvar).
+  - `bolagsordning_styrelse` är uppdelat i `bolagsordning`, `styrelse` och `revisor`. `arsredovisning` är uppdelat i `arsredovisning_ab` och `arsredovisning_ek_forening`. Varje ämne har sin egen adress. Katalogen har nu 17 ämnen i stället för 14.
+  - Verifieringskommentaren i filhuvudet är omskriven.
+- Inga ändringar i `ports/`, `types/`, `LegalAdvisor.ts`, `legalSchema.ts` eller demoadaptern. Källan väljs fortfarande med `KURERADE_KÄLLOR[topic.källId]`, och Geminis enum läser ämnes-id:na dynamiskt.
+- `adapters/live/legalSources.test.ts`: fyra nya tester. Varje källa ligger på rätt myndighets domän, de kontrollerade källorna pekar på en undersida, aktiebolag och ekonomisk förening får var sin årsredovisningskälla, och bolagsordning, styrelse och revisor är tre ämnen med var sin adress.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`) och `pnpm test` (605 gröna, 35 skippade) och `pnpm build` (grönt med påhittade platshållarvärden för de två Supabase-variablerna, bara i kommandot, ingen `.env.local` skapad — se Kända problem).
+
+### Återstår
+- **Fråga till Erik:** `adapters/live/LegalAdvisor.ts:91` sätter `status: "ej_uppfyllt"` på varje krav. Bolagsavtalet för handelsbolag visas då som ett krav som inte är uppfyllt, fast det bara rekommenderas. Ska `LegalAdvisor.ts` (och kanske `types/legal.ts`) kunna skilja på krav och rekommendationer?
+- Skatteverket, IMY, EUR-Lex, Konsumentverket och Riksdagen är inte kontrollerade av en människa och pekar fortfarande på startsidorna.
+- Juristgranskning av hela ämneskatalogen: vilka ämnen som gäller per bolagsform, avgifter, deadlines och lagrum.
+
+### Kända problem
+- `pnpm build` misslyckas i en Codespace utan `.env.local`: prerenderingen av `/app` kastar "NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY saknas". Felet finns också på en ren `origin/prototyp` och beror inte på den här ändringen. Med påhittade platshållarvärden för de två variablerna går bygget igenom.
+- En gammal `.next/`-cache från tidigare `next dev` (med de borttagna `app/demo/app/*`-sidorna) gjorde att `pnpm typecheck` gav fel. Lösningen är att ta bort `.next/`.
+
+### Beslut
+- Ämnes-id:na `bolagsordning_styrelse` och `arsredovisning` finns inte längre. Inget i repot använde dem utanför `legalSources.ts`.
+- Källnycklarna (`KällId`) är per sida, till exempel `bolagsverket_starta_ab`. Nya ämnen får en egen nyckel när de har en egen undersida.
+
 ## PR 2: Skalet (gren `design/pr2-skalet`, PR mot `prototyp`)
 Andra PR:en i `docs/plan-en-design.md`. `DemoShell` (`app/demo/_components/DemoShell.tsx`) blir `screens/AppShell.tsx` — nu delad av `/demo` och `/app`. Demoraden och rundturen rörs inte, de stannar i `app/demo/layout.tsx` (var redan syskon till skalet, inte en del av det).
 
@@ -2800,3 +2846,6 @@ Andra PR:en i `docs/plan-en-design.md`. `DemoShell` (`app/demo/_components/DemoS
 - **`AppShell`s props-yta är nu**: `homeHref`, `navBasePath?`, `dataKind`, `profile`, `currentStep?`, `headerRight?`, `children`. `scoreSnapshot`, `headerLeft`, `bottomBar`, `sidebarFooterAction` finns inte längre — lägg inte till dem igen utan en verklig användare.
 - **`appShell.profileMenuLabel`/`tagline`/`restartDemo`** är nu oanvända i18n-nycklar (bara gamla sidomenyn använde dem) — lämnade orörda, städas i PR 11 tillsammans med `NavIcon.tsx`/`ScoreRing.tsx`/`components/spark/DemoBar.tsx`/`TourOverlay.tsx`/`SidebarRestart.tsx` (redan sedan tidigare oanvända, se `docs/plan-en-design.md` PR 11).
 - **PR 3 (Hem)** är nästa enligt planen — `screens/AppHome.tsx` är oförändrad i den här PR:n, renderas nu bara inuti det nya skalets `<main className="fdd-main">` i stället för den gamla sidomenylayouten. Den kommer se blandad ut (Tailwind-innehåll i en `.fdd-main`-yta) tills PR 3 flyttar dess markup till samma stil — en avsiktlig mellanstation, inte en bugg.
+
+### Sammanslagning med `prototyp`
+Gren `design/pr2-skalet` skapades ur `adc4f24`; `prototyp` hann få två egna PR:er ("Nya priser", "Modul: Juridisk koll — källorna kontrollerade") innan den här mergades in (`git merge origin/prototyp`). Konflikt bara i `docs/status.md` (två sessioner hade lagt till varsin sektion längst ner — löst genom att behålla båda, i den ordning de redan låg på `prototyp`, med PR 2-sektionen sist). `i18n/sv.ts` och `i18n/en.ts` merge:ades automatiskt (icke överlappande nycklar). Inget rört i `core/score.ts`, `ports/`, demodatan eller Juridik-modulens adapter. `pnpm typecheck`/`lint`/`test`/`build` gröna efter sammanslagningen; skärmbilder av `/demo` och `/demo/marknad` på 1440/390 px oförändrade (pixel för pixel).

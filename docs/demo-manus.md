@@ -123,10 +123,10 @@ Talmanus för de guidade genomgångarna av Spark UF-demot på `/demo`, i en
 > kundsegment — nyregistreringar, kapitalrundor, nedläggningar — varje
 > signal med en mening om varför den spelar roll för henne."
 
-**19. 199 kr i månaden, bygget kostar extra** (`/demo/pulsen`)
-> "Prenumeration för allt utom bygget, som säljs separat per projekt
-> eller credit. Grundare-nivån, 199 kronor i månaden, låser upp hela
-> resan, full Puls och juridisk koll."
+**19. 249 kr i månaden, bygget ingår** (`/demo/pulsen`)
+> "Först en gratis provvecka. Sedan låser Grundare-nivån, 249 kronor
+> i månaden, upp hela resan inklusive bygget, full Puls och juridisk
+> koll. Tar gnistorna till bygget slut fyller man på för 99 kronor."
 
 **20. Klart. Nu kan du utforska själv** (`/demo/pulsen`)
 > "Klicka runt fritt nu — byt ingång för att se Jonas resa, eller
@@ -157,7 +157,7 @@ aldrig för att se bra ut."
 
 **17. Lovable bygger sidan sist** — samma text.
 
-**19. 199 kr i månaden, bygget kostar extra** — samma text.
+**19. 249 kr i månaden, bygget ingår** — samma text.
 
 **20. Klart. Nu kan du utforska själv** — samma text.
 

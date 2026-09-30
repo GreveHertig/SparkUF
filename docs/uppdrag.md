@@ -264,9 +264,9 @@ Bygg `/designsystem` som visar alla tokens och komponenter i alla tillstånd. Si
     9. Priser, FAQ och en avslutande uppmaning
   - Nämn inga konkurrenter vid namn.
 - **`/priser`:** tre nivåer, märkta som förslag.
-  - **Gratis:** steg 01–04 och begränsad Puls.
-  - **Grundare:** 199 kr/mån, steg 01–09 och 11–12, full Puls och juridisk koll.
-  - **Bygg-credits:** säljs separat.
+  - **Provvecka:** 0 kr i 7 dagar, kort krävs, steg 01–04 och begränsad Puls.
+  - **Grundare:** 249 kr/mån (årsvis 2 490 kr), steg 01–12 inkl. bygget med 3 miljoner gnistor/mån, full Puls och juridisk koll.
+  - **Gnistpaket:** 2 miljoner gnistor för 99 kr (5 miljoner för 229 kr) när månadens gnistor tar slut.
 - **`/logga-in` och `/skapa-konto`:** fejkade formulär som leder in i onboardingen.
 - **`/designsystem`:** se 5.5.
 
