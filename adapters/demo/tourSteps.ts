@@ -97,8 +97,8 @@ export const TOUR_STEPS: TourStep[] = [
     target: "market-kpi",
     title: { sv: "Datalöftet: källa och datum på varje siffra", en: "The data promise: a source and a date on every number" },
     body: {
-      sv: "312 byråer, 4,2 Mkr i medianomsättning, 18 % tillväxt — varje tal bär en källpill man kan klicka på. Ingen siffra i Spark är gissad.",
-      en: "312 firms, SEK 4.2M median revenue, 18% growth — every number carries a clickable source pill. Nothing in Spark is guessed.",
+      sv: "312 byråer, 18 % tillväxt — varje tal bär en källpill man kan klicka på. Ingen siffra i Spark är gissad.",
+      en: "312 firms, 18% growth — every number carries a clickable source pill. Nothing in Spark is guessed.",
     },
   },
   {

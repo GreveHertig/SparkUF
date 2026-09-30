@@ -914,7 +914,7 @@ export const en = {
       companies: "Companies in the register",
       median: "Median revenue",
       growth: "Share growing",
-      basis: "Revenue is based on {median} and growth on {growth} of {total} companies, the ones with digital annual reports.",
+      basis: "Growth is based on {growth} of {total} companies, the ones with digital annual reports.",
       sampleTitle: "From the customer list",
       employeesUnit: "employees",
       fictionalNote: "The example comes from the demo. The scenario and companies are fictional.",

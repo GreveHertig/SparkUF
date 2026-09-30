@@ -114,8 +114,8 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
     ),
     msg(
       "cofounder",
-      "312 redovisningsbyråer med 5–20 anställda. Medianomsättning 4,2 Mkr. 18 % växte mer än 10 % förra året.",
-      "312 accounting firms with 5–20 employees. Median revenue SEK 4.2M. 18% grew more than 10% last year.",
+      "312 redovisningsbyråer med 5–20 anställda. 18 % växte mer än 10 % förra året.",
+      "312 accounting firms with 5–20 employees. 18% grew more than 10% last year.",
     ),
     msg("founder", "Och konkurrenterna?", "And the competitors?"),
     msg(

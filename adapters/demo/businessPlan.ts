@@ -125,7 +125,8 @@ function marketSection(t: Dictionary, market: MarketOverview | null, ideaScreeni
   if (market) {
     overviewClaims = [
       { text: t.marketPage.companyCountLabel, value: market.companyCount, source: market.source, dataType: "register" },
-      { text: t.marketPage.medianRevenueLabel, value: market.medianRevenueKsek, source: market.source, dataType: "register" },
+      // Medianomsättningen tas inte med: demodatan bär inget räkenskapsår, och
+      // utan år visas luckan, aldrig siffran (PR 8 och 9, docs/plan-en-design.md).
       { text: t.marketPage.growthShareLabel, value: market.growthSharePercent, source: market.source, dataType: "register" },
       { text: t.marketPage.regionShareLabel, value: market.regionSharePercent, source: market.source, dataType: "register" },
     ];
@@ -133,7 +134,7 @@ function marketSection(t: Dictionary, market: MarketOverview | null, ideaScreeni
       coverageClaims = [
         {
           text: t.marketPage.basedOnLabel,
-          value: `${market.basis.medianRevenueCompanies}/${market.basis.growthCompanies}/${market.basis.regionCompanies}`,
+          value: `${market.basis.growthCompanies}/${market.basis.regionCompanies}`,
           source: market.source,
           dataType: "register",
         },

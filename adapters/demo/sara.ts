@@ -418,7 +418,6 @@ const [step03Fore, step03Korning, step03Efter] = makeStepBeats({
   highlightsAfter: {
     sv: [
       "312 redovisningsbyråer med 5–19 anställda (SNI 69.201).",
-      "Medianomsättning 4,2 Mkr.",
       "18 % växte mer än 10 % förra året.",
       "31 % finns i Stockholms län.",
       "Tre fiktiva konkurrenter identifierade, bara ytligt kartlagda så här långt.",
@@ -426,7 +425,6 @@ const [step03Fore, step03Korning, step03Efter] = makeStepBeats({
     ],
     en: [
       "312 accounting firms with 5–19 employees (SNI 69.201).",
-      "Median revenue SEK 4.2M.",
       "18% grew more than 10% last year.",
       "31% are located in the Stockholm region.",
       "Three fictional competitors identified, only shallowly mapped so far.",
@@ -994,7 +992,7 @@ const [step07Fore, step07Korning, step07Efter] = makeStepBeats({
   highlightsAfter: {
     sv: [
       "Pris satt till 1 190 kr/mån exkl. moms, spann 900–1 500 kr.",
-      "1. Vad kunderna tål: medianomsättning 4,2 Mkr, byråer med 10+ anställda tål mer än de mindre.",
+      "1. Vad kunderna tål: byråer med 10+ anställda tål mer än de mindre.",
       "2. Vad jämförbara aktörer tar: näraliggande verktyg tar 800–1 600 kr/mån.",
       "3. Vad kunderna själva sagt: median 900 kr bland de nio svaren, men alla som sa ja har 10 eller fler anställda.",
       "4. Vad som krävs för att gå ihop: kostnadsgolv ~8 500 kr/mån, break-even vid 8 kunder (8 × 1 190 kr = 9 520 kr).",
@@ -1002,7 +1000,7 @@ const [step07Fore, step07Korning, step07Efter] = makeStepBeats({
     ],
     en: [
       "Price set to SEK 1,190/month excl. VAT, range SEK 900–1,500.",
-      "1. What customers can afford: median revenue SEK 4.2M, firms with 10+ employees can afford more than smaller ones.",
+      "1. What customers can afford: firms with 10+ employees can afford more than smaller ones.",
       "2. What comparable players charge: adjacent tools charge SEK 800–1,600/month.",
       "3. What customers themselves said: median SEK 900 among the nine responses, but everyone who said yes has 10 or more employees.",
       "4. What's needed to break even: cost floor ~SEK 8,500/month, break-even at 8 customers (8 × SEK 1,190 = SEK 9,520).",

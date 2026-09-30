@@ -918,7 +918,7 @@ export const sv = {
       companies: "Företag i registret",
       median: "Median omsättning",
       growth: "Andel som växer",
-      basis: "Omsättning räknas på {median} och tillväxt på {growth} av {total} bolag, de som har digital årsredovisning.",
+      basis: "Tillväxten räknas på {growth} av {total} bolag, de som har digital årsredovisning.",
       sampleTitle: "Ur kundlistan",
       employeesUnit: "anställda",
       fictionalNote: "Exemplet kommer ur demot. Scenariot och företagen är fiktiva.",

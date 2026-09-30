@@ -6,7 +6,7 @@ import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import { SourceTag } from "@/components/ui/SourceTag";
 import { ALL_PART_IDS, SCORE_PART_WEIGHTS } from "@/core/score";
 import { useI18n } from "@/i18n/context";
-import { formatCount, formatSek } from "@/i18n/format";
+import { formatCount } from "@/i18n/format";
 import { saraEngine } from "@/adapters/demo/sara";
 import {
   demoRegistryProvider,
@@ -206,7 +206,11 @@ export default function FondaLandingPage() {
                     </div>
                     <div>
                       <dt>{copy.registry.median}</dt>
-                      <dd>{formatSek(market.medianRevenueKsek * 1000, locale)}</dd>
+                      {/* Demodatan bär inget räkenskapsår: luckan i stället för siffran (PR 8 och 9). */}
+                      <dd>
+                        <span aria-hidden="true">—</span>
+                        <span className="fd-sr-only">{t.common.fiscalYearMissing}</span>
+                      </dd>
                     </div>
                     <div>
                       <dt>{copy.registry.growth}</dt>
@@ -219,7 +223,6 @@ export default function FondaLandingPage() {
                   {market.basis && (
                     <p className="fd-register__basis">
                       {fill(copy.registry.basis, {
-                        median: formatCount(market.basis.medianRevenueCompanies, locale),
                         growth: formatCount(market.basis.growthCompanies, locale),
                         total: formatCount(market.companyCount, locale),
                       })}
