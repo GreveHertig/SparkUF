@@ -195,15 +195,20 @@ Det som **inte** är löst:
   juridisk rådgivning. Ta det med Juridisk koll och en vuxen/handledare.
 
 ### SCB:s del
-- SCB:s **avgiftsfria** företagsregister-API ger bl.a. SNI-koder,
+> **Rättat 2026-09-30** efter provkörningen mot det nya API:t, se avsnittet
+> "SCB AFR, provkörning 2026-09-30". Uppgifterna om certifikat, 2 000 rader
+> per anrop och 10 anrop per 10 sekunder gällde det gamla API:t och är
+> ersatta.
+
+- SCB:s **avgiftsfria** företagsregister-API (AFR) ger bl.a. SNI-koder,
   arbetsställeadresser och **antal anställda i storleksklasser**
-  (Sekundärt). Kräver att man godkänner API:ets användarvillkor och får
-  certifikat via scbforetag@scb.se.
-- Begränsningar: max 2 000 rader per anrop och 10 anrop per 10 sekunder
-  och användare. Bara aktuell data, ingen historik (Sekundärt, SCB).
-- **Autentiseringen byter från certifikat till API-nycklar i september
-  2026**, samt paginering läggs till (Sekundärt, SCB). Kolla vad som gäller
-  när vi får åtkomst.
+  (Verifierat 2026-09-30). Åtkomst med en personlig API-nyckel i headern
+  `X-API-Key` (Verifierat, swagger.json), inte certifikat.
+- Begränsningar: `limit` högst 5 000 rader per sida med cursor-paginering
+  (Verifierat, swagger.json) och högst 5 anrop per sekund och nyckel
+  (Sekundärt, SCB:s dokumentation enligt Erik; står inte i swagger.json).
+  Bara aktuell data, ingen historik. API:t ligger nere 04:00–04:30 varje
+  natt (Verifierat, swagger.json).
 - **Osäkert:** SCB:s statistikdatabas (branschstatistik som skulle kunna
   ge `medianRevenueKsek` direkt) har vi **inte** undersökt.
 
@@ -446,7 +451,8 @@ Principer:
   på N bolag"), aldrig visa ett tal som ser ut att gälla hela marknaden.
   Saknas siffran visar vi att vi inte vet.
 - **Cachning i Supabase** är möjlig för att spara anrop och klara SCB:s
-  gräns på 10 anrop per 10 sekunder. Registerdatan är offentlig men
+  gräns på 5 anrop per sekund (rättat 2026-09-30, tidigare "10 anrop per
+  10 sekunder", som gällde det gamla API:t). Registerdatan är offentlig men
   RLS-reglerna i CLAUDE.md gäller ändå. Förutsätter att villkoren tillåter
   lagring (se ovan).
 - **Bygg enligt `docs/bygga-en-modul.md`.** Kontraktstestet
@@ -556,18 +562,23 @@ sannolikt inget.
 | # | Fråga | Vem/hur | Blockerar |
 |---|---|---|---|
 | 1 | ~~Bolagsverkets faktiska användarvillkor (lagring, vidareutnyttjande)~~ **Avgjort, Verifierat 2026-09-23** (Erik läste och citerade ordagrant stycket "Användning av värdefulla data", sidans datum 2025-11-21, se avsnitt 2): fri kommersiell användning, får modifieras, bearbetas och kombineras, inom personuppgifts- och sekretesslag; källhänvisning kan krävas. Ingen namngiven licens. (Märkt Verifierat 2026-09-20 utan citat, nedgraderat och åter verifierat 2026-09-23.) | Klart. Om en uttrycklig licens hittas: citera den | **Inte längre ett hinder på licensgrunden.** Licensgrinden (`docs/moduler/registret.md`) ligger kvar i koden tills Erik själv öppnar den. Fråga 4 nedan gäller fortfarande |
-| 2 | ~~Kan Bolagsverkets API söka på SNI, eller krävs SCB/filer?~~ **Avgjort, bekräftat 2026-09-21:** nej. Bara fyra endpoints, ingen sökning eller listning. `searchCompanies` måste bygga på SCB:s statistikdatabas eller nedladdningsbara filer. Nästa steg: undersök SCB-spåret (fråga 7) | Undersök SCB:s databas och filer | `searchCompanies` |
+| 2 | ~~Kan Bolagsverkets API söka på SNI, eller krävs SCB/filer?~~ **Avgjort, bekräftat 2026-09-21:** nej. Bara fyra endpoints, ingen sökning eller listning. **Besvarat 2026-09-30 (Verifierat, riktiga anrop):** SCB:s företagsregister-API (AFR) listar juridiska enheter per SNI-kod, `GET /v1/juridiskaenheter/naringsgren/{kod}`, med cursor-paginering. Bara huvudbranschen (`rangordning=1`), ett filter per anrop. Se "SCB AFR, provkörning 2026-09-30" | Klart | Inget. `searchCompanies` byggs på AFR |
 | 3 | Vilka iXBRL-taggar finns för små bolag, och täckning | Spik med nycklar | `revenueKsek`, `growthSharePercent`, median |
 | 4 | Får namngivna aktiebolag lagras/visas, och hur hanteras enskilda firmor och reklamspärr? | Juridisk koll + vuxen/handledare | Steg 04–05 i live |
 | 5 | ~~Var får Utskick och svar mottagarnas e-post från?~~ **Avgjort:** egen mejlsökning med Tavily + Gemini, grundaren bekräftar alltid adressen. Hunter.io valdes bort (50 krediter per konto/månad) | Beslutat | Fas 2 (`OutreachProvider`), byggs inte nu |
 | 6 | Allabolag/UC: kontakt, villkor, pris, vem som är rättighetshavare (UC eller Proff AS) | Grundaren + partner + vuxen/handledare | Inget i MVP |
 | 7 | SCB:s statistikdatabas som källa till branschaggregat | Undersök vid spiken | `medianRevenueKsek` utan iXBRL-urval |
-| 8 | ~~SCB:s byte från certifikat till API-nycklar~~ Gemensamma API:et använder OAuth 2 client credentials (**Verifierat** 2026-09-21). Oklart om SCB:s separata företagsregister-API gör det | Kolla vid behov | Autentiseringens utformning |
+| 8 | ~~SCB:s byte från certifikat till API-nycklar~~ Gemensamma API:et använder OAuth 2 client credentials (**Verifierat** 2026-09-21). **Besvarat 2026-09-30 (Verifierat, swagger.json och riktiga anrop):** SCB:s företagsregister-API (AFR) använder en personlig API-nyckel i headern `X-API-Key`, ingen OAuth och inget certifikat. Utan nyckel svarar API:t 401. Nyckeln ligger i `.env.local` som `SCB_AFR_API_KEY` | Klart | Inget |
 
 ## Förslag: SCB-spåret (UTKAST, väntar på godkännande)
 
 > **Status:** förslag skrivet 2026-09-21, godkänt av Erik samma dag. Underlag: SCB:s egna sidor och söksammanfattningar. Inget
 > anrop mot SCB är gjort, och Claude Codes miljö har inte nycklar.
+>
+> **Uppdatering 2026-09-30:** alternativ A är provkört mot det nya API:t, se
+> "SCB AFR, provkörning 2026-09-30". Uppgifterna om certifikat, 2 000 rader
+> och 10 anrop/10 s i tabellen nedan gällde det gamla API:t och är ersatta
+> där. Tabellen står kvar som historik.
 > Märkningarna följer avsnittet "Så läser du märkningarna".
 
 ### Frågan
@@ -764,14 +775,193 @@ kontakta dessa på de sätt som de avsagt sig."
 - **SNI 2025.** Variabelbeskrivningen följer "SNI 2025". Demot och porten
   använder koder som `69.201`, som troligen är SNI 2007. Om och hur de
   översätts är okontrollerat. Blockerar `searchCompanies` tills det är utrett.
+  **Avgjort 2026-09-30 (Erik):** Spark använder SNI 2025 rakt av, fem
+  siffror utan punkt. Ingen omkodning från SNI 2007. Se `docs/beslut.md` och
+  `docs/moduler/registret.md`, "SNI 2025".
 - **Frågor till SCB när nyckeln kommer:** endpoints och sökbara fält i nya
   API:t, maxrader per anrop, om `Stkl` och SNI går att kombinera i en fråga,
   om omsättningsklass (TG07Oms) ingår avgiftsfritt, och användarvillkoren
   ordagrant.
 
+## SCB AFR, provkörning 2026-09-30
+
+> Kört av Claude Code 2026-09-30 kl. 22 (svensk tid) med Eriks personliga
+> nyckel, som lästes med `node --env-file=.env.local` och aldrig skrevs ut.
+> Skripten ligger i `scratchpad/` (gitignorerad): `scb-afr-test.mjs` (6 anrop)
+> och `scb-afr-uppfoljning.mjs` (4 anrop), med minst 250 ms mellan anropen.
+> Utskriften visar bara struktur, antal och kodtabeller. Inga enskilda
+> firmor visades. `/full`-varianterna anropades inte.
+>
+> Det normativa kontraktet är OpenAPI-filen
+> `https://apiafr.scb.se/swagger/v1/swagger.json` (OpenAPI 3.0.4,
+> "SCB:s allmänna företagsregister API", version v1), hämtad samma kväll.
+
+### Verifierat (swagger.json eller riktiga anrop)
+
+**Adress och autentisering**
+- **`servers` saknas i swagger.json.** Bas-URL:en `https://apiafr.scb.se`
+  är härledd ur var specen ligger. Den bekräftades av anropen: `/v1/api-info`
+  gav 401 utan nyckel, och alla tio anrop med nyckel gav 200.
+- Header `X-API-Key` på alla verksamhetsendpoints. Versionen står i sökvägen
+  (`/v1/...`), och "Nuvarande version är v1 och gäller tills vidare".
+- Fel returneras som `application/problem+json` (`type`, `title`, `status`,
+  `detail`, `instance`) med statuskoderna 400, 401, 404, 429, 500 och 503.
+  429 har headern `Retry-After` (sekunder).
+- Inga rate limit-headers kom i något av de tio svaren.
+- "API:t är inte tillgängligt i 30 minuter från kl. 04:00 varje natt då
+  data uppdateras."
+
+**Två kontrakt och kodtabeller**
+- **JE** (juridiska enheter, `/v1/juridiskaenheter`) omfattar "samtliga
+  juridiska personer i Sverige", **fysiska personer** med inregistrerat
+  företagsnamn eller registrerade för moms, F-skatt eller som arbetsgivare,
+  och vissa dödsbon.
+- **AE** (arbetsställen, `/v1/arbetsstallen`) omfattar registrerade
+  arbetsställen.
+- `/v1/kodtabeller/...` har 19 kodtabeller.
+
+**Filtermodellen:** ett filter per anrop, som inte går att kombinera. Varje
+lista har ett `/count`.
+
+| Filter | JE | AE |
+|---|---|---|
+| `naringsgren/{kod}` (bara `rangordning=1`) | ja | ja |
+| `kommun/{kod}` | ja | ja |
+| `lan/{kod}` | ja | ja |
+| `anstalldaklass/{kod}` | ja | ja |
+| `omsattningsklass/{kod}` | ja | nej |
+| `juridiskform/{kod}` | ja | nej |
+
+Det finns **inget filter på verksam (`ftgStat`) eller reklamspärr**. De
+fälten finns bara i svaret och filtreras hos oss.
+
+**Paginering**
+- `limit` (högst 5 000) och `cursorId`. Svaret har
+  `pagination: { nextCursorId, limit, hasMore }`.
+- Traversera i tur och ordning tills `hasMore` är false, med samma `limit`
+  hela vägen.
+- Sidorna kommer i intern ordning, inte sorterade på namn eller orgNr.
+
+**Fälten i JE-listan (`jePartialData`):**
+
+| Fält | Typ | Kommentar |
+|---|---|---|
+| `peOrgNr` | string | 12 siffror |
+| `orgNr` | string | 10 siffror |
+| `namn` | string | |
+| `postAdress` | object | `{ gatuAdress, coAdress, postNr, postOrt }`, alla strängar |
+| `primarNaringsgren` | object | `{ rangordning, naringsgren, andelProcent, avdelningsKod }`: rangordning och andelProcent är tal, naringsgren fem siffror |
+| `kommunSate`, `lanSate` | string | kod för sätet, ifylld på alla 50 raderna |
+| `anstKl` | string | klasskod som sträng; kodtabellen har `kod` som tal |
+| `ftgStat` | string | |
+| `jurform` | string | |
+| `reklamSparrTyp`, `telefonSparrTyp`, `epostSparrTyp` | number | |
+
+`/full` lägger bland annat till `tel`, `epost`, `omsKl`, `omsAr`, `regDat`,
+`naringsgrenar` (alla, inte bara huvudbranschen) och flera statusfält. Vi
+använder inte `/full`, se "Öppen fråga: /full och omsättningsklass" nedan.
+
+**Anropen**
+
+| Anrop | Status | Resultat |
+|---|---|---|
+| JE `/naringsgren/69201/count` | 200 | `{ count: 25791, path }` |
+| AE `/naringsgren/69201/count` | 200 | `{ count: 26210, path }` |
+| JE `/naringsgren/69201?limit=50` | 200 | 50 rader, `{ nextCursorId: 33779, limit: 50, hasMore: true }`, 21 711 tecken (~434 per rad), 716 ms |
+| JE `/naringsgren/62100/count` | 200 | `{ count: 31495, path }` |
+| `kodtabeller/anstklkoder`, `jurformkoder`, `naringsgrenkoder`, `ftgstatkoder`, `reklamsparrtypkoder`, `lankoder` | 200 | se nedan |
+
+Första sidan för 69201 innehöll inget aktiebolag. Fördelningen var:
+- `jurform`: 96 (utländska juridiska personer) 40 gånger, 10 (fysiska
+  personer) 5, 71 (familjestiftelser) 3, 91 (dödsbon) 2.
+- `ftgStat`: 1 37 gånger, 9 åtta, 0 fem.
+- `anstKl`: 1 35 gånger, 2 femton.
+- `reklamSparrTyp`: 1 på alla 50.
+- `andelProcent`: 50–100.
+
+Inget exempel visades.
+
+**Kodtabellerna**
+
+| Tabell | Innehåll |
+|---|---|
+| `anstklkoder` (17) | 0 = Uppgift saknas, 1 = 0, 2 = 1–4, 3 = 5–9, 4 = 10–19, 5 = 20–49, 6 = 50–99, 7 = 100–199, 8 = 200–499, 9 = 500–999, 10 = 1000–1499, 11 = 1500–1999, 12 = 2000–2999, 13 = 3000–3999, 14 = 4000–4999, 15 = 5000–9999, 16 = 10000– anställda |
+| `jurformkoder` (35) | Aktiebolagen: **41 = Bankaktiebolag, 42 = Försäkringsaktiebolag, 43 = Europabolag, 49 = Övriga aktiebolag**. 10 = Fysiska personer, 31 = Handelsbolag, kommanditbolag, 91 = Oskiftade dödsbon, 96 = Utländska juridiska personer, 99 = Juridisk form ej utredd |
+| `ftgstatkoder` (3) | 0 = Har aldrig varit verksam, **1 = Är verksam**, 9 = Är ej längre verksam |
+| `reklamsparrtypkoder` (2) | **1 = Tar emot reklam**, 2 = Har frånsagt sig reklam |
+| `lankoder` (23) | 01 = Stockholm … 25 = Norrbotten, plus 00 = Län okänd och 99 = Ej svenskt län |
+| `naringsgrenkoder` (836) | Fem siffror, fälten `kod, klartext, avdelningKod, avdelningText`. **SNI 2025:** 62010 och 62200 finns inte, 62100 = Dataprogrammering, 69201 = Redovisning och bokföring; skatterådgivning (avdelning N, i SNI 2007 låg den i M) |
+
+**Så filtrerar vi (förslag, tolkning av kodtabellerna):**
+- Behåll bara `jurform` i {41, 42, 43, 49}.
+- Behåll bara `ftgStat` = 1.
+- Behåll bara `reklamSparrTyp` = 1. Alla andra värden räknas som spärr,
+  också värden vi inte känner igen.
+
+Fysiska personer (10) och dödsbon (91) visas och lagras aldrig.
+
+### Sekundärt (Eriks läsning av SCB:s dokumentation, inte i swagger.json)
+
+- Högst **5 anrop per sekund** och nyckel. swagger.json säger bara att
+  anrop "kan begränsas tillfälligt (HTTP 429)" vid hög belastning.
+- **Användarvillkoren** är inte citerade än. Erik klistrar in dem separat.
+  swagger.json säger bara att användning "kan komma att tillfälligt
+  blockeras eller stängas av vid missbruk eller vid brott mot tjänstens
+  villkor".
+
+### Vad en kundlista kostar
+
+En kundlista för en SNI-kod betyder att hela `/naringsgren/{kod}` gås
+igenom. Filtret på juridisk form går inte att kombinera med SNI, och att
+lista alla aktiebolag via `juridiskform/49` och filtrera på SNI blir
+hundratusentals rader.
+
+| | SNI 69201 | SNI 62100 |
+|---|---|---|
+| Juridiska enheter | 25 791 | 31 495 |
+| Sidor med limit 1 000 (föreslaget) | 26 | 32 |
+| Minsta tid vid 5 anrop/s | 5,2 s | 6,4 s |
+| Data (~434 tecken per rad) | ~11 MB | ~14 MB |
+| Realistisk tid, i tur och ordning (0,7–1,3 s per anrop i provet) | ~20–35 s | ~25–40 s |
+| Sidor med limit 5 000 | 6 | 7 |
+
+Takten är inte flaskhalsen, det är svarsstorleken och att sidorna måste
+hämtas i tur och ordning. En sida med 5 000 rader är ~2,2 MB, långt över
+Bolagsverket-transportens tak på 512 000 tecken. Med limit 1 000 blir sidan
+~430 kB. Därför föreslås limit 1 000 och ett eget tak i `lib/server/scb.ts`,
+se `docs/moduler/registret.md`, "SCB AFR".
+
+### Öppen fråga: /full och omsättningsklass
+
+`/full` (JE och AE) innehåller `tel` och `epost`, alltså kontaktuppgifter
+som ofta pekar på en person. Vi använder den inte.
+
+`omsKl` (omsättningsklass) finns bara i `/full` och i filtret
+`/juridiskaenheter/omsattningsklass/{kod}`, som inte går att kombinera med
+SNI. Omsättningsklassen skulle senare kunna fylla en del av
+`medianRevenueKsek` (som en klass, inte en median), men det kräver ett eget
+beslut om personuppgifter innan `/full` används. Tills dess: **används
+inte.**
+
+### Luckor enligt Datalöftet
+
+- **Bara huvudbranschen.** Ett bolag räknas i en bransch bara om den är
+  dess `rangordning=1`. Siffror och listor ska säga "huvudbransch".
+- **Storleksklass i stället för exakt antal** anställda. Visa intervallet,
+  aldrig ett tal.
+- **Ingen omsättning** i AFR utan `/full`. `medianRevenueKsek` måste komma
+  från iXBRL (Bolagsverket) eller statistikdatabasen (fråga 7), och
+  `growthSharePercent` från iXBRL (ingen historik i AFR).
+- **Län avser säte** (`lanSate`), inte var verksamheten bedrivs. AE har
+  arbetsställenas adresser om det behövs senare.
+- `/count` räknar **alla** juridiska enheter i huvudbranschen, även fysiska
+  personer, dödsbon, utländska och de som inte är verksamma. Ett antal
+  "verksamma aktiebolag" kräver att hela listan gås igenom.
+
 ## 7. Källor
 
 Verifierat (läst den här sessionen, som sammanfattat utdrag):
+- SCB:s allmänna företagsregister API, OpenAPI-specifikation (hämtad och läst i sin helhet 2026-09-30, normativt kontrakt): https://apiafr.scb.se/swagger/v1/swagger.json
 - Bolagsverket, värdefulla datamängder, stycket "Användning av värdefulla data" (sidans datum 2025-11-21, läst och ordagrant citerad av Erik 2026-09-23; ett tidigare besök 2026-09-20 saknade citat): https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder.5294.html
 - Bolagsverket, API för värdefulla datamängder (läst av Erik 2026-09-19, sidans datum 2026-06-30): https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder/apiforvardefulladatamangder.5513.html
 - Förordning (EU) 2023/138: https://eur-lex.europa.eu/legal-content/SV/TXT/?uri=CELEX:32023R0138
