@@ -46,6 +46,13 @@ describe("Legal (skärmen, PR 5)", () => {
     expect(screen.getByText(sv.legalPage.disclaimer)).toBeInTheDocument();
   });
 
+  it("ingen källa visas som verifierad: varje källa är märkt, och sidan säger att inget är juristgranskat", () => {
+    renderLegal({ krav });
+    expect(screen.getAllByText(sv.legalPage.unverifiedSource)).toHaveLength(krav.length);
+    expect(screen.getByText(sv.legalPage.notReviewedNote)).toBeInTheDocument();
+    expect(screen.queryByText(/^verifierad$/i)).not.toBeInTheDocument();
+  });
+
   it("en källa utan datum visas som en lucka, aldrig som en källa", () => {
     renderLegal({ krav: [{ ...krav[0], källa: { namn: "Skatteverket", hämtad: "" } }] });
     expect(screen.getByText(sv.legalPage.sourceMissing)).toBeInTheDocument();

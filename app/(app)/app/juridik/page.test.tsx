@@ -54,6 +54,8 @@ describe("/app/juridik (PR 5)", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Aktiebolag" })).toBeInTheDocument();
     expect(screen.getByText("Bolagsverket — starta aktiebolag")).toBeInTheDocument();
     expect(screen.getByText(sv.legalPage.disclaimer)).toBeInTheDocument();
+    // Även de källor en människa har kontrollerat visas som overifierade.
+    expect(screen.getByText(sv.legalPage.unverifiedSource)).toBeInTheDocument();
     // Resan är en stubbe: inget låst läge hittas på.
     expect(screen.queryByText(sv.lockedState.title)).not.toBeInTheDocument();
   });

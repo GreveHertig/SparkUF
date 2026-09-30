@@ -164,8 +164,12 @@ describe("/demo", () => {
   it("Juridik visar ansvarsbegränsningen", async () => {
     startInApp(19);
     pathname = FONDA_DEMO_PATHS.legal;
-    await renderInApp(<FondaDemoLegalPage />);
+    const { container } = await renderInApp(<FondaDemoLegalPage />);
     expect(screen.getByText(sv.legalPage.disclaimer)).toBeInTheDocument();
+    // Demots källor är lika overifierade som appens (PR 5): en märkning per krav.
+    const rows = container.querySelectorAll(".fdd-rows__item");
+    expect(rows.length).toBeGreaterThan(0);
+    expect(screen.getAllByText(sv.legalPage.unverifiedSource)).toHaveLength(rows.length);
   });
 
   it("Juridik (tunn hämtare, PR 5) är låst före steg 05 och utanför Jonas scenario", async () => {

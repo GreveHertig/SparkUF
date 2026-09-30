@@ -87,9 +87,12 @@ export function Legal({
       ) : (
         <>
           <section className="fdd-block" aria-labelledby="fdd-legal-map">
-            <h2 id="fdd-legal-map" className="fdd-block__title">
-              {copy.title}
-            </h2>
+            <div className="fdd-block__head">
+              <h2 id="fdd-legal-map" className="fdd-block__title">
+                {copy.title}
+              </h2>
+              {krav && krav.length > 0 && <p className="fdd-muted">{copy.notReviewedNote}</p>}
+            </div>
             {krav === null ? (
               <ComingSoon />
             ) : krav.length === 0 ? (
@@ -102,7 +105,13 @@ export function Legal({
                       <p className="fdd-rows__title">{item.rubrik}</p>
                       <p className="fdd-muted">{item.beskrivning}</p>
                       {item.källa?.namn && item.källa.hämtad ? (
-                        <SourceTag source={item.källa} />
+                        // Ingen källa visas som verifierad: ingenting är
+                        // juristgranskat, och ingen adapter skickar en
+                        // verifieringsstatus (docs/moduler/juridisk-koll.md).
+                        <div className="fdd-sourceline">
+                          <SourceTag source={item.källa} />
+                          <span className="fdd-unverified">{copy.unverifiedSource}</span>
+                        </div>
                       ) : (
                         // Saknas underlaget visas luckan, aldrig en påhittad källa.
                         <p className="fdd-muted">{copy.sourceMissing}</p>

@@ -3627,3 +3627,23 @@ a.fdd-segmented__item {
   align-items: center;
   text-decoration: none;
 }
+
+/* Juridik (PR 5): varje källa bär sin märkning "Overifierad" bredvid källan
+   och datumet. Streckad som exempeletiketten, så att den läses som en
+   reservation och inte som en status. */
+.fdd-sourceline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.fdd-unverified {
+  display: inline-flex;
+  padding: 0.125rem var(--space-2);
+  border: 1px dashed var(--slate-300);
+  border-radius: 999px;
+  color: var(--fd-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
