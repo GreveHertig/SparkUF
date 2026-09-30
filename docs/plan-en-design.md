@@ -206,3 +206,20 @@ PR 1–3 i ordning. PR 4–10 är i stort sett oberoende och kan delas upp.
    (`adapters/live/PulseProvider`, `pulse_fetches`).
 4. **Öppen fråga — Oskars `landning-bilder`:** fråga Oskar om han vill ta
    nya bilder av det nya demot eller lägga ner grenen.
+5. **Bolagsformen i `/app/juridik` (PR 5).** Ingen port ger användarens
+   bolagsform, så användaren väljer den med fyra länkar på sidan.
+   - **Var valet sparas i dag:** bara i adressen (`?bolagsform=aktiebolag`).
+     Det sparas inte i databasen, i en cookie eller i webbläsaren. Valet
+     överlever en omladdning av samma adress. Det försvinner däremot när
+     användaren kommer till `/app/juridik` på annat sätt, till exempel via
+     en flik eller en länk utan parametern. Då visas uppmaningen att välja
+     igen.
+   - **Krav:** valet måste överleva en sidladdning, också när sidan öppnas
+     utan parametern. Det är inte uppfyllt än. Valet ska sparas
+     serverside per användare och inte bara i webbläsaren, eftersom `/app`
+     hämtar på servern.
+   - **När en port för bolagsform tillkommer** (troligen Projekt eller
+     Profil) ska väljaren läsa från den och skriva till den i stället.
+     Valet får inte finnas på två ställen, i adressen och i porten, som
+     kan säga olika saker. Adressparametern tas då bort eller blir bara ett
+     sätt att byta värdet i porten.

@@ -157,3 +157,30 @@ update. Användarägd med RLS (läsa, skapa, uppdatera egen), till skillnad frå
 `registry_cache`: raden styr bara grundarens egen sökning, så en förfalskad rad
 skadar ingen annan. Flödet står i `docs/moduler/webbresearch-och-pulsen.md`,
 "Dagscachen".
+
+## 2026-09-30
+
+**Juridikens källor: verifieringsstatus, och varför gränssnittet visar alla
+som overifierade.** Statusen har hittills bara funnits i en kodkommentar i
+`adapters/live/legalSources.ts`. Den hör hemma här och i datan.
+- **Kontrollerade av en människa, i webbläsaren 2026-09-30:** alla källor
+  från Bolagsverket, verksamt.se och Bokföringsnämnden (BFN). Kontrollen är
+  inlagd av Oskar (`Jaeger154`) i commit `262dc95`. Verifieringsloggen i
+  `docs/moduler/juridisk-koll.md` återger resultatet ordagrant men namnger
+  inte vem som gjorde kontrollen.
+- **Enbart maskinellt hämtade,** av Claude Code 2026-09-17, fortfarande
+  startsidor: Skatteverket, IMY, EUR-Lex (GDPR), Konsumentverket och
+  Riksdagen.
+- **Ingenting är granskat av jurist:** varken källorna, vilka ämnen som
+  gäller per bolagsform, avgifter, deadlines eller lagrum.
+- **Därför märker gränssnittet alla åtta som overifierade** ("Overifierad"
+  bredvid varje källa på Juridik, i både `/demo` och `/app`, PR 5). Det står
+  kvar tills en port bär verifieringsstatusen som data. En status som bara
+  finns i en kommentar får inte styra vad användaren ser.
+
+**Öppen uppgift till Juridik-modulens ägare (inte genomförd):** lägg till
+ett valfritt fält `kontrollerad?: string` (ISO-datum) i `Källa`
+(`types/evidence.ts`) och sätt det i `KURERADE_KÄLLOR`
+(`adapters/live/legalSources.ts`) för de källor som är kontrollerade. Först
+då kan `screens/Legal.tsx` visa märkningen bara för de källor som saknar
+fältet. Juristgranskning är en egen status och ska inte läggas i samma fält.

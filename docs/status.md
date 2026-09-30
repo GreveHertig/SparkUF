@@ -157,7 +157,7 @@ Se `docs/sessioner.md` — Session 2 (poängmotor + demomotor) är nästa. Reste
 - **Mönstret i `lib/server/gemini.ts`** (tunn SDK-inpackning, domänlogik i adaptern) är tänkt att återanvändas av `CofounderAgent`s liveadapter när den byggs.
 
 ### Kända problem / medvetna begränsningar
-- Tre av åtta kuraterade källor (Bolagsverket, verksamt.se, BFN) kunde inte bekräftas med en live hämtning i den här sessionen (WebFetch-anrop misslyckades utan svar för just de tre domänerna, oklart varför — troligen blockering, inte trasiga adresser). Adresserna är väletablerade, mångåriga svenska myndighetsadresser, men bör dubbelkollas manuellt innan lansering.
+- **Rättat 2026-09-30:** av de åtta myndigheterna bland de kuraterade källorna är tre kontrollerade av en människa i webbläsaren 2026-09-30 (Bolagsverket, verksamt.se, BFN). Fem är enbart maskinellt hämtade, av Claude Code 2026-09-17 (Skatteverket, IMY, EUR-Lex, Konsumentverket, Riksdagen). Ingenting är granskat av jurist. Se `docs/beslut.md` (2026-09-30) och verifieringsloggen i `docs/moduler/juridisk-koll.md`.
 - UF-företag (Ung Företagsamhet) finns inte som ett eget värde i `Bolagsform` — produkten heter Spark UF men typen har bara `enskild_firma`/`aktiebolag`/`handelsbolag`/`ekonomisk_forening`. Oklart om det är en avsiktlig avgränsning eller en lucka; flaggat, inte löst.
 - `getLegalMap` tar inte emot `locale` (till skillnad från t.ex. `CofounderAgent.sendMessage`), så Gemini svarar bara på svenska i dag — se motiveringen i `docs/arkitektur.md` avsnitt 7 om framtida Gemini-svar bör följa användarens språk.
 
