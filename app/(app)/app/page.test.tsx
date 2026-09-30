@@ -76,9 +76,8 @@ describe("/app Hem (PR 3)", () => {
 
     expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(2);
     expect(screen.getByText(String(snapshot.total))).toBeInTheDocument();
-    // Resans sidor finns inte i /app än: steget visas, men utan länk till en 404.
-    expect(screen.getByText("Om dig")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Om dig/ })).not.toBeInTheDocument();
+    // Resans sidor finns sedan PR 9: stegen länkar till /app/resan/<nummer>.
+    expect(screen.getByRole("link", { name: /Om dig/ })).toHaveAttribute("href", "/app/resan/1");
   });
 
   it("visar Kommer snart bara i poängrutan när kontot saknar bevis", async () => {

@@ -5,10 +5,17 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
-import { journeyStatusToneClasses } from "@/screens/Journey";
-import type { JourneyStepView } from "@/ports/JourneyRepository";
+import type { JourneyStepStatus, JourneyStepView } from "@/ports/JourneyRepository";
 
 const PHASE_ORDER = ["discover", "tryPhase", "launch", "grow"] as const;
+
+// Låg i den gamla `screens/Journey.tsx`, som ersattes i PR 9. Används bara här;
+// komponenten själv är oanvänd och städas i PR 11.
+const journeyStatusToneClasses: Record<JourneyStepStatus, string> = {
+  done: "border-score-green bg-score-green-bg text-score-green",
+  current: "border-accent-600 bg-accent-100 text-accent-700",
+  locked: "border-dashed border-slate-300 bg-slate-50 text-slate-500",
+};
 
 const dotToneClasses = {
   done: "bg-score-green text-white",

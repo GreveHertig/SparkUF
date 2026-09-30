@@ -19,6 +19,11 @@ const PAGES = [
   // aldrig registerdata (se testet nedan).
   { path: "/app/marknad", heading: "Marknad" },
   { path: "/app/marknad?sni=69.201", heading: "Marknad" },
+  // Resan, ett olåst steg och ett låst. Testkontot står på steg 01, så
+  // rubriken är stegets namn; det låsta steget 12 visar låst läge.
+  { path: "/app/resan", heading: /./ },
+  { path: "/app/resan/1", heading: /./ },
+  { path: "/app/resan/12", heading: /./ },
 ] as const;
 
 async function logIn(page: Page) {
@@ -72,5 +77,24 @@ test.describe("/app/marknad och licensgrinden", () => {
     await expect(main).toContainText(/Låses upp efter steg 02|Registret är inte öppet än/);
     await expect(main.locator(".fdd-figures, .fdd-bars")).toHaveCount(0);
     await expect(main).not.toContainText(/Baserat på|Mkr|Bolag i registret/);
+  });
+});
+
+test.describe("/app/resan", () => {
+  test.beforeEach(async ({ page }) => {
+    await logIn(page);
+  });
+
+  test("stegen i Hem och Resan länkar till sidor som finns", async ({ page }) => {
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await expect(page.locator("a.fdd-stepper__link")).toHaveCount(12);
+    await page.locator("a.fdd-stepper__link").first().click();
+    await page.waitForURL("**/app/resan/1");
+    await expect(page.getByRole("link", { name: /Tillbaka till Resan/ })).toBeVisible();
+  });
+
+  test("ett ogiltigt steg ger 404", async ({ page }) => {
+    const response = await page.goto("/app/resan/13");
+    expect(response?.status()).toBe(404);
   });
 });

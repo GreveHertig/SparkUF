@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
@@ -6,6 +6,8 @@ import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import { saraEngine } from "@/adapters/demo/sara";
+import { jonasBeats } from "@/adapters/demo/jonas";
+import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import FondaDemoLayout from "./layout";
 import FondaDemoAppLayout from "./(app)/layout";
 import FondaDemoHomePage from "./(app)/page";
@@ -15,6 +17,8 @@ import FondaDemoLegalPage from "./(app)/juridik/page";
 import FondaDemoMemoryPage from "./(app)/minnet/page";
 import FondaDemoValidationPage from "./(app)/validering/page";
 import FondaDemoPulsePage from "./(app)/pulsen/page";
+import FondaDemoJourneyPage from "./(app)/resan/page";
+import FondaDemoJourneyStepPage from "./(app)/resan/[steg]/page";
 import FondaDemoStartPage from "./start/page";
 import { FONDA_DEMO_KEY, REAL_DEMO_KEY, enterFondaDemo, leaveFondaDemo } from "./_lib/fondaDemoIsolation";
 import { FONDA_DEMO_PATHS } from "./_lib/paths";
@@ -192,6 +196,68 @@ describe("/demo", () => {
     expect(screen.getByText(sv.memoryPage.brainHint)).toBeInTheDocument();
     expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
   });
+  it("Resan (tunn hämtare, PR 9) visar demots steg med länkar under /demo/resan", async () => {
+    startInApp(9);
+    pathname = FONDA_DEMO_PATHS.journey;
+    await renderInApp(<FondaDemoJourneyPage />);
+    const steps = await demoJourneyRepository.getSteps("sv");
+    const current = steps.find((step) => step.status === "current")!;
+    expect(screen.getByRole("heading", { level: 1, name: current.title })).toBeInTheDocument();
+    const stepper = screen.getByRole("list", { name: sv.site.journey.stepsListLabel });
+    expect(stepper.querySelectorAll("a.fdd-stepper__link")).toHaveLength(12);
+    expect(stepper.querySelector("a.fdd-stepper__link")).toHaveAttribute("href", `${FONDA_DEMO_PATHS.journey}/1`);
+    expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+  });
+
+  it("steget (tunn hämtare, PR 9) visar domen i steg 06 och låst läge för ett senare steg", async () => {
+    startInApp(saraEngine.beats.length - 1);
+    pathname = `${FONDA_DEMO_PATHS.journey}/6`;
+    const detail = await demoJourneyRepository.getStepDetail(6, "sv");
+    await renderInApp(
+      <Suspense>
+        <FondaDemoJourneyStepPage params={Promise.resolve({ steg: "6" })} />
+      </Suspense>,
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: detail!.title })).toBeInTheDocument();
+    expect(screen.getByText(detail!.verdict!.headline)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: new RegExp(sv.journeyPage.backToJourney) })).toHaveAttribute(
+      "href",
+      FONDA_DEMO_PATHS.journey,
+    );
+    expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+    cleanup();
+
+    useDemoStore.getState().goTo(0);
+    await renderInApp(
+      <Suspense>
+        <FondaDemoJourneyStepPage params={Promise.resolve({ steg: "5" })} />
+      </Suspense>,
+    );
+    expect(await screen.findByText(`${sv.homePage.unlocksAfterStepBefore} 04`)).toBeInTheDocument();
+  });
+
+  it("inget olåst steg i demot saknar text, i något moment för Sara eller Jonas (PR 9: annars Kommer snart)", async () => {
+    startInApp(0);
+    const scenarios = [
+      { entry: "noIdea" as const, beats: saraEngine.beats.length },
+      { entry: "hasIdea" as const, beats: jonasBeats.length },
+    ];
+    const empty: string[] = [];
+    for (const { entry, beats } of scenarios) {
+      useDemoStore.getState().setEntry(entry);
+      for (let beat = 0; beat < beats; beat++) {
+        useDemoStore.getState().goTo(beat);
+        for (let stepNumber = 1; stepNumber <= 12; stepNumber++) {
+          for (const locale of ["sv", "en"] as const) {
+            const detail = await demoJourneyRepository.getStepDetail(stepNumber, locale);
+            if (detail && detail.status !== "locked" && !detail.why) empty.push(`${entry} beat ${beat} steg ${stepNumber} ${locale}`);
+          }
+        }
+      }
+    }
+    expect(empty).toEqual([]);
+  });
+
   describe("Datalöftet och buggrapporten (docs/buggar-2026-09.md)", () => {
     const lastBeat = saraEngine.beats.length - 1;
     const label = sv.site.demo.exampleLabel;

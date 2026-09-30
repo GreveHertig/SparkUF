@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { ConceptBadge } from "@/components/ui/ConceptBadge";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
-import type { JourneyStepView } from "@/ports/JourneyRepository";
 import { mentionsConcept } from "@/core/concepts";
 
 // Flyttade till screens/blocks/ i PR 5; exporteras vidare åt demots sidor
@@ -12,46 +10,6 @@ import { mentionsConcept } from "@/core/concepts";
 export { Locked, PageHead, Pill, type PillTone } from "@/screens/blocks/PageBlocks";
 // Flyttade till screens/blocks/ i PR 7, av samma skäl.
 export { ExampleLabel, Figures, SimulationBlock, VerdictBlock, type Figure } from "@/screens/blocks/DataBlocks";
-
-/** Resan som stegrad: klara steg fyllda, det aktuella markerat, låsta dämpade. */
-export function JourneyStepper({
-  steps,
-  stepHref,
-}: {
-  steps: JourneyStepView[];
-  stepHref?: (stepNumber: number) => string;
-}) {
-  const { t } = useI18n();
-
-  return (
-    <ol className="fd-stepper fdd-stepper" aria-label={t.site.journey.stepsListLabel}>
-      {steps.map((step) => {
-        const content = (
-          <>
-            <span className="fd-stepper__num">{String(step.stepNumber).padStart(2, "0")}</span>
-            <span className="fd-stepper__title">{step.title}</span>
-            <span className="fd-sr-only">{t.journeyPage.status[step.status]}</span>
-          </>
-        );
-        return (
-          <li
-            key={step.stepNumber}
-            className={cn("fd-stepper__item", `fdd-step--${step.status}`)}
-            aria-current={step.status === "current" ? "step" : undefined}
-          >
-            {stepHref ? (
-              <Link href={stepHref(step.stepNumber)} className="fdd-stepper__link">
-                {content}
-              </Link>
-            ) : (
-              content
-            )}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
 
 /** En rad i samtalet med Medgrundaren. Koncept får sin etikett. */
 export function ChatLine({ role, text }: { role: "founder" | "cofounder"; text: string }) {

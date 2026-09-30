@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { ComingSoon } from "@/components/ui/ComingSoon";
 import { SourceTag } from "@/components/ui/SourceTag";
-import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
 import { formatDate } from "@/i18n/format";
 import { fill } from "@/i18n/fill";
 import type { DataKind, NextStep, PulseSignal, ScoreSnapshot, SinceLastTime } from "@/core/domain";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
+import { JourneyStepper } from "./blocks/JourneyStepper";
 import { ScoreDelta, ScoreFigure } from "./blocks/ScoreFigure";
 
 /**
@@ -34,53 +34,8 @@ export type AppHomeData = {
   journeySteps: JourneyStepView[];
 };
 
-// ScoreFigure/ScoreDelta delas med Poäng-skärmen (screens/blocks/ScoreFigure.tsx,
-// PR 4). JourneyStepper finns fortfarande i två exemplar (här och i
-// app/demo/_components/DemoBlocks.tsx) tills Resan konverteras (PR 9).
-
-function StepContent({ step }: { step: JourneyStepView }) {
-  const { t } = useI18n();
-  return (
-    <>
-      <span className="fd-stepper__num">{String(step.stepNumber).padStart(2, "0")}</span>
-      <span className="fd-stepper__title">{step.title}</span>
-      <span className="fd-sr-only">{t.journeyPage.status[step.status]}</span>
-    </>
-  );
-}
-
-/** Resan som en kompakt stegrad: klara steg fyllda, det aktuella markerat. */
-function JourneyStepper({
-  steps,
-  stepHref,
-}: {
-  steps: JourneyStepView[];
-  /** `null`: stegen visas utan länk (sidorna finns inte än). */
-  stepHref: ((stepNumber: number) => string) | null;
-}) {
-  const { t } = useI18n();
-  return (
-    <ol className="fd-stepper fdd-stepper" aria-label={t.site.journey.stepsListLabel}>
-      {steps.map((step) => (
-        <li
-          key={step.stepNumber}
-          className={cn("fd-stepper__item", `fdd-step--${step.status}`)}
-          aria-current={step.status === "current" ? "step" : undefined}
-        >
-          {stepHref ? (
-            <Link href={stepHref(step.stepNumber)} className="fdd-stepper__link">
-              <StepContent step={step} />
-            </Link>
-          ) : (
-            <span className="fdd-stepper__link">
-              <StepContent step={step} />
-            </span>
-          )}
-        </li>
-      ))}
-    </ol>
-  );
-}
+// ScoreFigure/ScoreDelta delas med Poäng-skärmen (PR 4), JourneyStepper med
+// Resan (PR 9) — båda i screens/blocks/.
 
 /**
  * Hem: handlingskortet och poängkortet sida vid sida, Resan som en rad
@@ -104,7 +59,7 @@ export function AppHome({
    * Resans bas-väg (t.ex. `/demo/resan`); stegets länk blir `<bas>/<nummer>`.
    * En sträng, inte en funktion: `/app`-rutten är en Server Component, och
    * Next vägrar skicka funktioner till en klientkomponent. `null` när Resans
-   * sidor inte finns (i `/app` tills PR 9): stegen visas utan länk.
+   * sidor inte finns: stegen visas utan länk.
    */
   journeyBasePath: string | null;
   scoreHref: string;
@@ -193,7 +148,7 @@ export function AppHome({
           {copy.demo.journeyTitle}
         </h2>
         <div className="fd-journey">
-          <JourneyStepper steps={data.journeySteps} stepHref={journeyBasePath === null ? null : (stepNumber) => `${journeyBasePath}/${stepNumber}`} />
+          <JourneyStepper steps={data.journeySteps} basePath={journeyBasePath} />
         </div>
       </section>
 
