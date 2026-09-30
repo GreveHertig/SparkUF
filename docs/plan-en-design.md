@@ -87,6 +87,28 @@ Skriven 2026-09-26 efter PR #25 (ny startsida och nytt demo). Ingen kod är
   läge ("Registret är inte öppet än") i stället för bara `ComingSoon`.
   Inga registersiffror visas för den som inte står på allowlisten. Ett
   test per rutt bevisar att stängd grind aldrig visar data.
+- **Platshållare per sektion** (infört av PR 3). Ett kort/en sektion visar
+  `ComingSoon` bara när just DEN datan saknas — inte hela sidan bara för att
+  ett enda anrop misslyckas. Är två fält beroende av samma anrop (t.ex. ett
+  `nextStep`+`sinceLastTime`-par ur samma `getHomeSummary`), gate:a dem
+  tillsammans som ett nullbart objekt, inte var för sig. Gäller alla
+  återstående PR:er (4–11). Motivering: datalöftet — luckan ska synas, men
+  fungerande data ska aldrig gömmas bakom en annan moduls stubbe.
+
+## Arbetsordning
+
+PR 4–11 pushas direkt till grenen `design/en-design` — ingen egen PR per
+skärm. En PR öppnas från `design/en-design` mot `prototyp` ungefär en gång
+i veckan (eller när en naturlig grupp skärmar är klar), inte per skärm.
+`design/en-design` är skapad ur `design/pr3-hem` och har redan PR 2 och
+PR 3 i sig; den tar löpande in `prototyp` när nytt landar där (samma
+`.gitattributes`-fix för `docs/status.md` gäller — se filen).
+
+Under migrationen (PR 4–11) rör bara EN person `screens/` och
+`design/site.css` åt gången, för att undvika samtidiga ändringar i samma
+delade filer. Alla andra fortsätter jobba i sina egna moduler
+(`adapters/live/*`, `ports/*`, liveadaptrar) som vanligt, oberoende av
+migrationen — de rör varken `screens/` eller `design/site.css`.
 
 ## Pågående arbete, så att vi inte krockar
 
@@ -120,12 +142,20 @@ likadant ut före och efter, kontrollerat med skärmbilder.
    och `/app`. Demoraden och rundturen stannar i demots layout.
 3. **Hem** (`AppHome`). `/app` finns redan, så här syns skillnaden först.
 4. **Poäng** (Evidens är byggd): en enkel första vy med riktig data.
+   **Tar samtidigt bort dubbletten:** `ScoreFigure`/`ScoreDelta` finns just
+   nu i två exemplar (`app/demo/_components/DemoBlocks.tsx` och den lokala
+   kopian i `screens/AppHome.tsx`, PR 3). Poäng-sidan ska flytta in
+   DemoBlocks-versionen (eller en gemensam, icke-demo-bunden variant) och
+   ta bort den andra kopian — dubbletten får inte överleva PR 4.
 5. **Minnet** och **Juridik** (byggda). Juridik i samråd med Oskar.
 6. **Pulsen**: Bruno, på den nya skärmen (beslut 3).
 7. **Validering** (Utskick byggt, låst läge för Registret).
 8. **Marknad** (Registret bakom licensgrinden, tester för stängd grind).
 9. **Resan och steget** (liveadaptern stubbe: "Kommer snart" tills den
-   är klar).
+   är klar). **Tar samtidigt bort dubbletten:** samma sak för
+   `JourneyStepper` (`app/demo/_components/DemoBlocks.tsx` vs.
+   `screens/AppHome.tsx`s lokala kopia, PR 3) — Resan-sidan äger den enda
+   kvarvarande versionen efter den här PR:n.
 10. **Medgrundaren**, **Bygg** och **Affärsplan** (stubbar i appen;
     Medgrundaren kräver att demots manus flyttas ut ur sidan).
 11. **Onboarding** (`/start` och `/demo/start`) och städning: ta bort
