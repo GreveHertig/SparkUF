@@ -208,6 +208,42 @@ describe("/demo", () => {
       for (const cell of employeeCells) expect(cell).toMatch(/^(1–4|5–9|10–19|20–49|50\+)$/);
     });
 
+    it("Validering följer demots moment: låst, simulering från steg 04, domen från steg 06, aldrig Kommer snart (PR 7)", async () => {
+      const v = sv.validationPage;
+      const firstBeatOf = (step: number) => saraEngine.beats.findIndex((beat) => beat.stepNumber === step);
+      pathname = FONDA_DEMO_PATHS.validation;
+
+      startInApp(0);
+      await renderInApp(<FondaDemoValidationPage />);
+      expect(screen.getByText(`${sv.homePage.unlocksAfterStepBefore} 03`)).toBeInTheDocument();
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      cleanup();
+
+      startInApp(firstBeatOf(4));
+      await renderInApp(<FondaDemoValidationPage />);
+      expect(screen.getByRole("table")).toBeInTheDocument();
+      expect(screen.getByText(v.simulationTitle)).toBeInTheDocument();
+      expect(screen.queryByText(v.verdictTitle)).not.toBeInTheDocument();
+      expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+      cleanup();
+
+      startInApp(lastBeat);
+      await renderInApp(<FondaDemoValidationPage />);
+      expect(screen.getByText(v.verdictTitle)).toBeInTheDocument();
+      expect(screen.getByText(v.openRateLabel)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(`^${v.confidencePrefix} \\d+ av \\d+`))).toBeInTheDocument();
+      expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+    });
+
+    it("Validering för Jonas säger att den inte finns i scenariot (PR 7)", async () => {
+      startInApp(0);
+      useDemoStore.setState({ entry: "hasIdea" });
+      pathname = FONDA_DEMO_PATHS.validation;
+      await renderInApp(<FondaDemoValidationPage />);
+      expect(screen.getByText(sv.homePage.notInThisScenario)).toBeInTheDocument();
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    });
+
     it("märker registersiffrorna och konkurrenterna på Marknad", async () => {
       startInApp(lastBeat);
       pathname = FONDA_DEMO_PATHS.market;

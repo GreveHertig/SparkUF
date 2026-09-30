@@ -365,6 +365,8 @@ export type Dictionary = {
     verdictTitle: string;
     /** Simulering av betalningstolerans per byråstorlek (uppdrag 2.2, steg 04). */
     simulationTitle: string;
+    /** Rubriken i /app, utan demots byråer. */
+    simulationTitleLive: string;
   };
   pulsePage: {
     title: string;

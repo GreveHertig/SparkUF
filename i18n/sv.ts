@@ -328,6 +328,7 @@ export const sv = {
     priceTestedLabel: "Pris testat",
     verdictTitle: "Domen",
     simulationTitle: "Simulering: betalningstolerans per byråstorlek",
+    simulationTitleLive: "Simulering: betalningstolerans",
   },
   pulsePage: {
     title: "Pulsen",

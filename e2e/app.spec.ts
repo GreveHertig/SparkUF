@@ -13,6 +13,7 @@ const PAGES = [
   { path: "/app/minnet", heading: /./ },
   { path: "/app/juridik", heading: "Juridik" },
   { path: "/app/juridik?bolagsform=enskild_firma", heading: "Enskild firma" },
+  { path: "/app/validering", heading: "Valideringen" },
 ] as const;
 
 async function logIn(page: Page) {

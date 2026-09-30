@@ -1,263 +1,273 @@
 "use client";
 
-import { Card } from "@/components/ui/Card";
-import { EditorialHeading } from "@/components/ui/EditorialHeading";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { LockedState } from "@/components/ui/LockedState";
+import { ComingSoon } from "@/components/ui/ComingSoon";
 import { SourceTag } from "@/components/ui/SourceTag";
-import { KpiRow } from "@/components/spark/KpiRow";
-import { KpiTile } from "@/components/spark/KpiTile";
-import { SimulationCard } from "@/components/spark/SimulationCard";
-import { VerdictCard } from "@/components/spark/VerdictCard";
-import { cn } from "@/design/cn";
-import { useI18n, type Locale } from "@/i18n/context";
+import { useI18n } from "@/i18n/context";
 import { formatCount, formatDate } from "@/i18n/format";
-import type { Källa } from "@/core/domain";
-import type { CampaignRow, OutreachStatus } from "@/ports/OutreachProvider";
-import type { JourneyStepVerdict } from "@/ports/JourneyRepository";
+import type { DataKind, Källa } from "@/core/domain";
+import { sizeClassFor } from "@/core/sizeClass";
+import { outreachStats } from "@/core/validation";
+import type { CampaignRow, OutreachStatus, ResponseCard, ValidationAssumption } from "@/ports/OutreachProvider";
 import type { Simulation } from "@/ports/SimulationProvider";
-import type { ResponseCard, ValidationAssumption } from "@/ports/OutreachProvider";
+import { ExampleLabel, Figures, SimulationBlock, VerdictBlock, type Figure } from "./blocks/DataBlocks";
+import { Locked, PageHead, Pill, type PillTone } from "./blocks/PageBlocks";
 
+/** Domen som Valideringen visar den: poängen vid domen, utslaget och motiveringen. */
+export type ValidationVerdict = {
+  score: number;
+  headline: string;
+  reasoning: string;
+};
+
+/**
+ * Datan skärmen behöver, redan hämtad av den monterande routen. Platshållare
+ * per sektion (docs/plan-en-design.md): `null` betyder att just den datan
+ * saknas (stubbe eller platshållarfel) och ger "Kommer snart" i den
+ * sektionen. En tom lista och `"notReached"` betyder att steget inte är nått
+ * än; sektionen visas då inte, som i demot.
+ */
 export type ValidationData = {
-  /** Hela kontaktlistan (avsnitt 6, tidigare Kunder) — inget tappas i
-   * hopslagningen, se docs/status.md. */
-  rows: CampaignRow[];
-  /** `CampaignRow` bär ingen egen källa (avsnitt 14.3) — samma mönster som
-   * `MarketData.outreachSource` (Marknad-sidan), Datalöftet kräver ändå en
-   * källa på kontaktade/svar/svarsfrekvens. */
+  /** Hela kontaktlistan. `null` ger "Kommer snart" i nyckeltalen och i listan. */
+  rows: CampaignRow[] | null;
+  /** `CampaignRow` bär ingen egen källa; källan för kontaktade, svar och svarsfrekvens. */
   outreachSource: Källa | null;
-  /** Utskicksperioden, för del 1:s "antal kontaktade med datumintervall" —
-   * `null` innan kontaktlistan är byggd. */
-  contactedDateRange: { startIso: string; endIso: string } | null;
-  /** Öppningsfrekvensen, del 1:s fjärde nyckeltal (jämförelsetal) —
-   * `null`/`null` tills utskicket är igång. Se docs/status.md för varför
-   * det här ersätter ett branschsnitt som inte finns som riktig data. */
+  /** Utskicksperioden, visas under "Kontaktade". */
+  dateRange: { startIso: string; endIso: string } | null;
+  /** Öppningsfrekvensen visas bara när både talet och källan finns. */
   openRate: number | null;
   openRateSource: Källa | null;
-  /** "Antagandena som prövades" (del 2) — [] innan steg 06 är nått. */
-  assumptions: ValidationAssumption[];
-  /** Svaren från namngivna personer (del 3) — [] innan första svaret kommit in. */
-  responses: ResponseCard[];
-  /** Domen (del 4) — `null` innan steg 06 är nått. */
-  verdict: JourneyStepVerdict | null;
-  /** Totalpoängen vid domen (`JourneyStepDetail.scoreDelta.total`) — läst,
-   * aldrig räknad här. `VerdictCard` behöver den för nivåfärgen. */
-  verdictScoreTotal: number | null;
-  /** Betalningstoleranssimuleringen (avsnitt 2.2, steg 04) — null innan steget är nått. */
-  simulation: Simulation | null;
+  assumptions: ValidationAssumption[] | null;
+  responses: ResponseCard[] | null;
+  verdict: ValidationVerdict | null | "notReached";
+  simulation: Simulation | null | "notReached";
 };
 
-const statusToneClasses: Record<OutreachStatus, string> = {
-  draft: "bg-slate-100 text-slate-600",
-  sent: "bg-slate-100 text-slate-600",
-  opened: "bg-data-register-bg text-data-register",
-  responded: "bg-data-customer-bg text-data-customer",
+/** Låst läge för hela sidan. Demot räknar ut det ur sitt moment, /app ur Resans steg. */
+export type ValidationLock = { unlocksAfterStep: number } | "notInScenario" | null;
+
+const statusTone: Record<OutreachStatus, PillTone> = {
+  draft: "neutral",
+  sent: "neutral",
+  opened: "register",
+  responded: "customer",
 };
 
-function computeOutreachStats(rows: CampaignRow[]) {
-  const contacted = rows.filter((row) => row.status !== "draft").length;
-  const responded = rows.filter((row) => row.status === "responded").length;
-  return { contacted, responded };
-}
-
-function dateRangeLabel(range: { startIso: string; endIso: string }, locale: Locale): string {
-  return `${formatDate(range.startIso, locale)} – ${formatDate(range.endIso, locale)}`;
-}
-
-/** Valideringen (uppgift 3): Kunder och valideringen hopslagna — allt som
- * prövats mot verkliga kunder, samlat på en sida i den ordning uppdraget
- * angav (nyckeltal → antaganden → svar → domen), plus den fullständiga
- * kontaktlistan bevarad (inget tappas). */
-export function Validation({ data, notInScenario }: { data: ValidationData; notInScenario?: boolean }) {
-  const { locale, t } = useI18n();
+/**
+ * Validering: nyckeltalen, antagandena som prövades, svaren från namngivna
+ * företag, hela kontaktlistan, domen och simuleringen. Markup flyttad rakt av
+ * från demots `app/demo/(app)/validering/page.tsx` (PR 7,
+ * docs/plan-en-design.md). Antal anställda visas som storleksklass, aldrig
+ * som exakt tal (docs/buggar-2026-09.md punkt 13).
+ */
+export function Validation({
+  data,
+  dataKind,
+  locked,
+}: {
+  data: ValidationData;
+  dataKind: DataKind;
+  locked: ValidationLock;
+}) {
+  const { t, locale } = useI18n();
   const v = t.validationPage;
-  const { contacted, responded } = computeOutreachStats(data.rows);
-  const responseRate = contacted > 0 ? Math.round((responded / contacted) * 100) : null;
+
+  if (locked) {
+    return (
+      <div className="fdd-page">
+        <PageHead title={v.title} lede={v.subtitle} />
+        <Locked
+          hint={
+            locked === "notInScenario"
+              ? t.homePage.notInThisScenario
+              : `${t.homePage.unlocksAfterStepBefore} ${String(locked.unlocksAfterStep).padStart(2, "0")}`
+          }
+        />
+      </div>
+    );
+  }
+
+  const stats = data.rows ? outreachStats(data.rows) : null;
+  const source = data.outreachSource ?? undefined;
+
+  const figures: Figure[] = [];
+  if (stats) {
+    figures.push(
+      {
+        label: v.contactedLabel,
+        value: stats.contacted,
+        description: data.dateRange
+          ? `${formatDate(data.dateRange.startIso, locale)} - ${formatDate(data.dateRange.endIso, locale)}`
+          : undefined,
+        source,
+        dataType: "customer",
+      },
+      { label: v.respondedLabel, value: stats.responded, source, dataType: "customer" },
+    );
+    if (stats.responseRate !== null) {
+      figures.push({ label: v.responseRateLabel, value: stats.responseRate, unit: "%", source, dataType: "customer" });
+    }
+    if (data.openRate !== null && data.openRateSource) {
+      figures.push({
+        label: v.openRateLabel,
+        value: data.openRate,
+        unit: "%",
+        source: data.openRateSource,
+        dataType: "customer",
+      });
+    }
+  }
 
   return (
-    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
-      <div>
-        <EditorialHeading as="h1">{v.title}</EditorialHeading>
-        <p className="mt-2 text-sm text-slate-600">{v.subtitle}</p>
-      </div>
+    <div className="fdd-page">
+      <PageHead title={v.title} lede={v.subtitle} />
 
-      {data.rows.length === 0 ? (
-        <LockedState
-          unlockHint={notInScenario ? t.homePage.notInThisScenario : `${t.homePage.unlocksAfterStepBefore} 03`}
-        />
-      ) : (
-        <>
-          <section data-tour-id="validation-kpi" className="flex flex-col gap-3">
-            <Eyebrow>{v.kpiTitle}</Eyebrow>
-            <KpiRow>
-              <KpiTile
-                label={v.contactedLabel}
-                value={contacted}
-                description={data.contactedDateRange ? dateRangeLabel(data.contactedDateRange, locale) : undefined}
-                source={data.outreachSource ?? undefined}
-                dataType="customer"
-              />
-              <KpiTile
-                label={v.respondedLabel}
-                value={responded}
-                source={data.outreachSource ?? undefined}
-                dataType="customer"
-              />
-              {responseRate !== null && (
-                <KpiTile
-                  label={v.responseRateLabel}
-                  value={responseRate}
-                  unit="%"
-                  source={data.outreachSource ?? undefined}
-                  dataType="customer"
-                />
-              )}
-              {data.openRate !== null && data.openRateSource && (
-                <KpiTile
-                  label={v.openRateLabel}
-                  value={data.openRate}
-                  unit="%"
-                  source={data.openRateSource}
-                  dataType="customer"
-                />
-              )}
-            </KpiRow>
-          </section>
+      <section className="fdd-block" aria-labelledby="fdd-val-kpi">
+        <h2 id="fdd-val-kpi" className="fdd-block__title">
+          {v.kpiTitle}
+        </h2>
+        {stats ? <Figures tourId="validation-kpi" items={figures} /> : <ComingSoon />}
+      </section>
 
-          {data.assumptions.length > 0 && (
-            <section data-tour-id="validation-assumptions">
-              {/* Artefaktens .assum: rader med en avdelare, inte egna
-               * kortytor ovanpå Card-omslaget (samma dubbla-kantlinje-fix
-               * som Hems SuggestionList/PulseCard). */}
-              <Card title={v.assumptionsTitle}>
-                <div className="flex flex-col">
-                  {data.assumptions.map((assumption) => (
-                    <div
-                      key={assumption.id}
-                      className="flex flex-col gap-1 border-b border-slate-100 py-3 first:pt-0 last:border-b-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{assumption.text}</p>
-                        <p className="mt-1 text-sm text-slate-600">{assumption.basis}</p>
-                        <div className="mt-2">
-                          <SourceTag source={assumption.source} dataType="customer" />
-                        </div>
-                      </div>
-                      <span
-                        className={cn(
-                          "shrink-0 self-start rounded-pill px-2.5 py-1 text-xs font-semibold uppercase",
-                          assumption.verdict === "confirmed"
-                            ? "bg-score-green-bg text-score-green"
-                            : "bg-score-orange-bg text-score-orange",
-                        )}
-                        style={{ letterSpacing: "var(--tracking-label)" }}
-                      >
-                        {v.assumptionVerdict[assumption.verdict]}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </section>
+      {data.verdict !== "notReached" && (
+        <section className="fdd-block" aria-labelledby="fdd-val-verdict" data-tour-id="validation-verdict">
+          <h2 id="fdd-val-verdict" className="fdd-block__title">
+            {v.verdictTitle}
+          </h2>
+          {data.verdict ? (
+            <>
+              <VerdictBlock
+                score={data.verdict.score}
+                headline={data.verdict.headline}
+                reasoning={data.verdict.reasoning}
+              />
+              {stats && stats.responseRate !== null && (
+                <p className="fdd-muted">
+                  {v.confidencePrefix} {formatCount(stats.responded, locale)} {t.marketPage.ofLabel}{" "}
+                  {formatCount(stats.contacted, locale)} {v.confidenceContactedUnit} ({stats.responseRate} %{" "}
+                  {v.confidenceRateSuffix}).
+                </p>
+              )}
+            </>
+          ) : (
+            <ComingSoon />
           )}
+        </section>
+      )}
 
-          {data.responses.length > 0 && (
-            <section data-tour-id="validation-responses" className="flex flex-col gap-2.5">
-              <Eyebrow>{v.responsesTitle}</Eyebrow>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {(data.assumptions === null || data.assumptions.length > 0) && (
+        <section className="fdd-block" aria-labelledby="fdd-val-assumptions" data-tour-id="validation-assumptions">
+          <h2 id="fdd-val-assumptions" className="fdd-block__title">
+            {v.assumptionsTitle}
+          </h2>
+          {data.assumptions ? (
+            <ul className="fdd-rows">
+              {data.assumptions.map((assumption) => (
+                <li key={assumption.id} className="fdd-rows__item">
+                  <div className="fdd-rows__main">
+                    <p className="fdd-rows__title">{assumption.text}</p>
+                    <p className="fdd-muted">{assumption.basis}</p>
+                    <SourceTag source={assumption.source} dataType="customer" />
+                  </div>
+                  <Pill tone={assumption.verdict === "confirmed" ? "green" : "orange"}>
+                    {v.assumptionVerdict[assumption.verdict]}
+                  </Pill>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ComingSoon />
+          )}
+        </section>
+      )}
+
+      {(data.responses === null || data.responses.length > 0) && (
+        <section className="fdd-block" aria-labelledby="fdd-val-responses">
+          <h2 id="fdd-val-responses" className="fdd-block__title">
+            {v.responsesTitle}
+          </h2>
+          {data.responses ? (
+            <>
+              <ExampleLabel dataKind={dataKind} />
+              <ul className="fdd-quotes" data-tour-id="validation-responses">
                 {data.responses.map((response) => (
-                  <div key={response.companyName} className="flex flex-col gap-2 rounded-md border border-slate-200 bg-white p-4 shadow-lg">
-                    <div className="flex items-start justify-between gap-2">
+                  <li key={response.companyName} className="fd-panel fdd-quote">
+                    <div className="fdd-quote__head">
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">{response.companyName}</p>
-                        <p className="font-numeric text-xs text-slate-500">
-                          {response.county} · {response.employees} · {formatDate(response.dateIso, locale)}
+                        <p className="fdd-rows__title">{response.companyName}</p>
+                        <p className="fdd-muted">
+                          {response.county}, {sizeClassFor(response.employees)?.range ?? "–"}{" "}
+                          {t.site.registry.employeesUnit}, {formatDate(response.dateIso, locale)}
                         </p>
                       </div>
-                      <span
-                        className={cn(
-                          "shrink-0 rounded-pill px-2 py-0.5 text-xs font-semibold uppercase",
-                          response.verdict === "confirms"
-                            ? "bg-score-green-bg text-score-green"
-                            : "bg-score-orange-bg text-score-orange",
-                        )}
-                        style={{ letterSpacing: "var(--tracking-label)" }}
-                      >
+                      <Pill tone={response.verdict === "confirms" ? "green" : "orange"}>
                         {v.responseVerdict[response.verdict]}
-                      </span>
+                      </Pill>
                     </div>
-                    <p className="text-sm italic leading-snug text-slate-700">&quot;{response.quote}&quot;</p>
-                    <p className="font-numeric text-xs text-slate-500">
+                    <blockquote className="fdd-quote__text">”{response.quote}”</blockquote>
+                    <p className="fdd-muted">
                       {v.priceTestedLabel}: {formatCount(response.priceTestedKr, locale)} kr
                     </p>
-                  </div>
+                  </li>
                 ))}
-              </div>
-            </section>
+              </ul>
+            </>
+          ) : (
+            <ComingSoon />
           )}
+        </section>
+      )}
 
-          <section data-tour-id="validation-table">
-            <Card title={v.tableTitle}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+      <section className="fdd-block" aria-labelledby="fdd-val-table" data-tour-id="validation-table">
+        <h2 id="fdd-val-table" className="fdd-block__title">
+          {v.tableTitle}
+        </h2>
+        {data.rows ? (
+          <>
+            <ExampleLabel dataKind={dataKind} />
+            <div className="fdd-table">
+              <table>
                 <thead>
-                  <tr className="border-b border-slate-200 text-xs font-semibold uppercase text-slate-500">
-                    <th className="px-3 py-2">{v.tableCompany}</th>
-                    <th className="px-3 py-2">{v.tableSni}</th>
-                    <th className="px-3 py-2 text-right">{v.tableEmployees}</th>
-                    <th className="px-3 py-2 text-right">{v.tableRevenue}</th>
-                    <th className="px-3 py-2">{v.tableStatus}</th>
+                  <tr>
+                    <th scope="col">{v.tableCompany}</th>
+                    <th scope="col">{v.tableSni}</th>
+                    <th scope="col" className="fdd-num">
+                      {v.tableEmployees}
+                    </th>
+                    <th scope="col" className="fdd-num">
+                      {v.tableRevenue}
+                    </th>
+                    <th scope="col">{v.tableStatus}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.rows.map((row) => (
-                    <tr key={row.companyName} className="border-b border-slate-100 last:border-0 align-top">
-                      <td className="px-3 py-2 font-medium text-slate-900">{row.companyName}</td>
-                      <td className="font-numeric px-3 py-2 text-slate-600">{row.sniCode}</td>
-                      <td className="font-numeric px-3 py-2 text-right text-slate-600">{row.employees}</td>
-                      <td className="font-numeric px-3 py-2 text-right text-slate-600">
-                        {formatCount(row.revenueKsek, locale)} tkr
-                      </td>
-                      <td className="px-3 py-2">
-                        <span
-                          className={cn(
-                            "rounded-pill px-2 py-0.5 text-xs font-semibold uppercase",
-                            statusToneClasses[row.status],
-                          )}
-                          style={{ letterSpacing: "var(--tracking-label)" }}
-                        >
-                          {v.status[row.status]}
-                        </span>
+                    <tr key={row.companyName}>
+                      <td>{row.companyName}</td>
+                      <td className="fdd-muted">{row.sniCode}</td>
+                      <td className="fdd-num">{sizeClassFor(row.employees)?.range ?? "–"}</td>
+                      <td className="fdd-num">{formatCount(row.revenueKsek, locale)} tkr</td>
+                      <td>
+                        <Pill tone={statusTone[row.status]}>{v.status[row.status]}</Pill>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            </Card>
-          </section>
+          </>
+        ) : (
+          <ComingSoon />
+        )}
+      </section>
 
-          {data.verdict && data.verdictScoreTotal !== null && (
-            <section data-tour-id="validation-verdict" className="flex flex-col gap-2.5">
-              <Eyebrow>{v.verdictTitle}</Eyebrow>
-              <VerdictCard score={data.verdictScoreTotal} headline={data.verdict.headline} reasoning={data.verdict.reasoning} />
-              {responseRate !== null && (
-                <p className="text-xs text-slate-500">
-                  {v.confidencePrefix} {formatCount(responded, locale)} {t.marketPage.ofLabel}{" "}
-                  {formatCount(contacted, locale)} {v.confidenceContactedUnit} ({responseRate} %{" "}
-                  {v.confidenceRateSuffix}).
-                </p>
-              )}
-            </section>
-          )}
-
-          {data.simulation && (
-            <section className="flex flex-col gap-2.5">
-              <Eyebrow>{v.simulationTitle}</Eyebrow>
-              <SimulationCard simulation={data.simulation} className="max-w-xl" />
-            </section>
-          )}
-        </>
+      {data.simulation !== "notReached" && (
+        <section className="fdd-block" aria-labelledby="fdd-val-sim">
+          <h2 id="fdd-val-sim" className="fdd-block__title">
+            {/* Demots rubrik nämner byråer (Saras scenario); /app får en neutral. */}
+            {dataKind === "example" ? v.simulationTitle : v.simulationTitleLive}
+          </h2>
+          {data.simulation ? <SimulationBlock simulation={data.simulation} /> : <ComingSoon />}
+        </section>
       )}
     </div>
   );

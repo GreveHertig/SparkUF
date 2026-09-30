@@ -1,6 +1,7 @@
 /**
- * SCB:s storleksklasser för antal anställda. Demot visar klassen, inte det
- * exakta antalet: registret ger storleksklasser (docs/buggar-2026-09.md punkt 13).
+ * SCB:s storleksklasser för antal anställda. Skärmarna visar klassen, aldrig
+ * det exakta antalet: registret ger storleksklasser (docs/buggar-2026-09.md
+ * punkt 13). Flyttad hit från app/demo/_lib/ i PR 7 (Validering och Marknad).
  */
 export const SIZE_CLASSES = [
   { key: "oneToFour", min: 1, max: 4, range: "1–4" },

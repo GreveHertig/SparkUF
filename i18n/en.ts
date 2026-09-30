@@ -328,6 +328,7 @@ export const en = {
     priceTestedLabel: "Price tested",
     verdictTitle: "The verdict",
     simulationTitle: "Simulation: price tolerance by firm size",
+    simulationTitleLive: "Simulation: price tolerance",
   },
   pulsePage: {
     title: "Pulse",

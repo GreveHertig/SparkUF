@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
-import { ExampleLabel } from "./DemoBlocks";
+import { ExampleLabel } from "./DataBlocks";
 
 afterEach(() => cleanup());
 

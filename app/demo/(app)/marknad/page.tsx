@@ -17,7 +17,7 @@ import type { Simulation } from "@/ports/SimulationProvider";
 import {
   ExampleLabel,
   Figures, Locked, PageHead, SimulationBlock } from "../../_components/DemoBlocks";
-import { SIZE_CLASSES } from "../../_lib/sizeClass";
+import { SIZE_CLASSES } from "@/core/sizeClass";
 
 type MarketData = {
   overview: MarketOverview;
