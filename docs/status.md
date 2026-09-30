@@ -2795,7 +2795,18 @@ Priserna på sajten och i demot följer nu prisplanen som Kingen (marknad/sälj)
 - Priset är ännu inte testat mot väntelistan (fyra prisfrågor).
 - `pnpm typecheck` kräver att `next typegen` har körts (typen `LayoutProps` i `app/layout.tsx` genereras av Next). Värt att lägga in i skriptet.
 
+## Delningsbild och sidtitel (klar 2026-09-30, gren `fix/delningsbild`, PR mot `prototyp`)
+När länken delades (sms, DM, LinkedIn) visades ingen bild och bara titeln "Spark".
+
+### Klart
+- `app/opengraph-image.png` och `app/twitter-image.png` (1200×630) med alt-text i `*.alt.txt`. Samma uttryck som startsidans hero: ordmärket, `--paper-50` med blått sken, Castoro och Instrument Serif-kursiv i `--accent-600`, och ett förenklat poängkort. Förenklad med flit så att rubriken går att läsa även i en liten sms-förhandsvisning.
+- Titel och beskrivning ligger i i18n (`meta` i `dictionary.ts`, `sv.ts`, `en.ts`); `app/layout.tsx` läser svenskan och sätter `openGraph` och `twitter` (`summary_large_image`).
+- Ingen `metadataBase`: Next.js gör bildadressen absolut med Vercels `VERCEL_PROJECT_PRODUCTION_URL`. Bygget varnar lokalt om det, men det är väntat. Sätt `metadataBase` när en egen domän finns.
+- Kontroll: taggarna finns på `/`, `/priser`, `/demo`, `/integritet` i produktionsbygget och bilden serveras. `typecheck`, `lint` (0 fel), `test` (601 gröna).
+
 ## Modul: Juridisk koll — källorna kontrollerade (klar 2026-09-30, gren `modul/juridisk-koll-kallor`)
+
+**Rekonstruerad vid sammanslagningen till `design/pr2-skalet` 2026-09-30** — det här avsnittet (rubrik + hela innehållet) saknades helt i `origin/prototyp`s version av filen: commit `91be3ef` ("Delningsbild och sidtitel för länkförhandsvisning") skrev över hela sektionen i stället för att lägga till sin egen efter den, en riktig dataförlust på `prototyp` (inte bara en mergekonflikt). Återställt här från `design/pr2-skalet`s egen historik, som hade sektionen intakt. Flaggat i rapporten till grundaren — samma bugg som `.gitattributes`s `merge=union`-rad (se den filen) är till för att förhindra framöver.
 
 ### Klart
 - **Källorna från Bolagsverket, verksamt.se och Bokföringsnämnden är nu kontrollerade av en människa** (i webbläsaren 2026-09-30). Hela kontrollistan med adresser står som verifieringslogg i `docs/moduler/juridisk-koll.md`. **Ingenting är juristgranskat.**
@@ -2849,3 +2860,6 @@ Andra PR:en i `docs/plan-en-design.md`. `DemoShell` (`app/demo/_components/DemoS
 
 ### Sammanslagning med `prototyp`
 Gren `design/pr2-skalet` skapades ur `adc4f24`; `prototyp` hann få två egna PR:er ("Nya priser", "Modul: Juridisk koll — källorna kontrollerade") innan den här mergades in (`git merge origin/prototyp`). Konflikt bara i `docs/status.md` (två sessioner hade lagt till varsin sektion längst ner — löst genom att behålla båda, i den ordning de redan låg på `prototyp`, med PR 2-sektionen sist). `i18n/sv.ts` och `i18n/en.ts` merge:ades automatiskt (icke överlappande nycklar). Inget rört i `core/score.ts`, `ports/`, demodatan eller Juridik-modulens adapter. `pnpm typecheck`/`lint`/`test`/`build` gröna efter sammanslagningen; skärmbilder av `/demo` och `/demo/marknad` på 1440/390 px oförändrade (pixel för pixel).
+
+### Andra sammanslagningen med `prototyp` (2026-09-30, PR #31)
+`prototyp` hade fått ytterligare två PR:er ("Mobil: ingen sidledsskroll…", "Delningsbild och sidtitel"). Konflikt bara i `docs/status.md`, samma orsak som förra gången — men den här gången avslöjade konflikten en riktig dataförlust: commit `91be3ef` ("Delningsbild och sidtitel") hade av misstag **skrivit över** hela sektionen "Modul: Juridisk koll — källorna kontrollerade" (rubrik och allt) i stället för att lägga till sin egen sektion efter den, redan innan den mergades till `prototyp`. Sektionen fanns intakt i `design/pr2-skalet`s egen historik och är återställd här, med en not om det i sig själv (se ovan). Ingen av parternas text tappades i den här mergen — se `.gitattributes` (ny fil, `docs/status.md merge=union`) för den permanenta fixen som ska förhindra att det händer igen. `design/site.css` och `i18n/{sv,en}.ts` merge:ades automatiskt (icke överlappande rader). `pnpm typecheck`/`lint`/`test`/`build` gröna efter sammanslagningen.

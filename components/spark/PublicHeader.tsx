@@ -11,21 +11,21 @@ export function PublicHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-paper-50/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <Link href="/" aria-label="Spark">
           <Logo height={18} />
         </Link>
-        <nav className="flex items-center gap-6">
-          <Link href="/priser" className="text-sm font-medium text-slate-700 hover:text-slate-900">
+        <nav className="flex items-center gap-3 sm:gap-6">
+          <Link href="/priser" className="hidden text-sm font-medium sm:inline text-slate-700 hover:text-slate-900">
             {t.publicNav.pricingLink}
           </Link>
-          <Link href="/logga-in" className="text-sm font-medium text-slate-700 hover:text-slate-900">
+          <Link href="/logga-in" className="hidden text-sm font-medium sm:inline text-slate-700 hover:text-slate-900">
             {t.publicNav.logInLink}
           </Link>
           <LanguageSwitch />
           <Link
             href="/demo"
-            className="rounded-full bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            className="whitespace-nowrap rounded-full bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
             {t.publicNav.startDemoCta}
           </Link>
