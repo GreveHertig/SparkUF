@@ -24,7 +24,7 @@ export default function FondaDemoLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="fd">
-      <div className="fdd">
+      <div className="fdd fdd--with-bar">
         {children}
         <FondaDemoBar />
         <FondaTour />

@@ -127,6 +127,7 @@ export const en = {
       businessPlan: "Business plan",
     },
     profileMenuLabel: "Profile",
+    navMenuLabel: "Menu",
     tagline: "AI co-founder",
     restartDemo: "Restart the demonstration",
   },

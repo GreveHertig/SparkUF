@@ -2803,3 +2803,63 @@ När länken delades (sms, DM, LinkedIn) visades ingen bild och bara titeln "Spa
 - Titel och beskrivning ligger i i18n (`meta` i `dictionary.ts`, `sv.ts`, `en.ts`); `app/layout.tsx` läser svenskan och sätter `openGraph` och `twitter` (`summary_large_image`).
 - Ingen `metadataBase`: Next.js gör bildadressen absolut med Vercels `VERCEL_PROJECT_PRODUCTION_URL`. Bygget varnar lokalt om det, men det är väntat. Sätt `metadataBase` när en egen domän finns.
 - Kontroll: taggarna finns på `/`, `/priser`, `/demo`, `/integritet` i produktionsbygget och bilden serveras. `typecheck`, `lint` (0 fel), `test` (601 gröna).
+
+## Modul: Juridisk koll — källorna kontrollerade (klar 2026-09-30, gren `modul/juridisk-koll-kallor`)
+
+**Rekonstruerad vid sammanslagningen till `design/pr2-skalet` 2026-09-30** — det här avsnittet (rubrik + hela innehållet) saknades helt i `origin/prototyp`s version av filen: commit `91be3ef` ("Delningsbild och sidtitel för länkförhandsvisning") skrev över hela sektionen i stället för att lägga till sin egen efter den, en riktig dataförlust på `prototyp` (inte bara en mergekonflikt). Återställt här från `design/pr2-skalet`s egen historik, som hade sektionen intakt. Flaggat i rapporten till grundaren — samma bugg som `.gitattributes`s `merge=union`-rad (se den filen) är till för att förhindra framöver.
+
+### Klart
+- **Källorna från Bolagsverket, verksamt.se och Bokföringsnämnden är nu kontrollerade av en människa** (i webbläsaren 2026-09-30). Hela kontrollistan med adresser står som verifieringslogg i `docs/moduler/juridisk-koll.md`. **Ingenting är juristgranskat.**
+- `adapters/live/legalSources.ts`:
+  - En källa per undersida i stället för startsidor för Bolagsverket, verksamt.se och BFN, `hämtad: "2026-09-30"`. Skatteverket, IMY, EUR-Lex, Konsumentverket och Riksdagen är oförändrade (2026-09-17, startsidor).
+  - De två DELVIS-punkterna har nya texter: `aktiekapital` (minst 25 000 kr för privat AB; bankintyg vid betalning med pengar, revisorns yttrande vid apport) och `bolagsavtal` (rekommenderas men inget formellt krav; solidariskt ansvar).
+  - `bolagsordning_styrelse` är uppdelat i `bolagsordning`, `styrelse` och `revisor`. `arsredovisning` är uppdelat i `arsredovisning_ab` och `arsredovisning_ek_forening`. Varje ämne har sin egen adress. Katalogen har nu 17 ämnen i stället för 14.
+  - Verifieringskommentaren i filhuvudet är omskriven.
+- Inga ändringar i `ports/`, `types/`, `LegalAdvisor.ts`, `legalSchema.ts` eller demoadaptern. Källan väljs fortfarande med `KURERADE_KÄLLOR[topic.källId]`, och Geminis enum läser ämnes-id:na dynamiskt.
+- `adapters/live/legalSources.test.ts`: fyra nya tester. Varje källa ligger på rätt myndighets domän, de kontrollerade källorna pekar på en undersida, aktiebolag och ekonomisk förening får var sin årsredovisningskälla, och bolagsordning, styrelse och revisor är tre ämnen med var sin adress.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`) och `pnpm test` (605 gröna, 35 skippade) och `pnpm build` (grönt med påhittade platshållarvärden för de två Supabase-variablerna, bara i kommandot, ingen `.env.local` skapad — se Kända problem).
+
+### Återstår
+- **Fråga till Erik:** `adapters/live/LegalAdvisor.ts:91` sätter `status: "ej_uppfyllt"` på varje krav. Bolagsavtalet för handelsbolag visas då som ett krav som inte är uppfyllt, fast det bara rekommenderas. Ska `LegalAdvisor.ts` (och kanske `types/legal.ts`) kunna skilja på krav och rekommendationer?
+- Skatteverket, IMY, EUR-Lex, Konsumentverket och Riksdagen är inte kontrollerade av en människa och pekar fortfarande på startsidorna.
+- Juristgranskning av hela ämneskatalogen: vilka ämnen som gäller per bolagsform, avgifter, deadlines och lagrum.
+
+### Kända problem
+- `pnpm build` misslyckas i en Codespace utan `.env.local`: prerenderingen av `/app` kastar "NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY saknas". Felet finns också på en ren `origin/prototyp` och beror inte på den här ändringen. Med påhittade platshållarvärden för de två variablerna går bygget igenom.
+- En gammal `.next/`-cache från tidigare `next dev` (med de borttagna `app/demo/app/*`-sidorna) gjorde att `pnpm typecheck` gav fel. Lösningen är att ta bort `.next/`.
+
+### Beslut
+- Ämnes-id:na `bolagsordning_styrelse` och `arsredovisning` finns inte längre. Inget i repot använde dem utanför `legalSources.ts`.
+- Källnycklarna (`KällId`) är per sida, till exempel `bolagsverket_starta_ab`. Nya ämnen får en egen nyckel när de har en egen undersida.
+
+## PR 2: Skalet (gren `design/pr2-skalet`, PR mot `prototyp`)
+Andra PR:en i `docs/plan-en-design.md`. `DemoShell` (`app/demo/_components/DemoShell.tsx`) blir `screens/AppShell.tsx` — nu delad av `/demo` och `/app`. Demoraden och rundturen rörs inte, de stannar i `app/demo/layout.tsx` (var redan syskon till skalet, inte en del av det).
+
+### Klart
+- **`screens/AppShell.tsx`** skriven om: sidomenydesignen (mörk, med ikoner, `ScoreRing` i sidhuvudet) ersatt av den flyttade flikradsmarkupen från `DemoShell`. `DemoTopBar` flyttade med (fristående exporterad — demots onboarding, `app/demo/start/layout.tsx`, använder den utan flikrad) och fick en ny valfri `dataKind`-prop (default `"example"`, så onboardingens anropsställe är oförändrat). `AppShell` tar nu `{ homeHref, navBasePath?, dataKind, profile, currentStep?, headerRight?, children }` — flikarna byggs av `navBasePath` + samma tio slugs som gamla sidomenyn redan hade (`t.appShell.nav.*`), utan ikoner. Utan `navBasePath` (fortfarande fallet för `/app`, undersidorna finns inte än) renderas tio inerta `<span>`-flikar i stället för länkar.
+- **`scoreSnapshot` borttagen ur skalet helt** — `DemoShellData.score` i gamla `DemoShell.tsx` användes aldrig i dess JSX (redan död kod). `app/(app)/layout.tsx` anropar inte längre `liveEvidenceRepository.getScoreSnapshot` för skalets skull; Hem-sidan hämtar redan sin egen poäng oberoende. `NavIcon`/`ScoreRing` (bara använda av gamla skalet) importeras inte längre av `AppShell`, filerna rörda inte (PR 11 städar).
+- **Ny i18n-nyckel `appShell.navMenuLabel`** ("Meny"/"Menu") — flikradens `aria-label` för `dataKind="live"`. `site.demo.navLabel` ("Demomeny") används bara för `dataKind="example"`, så /app:s meny inte kallas "Demomeny" för en inloggad användare.
+- **`design/site.css`:** `.fdd`s `padding-bottom: 9rem` (plats åt demoradens `position: fixed`-bar) flyttad till en ny modifierare `.fdd--with-bar`, satt av `app/demo/layout.tsx` (som redan äger demoradens plats) — annars hade `/app` ärvt ett stort tomt utrymme i botten på varje sida utan anledning. Ny `.fdd-tab--disabled` (dämpad färg, ingen hover) för flikar utan sida än.
+- **`app/(app)/layout.tsx`:** ny `<div className="fd"><div className="fdd">`-wrapper (behövdes inte förut — gamla sidomenyn var ren Tailwind, inga `fd-`/`fdd-`-klasser). Skickar `dataKind="live"`, ingen `navBasePath` (oförändrat beslut sedan Session 1: inerta flikar tills undersidorna finns).
+- **`app/demo/(app)/layout.tsx`** blir en tunn hämtare: hämtar bara profil + steg (inte poäng), anropar `<AppShell navBasePath="/demo" dataKind="example" ...>`. **`app/demo/start/layout.tsx`** importerar `DemoTopBar` från `@/screens/AppShell` istället för den borttagna filen. **`app/demo/_components/DemoShell.tsx` borttagen** (allt flyttat).
+- **Tester:** `screens/AppShell.test.tsx` (ny, skärmtest — märket per `dataKind`, elva länkar med `navBasePath`/tio inerta utan, stegpillen, `headerRight`). `app/(app)/layout.test.tsx` (ny — första routetestet för `/app` någonsin: anropar `LiveAppShellLayout` direkt som en async-funktion och renderar resultatet; täcker platshållarprofilen vid stubbade liveadaptrar, en lyckad hämtning, inerta flikar, och att ett riktigt fel fortsätter kastas). `app/demo/demo.test.tsx` (befintlig demotest) oförändrad och grön — samma assertions (fiktionsmärket, flikradens `aria-label`, elva länkar, affärsplan-länken) gäller alltjämt genom `AppShell`.
+- **Skärmbilder FÖRE och EFTER** av `/demo` och `/demo/marknad` på 1440 och 390 px (Playwright, headless Chromium): alla fyra par pixel för pixel identiska (`compare -metric AE`, 0 i alla fyra).
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel), `pnpm test` (611 gröna, upp från 601 — tio nya), `pnpm build`. `screens/noAdapters.guard.test.ts` fortsatt grönt.
+
+### Vad som inte gick att flytta rakt av
+- **Poängen i sidhuvudet.** Gamla sidomenyn visade poängen (ScoreRing + delta) i headern; `DemoShell` gjorde det redan inte (dess `score`-fält var dödkod). Att "flytta markupen rakt av" innebar alltså att poängen försvinner ur skalet för `/app` också — ingen regression i sig (Hem visar redan sin egen poäng), men en verklig innehållsförändring på `/app`, inte bara en stilförändring.
+- **`.fdd`s bottenpadding** var byggd för demoradens `position: fixed`-bar, inte en generell skalegenskap — dolt tills `/app` skulle återanvända samma klass och fått ett stort tomt utrymme i botten på varje sida. Löst med `.fdd--with-bar` (se ovan).
+- **`DemoTopBar` har en andra användare** (demots onboarding) utanför den här PR:ns scope — gick inte att bara inline:a i `AppShell`, fick behållas som en egen exporterad byggsten med en bakåtkompatibel default-prop.
+- **Ingen "inert flik"-stil fanns** för den nya flikradsdesignen (gamla sidomenyns `<span>`-fallback hade sin egen stil) — en ny, liten CSS-modifierare behövdes.
+- **`/app` inte fotograferat** (samma kända begränsning som PR 1 — inget testkonto). Verifierat i stället med det nya routetestet, som renderar skalet direkt utan inloggning.
+
+### Beslut nästa session behöver känna till
+- **`AppShell`s props-yta är nu**: `homeHref`, `navBasePath?`, `dataKind`, `profile`, `currentStep?`, `headerRight?`, `children`. `scoreSnapshot`, `headerLeft`, `bottomBar`, `sidebarFooterAction` finns inte längre — lägg inte till dem igen utan en verklig användare.
+- **`appShell.profileMenuLabel`/`tagline`/`restartDemo`** är nu oanvända i18n-nycklar (bara gamla sidomenyn använde dem) — lämnade orörda, städas i PR 11 tillsammans med `NavIcon.tsx`/`ScoreRing.tsx`/`components/spark/DemoBar.tsx`/`TourOverlay.tsx`/`SidebarRestart.tsx` (redan sedan tidigare oanvända, se `docs/plan-en-design.md` PR 11).
+- **PR 3 (Hem)** är nästa enligt planen — `screens/AppHome.tsx` är oförändrad i den här PR:n, renderas nu bara inuti det nya skalets `<main className="fdd-main">` i stället för den gamla sidomenylayouten. Den kommer se blandad ut (Tailwind-innehåll i en `.fdd-main`-yta) tills PR 3 flyttar dess markup till samma stil — en avsiktlig mellanstation, inte en bugg.
+
+### Sammanslagning med `prototyp`
+Gren `design/pr2-skalet` skapades ur `adc4f24`; `prototyp` hann få två egna PR:er ("Nya priser", "Modul: Juridisk koll — källorna kontrollerade") innan den här mergades in (`git merge origin/prototyp`). Konflikt bara i `docs/status.md` (två sessioner hade lagt till varsin sektion längst ner — löst genom att behålla båda, i den ordning de redan låg på `prototyp`, med PR 2-sektionen sist). `i18n/sv.ts` och `i18n/en.ts` merge:ades automatiskt (icke överlappande nycklar). Inget rört i `core/score.ts`, `ports/`, demodatan eller Juridik-modulens adapter. `pnpm typecheck`/`lint`/`test`/`build` gröna efter sammanslagningen; skärmbilder av `/demo` och `/demo/marknad` på 1440/390 px oförändrade (pixel för pixel).
+
+### Andra sammanslagningen med `prototyp` (2026-09-30, PR #31)
+`prototyp` hade fått ytterligare två PR:er ("Mobil: ingen sidledsskroll…", "Delningsbild och sidtitel"). Konflikt bara i `docs/status.md`, samma orsak som förra gången — men den här gången avslöjade konflikten en riktig dataförlust: commit `91be3ef` ("Delningsbild och sidtitel") hade av misstag **skrivit över** hela sektionen "Modul: Juridisk koll — källorna kontrollerade" (rubrik och allt) i stället för att lägga till sin egen sektion efter den, redan innan den mergades till `prototyp`. Sektionen fanns intakt i `design/pr2-skalet`s egen historik och är återställd här, med en not om det i sig själv (se ovan). Ingen av parternas text tappades i den här mergen — se `.gitattributes` (ny fil, `docs/status.md merge=union`) för den permanenta fixen som ska förhindra att det händer igen. `design/site.css` och `i18n/{sv,en}.ts` merge:ades automatiskt (icke överlappande rader). `pnpm typecheck`/`lint`/`test`/`build` gröna efter sammanslagningen.

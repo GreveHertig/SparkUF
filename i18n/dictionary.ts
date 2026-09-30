@@ -129,6 +129,9 @@ export type Dictionary = {
       businessPlan: string;
     };
     profileMenuLabel: string;
+    /** `aria-label` på flikraden i /app (PR 2, skalet) — `site.demo.navLabel`
+     * ("Demomeny") används bara när `dataKind` är `"example"`. */
+    navMenuLabel: string;
     /** Undertext under ordmärket i sidomenyn (artefaktens `.brand small`). */
     tagline: string;
     /** Sidomenyns sidfot (artefaktens `.side-foot .restart`) — bara i demot,
