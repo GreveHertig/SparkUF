@@ -2794,3 +2794,16 @@ Priserna på sajten och i demot följer nu prisplanen som Kingen (marknad/sälj)
 - Momsen: bekräfta med UF-rådgivaren att Spark varken tar ut eller drar av moms. Kalkylen bygger på det.
 - Priset är ännu inte testat mot väntelistan (fyra prisfrågor).
 - `pnpm typecheck` kräver att `next typegen` har körts (typen `LayoutProps` i `app/layout.tsx` genereras av Next). Värt att lägga in i skriptet.
+
+## Mobilfixar inför lanseringen (klar 2026-09-30, gren `fix/mobil-landning`, PR mot `prototyp`)
+Startsidan och `/priser` gick att skrolla i sidled på mobil (390 px blev 471 px bred).
+
+### Klart
+- `design/site.css`: `.fd-journey` håller stegraden inom sin ram (den skrollar själv i sidled som tänkt), `.fd-split` har en kolumn `minmax(0, 1fr)` på smal skärm, och korthuvudena (`.fd-proof__ideahead`, `.fd-register__head`, `.fd-nextstep__head`) får bryta rad så att "Exempel med påhittad data" inte sticker ut.
+- `components/spark/PublicHeader.tsx` (`/priser`): mindre sidomarginal och avstånd på mobil; "Priser" och "Logga in" visas från `sm` och uppåt.
+- Kontroll: sidbredden är exakt skärmbredden på `/`, `/priser`, `/integritet` och `/demo` i 360, 390, 768 och 1440 px (Playwright mot produktionsbygget). `typecheck`, `lint` (0 fel), `test` (601 gröna).
+
+### Återstår inför lanseringen
+- Produktion byggs från `main`, som ligger på 16 september. `prototyp` måste in i `main` via PR.
+- Vercel Production behöver `NEXT_PUBLIC_SUPABASE_URL` och `NEXT_PUBLIC_SUPABASE_ANON_KEY` för att väntelistan ska fungera. Testa en riktig adress på förhandsadressen och ta bort den i Supabase efteråt.
+- `/logga-in` och `/skapa-konto` blir också publika när `main` uppdateras.
