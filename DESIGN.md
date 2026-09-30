@@ -63,7 +63,9 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
   `PageHead`, `Locked`, `Pill` i `PageBlocks.tsx`; PR 7: `ExampleLabel`,
   `Figures`, `SimulationBlock`, `VerdictBlock` i `DataBlocks.tsx`; PR 9:
   `JourneyStepper`, stegraden som Hem och Resan delar, med `basePath:
-  string | null` så att en Server Component kan skicka den). Marknads
+  string | null` så att en Server Component kan skicka den; PR 10:
+  `ChatLine`, `ToolRun`, `TimeSkipLine` i `ChatBlocks.tsx`, som Medgrundaren
+  och onboardingen delar). Marknads
   räkning (fördelning, vanligaste klass, spann) ligger i `core/market.ts` och
   räkenskapsåren i `core/fiscalYear.ts` (PR 8). Samma portregel
   som skärmarna. Demots `app/demo/_components/DemoBlocks.tsx` importerar
@@ -90,6 +92,20 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
 - **Val av bolagsform i `/app/juridik`** (PR 5): länkar (`?bolagsform=…`) i
   samma segmenterade kontroll som Minnets flikar (`.fdd-segmented--wrap`,
   radbryter på smala skärmar). Demot har inget val.
+- **Bara egen källa på affärsplanen** (PR 10): ett påstående visas bara med
+  sin egen, verkliga källa. En text som saknar källa i sin port (stegens
+  höjdpunkter, förslagens förklaringar, antaganden, konkurrenternas
+  beskrivningar) visas inte alls, i stället för att låna en poängdels eller
+  registrets källa. Avsnittet får då en lucka ("Underlag saknas — kommer från
+  steg N") och en lägre status. Andelar bär "%", och urvalet anger varje
+  andels underlag av helheten ("tillväxt: 171 av 312, region: 308 av 312").
+- **Färdighetsgraden** (PR 10, "1/9") bär ingen källmärkning. Den räknas av
+  `buildBusinessPlan` ur de nio avsnitten på samma sida (undantaget i
+  `CLAUDE.md`). Utan plan visas luckan "—".
+- **Tre lägen för en sektion i `/app`** (tydligast i Bygg, PR 10): en
+  stubbe ger "Kommer snart" (`ComingSoon`), portens eget "inget än" ger ett
+  tomläge med egen text ("Ingen spec än."), och Resans steg ger det låsta
+  läget (`Locked`). De blandas aldrig ihop.
 - **Poängen i sidhuvudet** (PR 4): en liten textsiffra, "Poäng 24", i
   toppradens typsnitt och storlek (`.fdd-top__score`), länkad till Poäng
   och synlig på alla bredder. Ingen ring och ingen nivåfärg i sidhuvudet;

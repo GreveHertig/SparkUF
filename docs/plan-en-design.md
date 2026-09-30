@@ -6,37 +6,37 @@ enda skillnaden ska vara datan: appen visar riktig data via
 samma skärmar i `screens/`.
 
 Skriven 2026-09-26 efter PR #25 (ny startsida och nytt demo). PR 1–3 är
-gjorda (egna grenar och PR:er mot `prototyp`); PR 4, 5, 7, 8 och 9 är gjorda på
+gjorda (egna grenar och PR:er mot `prototyp`); PR 4, 5, 7, 8, 9 och 10 är gjorda på
 `design/en-design` enligt avsnittet "Arbetsordning" nedan. Läget per PR står
 i `docs/status.md`.
 
 ## Nuläge
 
-Uppdaterat 2026-09-30, efter PR 9. Ögonblicksbilden från 2026-09-26 (före
+Uppdaterat 2026-09-30, efter PR 10. Ögonblicksbilden från 2026-09-26 (före
 PR 1) finns i historiken för den här filen.
 
 - **Delat av `/demo` och `/app`:** skalet (`AppShell`, PR 2, med poängen i
   sidhuvudet från PR 4), Hem (`AppHome`, PR 3), Poäng (`Score`, PR 4),
   Minnet (`Memory`, PR 5), Juridik (`Legal`, PR 5), Validering
-  (`Validation`, PR 7), Marknad (`Market`, PR 8) och Resan och steget
-  (`Journey`, `JourneyStep`, PR 9). Demots sidor för dem
+  (`Validation`, PR 7), Marknad (`Market`, PR 8), Resan och steget
+  (`Journey`, `JourneyStep`, PR 9), Medgrundaren (`Cofounder`), Bygg
+  (`Build`) och Affärsplanen (`BusinessPlan`, alla tre PR 10). Demots sidor för dem
   är tunna hämtare utan markup.
 - **`/app`-rutter:** `/app` (Hem), `/app/poang`, `/app/minnet`,
-  `/app/juridik`, `/app/validering`, `/app/marknad`, `/app/resan` och
-  `/app/resan/[steg]`, plus onboardingen på `/start` (`OnboardingEntry`,
+  `/app/juridik`, `/app/validering`, `/app/marknad`, `/app/resan`,
+  `/app/resan/[steg]`, `/app/medgrundaren`, `/app/bygg` och `/app/affarsplan`, plus onboardingen på `/start` (`OnboardingEntry`,
   `OnboardingIdea`, `OnboardingProfile`). Flikarna i `/app` är fortfarande
-  inerta (ingen `navBasePath`), eftersom fyra av sidorna saknas.
-- **Oanvända skärmar i `screens/`** (väntar på sina steg): `Build`,
-  `BusinessPlan`, `Cofounder` och `Pulse`. `components/spark/JourneyRail` är
+  inerta (ingen `navBasePath`), eftersom Pulsen saknas.
+- **Oanvända skärmar i `screens/`** (väntar på sitt steg): `Pulse`. `components/spark/JourneyRail` är
   oanvänd (städas i PR 11).
 - **Delade byggstenar** ligger i `screens/blocks/`: `ScoreFigure.tsx` (PR 4),
   `PageBlocks.tsx` (`PageHead`, `Locked`, `Pill`, PR 5) och
   `DataBlocks.tsx` (`ExampleLabel`, `Figures`, `SimulationBlock`,
-  `VerdictBlock`, PR 7) och `JourneyStepper.tsx` (PR 9, delad av Hem och
-  Resan).
+  `VerdictBlock`, PR 7), `JourneyStepper.tsx` (PR 9, delad av Hem och
+  Resan) och `ChatBlocks.tsx` (`ChatLine`, `ToolRun`, `TimeSkipLine`, PR 10).
   `app/demo/_components/DemoBlocks.tsx` exporterar de senare vidare åt
   demosidor som inte är flyttade än.
-- **Demots egna sidor kvar att flytta:** Pulsen, Medgrundaren, Bygg, Affärsplan och onboardingen på
+- **Demots egna sidor kvar att flytta:** Pulsen och onboardingen på
   `/demo/start`.
 - **Liveadaptrarna:** byggda är Evidens, Juridik, Minnet, OutreachPrep,
   Utskick, Pulsen och Registret (bakom licensgrinden). Helt eller delvis
@@ -56,11 +56,11 @@ PR 1) finns i historiken för den här filen.
 | Marknad | `marknad` | `Market` | ja, PR 8 (branschen väljs i adressen, låst till steg 02) | Registret, bakom licensgrinden; transporterna är inte skrivna, så även Theo och Erik får felrutan |
 | Validering | `validering` | `Validation` | ja, PR 7 (låst till steg 03 ur Resans steg) | Utskick: sändspärren ger "Kommer snart"; läser inte Registret |
 | Pulsen | `pulsen` | `Pulse` | nej | byggd |
-| Medgrundaren | `medgrundaren` | `Cofounder` | nej | stubbe |
+| Medgrundaren | `medgrundaren` | `Cofounder` | ja, PR 10 (ingen port för samtalet: Kommer snart i båda sektionerna) | stubbe (`sendMessage`) |
 | Minnet | `minnet` | `Memory` | ja, PR 5 | byggd |
 | Juridik | `juridik` | `Legal` | ja, PR 5 (bolagsformen väljs av användaren) | byggd, inget juristgranskat |
-| Bygg | `bygg` | `Build` | nej | stubbe |
-| Affärsplan | `affarsplan` | `BusinessPlan` | nej | ingen port, sammansätts i `core/businessPlan` |
+| Bygg | `bygg` | `Build` | ja, PR 10 (låst till steg 07 ur Resans steg; tomläge när porten saknar spec) | stubbe |
+| Affärsplan | `affarsplan` | `BusinessPlan` | ja, PR 10 (ingen hopsamling i `/app`: Kommer snart i varje avsnitt) | ingen port, sammansätts i `core/businessPlan`; hopsamlingen finns bara i demot |
 | Onboarding (tre vyer) | `start/*` | `Onboarding*` | ja, `/start` | Profil och Projekt stubbar |
 
 ## Vad som skiljer demot från nuvarande /app (gäller alla skärmar)
@@ -191,8 +191,9 @@ likadant ut före och efter, kontrollerat med skärmbilder.
    `JourneyStepper` (`app/demo/_components/DemoBlocks.tsx` vs.
    `screens/AppHome.tsx`s lokala kopia, PR 3). Gjort: den enda versionen
    ligger i `screens/blocks/JourneyStepper.tsx`, delad av Hem och Resan.
-10. **Medgrundaren**, **Bygg** och **Affärsplan** (stubbar i appen;
-    Medgrundaren kräver att demots manus flyttas ut ur sidan).
+10. **Medgrundaren**, **Bygg** och **Affärsplan** (gjort; stubbar i appen,
+    Medgrundarens manus stannar i demots sida). Affärsplanens demo visar nu
+    bara påståenden med egen källa (se PR 10 i `docs/status.md`).
 11. **Onboarding** (`/start` och `/demo/start`) och städning: ta bort
     oanvända `components/spark` och `components/ui`, `DemoBar` och
     `TourOverlay`, och Fonda-namnen i koden.
