@@ -66,6 +66,12 @@ describe("rektanglar", () => {
     expect(empty.match(/M/g)).toHaveLength(1);
   });
 
+  it("scrimClipPath kan ha raka hörn nertill och rundade upptill", () => {
+    const clip = scrimClipPath({ top: 10, left: 10, width: 100, height: 50 }, { top: 16, bottom: 0 });
+    expect(clip).toContain("A16 16 0 0 1 110 26");
+    expect(clip).toContain("V60A0 0 0 0 1 110 60");
+  });
+
   it("needsScroll bara när målet sticker ut", () => {
     expect(needsScroll({ top: 10, left: 0, width: 10, height: 100 }, 800)).toBe(false);
     expect(needsScroll({ top: 900, left: 0, width: 10, height: 100 }, 800)).toBe(true);
