@@ -267,6 +267,10 @@ export type Dictionary = {
     /** Tidsuppskattningens enhet i förslagskortens fot (artefaktens `pill(s.tid)`),
      * t.ex. "min" i "~15 min". */
     estimatedMinutesUnit: string;
+    /** Tomläget i historikkortet: ingen poäng sparad än (aldrig en påhittad punkt). */
+    noHistory: string;
+    /** Tomläget under "Höj din poäng": inga förslag skrivna än. */
+    noSuggestions: string;
   };
   marketPage: {
     title: string;

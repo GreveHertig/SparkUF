@@ -240,6 +240,8 @@ export const en = {
     pointsPerMinuteUnit: "points/min",
     estimatedMinutesUnit: "min",
     historyTitle: "Score history",
+    noHistory: "No score saved yet.",
+    noSuggestions: "No suggestions yet.",
   },
   marketPage: {
     title: "Market",

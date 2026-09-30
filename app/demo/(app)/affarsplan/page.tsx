@@ -9,7 +9,7 @@ import { useDemoStore } from "@/adapters/demo/demoStore";
 import type { BusinessPlan, BusinessPlanClaim, BusinessPlanSection, BusinessPlanStatus } from "@/core/businessPlan";
 import { fill } from "@/i18n/fill";
 import { Locked, PageHead, Pill, type PillTone } from "../../_components/DemoBlocks";
-import { mentionsConcept } from "../../_lib/concepts";
+import { mentionsConcept } from "@/core/concepts";
 
 const statusTone: Record<BusinessPlanStatus, PillTone> = {
   solid: "green",

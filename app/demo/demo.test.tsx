@@ -141,6 +141,17 @@ describe("/demo", () => {
     expect(window.localStorage.getItem(REAL_DEMO_KEY)).toBe(realSaved);
   });
 
+  it("Poäng (tunn hämtare, PR 4) visar delarna med källa, de låsta delarna och historiken — ingen Kommer snart", async () => {
+    startInApp(8);
+    pathname = FONDA_DEMO_PATHS.score;
+    const { container } = await renderInApp(<FondaDemoScorePage />);
+    const expected = saraEngine.getScoreSnapshotForBeat(8, "sv");
+    expect(container.querySelectorAll(".fd-part:not(.fd-part--locked)")).toHaveLength(expected.parts.length);
+    expect(container.querySelectorAll(".fd-part--locked")).toHaveLength(expected.lockedParts.length);
+    expect(container.querySelector(".fdd-history polyline")).not.toBeNull();
+    expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+  });
+
   it("Marknad är låst i Jonas scenario, som i originalet", async () => {
     startInApp(0);
     useDemoStore.getState().setEntry("hasIdea");

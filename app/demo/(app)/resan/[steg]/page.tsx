@@ -8,8 +8,9 @@ import { useI18n } from "@/i18n/context";
 import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import type { JourneyStepDetail } from "@/ports/JourneyRepository";
-import { Locked, PageHead, SimulationBlock, VerdictBlock, formatDelta } from "../../../_components/DemoBlocks";
-import { mentionsConcept } from "../../../_lib/concepts";
+import { Locked, PageHead, SimulationBlock, VerdictBlock } from "../../../_components/DemoBlocks";
+import { formatDelta } from "@/screens/blocks/ScoreFigure";
+import { mentionsConcept } from "@/core/concepts";
 import { FONDA_DEMO_PATHS } from "../../../_lib/paths";
 
 /** Ett steg i resan: vad som återstår eller hänt, domen, poängändringen och det som låstes upp. */

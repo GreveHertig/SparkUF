@@ -240,6 +240,8 @@ export const sv = {
     pointsPerMinuteUnit: "poäng/min",
     estimatedMinutesUnit: "min",
     historyTitle: "Poängens historik",
+    noHistory: "Ingen poäng sparad än.",
+    noSuggestions: "Inga förslag än.",
   },
   marketPage: {
     title: "Marknad",

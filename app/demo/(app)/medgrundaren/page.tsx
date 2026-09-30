@@ -8,7 +8,7 @@ import { engineFor } from "@/adapters/demo/journeyEngine";
 import { cofounderScript } from "@/adapters/demo/cofounderScript";
 import { jonasCofounderScript } from "@/adapters/demo/jonasCofounderScript";
 import { ChatLine, PageHead, TimeSkipLine, ToolRun } from "../../_components/DemoBlocks";
-import { mentionsConcept } from "../../_lib/concepts";
+import { mentionsConcept } from "@/core/concepts";
 
 /**
  * Medgrundaren: det aktuella momentet i samtalet, och det som redan

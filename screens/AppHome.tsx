@@ -7,9 +7,9 @@ import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
 import { formatDate } from "@/i18n/format";
 import { fill } from "@/i18n/fill";
-import { getScoreLevel } from "@/score/levels";
 import type { DataKind, NextStep, PulseSignal, ScoreSnapshot, SinceLastTime } from "@/core/domain";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
+import { ScoreDelta, ScoreFigure } from "./blocks/ScoreFigure";
 
 /**
  * Datan skärmen behöver, redan hämtad och språkvald av den monterande routen
@@ -34,50 +34,9 @@ export type AppHomeData = {
   journeySteps: JourneyStepView[];
 };
 
-// Samma nivåtoner som ScoreBadge/DemoBlocks.ScoreFigure — dupliceras
-// medvetet här i stället för att importeras (screens/ får bara ta emot
-// props och typer från ports/ och core/, DemoBlocks.tsx hör till
-// app/demo/_components och används fortfarande av andra, ännu inte
-// konverterade demosidor, se docs/plan-en-design.md PR 4/PR 9).
-const levelTone = {
-  red: "bg-score-red-bg text-score-red",
-  orange: "bg-score-orange-bg text-score-orange",
-  yellow: "bg-score-yellow-bg text-score-yellow",
-  green: "bg-score-green-bg text-score-green",
-  strong: "bg-score-strong-bg text-score-strong",
-} as const;
-
-function formatDelta(delta: number): string {
-  if (delta === 0) return "0";
-  return `${delta > 0 ? "+" : "−"}${Math.abs(delta)}`;
-}
-
-/** Poängen (Hems poängkort): stort tal, "av 100", nivån och rörelsen. */
-function ScoreFigure({ snapshot }: { snapshot: ScoreSnapshot }) {
-  const { t } = useI18n();
-  const level = getScoreLevel(snapshot.total);
-  return (
-    <div className="fdd-figure">
-      <p className="fd-proof__number">
-        <span key={snapshot.total} className="fd-recount">
-          {snapshot.total}
-        </span>
-        <span className="fd-proof__outof">{t.site.proof.outOf}</span>
-      </p>
-      <span className={cn("fd-level", levelTone[level.tone])}>{t.score.levels[level.key].name}</span>
-    </div>
-  );
-}
-
-function ScoreDelta({ snapshot }: { snapshot: ScoreSnapshot }) {
-  if (snapshot.delta === 0) return null;
-  return (
-    <p className="fdd-delta">
-      <span className={snapshot.delta > 0 ? "fdd-delta__up" : "fdd-delta__down"}>{formatDelta(snapshot.delta)}</span>
-      {snapshot.deltaReason && <> {snapshot.deltaReason}</>}
-    </p>
-  );
-}
+// ScoreFigure/ScoreDelta delas med Poäng-skärmen (screens/blocks/ScoreFigure.tsx,
+// PR 4). JourneyStepper finns fortfarande i två exemplar (här och i
+// app/demo/_components/DemoBlocks.tsx) tills Resan konverteras (PR 9).
 
 /** Resan som en kompakt stegrad: klara steg fyllda, det aktuella markerat. */
 function JourneyStepper({
