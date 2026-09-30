@@ -145,6 +145,7 @@ export const sv = {
     heroHeadingBefore: "Ditt",
     heroHeadingEmphasis: "nästa",
     heroHeadingAfter: "steg.",
+    noPulseSignal: "Ingen signal än.",
   },
   comingSoon: {
     eyebrow: "PLATTFORMEN",

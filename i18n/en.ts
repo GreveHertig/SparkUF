@@ -145,6 +145,7 @@ export const en = {
     heroHeadingBefore: "Your",
     heroHeadingEmphasis: "next",
     heroHeadingAfter: "step.",
+    noPulseSignal: "No signal yet.",
   },
   comingSoon: {
     eyebrow: "THE PLATFORM",

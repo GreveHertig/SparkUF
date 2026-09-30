@@ -157,6 +157,10 @@ export type Dictionary = {
     heroHeadingBefore: string;
     heroHeadingEmphasis: string;
     heroHeadingAfter: string;
+    /** Ärligt tomt läge för Pulsen på Hem i /app (PR 3, skalet) — samma plats
+     * som demots `site.demo.noPulse`, men utan "scenario"-ramningen (som är
+     * genuint demospecifik text, inte bara stil). */
+    noPulseSignal: string;
   };
   comingSoon: {
     eyebrow: string;
