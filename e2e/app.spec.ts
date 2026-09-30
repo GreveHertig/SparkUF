@@ -108,4 +108,19 @@ test.describe("/app/resan", () => {
     const response = await page.goto("/app/resan/13");
     expect(response?.status()).toBe(404);
   });
+
+  // PR 11: flikarna är tända. Pulsen saknar /app-sida och är inaktiv.
+  test("flikarna i /app leder till sidor som finns, och Pulsen är inaktiv", async ({ page }) => {
+    await page.goto("/app", { waitUntil: "networkidle" });
+    const tabs = page.getByRole("navigation", { name: "Meny" }).locator("a");
+    await expect(tabs).toHaveCount(10);
+    const hrefs = await tabs.evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+    expect(hrefs).not.toContain("/app/pulsen");
+    for (const href of hrefs) {
+      const response = await page.request.get(href!);
+      expect(response.status(), `status för ${href}`).toBe(200);
+    }
+    await page.getByRole("navigation", { name: "Meny" }).getByRole("link", { name: "Minnet" }).click();
+    await page.waitForURL("**/app/minnet");
+  });
 });

@@ -60,6 +60,34 @@ export function DemoTopBar({
   );
 }
 
+/** Flikarna efter Hem, i menyns ordning. Sluggen är sidans adress under `navBasePath`. */
+export const APP_SHELL_TAB_SLUGS = [
+  "medgrundaren",
+  "resan",
+  "poang",
+  "marknad",
+  "validering",
+  "pulsen",
+  "minnet",
+  "juridik",
+  "bygg",
+  "affarsplan",
+] as const;
+export type AppShellTabSlug = (typeof APP_SHELL_TAB_SLUGS)[number];
+
+const TAB_LABEL_KEYS = {
+  medgrundaren: "cofounder",
+  resan: "journey",
+  poang: "score",
+  marknad: "market",
+  validering: "validation",
+  pulsen: "pulse",
+  minnet: "memory",
+  juridik: "legal",
+  bygg: "build",
+  affarsplan: "businessPlan",
+} as const satisfies Record<AppShellTabSlug, string>;
+
 /**
  * Delat skal för /demo och /app (PR 2, docs/plan-en-design.md): sidhuvudet
  * med flikraden. Skalet vet ingenting om demo eller live — den monterande
@@ -73,8 +101,8 @@ export function DemoTopBar({
  * aldrig en nolla. Den stora ringen stannar på Poäng-sidan.
  *
  * `navBasePath` styr om flikarna länkar (t.ex. "/demo") eller förblir inerta
- * `<span>`-element (utelämnad — /app har inga undersidor än, se
- * docs/arkitektur.md 7). Demoraden och rundturen hör INTE hemma här — de
+ * `<span>`-element (utelämnad). `unavailableTabs` gör enskilda flikar inerta
+ * när deras sida saknas i läget, som Pulsen i /app (PR 11). Demoraden och rundturen hör INTE hemma här — de
  * stannar i demots egen layout (`app/demo/layout.tsx`), som redan renderar
  * dem som syskon till det här skalets innehåll.
  *
@@ -90,6 +118,7 @@ export function AppShell({
   currentStep,
   score,
   headerRight,
+  unavailableTabs = [],
   children,
 }: {
   homeHref: string;
@@ -99,6 +128,8 @@ export function AppShell({
   currentStep?: AppShellCurrentStep | null;
   score?: number | null;
   headerRight?: ReactNode;
+  /** Flikar vars sida inte finns än i det här läget. De visas inaktiva. */
+  unavailableTabs?: readonly AppShellTabSlug[];
   children: ReactNode;
 }) {
   const { t } = useI18n();
@@ -106,18 +137,10 @@ export function AppShell({
   const nav = t.appShell.nav;
   const pathname = usePathname();
 
-  const tabs: { href: string; label: string }[] = [
-    { href: homeHref, label: nav.home },
-    { href: `${navBasePath ?? homeHref}/medgrundaren`, label: nav.cofounder },
-    { href: `${navBasePath ?? homeHref}/resan`, label: nav.journey },
-    { href: `${navBasePath ?? homeHref}/poang`, label: nav.score },
-    { href: `${navBasePath ?? homeHref}/marknad`, label: nav.market },
-    { href: `${navBasePath ?? homeHref}/validering`, label: nav.validation },
-    { href: `${navBasePath ?? homeHref}/pulsen`, label: nav.pulse },
-    { href: `${navBasePath ?? homeHref}/minnet`, label: nav.memory },
-    { href: `${navBasePath ?? homeHref}/juridik`, label: nav.legal },
-    { href: `${navBasePath ?? homeHref}/bygg`, label: nav.build },
-    { href: `${navBasePath ?? homeHref}/affarsplan`, label: nav.businessPlan },
+  const base = navBasePath ?? homeHref;
+  const tabs: { href: string; label: string; slug: AppShellTabSlug | null }[] = [
+    { href: homeHref, label: nav.home, slug: null },
+    ...APP_SHELL_TAB_SLUGS.map((slug) => ({ href: `${base}/${slug}`, label: nav[TAB_LABEL_KEYS[slug]], slug })),
   ];
 
   // Den aktiva fliken ska synas även när flikraden rullar i sidled (mobil).
@@ -179,7 +202,7 @@ export function AppShell({
         <nav aria-label={dataKind === "example" ? copy.navLabel : t.appShell.navMenuLabel} className="fdd-tabs">
           <div ref={tabsRef} className="fdd-tabs__inner">
             {tabs.map((tab) => {
-              if (tab.href !== homeHref && !navBasePath) {
+              if (tab.slug && (!navBasePath || unavailableTabs.includes(tab.slug))) {
                 return (
                   <span key={tab.href} className="fdd-tab fdd-tab--disabled">
                     {tab.label}

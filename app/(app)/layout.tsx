@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 // under .fd/.fdd — se PR 2 (skalet) för wrappern nedan, som demots egen
 // layout (app/demo/layout.tsx) redan gör åt /demo.
 import "@/design/site.css";
-import { AppShell, type AppShellCurrentStep } from "@/screens/AppShell";
+import { AppShell, type AppShellCurrentStep, type AppShellTabSlug } from "@/screens/AppShell";
 import { SignOutButton } from "@/components/spark/SignOutButton";
 import { requireUser } from "@/lib/server/session";
 import { liveProfileRepository } from "@/adapters/live/ProfileRepository";
@@ -22,6 +22,11 @@ import type { Profile } from "@/core/domain";
 // platshållarfel (tomt konto) ger `null`, och skalet visar då luckan — aldrig
 // en nolla.
 const FALLBACK_PROFILE: Profile = { name: "—", initials: "—" };
+
+// Flikarna länkar till sina sidor (PR 11). Pulsen har ingen /app-sida än
+// (Bruno, steg 6 i docs/plan-en-design.md) och är inaktiv tills den finns.
+// Ta bort den ur listan när /app/pulsen är byggd.
+const UNAVAILABLE_TABS: readonly AppShellTabSlug[] = ["pulsen"];
 
 export default async function LiveAppShellLayout({ children }: { children: ReactNode }) {
   // Bindande sessionskontroll (docs/arkitektur.md) — proxy.ts har redan
@@ -57,6 +62,8 @@ export default async function LiveAppShellLayout({ children }: { children: React
       <div className="fdd">
         <AppShell
           homeHref="/app"
+          navBasePath="/app"
+          unavailableTabs={UNAVAILABLE_TABS}
           dataKind="live"
           profile={profile}
           currentStep={currentStep}

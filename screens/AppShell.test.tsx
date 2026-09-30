@@ -71,6 +71,21 @@ describe("AppShell (PR 2, skalet)", () => {
     expect(screen.getByText(sv.appShell.nav.businessPlan).tagName).toBe("SPAN");
   });
 
+  it("unavailableTabs gör just de flikarna inerta", () => {
+    pathname = "/app/poang";
+    render(
+      <LocaleProvider>
+        <AppShell homeHref="/app" navBasePath="/app" unavailableTabs={["pulsen"]} dataKind="live" profile={profile}>
+          <p>innehåll</p>
+        </AppShell>
+      </LocaleProvider>,
+    );
+    const nav = screen.getByRole("navigation", { name: sv.appShell.navMenuLabel });
+    expect(nav.querySelectorAll("a")).toHaveLength(10);
+    expect(screen.getByText(sv.appShell.nav.pulse).tagName).toBe("SPAN");
+    expect(screen.getByRole("link", { name: sv.appShell.nav.score })).toHaveAttribute("aria-current", "page");
+  });
+
   it("visar stegpillen bara när currentStep finns", () => {
     const { rerender } = render(
       <LocaleProvider>

@@ -80,15 +80,18 @@ describe("/app-skalet (PR 2)", () => {
     expect(stepPill.textContent).toContain("Marknaden");
   });
 
-  it("inerta flikar utan navBasePath (undersidorna finns inte än)", async () => {
+  it("flikarna länkar till /app-sidorna, utom Pulsen som saknas än (PR 11)", async () => {
     getProfileMock.mockRejectedValue(new NotImplementedError("Profil", "docs/moduler/profil.md"));
     getStepsMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
 
     await renderLayout();
 
     const nav = screen.getByRole("navigation", { name: sv.appShell.navMenuLabel });
-    expect(nav.querySelectorAll("a")).toHaveLength(1);
-    expect(screen.getByText(sv.appShell.nav.businessPlan).tagName).toBe("SPAN");
+    expect(nav.querySelectorAll("a")).toHaveLength(10);
+    expect(screen.getByRole("link", { name: sv.appShell.nav.businessPlan })).toHaveAttribute("href", "/app/affarsplan");
+    expect(screen.getByRole("link", { name: sv.appShell.nav.cofounder })).toHaveAttribute("href", "/app/medgrundaren");
+    expect(screen.queryByRole("link", { name: sv.appShell.nav.pulse })).not.toBeInTheDocument();
+    expect(screen.getByText(sv.appShell.nav.pulse).tagName).toBe("SPAN");
   });
 
   it("sidhuvudet visar poängen från liveadaptern som en liten siffra, länkad till Poäng (PR 4)", async () => {
