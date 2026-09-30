@@ -13,6 +13,7 @@ Repot hade redan ett Next.js-projekt. Läs `AGENTS.md`, bygg i den befintliga st
 
 ## Git
 - Allt arbete sker på branchen `prototyp` (landningssidan på `prototyp-landning`). Pusha aldrig direkt till `main`.
+- **Undantag, migrationen till en design:** PR 4–11 i `docs/plan-en-design.md` görs direkt på `design/en-design`, som tas in i `prototyp` med en PR ungefär en gång i veckan. Se avsnittet "Arbetsordning" där. Bara en person i taget rör `screens/` och `design/site.css`.
 - Kör `typecheck`, `lint` och testerna utan fel före varje commit.
 
 ## Arkitektur
@@ -31,6 +32,7 @@ Repot hade redan ett Next.js-projekt. Läs `AGENTS.md`, bygg i den befintliga st
 
 ## Produktregler
 - **Källa på varje siffra** via `DataFact` eller `SourceTag`.
+  - **Ett dokumenterat undantag: poängen i skalets sidhuvud** (`screens/AppShell.tsx`, "Poäng 24") bär ingen källmärkning. Den är en sammanfattning av delarna, inte ett eget påstående, och den länkar till Poäng-sidan, där varje del visar sin källa ett klick bort. Undantaget gäller bara den siffran. Det kan inte åberopas för någon annan siffra, inte heller för andra sammanfattningar som länkar till en sida med källor: varje annan siffra bär sin egen källa där den visas.
 - **Ingen hårdkodad text.** Allt ligger i i18n-filerna (sv/en).
 - **Poängen räknas alltid** av `calculateScore` och hårdkodas aldrig.
 - **Simuleringar** märks "Simulering" och ger aldrig poäng.

@@ -6,27 +6,38 @@ enda skillnaden ska vara datan: appen visar riktig data via
 samma skärmar i `screens/`.
 
 Skriven 2026-09-26 efter PR #25 (ny startsida och nytt demo). PR 1–3 är
-gjorda (egna grenar och PR:er mot `prototyp`); från PR 4 gäller
-avsnittet "Arbetsordning" nedan. Läget per PR står i `docs/status.md`.
+gjorda (egna grenar och PR:er mot `prototyp`); PR 4 och 5 är gjorda på
+`design/en-design` enligt avsnittet "Arbetsordning" nedan. Läget per PR står
+i `docs/status.md`.
 
 ## Nuläge
 
-- **`/app` har bara Hem**: `app/(app)/app/page.tsx` (skärmen `AppHome`),
-  skalet `AppShell` och onboardingen på `/start` (`OnboardingEntry`,
-  `OnboardingIdea`, `OnboardingProfile`).
-- **Tio skärmar i `screens/` används inte av någon sida** sedan det gamla
-  demot togs bort i #25: `Build`, `BusinessPlan`, `Cofounder`,
-  `JourneyStep`, `Legal`, `Market`, `Memory`, `Pulse`, `Score` och
-  `Validation`. `Journey` används bara via `components/spark/JourneyRail`
-  i `AppHome`.
-- **Demot delar ingenting med `screens/`.** Sidorna i `app/demo/**` hämtar
-  data själva (`useEffect`) från demoadaptrarna och har egen markup: cirka
-  1 800 rader sidor, 1 000 rader komponenter och `design/site.css`
-  (3 600 rader).
+Uppdaterat 2026-09-30, efter PR 5. Ögonblicksbilden från 2026-09-26 (före
+PR 1) finns i historiken för den här filen.
+
+- **Delat av `/demo` och `/app`:** skalet (`AppShell`, PR 2, med poängen i
+  sidhuvudet från PR 4), Hem (`AppHome`, PR 3), Poäng (`Score`, PR 4),
+  Minnet (`Memory`, PR 5) och Juridik (`Legal`, PR 5). Demots sidor för dem
+  är tunna hämtare utan markup.
+- **`/app`-rutter:** `/app` (Hem), `/app/poang`, `/app/minnet` och
+  `/app/juridik`, plus onboardingen på `/start` (`OnboardingEntry`,
+  `OnboardingIdea`, `OnboardingProfile`). Flikarna i `/app` är fortfarande
+  inerta (ingen `navBasePath`), eftersom sju av sidorna saknas.
+- **Oanvända skärmar i `screens/`** (väntar på sina steg): `Build`,
+  `BusinessPlan`, `Cofounder`, `JourneyStep`, `Market`, `Pulse` och
+  `Validation`. `Journey` används bara via `components/spark/JourneyRail`.
+- **Delade byggstenar** ligger i `screens/blocks/`: `ScoreFigure.tsx` (PR 4)
+  och `PageBlocks.tsx` (`PageHead`, `Locked`, `Pill`, PR 5).
+  `app/demo/_components/DemoBlocks.tsx` exporterar de senare vidare åt
+  demosidor som inte är flyttade än.
+- **Demots egna sidor kvar att flytta:** Resan och steget, Marknad,
+  Validering, Pulsen, Medgrundaren, Bygg, Affärsplan och onboardingen på
+  `/demo/start`.
 - **Liveadaptrarna:** byggda är Evidens, Juridik, Minnet, OutreachPrep,
-  Utskick, Pulsen och Registret (bakom licensgrinden). Stubbar
-  (`NotImplementedError`) är Build, Medgrundaren, Resan, Profil, Projekt,
-  Domen, Research och Simulering.
+  Utskick, Pulsen och Registret (bakom licensgrinden). Helt eller delvis
+  stubbar (`NotImplementedError`) är Build, Medgrundaren, Resan
+  (`getSteps` byggd, `getHomeSummary` stubbe), Profil, Projekt, Domen,
+  Research och Simulering.
 
 ## Skärmar som påverkas
 
@@ -35,13 +46,13 @@ avsnittet "Arbetsordning" nedan. Läget per PR står i `docs/status.md`.
 | Skal (sidhuvud, meny, poäng) | `_components/DemoShell` | `AppShell` | ja | Profil och Resan är stubbar |
 | Hem | `(app)/page.tsx` | `AppHome` | ja | Resan stubbe, Evidens och Pulsen byggda |
 | Resan och steget | `resan`, `resan/[steg]` | `Journey`, `JourneyStep` | nej | stubbe |
-| Poäng | `poang` | `Score` | nej | byggd |
+| Poäng | `poang` | `Score` | ja, PR 4 | byggd |
 | Marknad | `marknad` | `Market` | nej | Registret, bakom licensgrinden |
 | Validering | `validering` | `Validation` | nej | Utskick byggt |
 | Pulsen | `pulsen` | `Pulse` | nej | byggd |
 | Medgrundaren | `medgrundaren` | `Cofounder` | nej | stubbe |
-| Minnet | `minnet` | `Memory` | nej | byggd |
-| Juridik | `juridik` | `Legal` | nej | byggd |
+| Minnet | `minnet` | `Memory` | ja, PR 5 | byggd |
+| Juridik | `juridik` | `Legal` | ja, PR 5 (bolagsformen väljs av användaren) | byggd, inget juristgranskat |
 | Bygg | `bygg` | `Build` | nej | stubbe |
 | Affärsplan | `affarsplan` | `BusinessPlan` | nej | ingen port, sammansätts i `core/businessPlan` |
 | Onboarding (tre vyer) | `start/*` | `Onboarding*` | ja, `/start` | Profil och Projekt stubbar |

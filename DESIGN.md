@@ -56,9 +56,20 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
 - **Licensgrinden**: vyer som läser Registret visar ett låst läge när
   grinden är stängd, aldrig demodata.
 - **Delade byggstenar mellan skärmar** ligger i `screens/blocks/` (PR 4:
-  `ScoreFigure`, `ScoreDelta`, `levelTone`, `formatDelta`). Samma portregel
+  `ScoreFigure`, `ScoreDelta`, `levelTone`, `formatDelta`; PR 5:
+  `PageHead`, `Locked`, `Pill` i `PageBlocks.tsx`). Samma portregel
   som skärmarna. Demots `app/demo/_components/DemoBlocks.tsx` importerar
   därifrån i stället för att ha egna kopior.
+- **Overifierade källor på Juridik** (PR 5): varje krav visar sin källa och
+  sitt datum (`SourceTag`) och bredvid den en streckad märkning,
+  "Overifierad" (`.fdd-unverified`, samma streckade uttryck som
+  exempeletiketten: en reservation, inte en status). Kartans rubrikrad säger
+  att inget är granskat av en jurist. Ingen källa visas som verifierad förrän
+  en adapter skickar en verifieringsstatus som data. Saknas källnamn eller
+  datum visas luckan ("Källa saknas").
+- **Val av bolagsform i `/app/juridik`** (PR 5): länkar (`?bolagsform=…`) i
+  samma segmenterade kontroll som Minnets flikar (`.fdd-segmented--wrap`,
+  radbryter på smala skärmar). Demot har inget val.
 - **Poängen i sidhuvudet** (PR 4): en liten textsiffra, "Poäng 24", i
   toppradens typsnitt och storlek (`.fdd-top__score`), länkad till Poäng
   och synlig på alla bredder. Ingen ring och ingen nivåfärg i sidhuvudet;
