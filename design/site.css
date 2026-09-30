@@ -1529,6 +1529,23 @@
   }
 }
 
+/* Poängen i sidhuvudet (PR 4): samma typsnitt och storlek som steget, men
+ * synlig på alla bredder — sidhuvudet visar poängen alltid. */
+.fdd-top__score {
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.fdd-top__score:hover {
+  text-decoration: underline;
+}
+
+.fdd-top__scorevalue {
+  font-variant-numeric: tabular-nums;
+}
+
 .fdd-avatar {
   display: grid;
   place-items: center;

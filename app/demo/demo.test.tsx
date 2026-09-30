@@ -199,6 +199,14 @@ describe("/demo", () => {
       expect(container.textContent).not.toMatch(/sedan|Uppdaterad \d/);
     });
 
+    it("sidhuvudet visar demots poäng, samma som motorn räknar (PR 4)", async () => {
+      startInApp(8);
+      await renderInApp(<FondaDemoHomePage />);
+      const expected = saraEngine.getScoreSnapshotForBeat(8, "sv");
+      const link = screen.getByRole("link", { name: new RegExp(`^Poäng ${expected.total}`) });
+      expect(link).toHaveAttribute("href", FONDA_DEMO_PATHS.score);
+    });
+
     it("sidhuvudet på varje sida säger att datan är påhittad", async () => {
       startInApp(lastBeat);
       await renderInApp(<FondaDemoHomePage />);

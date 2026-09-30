@@ -128,6 +128,8 @@ export const en = {
     },
     profileMenuLabel: "Profile",
     navMenuLabel: "Menu",
+    headerScoreLabel: "Score",
+    headerScoreMissing: "No score yet",
     tagline: "AI co-founder",
     restartDemo: "Restart the demonstration",
   },

@@ -64,10 +64,13 @@ export function DemoTopBar({
  * Delat skal för /demo och /app (PR 2, docs/plan-en-design.md): sidhuvudet
  * med flikraden. Skalet vet ingenting om demo eller live — den monterande
  * routen skickar in profilen, det pågående steget (null = inte fastställt,
- * t.ex. Resan-stubben i /app) och `dataKind` för fiktionsmärket. Poängen
- * visas medvetet INTE här (den flyttade markupen, `DemoShell`, visade den
- * aldrig heller — `DemoShellData.score` var redan död kod; varje sida hämtar
- * och visar sin egen poäng, t.ex. Hems poängkort).
+ * t.ex. Resan-stubben i /app) och `dataKind` för fiktionsmärket.
+ *
+ * `score` (PR 4) är totalpoängen som en liten siffra i toppraden, på varje
+ * sida (docs/uppdrag.md avsnitt 6, "Appen": sidhuvudet visar poängen
+ * alltid). Räknad av `calculateScore` i adaptern, aldrig här. `null` eller
+ * utelämnad betyder att den inte gick att hämta — då visas luckan ("—"),
+ * aldrig en nolla. Den stora ringen stannar på Poäng-sidan.
  *
  * `navBasePath` styr om flikarna länkar (t.ex. "/demo") eller förblir inerta
  * `<span>`-element (utelämnad — /app har inga undersidor än, se
@@ -85,6 +88,7 @@ export function AppShell({
   dataKind,
   profile,
   currentStep,
+  score,
   headerRight,
   children,
 }: {
@@ -93,6 +97,7 @@ export function AppShell({
   dataKind: DataKind;
   profile: Profile;
   currentStep?: AppShellCurrentStep | null;
+  score?: number | null;
   headerRight?: ReactNode;
   children: ReactNode;
 }) {
@@ -140,6 +145,20 @@ export function AppShell({
         headerRight={headerRight}
         end={
           <>
+            <Link href={`${navBasePath ?? homeHref}/poang`} className="fdd-top__score">
+              {t.appShell.headerScoreLabel}{" "}
+              {typeof score === "number" ? (
+                <>
+                  <span className="fdd-top__scorevalue">{score}</span>
+                  <span className="fd-sr-only"> {t.site.proof.outOf}</span>
+                </>
+              ) : (
+                <>
+                  <span aria-hidden="true">—</span>
+                  <span className="fd-sr-only">{t.appShell.headerScoreMissing}</span>
+                </>
+              )}
+            </Link>
             {currentStep && (
               <p className="fdd-top__step">
                 {fill(copy.stepOf, {

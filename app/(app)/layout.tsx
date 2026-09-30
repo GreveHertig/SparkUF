@@ -8,6 +8,7 @@ import { SignOutButton } from "@/components/spark/SignOutButton";
 import { requireUser } from "@/lib/server/session";
 import { liveProfileRepository } from "@/adapters/live/ProfileRepository";
 import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
+import { liveEvidenceRepository } from "@/adapters/live/EvidenceRepository";
 import { isPlaceholderError } from "@/core/errors";
 import type { Profile } from "@/core/domain";
 
@@ -17,8 +18,9 @@ import type { Profile } from "@/core/domain";
 // platshållare i stället för att krascha, i båda fallen (isPlaceholderError,
 // core/errors.ts). `locale` spelar ingen roll för brödsmulan och hårdkodas
 // här; en senare session avgör hur en klar adapter får rätt språk för
-// sidhuvudet. Poängen hämtas INTE här (PR 2) — skalet visar den inte längre,
-// Hem-sidan (app/(app)/app/page.tsx) hämtar redan sin egen.
+// sidhuvudet. Poängen hämtas här för sidhuvudets lilla siffra (PR 4); ett
+// platshållarfel (tomt konto) ger `null`, och skalet visar då luckan — aldrig
+// en nolla.
 const FALLBACK_PROFILE: Profile = { name: "—", initials: "—" };
 
 export default async function LiveAppShellLayout({ children }: { children: ReactNode }) {
@@ -42,6 +44,14 @@ export default async function LiveAppShellLayout({ children }: { children: React
       throw error;
     });
 
+  const score = await liveEvidenceRepository
+    .getScoreSnapshot("sv")
+    .then((snapshot) => snapshot.total)
+    .catch((error) => {
+      if (isPlaceholderError(error)) return null;
+      throw error;
+    });
+
   return (
     <div className="fd">
       <div className="fdd">
@@ -50,6 +60,7 @@ export default async function LiveAppShellLayout({ children }: { children: React
           dataKind="live"
           profile={profile}
           currentStep={currentStep}
+          score={score}
           headerRight={<SignOutButton />}
         >
           {children}

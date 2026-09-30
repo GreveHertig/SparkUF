@@ -128,6 +128,8 @@ export const sv = {
     },
     profileMenuLabel: "Profil",
     navMenuLabel: "Meny",
+    headerScoreLabel: "Poäng",
+    headerScoreMissing: "Poängen saknas än",
     tagline: "AI-medgrundare",
     restartDemo: "Börja om demonstrationen",
   },

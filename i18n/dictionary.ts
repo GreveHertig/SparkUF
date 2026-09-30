@@ -132,6 +132,12 @@ export type Dictionary = {
     /** `aria-label` på flikraden i /app (PR 2, skalet) — `site.demo.navLabel`
      * ("Demomeny") används bara när `dataKind` är `"example"`. */
     navMenuLabel: string;
+    /** Poängen i sidhuvudet (docs/uppdrag.md avsnitt 6, "Appen": sidhuvudet
+     * visar poängen alltid) — etiketten före siffran, t.ex. "Poäng 24". */
+    headerScoreLabel: string;
+    /** Skärmläsartext när poängen inte gick att hämta. Luckan visas som "—",
+     * aldrig som en nolla eller ett påhittat värde. */
+    headerScoreMissing: string;
     /** Undertext under ordmärket i sidomenyn (artefaktens `.brand small`). */
     tagline: string;
     /** Sidomenyns sidfot (artefaktens `.side-foot .restart`) — bara i demot,
