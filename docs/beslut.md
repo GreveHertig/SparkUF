@@ -157,3 +157,13 @@ update. Användarägd med RLS (läsa, skapa, uppdatera egen), till skillnad frå
 `registry_cache`: raden styr bara grundarens egen sökning, så en förfalskad rad
 skadar ingen annan. Flödet står i `docs/moduler/webbresearch-och-pulsen.md`,
 "Dagscachen".
+
+## 2026-09-30
+
+**Spark använder SNI 2025 rakt av (Erik).** SNI-koder skrivs som fem siffror
+utan punkt, till exempel `69201`. Ingen omkodning från SNI 2007. Skäl: SCB:s
+företagsregister-API (AFR) och dess kodtabell är SNI 2025 (Verifierat
+2026-09-30: 62010 finns inte, 62100 = Dataprogrammering), och en omkodning
+mellan versionerna är inte en-till-en. Porten (`RegistryQuery.sniCode`),
+liveadapterns validering och demodatan (`69.201`) ändras inte nu. Vad som
+ska ändras står i `docs/moduler/registret.md`, "SNI 2025".
