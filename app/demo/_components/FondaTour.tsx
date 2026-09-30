@@ -9,7 +9,7 @@ import { saraBeats } from "@/adapters/demo/sara";
 import { TOUR_STEPS } from "@/adapters/demo/tourSteps";
 import { toFondaPath } from "../_lib/paths";
 import { fondaTourCopy } from "../_lib/tourCopy";
-import { frameStop, layoutStop, type SafeArea } from "../_lib/tourGeometry";
+import { cutBetweenUnits, frameStop, layoutStop, type SafeArea, type TourUnit } from "../_lib/tourGeometry";
 import {
   CARD_IN_EASE,
   CARD_OUT_EASE,
@@ -43,6 +43,40 @@ function safeArea(viewportHeight: number): SafeArea {
   const top = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
   const bottom = bar ? Math.min(viewportHeight, bar.getBoundingClientRect().top) : viewportHeight;
   return { top, bottom: bottom > top + 200 ? bottom : viewportHeight };
+}
+
+/**
+ * Målets delar, räknade från målets överkant: textblock (som aldrig kapas) och
+ * kort eller paneler med bakgrund eller ram. Listor räknas inte som kort, så
+ * att en lång lista kan kapas mellan två rader.
+ */
+function tourUnits(root: HTMLElement): TourUnit[] {
+  const origin = root.getBoundingClientRect().top;
+  const units: TourUnit[] = [];
+  const isInline = (el: Element) => getComputedStyle(el).display.startsWith("inline");
+  const walk = (parent: Element) => {
+    for (const el of parent.children) {
+      const rect = el.getBoundingClientRect();
+      if (rect.height < 1) continue;
+      const top = rect.top - origin;
+      const bottom = rect.bottom - origin;
+      const heading = /^H[1-6]$/.test(el.tagName);
+      if ([...el.children].every(isInline)) {
+        units.push({ top, bottom, box: false, heading });
+        continue;
+      }
+      const style = getComputedStyle(el);
+      const painted =
+        !/^(UL|OL|DL)$/.test(el.tagName) &&
+        ((style.backgroundColor !== "transparent" && style.backgroundColor !== "rgba(0, 0, 0, 0)") ||
+          parseFloat(style.borderTopWidth) > 0 ||
+          parseFloat(style.borderBottomWidth) > 0);
+      if (painted) units.push({ top, bottom, box: true, heading: false });
+      walk(el);
+    }
+  };
+  walk(root);
+  return units;
 }
 
 /**
@@ -145,6 +179,9 @@ function TourStage({
     // Skrollen körs av rutans svep: samma start, kurva och längd.
     let scrollPlanned = false;
     let scrollPlan: { from: number; to: number } | null = null;
+    // Ett mål som inte ryms bredvid kortet kapas mellan två hela delar
+    // (rader, kort, stycken). Höjden räknas ut en gång per stopp.
+    let trimHeight: number | null = null;
 
     // Hålet som visas nu (null tills första målet hittats: hel mörkläggning).
     let hole: Rect | null = null;
@@ -196,14 +233,35 @@ function TourStage({
       if (!targetId) return null;
       const el = document.querySelector<HTMLElement>(`[data-tour-id="${targetId}"]`);
       if (!el) return now - changedAt > MISSING_TARGET_MS ? null : undefined;
-      const rect = padRect(el.getBoundingClientRect(), SPOTLIGHT_PADDING);
+      // Skrollen planeras efter kortets höjd, så rutan väntar tills kortet bär
+      // det nya stoppets text. Annars mäts förra stoppets kort, och ett mål som
+      // precis ryms bredvid kortet hamnar under det.
+      if (!scrollPlanned && renderedIndexRef.current !== active) return undefined;
+      let rect = padRect(el.getBoundingClientRect(), SPOTLIGHT_PADDING);
       const scrollY = window.scrollY;
       if (!scrollPlanned) {
         scrollPlanned = true;
-        const maxScroll = Math.max(0, document.documentElement.scrollHeight - viewport.height);
-        const { scrollTo } = frameStop(rect, measure, viewport, safe, { y: scrollY, max: maxScroll });
-        if (scrollTo !== scrollY) scrollPlan = { from: scrollY, to: scrollTo };
+        trimHeight = null;
+        const scroll = { y: scrollY, max: Math.max(0, document.documentElement.scrollHeight - viewport.height) };
+        let plan = frameStop(rect, measure, viewport, safe, scroll);
+        // Ryms inte hela målet bredvid kortet kortas rutan till de hela delar
+        // som ryms, i stället för att kapas mitt i en rad eller täckas av kortet.
+        for (let attempt = 0; attempt < 4; attempt++) {
+          const height = trimHeight ?? rect.height;
+          const shown = plan.layout.hole?.height ?? 0;
+          // Saknas bara luften runt målet räknas det som att det ryms.
+          if (shown >= height - SPOTLIGHT_PADDING * 2) break;
+          const limit = shown - SPOTLIGHT_PADDING * 2;
+          const cut = cutBetweenUnits(tourUnits(el), limit);
+          // En skarv långt ovanför ytan (t.ex. direkt under rubriken) ger en
+          // ruta som visar för lite. Då hellre målet avskuret vid kortet.
+          if (cut === null || cut < limit / 2) break;
+          trimHeight = cut + SPOTLIGHT_PADDING * 2;
+          plan = frameStop({ ...rect, height: trimHeight }, measure, viewport, safe, scroll);
+        }
+        if (plan.scrollTo !== scrollY) scrollPlan = { from: scrollY, to: plan.scrollTo };
       }
+      if (trimHeight !== null) rect = { ...rect, height: Math.min(rect.height, trimHeight) };
       // Under skrollen siktar rutan och kortet på där målet hamnar när den är klar.
       return scrollPlan ? { ...rect, top: rect.top + scrollY - scrollPlan.to } : rect;
     }
@@ -301,7 +359,22 @@ function TourStage({
         if (card.style.width !== width) card.style.width = width;
       }
 
-      const clip = scrimClipPath(hole ? roundRect(hole) : centerPoint(viewportWidth, viewportHeight), SPOTLIGHT_RADIUS);
+      // Där målet fortsätter förbi hålet (under sidhuvudet, demoraden eller
+      // kortet) når hålet ända fram med raka hörn, så att det ser ut att
+      // fortsätta. Radien växer mjukt med avståndet till kanten, så att svepet
+      // inte hackar. Kapas bara luften runt målet är hörnen rundade.
+      const shown = hole ? roundRect(hole) : centerPoint(viewportWidth, viewportHeight);
+      const area = layout?.area ?? safe;
+      const final = layout?.hole;
+      const cutTop = !!(final && found && final.top > found.top + SPOTLIGHT_PADDING);
+      const cutBottom = !!(final && found && final.top + final.height < found.top + found.height - SPOTLIGHT_PADDING);
+      const radius = {
+        top: cutTop ? Math.min(SPOTLIGHT_RADIUS, Math.max(0, shown.top - area.top)) : SPOTLIGHT_RADIUS,
+        bottom: cutBottom
+          ? Math.min(SPOTLIGHT_RADIUS, Math.max(0, area.bottom - (shown.top + shown.height)))
+          : SPOTLIGHT_RADIUS,
+      };
+      const clip = scrimClipPath(shown, radius);
       if (clip !== lastClip) {
         scrim.style.clipPath = clip;
         lastClip = clip;

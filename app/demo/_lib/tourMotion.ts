@@ -139,20 +139,24 @@ export function padRect(rect: Rect, padding: number): Rect {
 
 /**
  * Mörkläggningen som ett enda lager: hela skärmen minus ett rundat hål,
- * klippt med `evenodd`. Inga rutor som möts, alltså inga skarvar.
+ * klippt med `evenodd`. Inga rutor som möts, alltså inga skarvar. Radien kan
+ * ges separat för över- och underkanten: ett mål som fortsätter förbi
+ * skärmkanten får raka hörn där.
  */
-export function scrimClipPath(rect: Rect, radius: number): string {
+export function scrimClipPath(rect: Rect, radius: number | { top: number; bottom: number }): string {
   const outer = "M-10 -10H100000V100000H-10Z";
   if (rect.width < 1 || rect.height < 1) return `path(evenodd, "${outer}")`;
   const { top, left, width, height } = rect;
-  const r = Math.min(radius, width / 2, height / 2);
+  const radii = typeof radius === "number" ? { top: radius, bottom: radius } : radius;
+  const t = Math.max(0, Math.min(radii.top, width / 2, height / 2));
+  const b = Math.max(0, Math.min(radii.bottom, width / 2, height / 2));
   const right = left + width;
   const bottom = top + height;
   const hole =
-    `M${left + r} ${top}H${right - r}A${r} ${r} 0 0 1 ${right} ${top + r}` +
-    `V${bottom - r}A${r} ${r} 0 0 1 ${right - r} ${bottom}` +
-    `H${left + r}A${r} ${r} 0 0 1 ${left} ${bottom - r}` +
-    `V${top + r}A${r} ${r} 0 0 1 ${left + r} ${top}Z`;
+    `M${left + t} ${top}H${right - t}A${t} ${t} 0 0 1 ${right} ${top + t}` +
+    `V${bottom - b}A${b} ${b} 0 0 1 ${right - b} ${bottom}` +
+    `H${left + b}A${b} ${b} 0 0 1 ${left} ${bottom - b}` +
+    `V${top + t}A${t} ${t} 0 0 1 ${left + t} ${top}Z`;
   return `path(evenodd, "${outer}${hole}")`;
 }
 
