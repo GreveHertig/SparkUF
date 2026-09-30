@@ -25,6 +25,9 @@ import FondaDemoCofounderPage from "./(app)/medgrundaren/page";
 import FondaDemoBuildPage from "./(app)/bygg/page";
 import FondaDemoBusinessPlanPage from "./(app)/affarsplan/page";
 import FondaDemoStartPage from "./start/page";
+import FondaDemoIdeaPage from "./start/ide/page";
+import FondaDemoProfilePage from "./start/profil/page";
+import { demoProjectRepository } from "@/adapters/demo/ProjectRepository";
 import { FONDA_DEMO_KEY, REAL_DEMO_KEY, enterFondaDemo, leaveFondaDemo } from "./_lib/fondaDemoIsolation";
 import { FONDA_DEMO_PATHS } from "./_lib/paths";
 
@@ -112,6 +115,54 @@ describe("/demo", () => {
     expect(useDemoStore.getState().entry).toBe("hasIdea");
     expect(JSON.parse(window.localStorage.getItem(FONDA_DEMO_KEY) ?? "{}").state.entry).toBe("hasIdea");
     expect(window.localStorage.getItem(REAL_DEMO_KEY)).toBe(realSaved);
+  });
+
+  it("idégenomlysningen (tunn hämtare, PR 11) visar demots genomlysning och länkar till profilsamtalet", async () => {
+    pathname = FONDA_DEMO_PATHS.startIdea;
+    enterFondaDemo();
+    useDemoStore.getState().setEntry("hasIdea");
+    const screening = await demoProjectRepository.getIdeaScreening("sv");
+    render(
+      <LocaleProvider>
+        <FondaDemoLayout>
+          <FondaDemoIdeaPage />
+        </FondaDemoLayout>
+      </LocaleProvider>,
+    );
+    await act(async () => {});
+    expect(screen.getByText(screening.originalIdea)).toBeInTheDocument();
+    expect(screen.getByText(screening.sharperIdea.name)).toBeInTheDocument();
+    expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: sv.onboarding.idea.continueCta })).toHaveAttribute("href", FONDA_DEMO_PATHS.startProfile);
+  });
+
+  it("profilsamtalet (tunn hämtare, PR 11) spelar upp demots samtal och markerar onboardingen klar", async () => {
+    vi.useFakeTimers();
+    try {
+      pathname = FONDA_DEMO_PATHS.startProfile;
+      enterFondaDemo();
+      render(
+        <LocaleProvider>
+          <FondaDemoLayout>
+            <FondaDemoProfilePage />
+          </FondaDemoLayout>
+        </LocaleProvider>,
+      );
+      await act(async () => {});
+      expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+      for (let i = 0; i < 20; i += 1) {
+        await act(async () => {
+          vi.advanceTimersByTime(2300);
+        });
+      }
+      const continueLink = screen.getByRole("link", { name: sv.onboarding.profile.continueCta });
+      expect(continueLink).toHaveAttribute("href", FONDA_DEMO_PATHS.home);
+      expect(useDemoStore.getState().onboardingDone).toBe(false);
+      fireEvent.click(continueLink);
+      expect(useDemoStore.getState().onboardingDone).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("Hem visar första steget, och knappen spelar upp nästa moment i demots eget läge", async () => {

@@ -5,7 +5,7 @@ const password = process.env.APP_TEST_USER_PASSWORD;
 
 test.skip(!email || !password, "APP_TEST_USER_EMAIL/APP_TEST_USER_PASSWORD saknas i .env.local (se .env.example).");
 
-// Varje /app-sida som finns. Juridik både utan och med vald bolagsform: med
+// Varje /app-sida som finns, och onboardingen på /start. Juridik både utan och med vald bolagsform: med
 // val anropas liveadaptern (cachad, se app/(app)/app/juridik/legalMapCache.ts).
 const PAGES = [
   { path: "/app", heading: /./ },
@@ -30,6 +30,11 @@ const PAGES = [
   { path: "/app/bygg", heading: "Bygg" },
   // Affärsplanen: ingen hopsamling i /app än, Kommer snart i varje avsnitt.
   { path: "/app/affarsplan", heading: "Affärsplanen" },
+  // PR 11: onboardingen, samma skärmar som /demo/start. Profil och Projekt
+  // är stubbar, så idégenomlysningen och samtalet visar Kommer snart.
+  { path: "/start", heading: "Var står du idag?" },
+  { path: "/start/ide", heading: "Idén, granskad" },
+  { path: "/start/profil", heading: "Berätta om dig" },
 ] as const;
 
 async function logIn(page: Page) {

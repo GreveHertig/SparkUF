@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { OnboardingIdea } from "./OnboardingIdea";
@@ -25,10 +25,11 @@ const screening: IdeaScreening = {
 // Avsnitt 2.1: antaganden bryts ut, registerbilden visas, Medgrundaren säger
 // rakt ut vad som är svagt och föreslår en skarpare version.
 describe("OnboardingIdea", () => {
+  afterEach(cleanup);
   it("visar idén, antagandena, registerbilden, svagheten och den skarpare versionen", () => {
     render(
       <LocaleProvider>
-        <OnboardingIdea data={{ screening, continueHref: "/demo/start/profil" }} />
+        <OnboardingIdea data={{ screening }} continueHref="/demo/start/profil" />
       </LocaleProvider>,
     );
 
@@ -46,9 +47,23 @@ describe("OnboardingIdea", () => {
 
     expect(screen.getByText("Beläggningsprognosen")).toBeInTheDocument();
     expect(screen.getByText("Ett B2B-verktyg för hallägare.")).toBeInTheDocument();
-    expect(screen.getByText("Säljbakgrunden blir en fördel.")).toBeInTheDocument();
+    expect(screen.getByText(/Säljbakgrunden blir en fördel\./)).toBeInTheDocument();
 
     const continueLink = screen.getByRole("link", { name: "Fortsätt till profilsamtalet" });
     expect(continueLink).toHaveAttribute("href", "/demo/start/profil");
+  });
+
+  it("visar Kommer snart i varje sektion utan genomlysning, men behåller rubrikerna", () => {
+    render(
+      <LocaleProvider>
+        <OnboardingIdea data={{ screening: null }} continueHref="/start/profil" />
+      </LocaleProvider>,
+    );
+    expect(screen.getByRole("heading", { level: 1, name: "Idén, granskad" })).toBeInTheDocument();
+    for (const title of ["Din idé", "Antaganden idén bygger på", "Första registerbilden", "Vad som är svagt", "En skarpare version"]) {
+      expect(screen.getByRole("heading", { level: 2, name: title })).toBeInTheDocument();
+    }
+    expect(screen.getAllByText("Kommer snart")).toHaveLength(5);
+    expect(screen.queryByText("Padelhallsbolag i Sverige")).not.toBeInTheDocument();
   });
 });
