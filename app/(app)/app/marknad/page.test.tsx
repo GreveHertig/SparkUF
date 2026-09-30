@@ -131,6 +131,9 @@ describe("/app/marknad", () => {
     expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(2);
     expect(screen.queryByText(sv.site.demo.exampleLabel)).not.toBeInTheDocument();
     expect(screen.queryByText(/byrå/i)).not.toBeInTheDocument();
+    // PR 11: demots exempelkällor läcker aldrig in i /app.
+    expect(screen.queryByText(sv.common.exampleSourceLabel)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Påhittad data/)).not.toBeInTheDocument();
   });
 
   it("ett transportfel visar felrutan i registersektionerna, aldrig feltexten", async () => {

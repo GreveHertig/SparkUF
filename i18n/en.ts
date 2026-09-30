@@ -23,6 +23,7 @@ export const en = {
     pulseWhyItMattersPrefix: "Why it matters:",
     doneItemsLabel: "Already done",
     simulationLabel: "Simulation",
+    exampleSourceLabel: "Example",
     simulationPopulationLabel: "Simulated population",
     upToPointsBefore: "Can earn up to",
     upToPointsAfter: "points",
@@ -813,6 +814,7 @@ export const en = {
       missing: "Missing",
     },
     requiresStepTemplate: "No evidence yet — comes from step {step}",
+    stepDoneNoEvidenceTemplate: "Step {step} is done, but gave this section no evidence with a source.",
     percentValueTemplate: "{value}%",
     coverageValueTemplate: "growth: {growth} of {total}, region: {region} of {total}",
     contradictionLabel: "Contradiction — both sides shown",
@@ -1002,6 +1004,12 @@ export const en = {
     demo: {
       badge: "Example with made-up data",
       exampleLabel: "Example with made-up data. These companies don't exist.",
+      exampleSourceTemplate: "Made-up data, {origin}",
+      exampleOrigins: {
+        step: "step {step}",
+        ideaScreening: "the idea screening",
+        suggestions: "Raise your score",
+      },
       navLabel: "Demo menu",
       backToLanding: "Back to the start page",
       stepOf: "Step {current} of {total}",

@@ -1,7 +1,10 @@
 "use client";
 
 import { ConceptBadge } from "@/components/ui/ConceptBadge";
+import { SourceTag } from "@/components/ui/SourceTag";
+import type { Källa } from "@/core/domain";
 import { cn } from "@/design/cn";
+import type { DataType } from "@/design/tokens";
 import { useI18n } from "@/i18n/context";
 import { mentionsConcept } from "@/core/concepts";
 
@@ -12,18 +15,22 @@ import { mentionsConcept } from "@/core/concepts";
  * `screens/` — portregeln gäller.
  */
 
-/** En rad i samtalet med Medgrundaren. Koncept får sin etikett. */
-export function ChatLine({ role, text }: { role: "founder" | "cofounder"; text: string }) {
+/** Källan för siffrorna i en rad eller en verktygskörning, när den har någon (PR 11). */
+export type ChatSource = { source: Källa; dataType: DataType };
+
+/** En rad i samtalet med Medgrundaren. Koncept får sin etikett, siffror sin källa. */
+export function ChatLine({ role, text, source }: { role: "founder" | "cofounder"; text: string; source?: ChatSource }) {
   return (
     <div className={cn("fdd-chat", role === "founder" ? "fdd-chat--founder" : "fdd-chat--cofounder")}>
       <p className="fdd-chat__bubble">{text}</p>
       {mentionsConcept(text) && <ConceptBadge />}
+      {source && <SourceTag source={source.source} dataType={source.dataType} />}
     </div>
   );
 }
 
 /** Ett verktyg som körts: delmomenten, alla klara. */
-export function ToolRun({ label, steps }: { label: string; steps: string[] }) {
+export function ToolRun({ label, steps, source }: { label: string; steps: string[]; source?: ChatSource }) {
   const { t } = useI18n();
   return (
     <div className="fdd-tool">
@@ -36,6 +43,7 @@ export function ToolRun({ label, steps }: { label: string; steps: string[] }) {
         ))}
       </ul>
       {mentionsConcept(`${label} ${steps.join(" ")}`) && <ConceptBadge />}
+      {source && <SourceTag source={source.source} dataType={source.dataType} />}
     </div>
   );
 }

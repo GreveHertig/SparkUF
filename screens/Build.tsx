@@ -4,7 +4,8 @@ import { ComingSoon } from "@/components/ui/ComingSoon";
 import { ConceptBadge } from "@/components/ui/ConceptBadge";
 import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n } from "@/i18n/context";
-import type { ByggBrief } from "@/core/domain";
+import type { ByggBrief, Källa } from "@/core/domain";
+import type { DataType } from "@/design/tokens";
 import type { BuildStatus } from "@/ports/BuildProvider";
 import { Locked, PageHead, Pill, type PillTone } from "./blocks/PageBlocks";
 
@@ -19,6 +20,9 @@ export type BuildStatusView = { status: BuildStatus; url?: string; creditsUsed?:
 export type BuildData = {
   status: BuildStatusView | null;
   spec: ByggBrief | "none" | null;
+  /** Källan för `creditsUsed`, som porten inte bär. Bara demot sätter den:
+   * talet är påhittat och får en exempelkälla (PR 11). */
+  creditsSource?: { source: Källa; dataType: DataType };
 };
 
 /** Samma form som `ValidationLock` och `MarketLock`. */
@@ -62,6 +66,12 @@ export function Build({ data, locked }: { data: BuildData; locked: BuildLock }) 
               {status.creditsUsed !== undefined && (
                 <span className="fdd-gate__credits">
                   {copy.creditsUsedLabel}: {status.creditsUsed}
+                  {data.creditsSource && (
+                    <>
+                      {" "}
+                      <SourceTag source={data.creditsSource.source} dataType={data.creditsSource.dataType} />
+                    </>
+                  )}
                 </span>
               )}
             </div>

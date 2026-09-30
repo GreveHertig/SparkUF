@@ -2,22 +2,28 @@
 
 import { ComingSoon } from "@/components/ui/ComingSoon";
 import { ConceptBadge } from "@/components/ui/ConceptBadge";
+import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n } from "@/i18n/context";
 import type { TranscriptItem } from "@/ports/CofounderAgent";
 import { mentionsConcept } from "@/core/concepts";
-import { ChatLine, TimeSkipLine, ToolRun } from "./blocks/ChatBlocks";
+import { ChatLine, TimeSkipLine, ToolRun, type ChatSource } from "./blocks/ChatBlocks";
 import { PageHead } from "./blocks/PageBlocks";
 
 /** Det aktuella momentet i samtalet: etiketten ("03 · Marknaden") och inslagen. */
 export type CofounderMoment = {
   label: string;
   items: TranscriptItem[];
+  /** Källan för siffrorna i varje inslag, i samma ordning som `items`. Porten
+   * bär ingen; demot sätter en exempelkälla på inslag med siffror (PR 11). */
+  itemSources?: (ChatSource | null)[];
 };
 
 /** En kort, redan känd fakta eller ett redan taget beslut — en rad, aldrig chattbubblor. */
 export type CofounderContextItem = {
   id: string;
   text: string;
+  /** Källan för radens siffror, när den har några (PR 11). */
+  source?: ChatSource;
 };
 
 /**
@@ -58,9 +64,14 @@ export function Cofounder({ data }: { data: CofounderData }) {
             <div className="fdd-conversation" data-tour-id="cofounder-moment">
               {moment.items.map((item, index) =>
                 item.kind === "message" ? (
-                  <ChatLine key={index} role={item.role} text={item.text[locale]} />
+                  <ChatLine key={index} role={item.role} text={item.text[locale]} source={moment.itemSources?.[index] ?? undefined} />
                 ) : item.kind === "tool" ? (
-                  <ToolRun key={index} label={item.label[locale]} steps={item.steps[locale]} />
+                  <ToolRun
+                    key={index}
+                    label={item.label[locale]}
+                    steps={item.steps[locale]}
+                    source={moment.itemSources?.[index] ?? undefined}
+                  />
                 ) : (
                   <TimeSkipLine key={index} label={item.label[locale]} />
                 ),
@@ -94,6 +105,12 @@ export function Cofounder({ data }: { data: CofounderData }) {
                   <li key={item.id}>
                     {item.text}
                     {mentionsConcept(item.text) && <ConceptBadge className="fdd-context__concept" />}
+                    {item.source && (
+                      <>
+                        {" "}
+                        <SourceTag source={item.source.source} dataType={item.source.dataType} />
+                      </>
+                    )}
                   </li>
                 ))}
               </ol>

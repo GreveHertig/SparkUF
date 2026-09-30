@@ -23,6 +23,7 @@ export const sv = {
     pulseWhyItMattersPrefix: "Varför det spelar roll:",
     doneItemsLabel: "Redan klart",
     simulationLabel: "Simulering",
+    exampleSourceLabel: "Exempel",
     simulationPopulationLabel: "Simulerad population",
     upToPointsBefore: "Kan ge upp till",
     upToPointsAfter: "poäng",
@@ -817,6 +818,7 @@ export const sv = {
       missing: "Saknas",
     },
     requiresStepTemplate: "Underlag saknas — kommer från steg {step}",
+    stepDoneNoEvidenceTemplate: "Steg {step} är klart, men gav inget underlag med källa till det här avsnittet.",
     percentValueTemplate: "{value} %",
     coverageValueTemplate: "tillväxt: {growth} av {total}, region: {region} av {total}",
     contradictionLabel: "Motsägelse — båda sidor visas",
@@ -1006,6 +1008,12 @@ export const sv = {
     demo: {
       badge: "Exempel med påhittad data",
       exampleLabel: "Exempel med påhittad data. Företagen finns inte på riktigt.",
+      exampleSourceTemplate: "Påhittad data, {origin}",
+      exampleOrigins: {
+        step: "steg {step}",
+        ideaScreening: "idégenomlysningen",
+        suggestions: "Höj din poäng",
+      },
       navLabel: "Demomeny",
       backToLanding: "Till startsidan",
       stepOf: "Steg {current} av {total}",

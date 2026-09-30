@@ -21,8 +21,11 @@ import { Locked, PageHead, Pill, type PillTone } from "./blocks/PageBlocks";
  * `null` betyder att planen inte kan sättas samman (ingen hopsamling i /app
  * än): varje avsnitt visar sin rubrik och "Kommer snart", och mognaden visas
  * som luckan "—", aldrig som 0.
+ *
+ * `completedStepNumbers` är stegen som är klara. En lucka från ett klart steg
+ * säger det, i stället för att underlaget "kommer från" steget (PR 11).
  */
-export type BusinessPlanData = { plan: BusinessPlanModel | null };
+export type BusinessPlanData = { plan: BusinessPlanModel | null; completedStepNumbers?: readonly number[] };
 
 const statusTone: Record<BusinessPlanStatus, PillTone> = {
   solid: "green",
@@ -70,7 +73,7 @@ function SectionShell({
   );
 }
 
-function Section({ section }: { section: BusinessPlanSection }) {
+function Section({ section, completedStepNumbers }: { section: BusinessPlanSection; completedStepNumbers: readonly number[] }) {
   const { t } = useI18n();
   const copy = t.businessPlanPage;
 
@@ -94,9 +97,15 @@ function Section({ section }: { section: BusinessPlanSection }) {
         </div>
       ))}
 
-      {section.gaps.map((gap, index) => (
-        <Locked key={index} hint={fill(copy.requiresStepTemplate, { step: gap.requiredStepNumber })} />
-      ))}
+      {section.gaps.map((gap, index) =>
+        completedStepNumbers.includes(gap.requiredStepNumber) ? (
+          <p key={index} className="fdd-muted">
+            {fill(copy.stepDoneNoEvidenceTemplate, { step: gap.requiredStepNumber })}
+          </p>
+        ) : (
+          <Locked key={index} hint={fill(copy.requiresStepTemplate, { step: gap.requiredStepNumber })} />
+        ),
+      )}
 
       {section.lockedParts.length > 0 && (
         <div className="fdd-stack fdd-stack--tight">
@@ -136,7 +145,9 @@ export function BusinessPlan({ data }: { data: BusinessPlanData }) {
       />
       <div className="fdd-plan">
         {plan
-          ? plan.sections.map((section) => <Section key={section.id} section={section} />)
+          ? plan.sections.map((section) => (
+              <Section key={section.id} section={section} completedStepNumbers={data.completedStepNumbers ?? []} />
+            ))
           : BUSINESS_PLAN_SECTION_ORDER.map((id) => (
               <SectionShell key={id} id={id}>
                 <ComingSoon />

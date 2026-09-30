@@ -79,6 +79,16 @@ describe("/app/bygg (PR 10)", () => {
     expect(screen.getByText("Ett belagt påstående.")).toBeInTheDocument();
   });
 
+  it("credits från porten visas utan exempelkälla (PR 11: exempel bara i demot)", async () => {
+    getStepsMock.mockResolvedValue(stepsWithStep7("done"));
+    getStatusMock.mockResolvedValue({ status: "building", creditsUsed: 12 });
+    getSpecMock.mockResolvedValue(spec);
+    await renderPage();
+    expect(screen.getByText(new RegExp(`${sv.buildPage.creditsUsedLabel}: 12`))).toBeInTheDocument();
+    expect(screen.queryByText(sv.common.exampleSourceLabel)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Påhittad data/)).not.toBeInTheDocument();
+  });
+
   it("okända steg ger inget låst läge; sektionerna visar sina luckor", async () => {
     getStepsMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
     getStatusMock.mockRejectedValue(stub());

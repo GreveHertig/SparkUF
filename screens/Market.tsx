@@ -7,6 +7,7 @@ import { useI18n, type Locale } from "@/i18n/context";
 import type { Dictionary } from "@/i18n/dictionary";
 import { formatCount, formatSek } from "@/i18n/format";
 import type { DataKind, Källa } from "@/core/domain";
+import type { DataType } from "@/design/tokens";
 import { formatFiscalYearSpan, type FiscalYearSpan } from "@/core/fiscalYear";
 import { dominantBucket, employeeSpan, sizeDistribution } from "@/core/market";
 import { outreachStats } from "@/core/validation";
@@ -52,6 +53,10 @@ export type MarketData = {
   /** Kontaktlistan och dess källa kommer ur samma utskick och gatas tillsammans. */
   outreach: { rows: CampaignRow[]; source: Källa } | null;
   simulation: Simulation | null;
+  /** Källan för konkurrenternas beskrivningar, när porten inte bär någon.
+   * Bara demot sätter den: beskrivningarna är exempeldata och får en
+   * exempelkälla (PR 11), aldrig registrets. */
+  competitorsSource?: { source: Källa; dataType: DataType };
 };
 
 /** Låst läge för hela sidan. Demot räknar ut det ur sitt moment, /app ur Resans steg. */
@@ -223,6 +228,9 @@ export function Market({
                 <li key={competitor.name}>
                   <p className="fdd-cells__title">{competitor.name}</p>
                   <p className="fdd-muted">{competitor.description}</p>
+                  {data.competitorsSource && (
+                    <SourceTag source={data.competitorsSource.source} dataType={data.competitorsSource.dataType} />
+                  )}
                 </li>
               ))}
             </ul>

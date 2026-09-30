@@ -4,6 +4,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
+import { fill } from "@/i18n/fill";
 import { DEMO_STATE_KEY, useDemoStore } from "@/adapters/demo/demoStore";
 import { saraEngine } from "@/adapters/demo/sara";
 import { jonasBeats } from "@/adapters/demo/jonas";
@@ -366,6 +367,64 @@ describe("/demo", () => {
       expect(item.querySelector(".fdd-inline")?.textContent).not.toBe("");
     }
     expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+  });
+
+  describe("exempelkällor (PR 11)", () => {
+    const lastBeat = saraEngine.beats.length - 1;
+    const exampleTags = () =>
+      screen
+        .queryAllByRole("button", { name: sv.common.sourceTag.openDetails })
+        .filter((tag) => tag.textContent?.startsWith(sv.common.exampleSourceLabel));
+
+    it("affärsplanens exempel bär exempelkällan, och en lucka från ett klart steg säger att steget är klart", async () => {
+      startInApp(lastBeat);
+      pathname = DEMO_PATHS.businessPlan;
+      await renderInApp(<DemoBusinessPlanPage />);
+      expect(await screen.findByText("8/9")).toBeInTheDocument();
+      expect(exampleTags().length).toBeGreaterThan(0);
+      for (const tag of exampleTags()) expect(tag).toHaveTextContent(/Påhittad data, /);
+      // Saras steg 06 är klart men ger inga antaganden: ingen "kommer från steg 6".
+      expect(screen.getByText(fill(sv.businessPlanPage.stepDoneNoEvidenceTemplate, { step: 6 }))).toBeInTheDocument();
+      expect(screen.queryByText(fill(sv.businessPlanPage.requiresStepTemplate, { step: 6 }))).not.toBeInTheDocument();
+    });
+
+    it("Marknads konkurrentbeskrivningar bär var sin exempelkälla från steg 03", async () => {
+      startInApp(lastBeat);
+      pathname = DEMO_PATHS.market;
+      await renderInApp(<DemoMarketPage />);
+      const section = (await screen.findByRole("heading", { name: sv.marketPage.competitorsTitle })).closest("section")!;
+      const tags = [...section.querySelectorAll("button")].filter((b) => b.textContent?.includes("Påhittad data, steg 03"));
+      expect(tags.length).toBe(section.querySelectorAll("li").length);
+      expect(tags.length).toBeGreaterThan(0);
+    });
+
+    it("Byggs credits bär en exempelkälla", async () => {
+      startInApp(lastBeat);
+      pathname = DEMO_PATHS.build;
+      await renderInApp(<DemoBuildPage />);
+      const credits = (await screen.findByText(new RegExp(sv.buildPage.creditsUsedLabel))).closest(".fdd-gate__credits")!;
+      expect(credits).toHaveTextContent("62");
+      expect(credits.querySelector("button")).toHaveTextContent(`${sv.common.exampleSourceLabel}·Påhittad data, steg `);
+    });
+
+    it("Medgrundarens inslag med siffror bär en exempelkälla, andra gör det inte", async () => {
+      startInApp(saraEngine.beats.findIndex((beat) => beat.id === "03-marknaden-korning"));
+      pathname = DEMO_PATHS.cofounder;
+      await renderInApp(<DemoCofounderPage />);
+      const line = (await screen.findByText(/^312 redovisningsbyråer/)).closest(".fdd-chat")!;
+      expect(line.querySelector("button")).toHaveTextContent(`${sv.common.exampleSourceLabel}·Påhittad data, steg 03`);
+      for (const chat of document.querySelectorAll(".fdd-chat")) {
+        if (!/\d/.test(chat.querySelector(".fdd-chat__bubble")?.textContent ?? "")) expect(chat.querySelector("button")).toBeNull();
+      }
+    });
+
+    it("Medgrundarens Sedan tidigare bär exempelkällan på rader med siffror", async () => {
+      startInApp(lastBeat);
+      pathname = DEMO_PATHS.cofounder;
+      await renderInApp(<DemoCofounderPage />);
+      const row = (await screen.findByText(/^Marknadsbilden hämtad: 312 byråer/)).closest("li")!;
+      expect(row.querySelector("button")).toHaveTextContent(`${sv.common.exampleSourceLabel}·Påhittad data, steg 03`);
+    });
   });
 
   describe("Datalöftet och buggrapporten (docs/buggar-2026-09.md)", () => {

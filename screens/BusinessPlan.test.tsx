@@ -82,4 +82,29 @@ describe("BusinessPlan (PR 10)", () => {
     expect(screen.queryByText(/^0/)).not.toBeInTheDocument();
     expect(screen.queryByText(sv.businessPlanPage.status.missing)).not.toBeInTheDocument();
   });
+
+  it("luckan från ett klart steg säger att steget är klart, inte att underlaget kommer därifrån (PR 11)", () => {
+    renderPlan({ plan, completedStepNumbers: [1, 2, 3] });
+    expect(screen.getByText(fill(sv.businessPlanPage.stepDoneNoEvidenceTemplate, { step: 3 }))).toBeInTheDocument();
+    expect(screen.queryByText(fill(sv.businessPlanPage.requiresStepTemplate, { step: 3 }))).not.toBeInTheDocument();
+    // Steg 5 är inte klart: luckan är låst som förut.
+    expect(screen.getByText(fill(sv.businessPlanPage.requiresStepTemplate, { step: 5 }))).toBeInTheDocument();
+  });
+
+  it("en exempelkälla visas med etiketten Exempel", () => {
+    const examplePlan = buildBusinessPlan([
+      {
+        id: "idea",
+        checks: [
+          {
+            claims: [{ text: "Byråer vill slippa jaga kvitton.", source: { namn: "Påhittad data, steg 01", hämtad: "2026-01-05" }, dataType: "example" }],
+            requiredStepNumber: 1,
+          },
+        ],
+      },
+    ]);
+    renderPlan({ plan: examplePlan });
+    const tag = screen.getByRole("button", { name: sv.common.sourceTag.openDetails });
+    expect(tag).toHaveTextContent(`${sv.common.exampleSourceLabel}·Påhittad data, steg 01`);
+  });
 });

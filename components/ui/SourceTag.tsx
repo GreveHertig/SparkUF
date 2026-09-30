@@ -19,12 +19,16 @@ const toneClasses: Record<DataType, string> = {
   register: "bg-data-register-bg text-data-register",
   simulation: "bg-data-simulation-bg text-data-simulation",
   customer: "bg-data-customer-bg text-data-customer",
+  example: "border-dashed border-slate-400! bg-white text-slate-700",
 };
 
 /**
  * Källa + datum, i variant efter datatyp. Klick visar detaljer.
  * Simuleringar (uppdrag 2.2) bär alltid den synliga etiketten "Simulering",
- * utöver den egna färgen — aldrig bara en färgskillnad.
+ * utöver den egna färgen — aldrig bara en färgskillnad. Påhittad exempeldata
+ * i demot (`"example"`, PR 11) bär på samma sätt etiketten "Exempel" och
+ * fiktionsmärkets streckade kant, så att den aldrig ser ut som en
+ * myndighetskälla.
  */
 export function SourceTag({
   source,
@@ -51,6 +55,12 @@ export function SourceTag({
           {dataType === "simulation" && (
             <>
               <span className="font-semibold uppercase">{t.common.simulationLabel}</span>
+              <span aria-hidden="true">·</span>
+            </>
+          )}
+          {dataType === "example" && (
+            <>
+              <span className="font-semibold uppercase">{t.common.exampleSourceLabel}</span>
               <span aria-hidden="true">·</span>
             </>
           )}

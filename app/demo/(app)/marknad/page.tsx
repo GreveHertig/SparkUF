@@ -6,6 +6,7 @@ import { demoRegistryProvider, SARA_INDUSTRY_LABEL, SARA_MARKET_SNI_CODE } from 
 import { demoSimulationProvider, simulationQuestions } from "@/adapters/demo/SimulationProvider";
 import { demoOutreachProvider, outreachSource } from "@/adapters/demo/OutreachProvider";
 import { getCurrentStepNumber, useDemoStore } from "@/adapters/demo/demoStore";
+import { exampleSource } from "@/adapters/demo/exampleSource";
 import { Market, type MarketData, type MarketLock } from "@/screens/Market";
 
 /**
@@ -38,6 +39,8 @@ export default function DemoMarketPage() {
         registry: { overview, companies, medianRevenueFiscalYears: null },
         outreach: { rows: campaign, source: outreachSource[locale] },
         simulation,
+        // Beskrivningarna är bedömningar i scenariot, inga registeruppgifter.
+        competitorsSource: { source: exampleSource(locale, { step: 3 }), dataType: "example" },
       });
     });
     return () => {

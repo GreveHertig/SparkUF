@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/context";
 import { getBusinessPlan } from "@/adapters/demo/businessPlan";
+import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 import type { BusinessPlan as BusinessPlanModel } from "@/core/businessPlan";
 import { BusinessPlan } from "@/screens/BusinessPlan";
@@ -17,19 +18,20 @@ export default function DemoBusinessPlanPage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);
-  const [plan, setPlan] = useState<BusinessPlanModel | null>(null);
+  const [data, setData] = useState<{ plan: BusinessPlanModel; completedStepNumbers: number[] } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    getBusinessPlan(locale).then((result) => {
-      if (!cancelled) setPlan(result);
+    Promise.all([getBusinessPlan(locale), demoJourneyRepository.getSteps(locale)]).then(([plan, steps]) => {
+      const completedStepNumbers = steps.filter((step) => step.status === "done").map((step) => step.stepNumber);
+      if (!cancelled) setData({ plan, completedStepNumbers });
     });
     return () => {
       cancelled = true;
     };
   }, [locale, beatIndex, entry]);
 
-  if (!plan) return null;
+  if (!data) return null;
 
-  return <BusinessPlan data={{ plan }} />;
+  return <BusinessPlan data={data} />;
 }

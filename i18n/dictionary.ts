@@ -27,6 +27,10 @@ export type Dictionary = {
     doneItemsLabel: string;
     /** Uppdrag 2.2: simuleringar ska alltid bära den här etiketten, oavsett källa. */
     simulationLabel: string;
+    /** Synlig etikett först i en källtagg för påhittad exempeldata i demot
+     * (datatypen "example", PR 11). Samma princip som "Simulering": aldrig
+     * bara en färgskillnad. */
+    exampleSourceLabel: string;
     /** SimulationCard (uppdrag 2.2, 8): populationens storlek ska alltid synas. */
     simulationPopulationLabel: string;
     upToPointsBefore: string;
@@ -796,6 +800,9 @@ export type Dictionary = {
     maturityLabel: string;
     status: { solid: string; thin: string; missing: string };
     requiresStepTemplate: string;
+    /** Luckan när steget redan är klart men inte gav något påstående med
+     * källa (PR 11). "Kommer från steg N" vore fel då. */
+    stepDoneNoEvidenceTemplate: string;
     /** En andel i planen, t.ex. "18 %". */
     percentValueTemplate: string;
     /** Urvalet bakom andelarna: varje andel med sitt eget underlag av helheten. */
@@ -905,6 +912,10 @@ export type Dictionary = {
       badge: string;
       /** Synlig etikett på block med påhittade företag och siffror (Datalöftet). */
       exampleLabel: string;
+      /** Namnet på en exempelkälla i demot (PR 11): påhittad data, och var i
+       * scenariot den kommer ifrån. Visas med datatypen "example". */
+      exampleSourceTemplate: string;
+      exampleOrigins: { step: string; ideaScreening: string; suggestions: string };
       navLabel: string;
       backToLanding: string;
       stepOf: string;

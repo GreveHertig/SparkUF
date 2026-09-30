@@ -51,6 +51,9 @@ export const dataTypeColors = {
   register: { fg: slate[700], bg: slate[100] },
   simulation: { fg: "#7558a3", bg: "#ece5f5" },
   customer: { fg: "#38717f", bg: "#dfeef2" },
+  // Påhittad exempeldata i demot (PR 11): vit med streckad kant, som
+  // fiktionsmärket (`.fd-pill--fiction`), och alltid etiketten "Exempel".
+  example: { fg: slate[700], bg: "#ffffff" },
 } as const;
 
 export const spacing = {
