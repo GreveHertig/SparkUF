@@ -445,6 +445,8 @@ export type Dictionary = {
     publishedUrlLabel: string;
     /** Avsnitt 2.3: "Visa att bygget kostar credits." */
     creditsUsedLabel: string;
+    /** /app: porten svarar att ingen spec finns än — skiljt från en stubbe ("Kommer snart"). */
+    specEmpty: string;
   };
   /** Demoraden (avsnitt 9.1) — fast rad nederst i /demo/app och /demo/start. */
   demoBar: {

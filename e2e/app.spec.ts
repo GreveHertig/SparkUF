@@ -26,6 +26,8 @@ const PAGES = [
   { path: "/app/resan/12", heading: /./ },
   // PR 10: Medgrundaren (ingen port för samtalet, Kommer snart per sektion).
   { path: "/app/medgrundaren", heading: "Medgrundaren" },
+  // Bygg: testkontot står på steg 01, så sidan är låst till steg 07.
+  { path: "/app/bygg", heading: "Bygg" },
 ] as const;
 
 async function logIn(page: Page) {

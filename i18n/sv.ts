@@ -395,6 +395,7 @@ export const sv = {
     previewTitle: "Förhandsvisning",
     publishedUrlLabel: "Publicerad på",
     creditsUsedLabel: "Credits använda",
+    specEmpty: "Ingen spec än.",
   },
   demoBar: {
     personaALabel: "Persona A",

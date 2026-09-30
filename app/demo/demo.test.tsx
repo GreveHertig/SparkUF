@@ -8,6 +8,7 @@ import { useDemoStore } from "@/adapters/demo/demoStore";
 import { saraEngine } from "@/adapters/demo/sara";
 import { jonasBeats } from "@/adapters/demo/jonas";
 import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
+import { demoBuildProvider } from "@/adapters/demo/BuildProvider";
 import FondaDemoLayout from "./layout";
 import FondaDemoAppLayout from "./(app)/layout";
 import FondaDemoHomePage from "./(app)/page";
@@ -20,6 +21,7 @@ import FondaDemoPulsePage from "./(app)/pulsen/page";
 import FondaDemoJourneyPage from "./(app)/resan/page";
 import FondaDemoJourneyStepPage from "./(app)/resan/[steg]/page";
 import FondaDemoCofounderPage from "./(app)/medgrundaren/page";
+import FondaDemoBuildPage from "./(app)/bygg/page";
 import FondaDemoStartPage from "./start/page";
 import { FONDA_DEMO_KEY, REAL_DEMO_KEY, enterFondaDemo, leaveFondaDemo } from "./_lib/fondaDemoIsolation";
 import { FONDA_DEMO_PATHS } from "./_lib/paths";
@@ -277,6 +279,27 @@ describe("/demo", () => {
     await renderInApp(<FondaDemoCofounderPage />);
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
     expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+  });
+
+  it("Bygg (tunn hämtare, PR 10) är låst före steg 08, visar specen efter, och är utanför Jonas scenario", async () => {
+    startInApp(0);
+    pathname = FONDA_DEMO_PATHS.build;
+    await renderInApp(<FondaDemoBuildPage />);
+    expect(await screen.findByText(`${sv.homePage.unlocksAfterStepBefore} 07`)).toBeInTheDocument();
+    cleanup();
+
+    useDemoStore.getState().goTo(saraEngine.beats.length - 1);
+    await renderInApp(<FondaDemoBuildPage />);
+    const spec = await demoBuildProvider.getSpec("sv");
+    expect(await screen.findByRole("heading", { level: 1, name: spec!.sammanfattning })).toBeInTheDocument();
+    expect(screen.getByText(sv.buildPage.status.published)).toBeInTheDocument();
+    expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+    expect(screen.queryByText(sv.buildPage.specEmpty)).not.toBeInTheDocument();
+    cleanup();
+
+    useDemoStore.getState().setEntry("hasIdea");
+    await renderInApp(<FondaDemoBuildPage />);
+    expect(await screen.findByText(sv.homePage.notInThisScenario)).toBeInTheDocument();
   });
 
   describe("Datalöftet och buggrapporten (docs/buggar-2026-09.md)", () => {

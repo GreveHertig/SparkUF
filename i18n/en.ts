@@ -395,6 +395,7 @@ export const en = {
     previewTitle: "Preview",
     publishedUrlLabel: "Published at",
     creditsUsedLabel: "Credits used",
+    specEmpty: "No spec yet.",
   },
   demoBar: {
     personaALabel: "Persona A",
