@@ -252,6 +252,43 @@ describe("/demo", () => {
       expect(screen.getAllByText(label)).toHaveLength(2);
     });
 
+    it("Marknad (tunn hämtare, PR 8) följer demots moment och visar ingen Kommer snart", async () => {
+      const firstBeatOf = (step: number) => saraEngine.beats.findIndex((beat) => beat.stepNumber === step);
+      pathname = FONDA_DEMO_PATHS.market;
+
+      startInApp(0);
+      await renderInApp(<FondaDemoMarketPage />);
+      expect(screen.getByText(`${sv.homePage.unlocksAfterStepBefore} 02`)).toBeInTheDocument();
+      cleanup();
+
+      startInApp(firstBeatOf(3));
+      const { container } = await renderInApp(<FondaDemoMarketPage />);
+      expect(screen.getByRole("heading", { level: 1, name: /anställda$/ })).toBeInTheDocument();
+      expect(container.querySelectorAll(".fdd-bars__row")).toHaveLength(5);
+      expect(screen.getByText("Konkurrenter")).toBeInTheDocument();
+      expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+    });
+
+    it("medianomsättningen och kontaktlistans omsättning visas inte utan räkenskapsår (PR 8)", async () => {
+      startInApp(lastBeat);
+      pathname = FONDA_DEMO_PATHS.market;
+      await renderInApp(<FondaDemoMarketPage />);
+      // Demodatan bär inga räkenskapsår: luckan i stället för "4,2 Mkr".
+      const median = screen.getByText(sv.marketPage.medianRevenueLabel).parentElement!;
+      expect(median).toHaveTextContent(sv.common.fiscalYearMissing);
+      expect(median).not.toHaveTextContent(/Mkr/);
+      cleanup();
+
+      pathname = FONDA_DEMO_PATHS.validation;
+      await renderInApp(<FondaDemoValidationPage />);
+      const revenueCells = [...screen.getByRole("table").querySelectorAll("tbody tr")].map((row) => row.children[3]);
+      expect(revenueCells.length).toBeGreaterThan(0);
+      for (const cell of revenueCells) {
+        expect(cell).not.toHaveTextContent(/tkr|\d/);
+        expect(cell).toHaveTextContent(sv.common.fiscalYearMissing);
+      }
+    });
+
     it("Pulsen visar inga fasta relativa tider som inte stämmer med källans datum (punkt 11)", async () => {
       startInApp(lastBeat);
       pathname = FONDA_DEMO_PATHS.pulse;

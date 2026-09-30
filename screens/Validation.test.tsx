@@ -4,16 +4,24 @@ import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
 import type { DataKind } from "@/core/domain";
-import type { CampaignRow, ResponseCard, ValidationAssumption } from "@/ports/OutreachProvider";
+import type { ResponseCard, ValidationAssumption } from "@/ports/OutreachProvider";
 import type { Simulation } from "@/ports/SimulationProvider";
-import { Validation, type ValidationData, type ValidationLock } from "./Validation";
+import { Validation, type ValidationData, type ValidationLock, type ValidationRow } from "./Validation";
 
 const outreachSource = { namn: "Testutskick (Gmail)", hämtad: "2026-01-19" };
 
-const rows: CampaignRow[] = [
-  { companyName: "A", sniCode: "69.201", employees: 8, revenueKsek: 4200, status: "responded", quote: "Bra." },
-  { companyName: "B", sniCode: "69.201", employees: 6, revenueKsek: 3200, status: "opened" },
-  { companyName: "C", sniCode: "69.201", employees: 12, revenueKsek: 6000, status: "draft" },
+const rows: ValidationRow[] = [
+  {
+    companyName: "A",
+    sniCode: "69.201",
+    employees: 8,
+    revenueKsek: 4200,
+    revenueFiscalYear: 2024,
+    status: "responded",
+    quote: "Bra.",
+  },
+  { companyName: "B", sniCode: "69.201", employees: 6, revenueKsek: 3200, revenueFiscalYear: null, status: "opened" },
+  { companyName: "C", sniCode: "69.201", employees: 12, revenueKsek: 6000, revenueFiscalYear: 2023, status: "draft" },
 ];
 
 const responses: ResponseCard[] = [
@@ -137,6 +145,16 @@ describe("Validation (skärmen, PR 7)", () => {
       expect(within(table).queryByText(exact)).not.toBeInTheDocument();
     }
     expect(screen.getByText(/Stockholms län, 5–9/)).toBeInTheDocument();
+  });
+
+  it("omsättningen visas med sitt räkenskapsår, och utan år visas luckan", () => {
+    renderValidation(baseData());
+    const table = screen.getByRole("table");
+    expect(within(table).getByText(/^4\s200 tkr \(räkenskapsår 2024\)$/)).toBeInTheDocument();
+    expect(within(table).getByText(/^6\s000 tkr \(räkenskapsår 2023\)$/)).toBeInTheDocument();
+    // B saknar år: ingen siffra alls, bara luckan (och en förklaring för skärmläsare).
+    expect(within(table).queryByText(/3\s200/)).not.toBeInTheDocument();
+    expect(within(table).getByText(sv.common.fiscalYearMissing)).toBeInTheDocument();
   });
 
   it("antagandena visar dom och källa, svaren citat, dom och pris", () => {

@@ -104,6 +104,9 @@ describe("/app/validering (PR 7)", () => {
     expect(table).toHaveTextContent("5–9");
     expect(table).toHaveTextContent("20–49");
     expect(table).not.toHaveTextContent(/\b(7|22)\b/);
+    // Porten bär inget räkenskapsår: omsättningen visas inte, luckan visas.
+    expect(table).not.toHaveTextContent(/3\s100|9\s000|tkr/);
+    expect(table).toHaveTextContent(sv.common.fiscalYearMissing);
     expect(screen.getByText(v.responseRateLabel).nextElementSibling).toHaveTextContent("50 %");
     expect(screen.queryByText(sv.site.demo.exampleLabel)).not.toBeInTheDocument();
   });

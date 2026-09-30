@@ -48,7 +48,8 @@ export default function FondaDemoValidationPage() {
       setView({
         locked: rows.length > 0 ? null : notInScenario ? "notInScenario" : { unlocksAfterStep: 3 },
         data: {
-          rows,
+          // Demodatan bär inga räkenskapsår: omsättningen visas som en lucka.
+          rows: rows.map((row) => ({ ...row, revenueFiscalYear: null })),
           outreachSource: rows.length > 0 ? outreachSource[locale] : null,
           dateRange: showOutreach ? outreachDateRange : null,
           openRate: showOutreach ? outreachOpenRate : null,

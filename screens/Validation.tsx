@@ -20,6 +20,13 @@ export type ValidationVerdict = {
 };
 
 /**
+ * En rad i kontaktlistan med räkenskapsåret omsättningen avser. Porten
+ * (`CampaignRow`) bär inget år än, så rutterna sätter `null`, och då visas
+ * luckan i stället för omsättningen (PR 8: ingen siffra utan datum).
+ */
+export type ValidationRow = CampaignRow & { revenueFiscalYear: number | null };
+
+/**
  * Datan skärmen behöver, redan hämtad av den monterande routen. Platshållare
  * per sektion (docs/plan-en-design.md): `null` betyder att just den datan
  * saknas (stubbe eller platshållarfel) och ger "Kommer snart" i den
@@ -28,7 +35,7 @@ export type ValidationVerdict = {
  */
 export type ValidationData = {
   /** Hela kontaktlistan. `null` ger "Kommer snart" i nyckeltalen och i listan. */
-  rows: CampaignRow[] | null;
+  rows: ValidationRow[] | null;
   /** `CampaignRow` bär ingen egen källa; källan för kontaktade, svar och svarsfrekvens. */
   outreachSource: Källa | null;
   /** Utskicksperioden, visas under "Kontaktade". */
@@ -245,7 +252,16 @@ export function Validation({
                       <td>{row.companyName}</td>
                       <td className="fdd-muted">{row.sniCode}</td>
                       <td className="fdd-num">{sizeClassFor(row.employees)?.range ?? "–"}</td>
-                      <td className="fdd-num">{formatCount(row.revenueKsek, locale)} tkr</td>
+                      <td className="fdd-num">
+                        {row.revenueFiscalYear === null ? (
+                          <>
+                            <span aria-hidden="true">–</span>
+                            <span className="fd-sr-only">{t.common.fiscalYearMissing}</span>
+                          </>
+                        ) : (
+                          `${formatCount(row.revenueKsek, locale)} tkr (${t.common.fiscalYearLabel} ${row.revenueFiscalYear})`
+                        )}
+                      </td>
                       <td>
                         <Pill tone={statusTone[row.status]}>{v.status[row.status]}</Pill>
                       </td>

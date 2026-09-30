@@ -14,6 +14,10 @@ export type Dictionary = {
     };
     conceptBadge: string;
     demoDataBadge: string;
+    /** "räkenskapsår": en omsättning visas alltid med året, eller spannet av år, den avser (PR 8). */
+    fiscalYearLabel: string;
+    /** Luckan där en omsättning saknar räkenskapsår i datan: siffran visas inte. */
+    fiscalYearMissing: string;
     sourceTag: {
       openDetails: string;
       quoteLabel: string;
@@ -294,6 +298,21 @@ export type Dictionary = {
     basedOnLabel: string;
     ofLabel: string;
     companiesUnit: string;
+    /** /app: antalet utan Saras bransch ("Byråer", "SNI 69.201" gäller bara demot). */
+    companyCountLabelLive: string;
+    companyCountDescriptionLive: string;
+    /** Luckan när underlaget är 0 bolag (porten: siffran är okänd och får inte visas). */
+    basisMissing: string;
+    /** Licensgrinden stängd (RegistryLockedError): inga registersiffror. */
+    registryClosed: string;
+    /** Registret svarade med ett fel. Feltexten visas aldrig. */
+    registryLoadFailed: string;
+    /** Branschväljaren i /app (`?sni=`), samma öppna uppgift som bolagsformen i Juridik. */
+    sniPickerLabel: string;
+    sniPickerSubmit: string;
+    sniPrompt: string;
+    sniInvalid: string;
+    sniChooseFirst: string;
     dataLayers: {
       title: string;
       registerName: string;

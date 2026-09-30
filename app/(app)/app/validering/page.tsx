@@ -48,7 +48,8 @@ export default async function LiveValidationPage() {
   }
 
   const data: ValidationData = {
-    rows,
+    // `CampaignRow` bär inget räkenskapsår: omsättningen visas som en lucka.
+    rows: rows && rows.map((row) => ({ ...row, revenueFiscalYear: null })),
     outreachSource: null,
     dateRange: null,
     openRate: null,

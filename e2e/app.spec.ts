@@ -14,6 +14,11 @@ const PAGES = [
   { path: "/app/juridik", heading: "Juridik" },
   { path: "/app/juridik?bolagsform=enskild_firma", heading: "Enskild firma" },
   { path: "/app/validering", heading: "Valideringen" },
+  // Marknad både utan och med vald bransch. Testkontot står inte på Registrets
+  // allowlist: sidan får visa låst läge eller "Registret är inte öppet än",
+  // aldrig registerdata (se testet nedan).
+  { path: "/app/marknad", heading: "Marknad" },
+  { path: "/app/marknad?sni=69.201", heading: "Marknad" },
 ] as const;
 
 async function logIn(page: Page) {
@@ -53,4 +58,19 @@ test.describe("/app inloggad", () => {
       expect(errors).toEqual([]);
     });
   }
+});
+
+test.describe("/app/marknad och licensgrinden", () => {
+  test.beforeEach(async ({ page }) => {
+    await logIn(page);
+  });
+
+  test("testkontot ser inga registersiffror", async ({ page }) => {
+    await page.goto("/app/marknad?sni=69.201", { waitUntil: "networkidle" });
+    const main = page.locator("main");
+    // Antingen låst till steg 02 eller stängd grind; båda saknar registerdata.
+    await expect(main).toContainText(/Låses upp efter steg 02|Registret är inte öppet än/);
+    await expect(main.locator(".fdd-figures, .fdd-bars")).toHaveCount(0);
+    await expect(main).not.toContainText(/Baserat på|Mkr|Bolag i registret/);
+  });
 });

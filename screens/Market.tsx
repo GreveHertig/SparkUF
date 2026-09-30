@@ -1,270 +1,403 @@
 "use client";
 
-import { BarChart } from "@/components/ui/BarChart";
-import { Card } from "@/components/ui/Card";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { EditorialHeading } from "@/components/ui/EditorialHeading";
-import { LockedState } from "@/components/ui/LockedState";
+import { ComingSoon } from "@/components/ui/ComingSoon";
+import { ConceptBadge } from "@/components/ui/ConceptBadge";
 import { SourceTag } from "@/components/ui/SourceTag";
-import { KpiRow } from "@/components/spark/KpiRow";
-import { KpiTile } from "@/components/spark/KpiTile";
-import { SimulationCard } from "@/components/spark/SimulationCard";
 import { useI18n, type Locale } from "@/i18n/context";
 import type { Dictionary } from "@/i18n/dictionary";
 import { formatCount, formatSek } from "@/i18n/format";
-import type { Källa } from "@/types/evidence";
-import type { MarketOverview, RegistryCompany } from "@/ports/RegistryProvider";
+import type { DataKind, Källa } from "@/core/domain";
+import { formatFiscalYearSpan, type FiscalYearSpan } from "@/core/fiscalYear";
+import { dominantBucket, employeeSpan, sizeDistribution } from "@/core/market";
+import { outreachStats } from "@/core/validation";
 import type { CampaignRow } from "@/ports/OutreachProvider";
+import type { MarketOverview, RegistryCompany } from "@/ports/RegistryProvider";
 import type { Simulation } from "@/ports/SimulationProvider";
+import { ExampleLabel, Figures, SimulationBlock, type Figure } from "./blocks/DataBlocks";
+import { Locked, PageHead } from "./blocks/PageBlocks";
 
+/**
+ * Registerdelen av sidan. Ett objekt bär datan, där varje fält kan saknas för
+ * sig (`null` ger "Kommer snart" i just den sektionen). De andra lägena bär
+ * ingen data alls, så en stängd licensgrind kan aldrig visa en registersiffra:
+ *
+ * - `"closed"`: licensgrinden är stängd (`RegistryLockedError`).
+ * - `"failed"`: registret svarade med ett fel. Feltexten visas aldrig.
+ * - `"notChosen"`: ingen bransch vald än (bara /app, se `SniPicker`).
+ */
+export type MarketRegistry =
+  | "closed"
+  | "failed"
+  | "notChosen"
+  | {
+      overview: MarketOverview | null;
+      /** Urvalet storleksfördelningen och rubrikens spann räknas på. */
+      companies: RegistryCompany[] | null;
+      /**
+       * Räkenskapsåren medianomsättningen bygger på. Porten bär dem inte än,
+       * så `null` är det vanliga: då visas luckan i stället för medianen.
+       */
+      medianRevenueFiscalYears: FiscalYearSpan | null;
+    };
+
+/**
+ * Datan skärmen behöver, redan hämtad av den monterande routen. Platshållare
+ * per sektion (docs/plan-en-design.md): `null` ger "Kommer snart" i just den
+ * sektionen.
+ */
 export type MarketData = {
-  overview: MarketOverview;
-  simulation: Simulation;
-  /** Registrets urval (avsnitt 6): 20 av 312 byråer, för storleksfördelningen. */
-  companies: RegistryCompany[];
-  /** [] innan kontaktlistan är byggd (steg 04) — se `computeOutreachStats`. */
-  campaign: CampaignRow[];
-  /** `CampaignRow` bär ingen egen källa (avsnitt 14.3) — Datalöftet kräver
-   * ändå en källa på svarsfrekvensen, så anroparen skickar med den. */
-  outreachSource: Källa;
-  /** Branschordet för det aktiva scenariot (uppgift 2: innehållsburet
-   * sidhuvud) — ingen port för "vilken bransch" finns, så anroparen skickar
-   * med det, samma mönster som `outreachSource`. */
-  industryLabel: string;
+  /** Branschens namn i rubriken. Demot har Saras; /app har inget än och visar sidans namn. */
+  industryLabel: string | null;
+  registry: MarketRegistry;
+  /** Kontaktlistan och dess källa kommer ur samma utskick och gatas tillsammans. */
+  outreach: { rows: CampaignRow[]; source: Källa } | null;
+  simulation: Simulation | null;
 };
 
-type MarketPageDict = Dictionary["marketPage"];
+/** Låst läge för hela sidan. Demot räknar ut det ur sitt moment, /app ur Resans steg. */
+export type MarketLock = { unlocksAfterStep: number } | "notInScenario" | null;
 
-const SIZE_BUCKETS = [
-  { key: "oneToFour", min: 1, max: 4 },
-  { key: "fiveToNine", min: 5, max: 9 },
-  { key: "tenToNineteen", min: 10, max: 19 },
-  { key: "twentyToFortyNine", min: 20, max: 49 },
-  { key: "fiftyPlus", min: 50, max: Infinity },
-] as const;
+/**
+ * Branschväljaren i /app (`?sni=69.201`). Ingen port ger användarens bransch
+ * än; valet finns bara i adressen, samma öppna uppgift som bolagsformen i
+ * Juridik (docs/plan-en-design.md, beslut 5). `invalid` betyder att adressen
+ * hade en kod med fel form; den visas inte tillbaka.
+ */
+export type SniPicker = { basePath: string; current: string | null; invalid: boolean };
 
-/** Storleksklasser, aldrig exakta tal (docs/dataspiken.md: "SCB ger klasser,
- * inte siffror") — bucketar det demot råkar ha exakta tal för internt. */
-function computeSizeDistribution(companies: RegistryCompany[], buckets: MarketPageDict["distribution"]["sizeBuckets"]) {
-  return SIZE_BUCKETS.map((bucket) => ({
-    label: buckets[bucket.key],
-    count: companies.filter((company) => company.employees >= bucket.min && company.employees <= bucket.max).length,
-  }));
+type M = Dictionary["marketPage"];
+
+function basedOn(m: M, n: number, total: number, locale: Locale): string {
+  return `${m.basedOnLabel} ${formatCount(n, locale)} ${m.ofLabel} ${formatCount(total, locale)} ${m.companiesUnit}.`;
 }
 
-function basedOn(t: MarketPageDict, n: number, m: number, locale: Locale): string {
-  return `${t.basedOnLabel} ${formatCount(n, locale)} ${t.ofLabel} ${formatCount(m, locale)} ${t.companiesUnit}.`;
-}
-
-/** Innehållsburen rubrik (uppgift 2): branschen plus storleksspannet i
- * urvalet, t.ex. "Redovisningsbyråer, 5–20 anställda" — hämtat ur det
- * aktiva scenariots data, aldrig hårdkodat. */
-function marketHeadline(data: MarketData, m: MarketPageDict): string {
-  const { companies, industryLabel } = data;
-  if (companies.length === 0) return industryLabel;
-  const employeeCounts = companies.map((company) => company.employees);
-  const min = Math.min(...employeeCounts);
-  const max = Math.max(...employeeCounts);
-  const range = min === max ? `${min}` : `${min}–${max}`;
-  return `${industryLabel}, ${range} ${m.distribution.employeesUnit}`;
-}
-
-function computeOutreachStats(campaign: CampaignRow[]) {
-  if (campaign.length === 0) return null;
-  const contacted = campaign.filter((row) => row.status !== "draft").length;
-  const responded = campaign.filter((row) => row.status === "responded").length;
-  return { total: campaign.length, contacted, responded };
-}
-
-/** Marknad (avsnitt 6, Datalöftet uppdrag 1.2): nyckeltal, datalagren bakom
- * dem, storleksfördelningen och utskickets svarsfrekvens — allt med källa och
- * urval, aldrig ett tal som ser ut att gälla hela marknaden när det gäller ett
- * urval. Simuleringen (Hiasynth) hålls alltid visuellt och textuellt åtskild
- * från registerfakta, via `SimulationCard`. */
-export function Market({ data, notInScenario }: { data: MarketData | null; notInScenario?: boolean }) {
-  const { locale, t } = useI18n();
+/**
+ * Marknad: registrets nyckeltal med urval och källa, storleksfördelningen,
+ * utskickets svar, datalagren, konkurrenterna och simuleringen, som alltid
+ * hålls åtskild från registret. Markup flyttad rakt av från demots
+ * `app/demo/(app)/marknad/page.tsx` (PR 8, docs/plan-en-design.md).
+ *
+ * Omsättning visas bara med räkenskapsåret, eller spannet av år, den avser.
+ * Saknas året visas luckan (Datalöftet: ingen siffra utan källa och datum).
+ */
+export function Market({
+  data,
+  dataKind,
+  locked,
+  sniPicker,
+}: {
+  data: MarketData;
+  dataKind: DataKind;
+  locked: MarketLock;
+  sniPicker?: SniPicker;
+}) {
+  const { t, locale } = useI18n();
   const m = t.marketPage;
 
-  return (
-    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
-      <div>
-        <EditorialHeading as="h1">{data ? marketHeadline(data, m) : m.title}</EditorialHeading>
-        <p className="mt-2 text-sm text-slate-600">{m.subtitle}</p>
-      </div>
-
-      {!data ? (
-        <LockedState
-          unlockHint={notInScenario ? t.homePage.notInThisScenario : `${t.homePage.unlocksAfterStepBefore} 02`}
+  if (locked) {
+    return (
+      <div className="fdd-page">
+        <PageHead title={m.title} lede={m.subtitle} />
+        <Locked
+          hint={
+            locked === "notInScenario"
+              ? t.homePage.notInThisScenario
+              : `${t.homePage.unlocksAfterStepBefore} ${String(locked.unlocksAfterStep).padStart(2, "0")}`
+          }
         />
-      ) : (
-        <MarketBody data={data} m={m} locale={locale} />
-      )}
-    </div>
-  );
-}
+      </div>
+    );
+  }
 
-function MarketBody({ data, m, locale }: { data: MarketData; m: MarketPageDict; locale: Locale }) {
-  const { overview, simulation, companies, campaign, outreachSource } = data;
-  const sniCode = companies[0]?.sniCode ?? "";
-  const distribution = computeSizeDistribution(companies, m.distribution.sizeBuckets);
-  const dominant = distribution.reduce((best, bucket) => (bucket.count > best.count ? bucket : best), distribution[0]);
-  const dominantPercent = companies.length > 0 ? Math.round((dominant.count / companies.length) * 100) : 0;
-  const outreachStats = computeOutreachStats(campaign);
+  const registry = typeof data.registry === "object" ? data.registry : null;
+  const overview = registry?.overview ?? null;
+  const companies = registry?.companies ?? null;
+  const span = companies ? employeeSpan(companies) : null;
+  const title = !data.industryLabel
+    ? m.title
+    : span
+      ? `${data.industryLabel}, ${span.min}–${span.max} ${m.distribution.employeesUnit}`
+      : data.industryLabel;
+
+  /** Registersektionerna utan data: samma läge i varje sektion, aldrig en siffra. */
+  const registryGap =
+    data.registry === "closed" ? (
+      <Locked hint={m.registryClosed} />
+    ) : data.registry === "failed" ? (
+      <p className="fdd-muted" role="alert">
+        {m.registryLoadFailed}
+      </p>
+    ) : data.registry === "notChosen" ? (
+      <Locked hint={m.sniChooseFirst} />
+    ) : (
+      <ComingSoon />
+    );
 
   return (
-    <>
-      <section data-tour-id="market-kpi" className="flex flex-col gap-3">
-        <Eyebrow>{m.kpiTitle}</Eyebrow>
-        <KpiRow>
-          <KpiTile
-            label={m.companyCountLabel}
-            value={overview.companyCount}
-            unit={m.companyCountUnit}
-            description={m.companyCountDescription}
-            source={overview.source}
-          />
-          <KpiTile
-            label={m.medianRevenueLabel}
-            value={formatSek(overview.medianRevenueKsek * 1000, locale)}
-            description={overview.basis ? basedOn(m, overview.basis.medianRevenueCompanies, overview.companyCount, locale) : undefined}
-            source={overview.source}
-          />
-          <KpiTile
-            label={m.growthShareLabel}
-            value={overview.growthSharePercent}
-            unit="%"
-            description={overview.basis ? basedOn(m, overview.basis.growthCompanies, overview.companyCount, locale) : undefined}
-            source={overview.source}
-          />
-          <KpiTile
-            label={m.regionShareLabel}
-            value={overview.regionSharePercent}
-            unit="%"
-            description={overview.basis ? basedOn(m, overview.basis.regionCompanies, overview.companyCount, locale) : undefined}
-            source={overview.source}
-          />
-        </KpiRow>
+    <div className="fdd-page">
+      <PageHead title={title} lede={m.subtitle} />
+
+      {sniPicker && data.registry !== "closed" && <SniForm picker={sniPicker} m={m} />}
+
+      <section className="fdd-block" aria-labelledby="fdd-market-kpi">
+        <h2 id="fdd-market-kpi" className="fdd-block__title">
+          {m.kpiTitle}
+        </h2>
+        {overview && registry ? (
+          <>
+            <ExampleLabel dataKind={dataKind} />
+            <Figures
+              tourId="market-kpi"
+              items={kpiFigures(m, overview, registry.medianRevenueFiscalYears, dataKind, t.common, locale)}
+            />
+          </>
+        ) : (
+          registryGap
+        )}
       </section>
 
-      <div className="grid grid-cols-1 gap-[18px] lg:grid-cols-[2fr_316px]">
-        <section data-tour-id="market-distribution">
-          <Card
-            title={m.distribution.title}
-            right={
-              <span className="font-numeric text-xs text-slate-500">
-                {m.distribution.sniLabel} {sniCode}
+      <div className="fdd-hero">
+        <section className="fd-panel" aria-labelledby="fdd-market-dist" data-tour-id="market-distribution">
+          <div className="fdd-panel__head">
+            <h2 id="fdd-market-dist" className="fdd-panel__title">
+              {m.distribution.title}
+            </h2>
+            {companies && (
+              <span className="fdd-muted">
+                {m.distribution.sniLabel} {companies[0]?.sniCode ?? ""}
               </span>
-            }
-          >
-            <BarChart bars={distribution.map((bucket) => ({ label: bucket.label, value: bucket.count }))} />
-            {companies.length > 0 && (
-              <p className="mt-3 text-sm text-slate-600">
-                {m.distribution.mostCommonLabel} {dominant.label} — {formatCount(dominant.count, locale)} {m.companiesUnit}{" "}
-                {m.ofLabel} {formatCount(companies.length, locale)} ({dominantPercent} %).{" "}
-                {basedOn(m, companies.length, overview.companyCount, locale)}
-              </p>
             )}
-            <div className="mt-3">
-              <SourceTag source={overview.source} />
-            </div>
-          </Card>
+          </div>
+          {companies && overview ? (
+            <Distribution companies={companies} overview={overview} m={m} locale={locale} />
+          ) : (
+            registryGap
+          )}
         </section>
 
-        <div className="flex flex-col gap-[18px]">
-          <section data-tour-id="market-outreach">
-            <Card title={m.outreach.title}>
-              {!outreachStats ? (
-                <LockedState unlockHint={m.outreach.notBuiltYet} />
-              ) : outreachStats.contacted === 0 ? (
-                <LockedState unlockHint={m.outreach.notSentYet} />
-              ) : (
-                <div className="flex flex-col gap-3">
-                  <dl className="flex flex-col gap-2 text-sm">
-                    <div className="flex items-center justify-between gap-2">
-                      <dt className="text-slate-600">{m.outreach.contactedLabel}</dt>
-                      <dd className="font-numeric font-semibold text-slate-900">
-                        {formatCount(outreachStats.contacted, locale)} / {formatCount(outreachStats.total, locale)}
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <dt className="text-slate-600">{m.outreach.respondedLabel}</dt>
-                      <dd className="font-numeric font-semibold text-slate-900">
-                        {formatCount(outreachStats.responded, locale)}
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <dt className="text-slate-600">{m.outreach.responseRateLabel}</dt>
-                      <dd className="font-numeric font-semibold text-slate-900">
-                        {Math.round((outreachStats.responded / outreachStats.contacted) * 100)}%
-                      </dd>
-                    </div>
-                  </dl>
-                  <SourceTag source={outreachSource} dataType="customer" />
-                </div>
-              )}
-            </Card>
+        <div className="fdd-stack">
+          <section className="fd-panel" aria-labelledby="fdd-market-outreach" data-tour-id="market-outreach">
+            <h2 id="fdd-market-outreach" className="fdd-panel__title">
+              {m.outreach.title}
+            </h2>
+            {data.outreach ? <Outreach outreach={data.outreach} m={m} locale={locale} /> : <ComingSoon />}
           </section>
 
-          <section data-tour-id="market-datalayers">
-            <Card title={m.dataLayers.title}>
-              <div className="flex flex-col gap-3">
-                <DataLayerRow name={m.dataLayers.registerName} note={m.dataLayers.registerNote} source={overview.source} />
-                <DataLayerRow
-                  name={m.dataLayers.annualReportName}
-                  note={m.dataLayers.annualReportNote}
-                  source={overview.source}
-                />
-                <DataLayerRow
-                  name={m.dataLayers.simulationName}
-                  note={m.dataLayers.simulationNote}
-                  source={simulation.source}
-                  dataType="simulation"
-                />
-              </div>
-            </Card>
+          <section className="fd-panel" aria-labelledby="fdd-market-layers" data-tour-id="market-datalayers">
+            <h2 id="fdd-market-layers" className="fdd-panel__title">
+              {m.dataLayers.title}
+            </h2>
+            <ul className="fdd-layers">
+              <li>
+                <p className="fdd-layers__name">{m.dataLayers.registerName}</p>
+                <p className="fdd-muted">{m.dataLayers.registerNote}</p>
+                {overview && <SourceTag source={overview.source} />}
+              </li>
+              <li>
+                <p className="fdd-layers__name">{m.dataLayers.annualReportName}</p>
+                <p className="fdd-muted">{m.dataLayers.annualReportNote}</p>
+                {overview && <SourceTag source={overview.source} />}
+              </li>
+              <li>
+                <p className="fdd-layers__name">{m.dataLayers.simulationName}</p>
+                <p className="fdd-muted">{m.dataLayers.simulationNote}</p>
+                <span className="fdd-inline">
+                  {data.simulation && <SourceTag source={data.simulation.source} dataType="simulation" />}
+                  <ConceptBadge />
+                </span>
+              </li>
+            </ul>
           </section>
         </div>
       </div>
 
-      <section data-tour-id="market-competitors">
-        <Card title={m.competitorsTitle}>
-          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-sm bg-slate-200 sm:grid-cols-3">
-            {overview.competitors.map((competitor) => (
-              <div key={competitor.name} className="bg-white p-3.5">
-                <p className="text-sm text-slate-900">{competitor.name}</p>
-                <p className="mt-1 text-sm leading-snug text-slate-600">{competitor.description}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
+      <section className="fdd-block" aria-labelledby="fdd-market-comp" data-tour-id="market-competitors">
+        <h2 id="fdd-market-comp" className="fdd-block__title">
+          {m.competitorsTitle}
+        </h2>
+        {overview ? (
+          <>
+            <ExampleLabel dataKind={dataKind} />
+            <ul className="fdd-cells">
+              {overview.competitors.map((competitor) => (
+                <li key={competitor.name}>
+                  <p className="fdd-cells__title">{competitor.name}</p>
+                  <p className="fdd-muted">{competitor.description}</p>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          registryGap
+        )}
       </section>
 
-      <section data-tour-id="market-simulation" className="flex flex-col gap-2.5">
-        <Eyebrow>{m.simulationTitle}</Eyebrow>
-        <SimulationCard simulation={simulation} />
+      <section className="fdd-block" aria-labelledby="fdd-market-sim" data-tour-id="market-simulation">
+        <h2 id="fdd-market-sim" className="fdd-block__title">
+          {m.simulationTitle}
+        </h2>
+        {data.simulation ? <SimulationBlock simulation={data.simulation} /> : <ComingSoon />}
       </section>
+    </div>
+  );
+}
+
+/**
+ * Nyckeltalen. Ett underlag på 0 bolag betyder att siffran är okänd (porten,
+ * `MarketOverview.basis`), och medianomsättningen visas bara med spannet av
+ * räkenskapsår den bygger på: i båda fallen visas luckan, aldrig en nolla.
+ */
+function kpiFigures(
+  m: M,
+  overview: MarketOverview,
+  medianYears: FiscalYearSpan | null,
+  dataKind: DataKind,
+  common: Dictionary["common"],
+  locale: Locale,
+): Figure[] {
+  const { basis } = overview;
+  const gap = (label: string, description: string): Figure => ({ label, value: "—", description });
+
+  const median: Figure =
+    basis && basis.medianRevenueCompanies === 0
+      ? gap(m.medianRevenueLabel, m.basisMissing)
+      : !medianYears
+        ? gap(m.medianRevenueLabel, common.fiscalYearMissing)
+        : {
+            label: m.medianRevenueLabel,
+            value: formatSek(overview.medianRevenueKsek * 1000, locale),
+            unit: `(${common.fiscalYearLabel} ${formatFiscalYearSpan(medianYears)})`,
+            description: basis ? basedOn(m, basis.medianRevenueCompanies, overview.companyCount, locale) : undefined,
+            source: overview.source,
+          };
+
+  const share = (label: string, value: number, basisCount: number | undefined): Figure =>
+    basisCount === 0
+      ? gap(label, m.basisMissing)
+      : {
+          label,
+          value,
+          unit: "%",
+          description: basisCount !== undefined ? basedOn(m, basisCount, overview.companyCount, locale) : undefined,
+          source: overview.source,
+        };
+
+  return [
+    {
+      label: dataKind === "example" ? m.companyCountLabel : m.companyCountLabelLive,
+      value: formatCount(overview.companyCount, locale),
+      unit: m.companyCountUnit,
+      description: dataKind === "example" ? m.companyCountDescription : m.companyCountDescriptionLive,
+      source: overview.source,
+    },
+    median,
+    share(m.growthShareLabel, overview.growthSharePercent, basis?.growthCompanies),
+    share(m.regionShareLabel, overview.regionSharePercent, basis?.regionCompanies),
+  ];
+}
+
+function Distribution({
+  companies,
+  overview,
+  m,
+  locale,
+}: {
+  companies: RegistryCompany[];
+  overview: MarketOverview;
+  m: M;
+  locale: Locale;
+}) {
+  const distribution = sizeDistribution(companies);
+  const maxCount = Math.max(1, ...distribution.map((bucket) => bucket.count));
+  const dominant = dominantBucket(distribution, companies.length);
+  return (
+    <>
+      <ul className="fdd-bars">
+        {distribution.map((bucket) => (
+          <li key={bucket.key} className="fdd-bars__row">
+            <span className="fdd-bars__label">{m.distribution.sizeBuckets[bucket.key]}</span>
+            <span className="fdd-bars__track" aria-hidden="true">
+              <span style={{ width: `${(bucket.count / maxCount) * 100}%` }} />
+            </span>
+            <span className="fdd-bars__value">{formatCount(bucket.count, locale)}</span>
+          </li>
+        ))}
+      </ul>
+      {dominant && (
+        <p className="fdd-muted">
+          {m.distribution.mostCommonLabel} {m.distribution.sizeBuckets[dominant.key]}:{" "}
+          {formatCount(dominant.count, locale)} {m.companiesUnit} {m.ofLabel} {formatCount(companies.length, locale)} (
+          {dominant.percent} %). {basedOn(m, companies.length, overview.companyCount, locale)}
+        </p>
+      )}
+      <SourceTag source={overview.source} />
     </>
   );
 }
 
-function DataLayerRow({
-  name,
-  note,
-  source,
-  dataType = "register",
+function Outreach({
+  outreach,
+  m,
+  locale,
 }: {
-  name: string;
-  note: string;
-  source: MarketOverview["source"];
-  dataType?: "register" | "simulation";
+  outreach: { rows: CampaignRow[]; source: Källa };
+  m: M;
+  locale: Locale;
 }) {
+  const { rows, source } = outreach;
+  const stats = outreachStats(rows);
+  if (rows.length === 0) return <Locked hint={m.outreach.notBuiltYet} />;
+  if (stats.responseRate === null) return <Locked hint={m.outreach.notSentYet} />;
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <div>
-        <p className="text-sm font-semibold text-slate-900">{name}</p>
-        <p className="text-xs text-slate-600">{note}</p>
+    <>
+      <dl className="fdd-pairs">
+        <div>
+          <dt>{m.outreach.contactedLabel}</dt>
+          <dd>
+            {formatCount(stats.contacted, locale)} / {formatCount(rows.length, locale)}
+          </dd>
+        </div>
+        <div>
+          <dt>{m.outreach.respondedLabel}</dt>
+          <dd>{formatCount(stats.responded, locale)}</dd>
+        </div>
+        <div>
+          <dt>{m.outreach.responseRateLabel}</dt>
+          <dd>{stats.responseRate} %</dd>
+        </div>
+      </dl>
+      <SourceTag source={source} dataType="customer" />
+    </>
+  );
+}
+
+/** Ett vanligt GET-formulär: valet hamnar i adressen och kräver ingen JavaScript. */
+function SniForm({ picker, m }: { picker: SniPicker; m: M }) {
+  return (
+    <form className="fdd-sni" method="get" action={picker.basePath}>
+      <label className="fdd-sni__label" htmlFor="fdd-sni-input">
+        {m.sniPickerLabel}
+      </label>
+      <div className="fdd-sni__row">
+        <input
+          id="fdd-sni-input"
+          className="fdd-input"
+          name="sni"
+          inputMode="decimal"
+          pattern="\d{2}\.\d{3}"
+          placeholder="69.201"
+          defaultValue={picker.current ?? ""}
+          aria-describedby="fdd-sni-hint"
+          aria-invalid={picker.invalid || undefined}
+          required
+        />
+        <button type="submit" className="fd-btn fd-btn--primary fd-btn--sm">
+          {m.sniPickerSubmit}
+        </button>
       </div>
-      <SourceTag source={source} dataType={dataType} />
-    </div>
+      <p id="fdd-sni-hint" className="fdd-muted" role={picker.invalid ? "alert" : undefined}>
+        {picker.invalid ? m.sniInvalid : picker.current === null ? m.sniPrompt : null}
+      </p>
+    </form>
   );
 }
