@@ -2901,3 +2901,8 @@ Gren `design/pr2-skalet` skapades ur `adc4f24`; `prototyp` hann få två egna PR
 ### Kända problem
 - `swagger.json` saknar `servers`. Bas-URL:en är härledd och bekräftad med anrop, inte angiven i kontraktet.
 - Gränsen 5 anrop/s är Sekundärt: den står i SCB:s dokumentation enligt Erik, inte i swagger.json, och inga rate limit-headers syntes.
+
+## Juridisk koll: namn och datum för källkontrollen (klar 2026-10-01, gren `docs/verifiering-namn`, PR #41 mot `prototyp`)
+
+### Klart
+- Vem som kontrollerade källorna och när står nu i två filer. I `docs/beslut.md` finns beslutet "Källverifiering juridik" under 2026-09-30. Överst i verifieringsloggen i `docs/moduler/juridisk-koll.md` står "Kontrollerat av: Oskar Jaeger, 2026-09-30". Bara dokumentation, ingen kod.
