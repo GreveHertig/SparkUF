@@ -49,6 +49,8 @@ Typer i `types/legal.ts` (Bolagsform, JuridisktKrav) och `types/evidence.ts` (K�
 
 ## Verifieringslogg
 
+Kontrollerat av: Oskar Jaeger, 2026-09-30
+
 ### 2026-09-30 — kontroll i webbläsaren av en människa (Bolagsverket, verksamt.se, BFN)
 
 Kontrollerat i webbläsaren 2026-09-30. Resultat, ordagrant:

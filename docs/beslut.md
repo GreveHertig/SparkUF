@@ -193,6 +193,15 @@ mellan versionerna är inte en-till-en. Porten (`RegistryQuery.sniCode`),
 liveadapterns validering och demodatan (`69.201`) ändras inte nu. Vad som
 ska ändras står i `docs/moduler/registret.md`, "SNI 2025".
 
+**Källverifiering juridik.** Oskar Jaeger läste själv myndighetssidorna i
+webbläsaren 2026-09-30: Bolagsverket (registrering, aktiekapital,
+bolagsordning, styrelse, revisor, årsredovisning, stadgar), verksamt.se
+(vilka som driver sidan, handelsbolag) och BFN (webbplatsen,
+bokföringsskyldighet). Adresserna finns i verifieringsloggen i
+`docs/moduler/juridisk-koll.md`. Två texter rättades (aktiekapital och
+bolagsavtal). Skatteverket, IMY, EUR-Lex, Konsumentverket och Riksdagen är
+inte kontrollerade av en människa. Ingenting är juristgranskat.
+
 ## 2026-10-01
 
 **Källtyperna: sex datatyper för källtaggen, och bara registret är grått.**
