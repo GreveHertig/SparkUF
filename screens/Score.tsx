@@ -77,6 +77,16 @@ function PartsList({ snapshot }: { snapshot: ScoreSnapshot }) {
           <SourceTag source={part.source} dataType={part.dataType} className="fd-part__source" />
         </li>
       ))}
+      {/* Beslut B4 (docs/bevislagring.md 3.3): en upplåst del utan bevis är en
+          lucka, aldrig "0/vikt" — Datalöftet. Samma utseende som en låst del. */}
+      {(snapshot.emptyParts ?? []).map((part) => (
+        <li key={part.name} className="fd-part fd-part--locked">
+          <div className="fd-part__row">
+            <span className="fd-part__name">{part.name}</span>
+          </div>
+          <span className="fd-part__lockedlabel">{t.scorePage.emptyPart}</span>
+        </li>
+      ))}
       {locked.map((part) => (
         <li key={part.name} className="fd-part fd-part--locked">
           <div className="fd-part__row">

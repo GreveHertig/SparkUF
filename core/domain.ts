@@ -42,6 +42,14 @@ export type LockedScorePart = {
   unlocksAfterStep: number;
 };
 
+/** En upplåst del som saknar bevis (beslut B4, docs/bevislagring.md 3.3).
+ * Ger 0 poäng till totalen men visas som en lucka, aldrig som "0/vikt":
+ * Datalöftet säger att saknat underlag syns som en lucka, inte som ett resultat. */
+export type EmptyScorePart = {
+  name: string;
+  weight: number;
+};
+
 export type ScoreSnapshot = {
   total: number;
   previousTotal: number;
@@ -50,6 +58,9 @@ export type ScoreSnapshot = {
   calculatedAtIso: string;
   parts: ScorePart[];
   lockedParts: LockedScorePart[];
+  /** Upplåsta delar utan bevis. Valfri så att befintliga snapshots i demots
+   * scenarier inte behöver skrivas om. calculateScore sätter den alltid. */
+  emptyParts?: EmptyScorePart[];
 };
 
 /** Handlingssteget som alltid visas (avsnitt 1.4, punkt 3). */

@@ -26,6 +26,20 @@ const CLOSED_TABLES: Record<string, string> = {
     "Väntelistan. Nås bara via funktionen public.join_waitlist (security definer), aldrig direkt. Beslut Erik 2026-09-25, docs/beslut.md.",
 };
 
+/**
+ * Läsbara men stängda för skrivning: RLS på, en select-policy, men ingen
+ * insert-, update-, delete- eller all-policy, och skrivrätten indragen från
+ * anon och authenticated. Skrivs bara av servern eller via en
+ * security definer-funktion. Lägg bara till med ett beslut i docs/beslut.md.
+ */
+const WRITE_CLOSED_TABLES: Record<string, string> = {
+  evidence:
+    "Bevis. Grundaren skriver bara via public.record_evidence, poängen sätts ur sorten. Beslut 2026-10-01, docs/beslut.md (docs/bevislagring.md 2.3).",
+  score_snapshots:
+    "Poänghistoriken. Skrivs bara av servern (lib/server/scoreSnapshots.ts), så att historiken inte går att förfalska. Beslut 2026-10-01, docs/beslut.md.",
+  evidence_kinds: "Bevissorterna. Ändras bara via migreringar. Beslut 2026-10-01, docs/beslut.md.",
+};
+
 function readAllMigrationsSql(): string {
   const files = readdirSync(MIGRATIONS_DIR)
     .filter((file) => file.endsWith(".sql"))
@@ -41,6 +55,23 @@ function findCreatedTables(sql: string): string[] {
 /** Utan SQL-kommentarer, så att en policy som bara nämns i en kommentar inte räknas. */
 function stripComments(sql: string): string {
   return sql.replace(/--[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
+type Policy = { name: string; table: string; command: string };
+
+/** Policyerna som finns kvar efter alla migreringar: skapade minus borttagna,
+ * i filordning. En policy som tas bort i en senare migrering räknas inte. */
+function finalPolicies(sql: string): Policy[] {
+  const policies = new Map<string, Policy>();
+  const statements = sql.matchAll(
+    /(create|drop) policy "([^"]+)" on public\.(\w+)(?:\s+(?:as \w+\s+)?for (\w+))?/gi,
+  );
+  for (const [, verb, name, table, command] of statements) {
+    const key = `${table}:${name}`;
+    if (verb.toLowerCase() === "create") policies.set(key, { name, table, command: (command ?? "all").toLowerCase() });
+    else policies.delete(key);
+  }
+  return [...policies.values()];
 }
 
 describe("supabase/migrations: RLS-täckning (14.6)", () => {
@@ -70,6 +101,29 @@ describe("supabase/migrations: RLS-täckning (14.6)", () => {
   it.each(closedTables)("%s (stängd) har INGEN policy", (table) => {
     const pattern = new RegExp(`create policy [^;]*on public\\.${table}\\b`, "i");
     expect(sql).not.toMatch(pattern);
+  });
+
+  const writeClosedTables = Object.keys(WRITE_CLOSED_TABLES);
+  const policies = finalPolicies(sql);
+
+  it("varje tabell i WRITE_CLOSED_TABLES skapas och är inte samtidigt helt stängd", () => {
+    for (const table of writeClosedTables) {
+      expect(tables).toContain(table);
+      expect(CLOSED_TABLES).not.toHaveProperty(table);
+    }
+  });
+
+  it.each(writeClosedTables)("%s (stängd för skrivning) har kvar en select-policy", (table) => {
+    expect(policies.filter((p) => p.table === table && p.command === "select")).not.toHaveLength(0);
+  });
+
+  it.each(writeClosedTables)("%s (stängd för skrivning) har ingen insert-, update-, delete- eller all-policy", (table) => {
+    expect(policies.filter((p) => p.table === table && p.command !== "select")).toEqual([]);
+  });
+
+  it.each(writeClosedTables)("%s (stängd för skrivning) har skrivrätten indragen från anon och authenticated", (table) => {
+    const pattern = new RegExp(`revoke insert, update, delete on table public\\.${table} from anon, authenticated`, "i");
+    expect(sql).toMatch(pattern);
   });
 
   it.each(closedTables)("%s (stängd) har rättigheterna indragna från anon och authenticated", (table) => {

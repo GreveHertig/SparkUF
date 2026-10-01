@@ -1,8 +1,8 @@
 # Bevislagringen: spec (förslag)
 
-Status: **förslag, ej beslutat.** Skrivet 2026-10-01 på `design/en-design`. Ingen kod är ändrad.
+Status: **beslutad och byggd** 2026-10-01 på grenen `plattform/bevislagring`. Skrevs först som förslag på `design/en-design`. **Besluten står i avsnitt 11**, och de går före texten i avsnitt 1–10 där de skiljer sig.
 
-Specen ska gå att bygga utan annan kontext. Varje beslut har ett motiv. Där jag är osäker står det **Öppet beslut** med alternativen. De är också samlade i avsnitt 10.
+Specen ska gå att bygga utan annan kontext. Varje beslut har ett motiv. Avsnitt 1–10 är förslaget som det skrevs, med de öppna besluten. Avsnitt 11 är vad som valdes och byggdes.
 
 Underlag: `docs/uppdrag.md` (1.2, 1.5, 7, 14), `core/score.ts` med tester, alla filer i `ports/`, `docs/moduler/evidens-och-poang.md`, `adapters/live/EvidenceRepository.ts`, `supabase/migrations/`, `docs/status.md`.
 
@@ -25,7 +25,7 @@ Uppgiften säger att ingenting sparar bevis. Det stämmer i praktiken, men det �
 
 Luckan är alltså inte tabellen. Den är **skrivvägen och regeln för vad ett bevis är värt**. Den här specen fyller den luckan, ändrar tabellen där den inte räcker och pekar ut tre beroenden utanför bevislagringen som också måste lösas innan siffran kan röra sig på riktigt (avsnitt 5.2).
 
-**Fyra fel i det som redan finns**, upptäckta under läsningen. De tas om hand nedan:
+**Fyra fel i det som redan fanns**, upptäckta under läsningen. Alla fyra är rättade, se avsnitt 11.6:
 
 1. **RLS-policyn `evidence: insert egen` låter en inloggad användare skriva rader med valfritt `points` direkt mot Supabase REST.** Anon-nyckeln är publik och användarens JWT finns i webbläsaren. Vem som helst kan alltså höja sin egen poäng till taket med ett `curl`-anrop. Det bryter mot 7.1, "går inte att prata sig till". Se 2.3 och 7.1.
 2. **`calculateScore` kastar om en upplåst del saknar bevis** (`core/score.ts`, `scorePart`). I live händer det så fort fasen går vidare innan beviset finns. Ett exempel: steg 04 markeras klart, `scorePhaseForStep(5)` ger `tryAfterCalls`, och då är Problem och Betalningsvilja upplåsta utan ett enda kundsvar. Se 3.3.
@@ -73,10 +73,12 @@ Förslag till sorter. **Siffrorna i `basePoints` och `freshForDays` är produktb
 | `customerPriceDeclined` | willingnessToPay | customer | 3 | **ja** | 180 | either |
 | `productScopeFromEvidence` | product | customer | 4 | nej | null | founder |
 | `productPublished` | product | customer | 6 | nej | 90 | founder |
-| `formalRegistrationDone` | feasibility | register | 4 | nej | null | founder |
+| `formalRegistrationDone` | feasibility | register | 4 | nej | null | either² |
 | `legalItemDone` | feasibility | register | 1 | nej | 365 | founder |
-| `payingCustomer` | traction | customer | 4 | nej | 90 | founder |
-| `activeUser` | traction | customer | 1 | nej | 30 | founder |
+| `payingCustomer` | traction | customer | 4 | nej | 90 | either² |
+| `activeUser` | traction | customer | 1 | nej | 30 | either² |
+
+² Ändrat från `founder` till `either` vid bygget (beslut B6, avsnitt 11.2): de tre är fakta om en tredje part som går att kontrollera, så när grundaren anger dem är de självrapporterade.
 
 ¹ `DataType` har bara tre värden (`design/tokens.ts`), och inget av dem passar profilen. Demot använder redan `customer` för profilsvar. Jag behåller det i stället för att ändra tokens, eftersom en ny datatyp påverkar designsystemets färger och ligger utanför den här uppgiften.
 
@@ -530,3 +532,87 @@ Varje punkt är en egen PR som går att granska för sig. Typecheck, lint och te
 | — | Kan motsägande bevis återkallas? | bara `founder`-bevis, eller aldrig | 7.7 |
 | — | Följer Passform med vid pivot? | kopiera eller räkna per användare | 7.11 |
 | — | Källnamn som i18n-nyckel eller som text | nyckel för interna källor, eller alltid svenska | 7.12 |
+
+---
+
+## 11. Beslut och vad som byggdes (2026-10-01)
+
+Besluten B4, B6 och B9 tog Theodor. De övriga sju (B1, B2, B3, B5, B7, B8, B10) och de fyra omärkta frågorna i avsnitt 10 valde jag, efter vad specen lutade åt där den lutade.
+
+### 11.1 Theodors beslut
+
+**B4: en upplåst del utan bevis ger 0 och visar luckan.** Aldrig ett kastat fel. `core/score.ts` är ändrad, men bara den regeln: `scorePart` anropas inte längre med en tom lista. Delen läggs i stället i den nya listan `ScoreSnapshot.emptyParts` (valfritt fält i `core/domain.ts`), och `screens/Score.tsx` visar den som "Inget underlag än", aldrig som "0/18". Ingen `ScorePart` med 0 poäng skapas, eftersom en sådan kräver en källa (7.4). Det befintliga testet "kastar om en upplåst del helt saknar bevis" beskrev exakt den regel som skulle bort. Det är därför omskrivet till den nya regeln. Alla andra tester i `core/score.test.ts` är oförändrade och gröna.
+
+**B6: grundaren får lägga in bevis själv, men de märks och väger mindre.**
+- *Självrapporterat* betyder att grundaren anger ett faktum om en tredje part, alltså en sort med `enteredBy: "either"` som läggs in med `entered_by = 'founder'`. Det gäller kundsvar, betalande kunder, aktiva användare och registrering.
+- Profilsvar, MVP-avgränsning, publicerad produkt och juridiska punkter är inte självrapporterade, eftersom grundaren själv är källan där.
+- **Vikt:** ett självrapporterat bevis ger **hälften** av sortens poäng (`SELF_REPORTED_MULTIPLIER = 0.5`). Det är databasen som sätter det, i triggern.
+- **Tak:** självrapporterade bevis kan tillsammans ge en del **högst 50 % av delens vikt** (`SELF_REPORTED_PART_SHARE = 0.5`). Det räknas i `core/evidenceInput.ts`. Problem och Betalningsvilja (vikt 18) når alltså högst 9 på egna påståenden, och Traktion (14) högst 7. Resten kräver bevis som Spark själv tagit emot.
+- **Varför 50 %:**
+  - Utan tak kan grundaren fylla en del med påhittade bolag. `record_evidence` går att anropa direkt, och dubblettspärren hindrar inte att man anger nya bolagsnamn.
+  - Med 50 % kan poängen röra sig i live redan nu, innan utskicken fungerar. Ett eget påstående är svagt bevis med känd källa, inte inget bevis.
+  - Hälften är också lätt att förklara i en mening: "Det du själv angett kan ge högst hälften av delen."
+  - Ett lägre tak, till exempel 25 %, skulle göra Problem i praktiken orörligt (högst 4 av 18). Ett högre skulle låta självrapporterat dominera.
+- Över taket räknas ett bevis med 0 poäng och märks `capped`. Det ligger ändå kvar i underlaget, så att ett självrapporterat avböjt pris fortfarande drar in delen i "skevt underlag" (7.4).
+
+**B9: gamla bevis utesluts, de graderas inte ner.** Livslängd per sort, räknat från faktumets datum (`fetched_at`):
+
+| Sort | Livslängd | Varför |
+|---|---|---|
+| Registersiffror (antal, omsättning, konkurrenter) | 365 dagar | Registren uppdateras när årsredovisningarna kommer in, en gång om året. Äldre siffror beskriver ett annat år. |
+| Kundsvar om problem och pris | 180 dagar | En kunds besked om problem och betalningsvilja håller ungefär en säsong. Efter ett halvår har marknaden, priset eller idén ofta ändrats. |
+| Publicerad produkt | 90 dagar | En sida som inte kontrollerats på ett kvartal kan vara nere. Det ska kontrolleras igen, inte förutsättas. |
+| Betalande kund | 90 dagar | En betalning för mer än ett kvartal sedan säger inte att kunden fortfarande betalar. |
+| Aktiva användare | 30 dagar | "Aktiv" är per definition färskt. Siffran från förra månaden gäller inte nu. |
+| Juridisk punkt klar | 365 dagar | Deklarationer, årsredovisning och tillstånd återkommer årligen. |
+| Profilsvar, MVP-avgränsning, registrering | aldrig | Faktum som inte blir gammalt: en kompetens, ett beslut, ett bolag som finns. |
+
+Gränsen är skarp: ett kundsvar räknas i exakt 180 dagar (testat). Ett uteslutet bevis märks `stale` i `listEvidence`. Blir en del tom på det sättet gäller B4.
+
+### 11.2 Mina val på de sju öppna punkterna
+
+| # | Val | Varför |
+|---|---|---|
+| **B1** | Startvärdena i 1.2. `payingCustomer`, `activeUser` och `formalRegistrationDone` ändrade till `either`. | Specen lutade uttryckligen åt startvärdena. Ändringen följer av B6. |
+| **B2** | **Databasen** sätter `points` ur `evidence_kinds` när beviset skrivs, och värdet lagras. Läsningen använder det lagrade värdet. Del, datatyp och motsäger kontrolleras mot `core/evidenceKinds.ts`, och en avvikelse kastar `EvidenceIntegrityError`. | Theodors krav: poängen härleds ur sorten i databasen och kommer aldrig ur inmatningen. Historiken stämmer med en omräkning. Nackdel: en ändrad poängtabell gäller bara nya bevis, så gamla bevis behåller sitt värde. |
+| **B3** | Security definer-funktionen `public.record_evidence` för grundarens bevis, plus en trigger som skriver över del, datatyp, motsäger och poäng ur sorten vid **varje** insert, även med service role. | Det är den enda vägen där ett direkt anrop mot Supabase inte kan sätta poäng, del eller "system". Användaren tas ur `auth.uid()`, projektet ur det aktiva projektet och `entered_by` blir alltid `'founder'`. |
+| **B5** | En ny port, `ports/EvidenceRecorder.ts`. | Specen lutade inte tydligt åt något håll. En ny port gör att `EvidenceRepository`s adaptrar inte behöver fler metoder, och typsystemet visar vilka moduler som kan påverka poängen. |
+| **B7** | Grundaren väljer klassningen själv (bekräftar eller avvisar). En modell får bara föreslå. | Så fungerar den enda väg som finns i dag, den manuella. En språkmodell rör aldrig poängen. När svar via Spark finns (systembevis) behöver frågan tas upp igen för de svaren. |
+| **B8** | En snapshot skrivs bara när totalen ändras jämfört med den senaste. | Specens huvudförslag. En duplicerad punkt i grafen är brus. |
+| **B10** | (a): historiken visar ett fall vid nästa händelse. | Inget cron-jobb behövs, och beslutet att en läsning aldrig skriver står kvar. Läsningen visar ändå fallet direkt, med orsaken "Bevis har blivit för gamla för att räknas". |
+
+### 11.3 De fyra omärkta frågorna
+
+- **7.2b, nytt svar från samma bolag:** det nya **ersätter** det gamla. Det gamla återkallas med en anledning, och svaret blir `replaced`. Det gäller bara när båda är grundarens egna. Ett svar som Spark tagit emot (system) kan grundaren aldrig ersätta.
+  - Om samma sort, sak *och* datum skickas en gång till blir svaret `duplicate`, till exempel vid ett dubbelklick.
+- **7.7, återkallelse:** bara grundarens egna bevis går att återkalla, och det kräver en anledning som skrivs i Spåret. Motsägande självrapporterade bevis kan alltså återkallas. Det är grundarens eget påstående, och taket i B6 gör att det inte lönar sig att gömma ett motsägande svar för att hämta in poäng.
+- **7.11, pivot:** Passform följer **inte** med till ett nytt projekt. Bevisen hör till `project_id`. Enklast, och samma regel för alla sorter. Profilsvaren får läggas in igen i det nya projektet.
+- **7.12, källnamn:** Sparks egna källor lagras som nyckel, med prefixet `spark:` (i dag bara `spark:profile`, som visas som "Profilsamtalet"). Egennamn lagras som text. Både databasen och servern nekar `spark:`-källor på sorter där grundaren inte själv är källan, så att ett påstående om en kund aldrig ser ut att komma från Spark.
+
+### 11.4 Var reglerna sitter
+
+| Regel | Var |
+|---|---|
+| Klienten kan inte skriva i `evidence`, `score_snapshots` eller `evidence_kinds` | Migrationen: skrivpolicyer borttagna, `revoke insert, update, delete`. Vakt: `WRITE_CLOSED_TABLES` i `migrations.test.ts`. |
+| Poäng, del, datatyp och motsäger ur sorten | Triggern `evidence_derive_from_kind` |
+| Ett bevis ändras aldrig, det återkallas | Triggern `evidence_only_retraction` |
+| Bara `http(s)`-länkar | `check` i tabellen och zod i servern |
+| Datum inte i framtiden, ingen registerdata från grundaren, en skrivning i taget per projekt | `record_evidence` (plus servern för begripliga fel) |
+| Föråldring, återkallade bevis, ordning och tak för självrapporterat | `core/evidenceInput.ts`, ren funktion |
+| Snapshots skrivs bara av servern | `lib/server/scoreSnapshots.ts` (service role, lint-spärrad). Beslut i `docs/beslut.md`. |
+
+SQL:en prövas mot en riktig Postgres i CI med PGlite (`supabase/migrations/evidenceWritePath.pg.test.ts`, `test/pgMigrations.ts`), inklusive testet att egna `points` avvisas.
+
+### 11.5 Avvikelser från avsnitt 1–10
+
+- `RecordEvidenceInput` har inte `responseId` och `companyId`. Grundarens väg har inga sådana, och kolumnerna finns för systemvägen.
+- Ingen server action är byggd. Inget flöde i UI:t anropar skrivvägen än (byggordning punkt 5, Passform från profilen, är nästa). En action utan anropare vore en öppen ingång i onödan.
+- `previousTotal`-regeln i 3.4 är utökad: har totalen ändrats sedan den senaste snapshotten blir orsaken antingen "för gamla" (om totalen sjönk och något bevis är för gammalt) eller "räknad om".
+
+### 11.6 De fyra felen i avsnitt 0
+
+1. **Insert-policyn:** borttagen, se 11.4.
+2. **`calculateScore` kastade:** se B4.
+3. **`previousTotal`:** varje snapshot bär sin egen förändring. Läsningen visar `senaste.total − senaste.delta` när totalen fortfarande stämmer (`previousFromLatest` i `adapters/live/evidenceScore.ts`). Testat hela vägen genom två skrivningar och en läsning.
+4. **Fasen mot upplåsningstexten:** "efter steg N" gäller. Fasen räknas ur högsta *avklarade* steg (`scorePhaseForCompletedSteps` i `core/journey.ts`). Beslutet står i `docs/beslut.md`.
+   - **Kvar:** `UNLOCK_STEP` i `core/score.ts` säger "efter steg 08" för Produkt och "efter steg 09" för Genomförbarhet, men fasen Lansera låser upp båda efter steg 07, både i demot och nu i live. Det rättas inte här, eftersom `core/score.ts` bara fick ändras för B4.

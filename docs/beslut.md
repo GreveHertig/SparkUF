@@ -192,3 +192,43 @@ företagsregister-API (AFR) och dess kodtabell är SNI 2025 (Verifierat
 mellan versionerna är inte en-till-en. Porten (`RegistryQuery.sniCode`),
 liveadapterns validering och demodatan (`69.201`) ändras inte nu. Vad som
 ska ändras står i `docs/moduler/registret.md`, "SNI 2025".
+
+## 2026-10-01
+
+**Fasen räknas ur högsta avklarade steg, inte ur steget som pågår.**
+"Låses upp efter steg 05" betyder efter att steg 05 är klart. Förut räknade
+liveadaptern fasen ur aktuellt steg (`scorePhaseForStep(deriveCurrentStepNumber(...))`),
+vilket låste upp varje del ett steg för tidigt och sade emot texten.
+Upplåsningstexten gäller, och fasen är rättad (`scorePhaseForCompletedSteps`
+i `core/journey.ts`). Skäl: det stämmer med texten, med demots kalibrerade
+moment (fasen byts i "efter"-momentet för steg 03, 05, 07 och 11) och med
+fasnamnet "tryAfterCalls", efter samtalen i steg 05. Kvar: `UNLOCK_STEP` i
+`core/score.ts` säger 08 för Produkt och 09 för Genomförbarhet, men båda låses
+upp efter steg 07. Ska rättas i `core/score.ts` i en egen ändring.
+Se `docs/bevislagring.md` 11.6.
+
+**Bevislagringen: `evidence`, `score_snapshots` och `evidence_kinds` är
+stängda för skrivning från klienter** (`WRITE_CLOSED_TABLES` i
+`supabase/migrations/migrations.test.ts`). Klienten läser sina egna rader
+men skriver aldrig direkt. Bevis skrivs via `public.record_evidence`
+(security definer), och poängen sätts av databasen ur sorten. Skäl: förut
+kunde vem som helst höja sin egen poäng med ett direkt anrop mot Supabase.
+Se `docs/bevislagring.md` 11.
+
+**Poänghistoriken skrivs av servern med service role**
+(`lib/server/scoreSnapshots.ts`). Det är den andra användningen av
+`SUPABASE_SERVICE_ROLE_KEY`, efter registercachen. Skäl: totalen räknas av
+`calculateScore` i kod och aldrig i SQL, så den kan inte sättas av en
+databasfunktion som användaren själv anropar. Om klienten fick skriva kunde
+historiken och den visade förändringen förfalskas.
+- Nyckeln används bara för insert i `score_snapshots`.
+- Användare och projekt kommer ur sessionen.
+- Den sammansatta främmande nyckeln mot `projects` gör det omöjligt att
+  skriva på någon annans projekt.
+- Lint tillåter bara `adapters/live/EvidenceRecorder.ts` att importera filen.
+
+**Besluten B1–B10 i bevislagringen** står med motiv i
+`docs/bevislagring.md` avsnitt 11. B4, B6 och B9 tog Theodor:
+- B4: en upplåst del utan bevis ger 0 och visas som en lucka.
+- B6: självrapporterade bevis ger halva poängen, med tak på halva delens vikt.
+- B9: gamla bevis utesluts, med livslängd per sort.

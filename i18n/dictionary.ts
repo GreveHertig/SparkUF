@@ -1,5 +1,7 @@
 /** Typad form för översättningarna. sv.ts och en.ts måste båda uppfylla den
  * här — saknas en nyckel i endera filen larmar TypeScript. */
+import type { EvidenceKind } from "@/core/evidenceKinds";
+
 export type Dictionary = {
   /** Sidtitel och förhandsvisning när länken delas (app/layout.tsx). */
   meta: {
@@ -277,6 +279,40 @@ export type Dictionary = {
     noHistory: string;
     /** Tomläget under "Höj din poäng": inga förslag skrivna än. */
     noSuggestions: string;
+    /** Beslut B4 (docs/bevislagring.md 3.3): en upplåst del utan bevis visas
+     * som en lucka, aldrig som "0/vikt". */
+    emptyPart: string;
+  };
+  /** Bevislagringen (docs/bevislagring.md). */
+  evidence: {
+    /** Bevissorternas namn, en per EvidenceKind (core/evidenceKinds.ts). */
+    kinds: Record<EvidenceKind, string>;
+    /** Märkningen på ett bevis grundaren själv angett om en tredje part (beslut B6). */
+    selfReported: string;
+    status: {
+      /** Beslut B9: äldre än sortens livslängd, räknas inte. */
+      stale: string;
+      /** Beslut B6: över taket för självrapporterade bevis i delen. */
+      capped: string;
+      retracted: string;
+    };
+    /** Orsaken till en poängförändring. {kind} är sortens namn. */
+    deltaReason: {
+      recorded: string;
+      replaced: string;
+      retracted: string;
+      stale: string;
+      recalculated: string;
+    };
+    /** Sparks egna källor, lagrade som nyckel och inte som text (7.12). */
+    internalSources: {
+      profile: string;
+    };
+    /** Posterna i Spåret. */
+    trace: {
+      recorded: string;
+      retracted: string;
+    };
   };
   marketPage: {
     title: string;

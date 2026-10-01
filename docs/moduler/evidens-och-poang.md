@@ -30,6 +30,14 @@ getScoreHistory(locale: Locale): Promise<number[]>
   med 0 poäng (avsnitt 7.3).
 - `ScoreSuggestion` (`core/score.ts`): en kandidat för "Höj din poäng"
   (avsnitt 7.6), med ett härlett `pointsPerMinute`.
+- `ScoreSnapshot.emptyParts` (valfri): upplåsta delar utan bevis, som visas
+  som en lucka (beslut B4, `docs/bevislagring.md` 11.1).
+
+**Skrivvägen** är en egen port, `ports/EvidenceRecorder.ts` (beslut B5):
+`recordEvidence`, `retractEvidence`, `listEvidence`. Liveadaptern skriver via
+databasfunktionen `public.record_evidence`. Demoadaptern sparar ingenting och
+svarar med momentets poäng. Hela designen, med besluten, står i
+`docs/bevislagring.md`.
 
 ## Datakällor och vad som krävs
 
@@ -46,7 +54,12 @@ getScoreHistory(locale: Locale): Promise<number[]>
   ställen som kan glida isär.
 - Ingen extern tjänst. Andra moduler (Registret, Utskick och svar,
   Webbresearch/Pulsen, Simuleringar — den sistnämnda **ger aldrig poäng**,
-  7.4) skriver in bevis i `evidence`-tabellen; den här porten läser bara.
+  7.4) skriver in bevis i `evidence`-tabellen. `EvidenceRepository` läser
+  bara. Skrivningar går via `EvidenceRecorder`, eller i framtiden via servern
+  för systembevis, aldrig direkt från en klient (tabellen är stängd för
+  skrivning).
+- Läsvägen är delad: `adapters/live/evidenceScore.ts` (rader →
+  `toPartEvidence` i `core/evidenceInput.ts` → `calculateScore`).
 
 ## Hur demoadaptern fungerar i dag
 
@@ -67,8 +80,8 @@ getScoreHistory(locale: Locale): Promise<number[]>
 
 - `total` ligger alltid inom 1–100 (avsnitt 7.1: aldrig 0, klämt vid 100).
 - Varje del i `parts` har en ifylld `source` (Datalöftet) — ingen poäng
-  utan källa (avsnitt 7.3s regel, "ett upplåst del utan bevis kastar ett
-  tydligt fel").
+  utan källa. En upplåst del utan bevis kastar inte längre. Den hamnar i
+  `emptyParts` och visas som en lucka (beslut B4, 2026-10-01).
 - `lockedParts`-poster är aldrig samma sak som en `ScorePart` med 0 poäng.
 - `getSuggestions` returnerar bara delar som faktiskt är upplåsta i den
   aktuella fasen.
