@@ -48,6 +48,17 @@ describe("Pulse (steg 6)", () => {
     expect(container.textContent).not.toMatch(/sedan/);
   });
 
+  it("utan sourceDataType är källtaggen vanlig, med \"example\" bär den etiketten Exempel", () => {
+    const { rerender } = renderPulse({ signals });
+    expect(screen.queryByText(sv.common.exampleSourceLabel)).not.toBeInTheDocument();
+    rerender(
+      <LocaleProvider>
+        <Pulse data={{ signals, sourceDataType: "example" }} />
+      </LocaleProvider>,
+    );
+    expect(screen.getAllByText(sv.common.exampleSourceLabel)).toHaveLength(2);
+  });
+
   it("en tom lista är ett ärligt tomläge, inte Kommer snart", () => {
     renderPulse({ signals: [] });
     expect(screen.getByRole("heading", { level: 1, name: sv.pulsePage.title })).toBeInTheDocument();

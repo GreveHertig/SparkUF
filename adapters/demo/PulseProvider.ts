@@ -104,6 +104,21 @@ function isRevealed(beatId: string, beatIndex: number): boolean {
   return revealIndex !== -1 && beatIndex >= revealIndex;
 }
 
+/**
+ * Signalerna med steget där de dyker upp i scenariot, i samma ordning som
+ * `getSignals`. Signalerna är påhittade: demots Pulsen-sida visar dem med en
+ * exempelkälla för steget ("Påhittad data, steg 03", PR 11) i stället för den
+ * myndighet som står i `source`. Används bara i demots rutt-fil.
+ */
+export function getSignalSteps(): number[] {
+  const { beatIndex, entry } = useDemoStore.getState();
+  if (entry === "hasIdea") return [];
+  const steps = [1, 1, 1];
+  if (isRevealed("03-marknaden-efter", beatIndex)) steps.unshift(3);
+  if (isRevealed("06-domen-efter", beatIndex)) steps.unshift(6);
+  return steps;
+}
+
 export const demoPulseProvider: PulseProvider = {
   // Saras signaler bara — porten tillåter inte ett tomt/null-svar här, så
   // Jonas-läget hanteras i stället av anroparen (app/demo/app/page.tsx),

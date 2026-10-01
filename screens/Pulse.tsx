@@ -4,6 +4,7 @@ import { ComingSoon } from "@/components/ui/ComingSoon";
 import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n } from "@/i18n/context";
 import type { PulseSignal } from "@/core/domain";
+import type { DataType } from "@/design/tokens";
 import { PageHead } from "./blocks/PageBlocks";
 
 /**
@@ -11,9 +12,14 @@ import { PageHead } from "./blocks/PageBlocks";
  * `signals: null` när signalerna inte gick att hämta (platshållarfel): listan
  * visar då "Kommer snart", och rubriken blir sidans namn. En tom lista är ett
  * ärligt tomläge ("Ingen signal än"), inte en lucka.
+ *
+ * `sourceDataType` (valfri) sätter källtaggarnas datatyp. Demot skickar
+ * `"example"` tillsammans med exempelkällor, så att påhittade signaler bär
+ * etiketten "Exempel" (PR 11). `/app` skickar ingen.
  */
 export type PulseData = {
   signals: PulseSignal[] | null;
+  sourceDataType?: DataType;
 };
 
 /**
@@ -51,7 +57,7 @@ export function Pulse({ data }: { data: PulseData }) {
               <p className="fd-nextstep__why">
                 {t.common.pulseWhyItMattersPrefix} {signal.whyItMatters}
               </p>
-              <SourceTag source={signal.source} />
+              <SourceTag source={signal.source} dataType={data.sourceDataType} />
             </li>
           ))}
         </ul>

@@ -549,6 +549,19 @@ describe("/demo", () => {
       expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
     });
 
+    it("Pulsens påhittade signaler bär exempelkälla, aldrig en myndighets namn (steg 6, PR 11)", async () => {
+      startInApp(lastBeat);
+      pathname = DEMO_PATHS.pulse;
+      const { container } = await renderInApp(<DemoPulsePage />);
+      const signals = [...container.querySelectorAll(".fdd-signal")];
+      expect(signals.length).toBeGreaterThan(0);
+      for (const signal of signals) {
+        expect(signal).toHaveTextContent(sv.common.exampleSourceLabel);
+        expect(signal).toHaveTextContent(/Påhittad data, steg 0[136]/);
+        expect(signal.querySelector("button")?.textContent).not.toMatch(/Bolagsverket|Skatteverket|branschtidning/);
+      }
+    });
+
     it("Pulsen för Jonas visar tomläget, inga påhittade signaler (steg 6)", async () => {
       startInApp(0);
       useDemoStore.setState({ entry: "hasIdea" });
