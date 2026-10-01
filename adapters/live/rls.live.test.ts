@@ -140,27 +140,69 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
       { why: "kapad" },
     ));
 
-  it("evidence: RLS-isolering", async () =>
-    expectRowIsolation(
-      "evidence",
-      {
-        user_id: userIdA,
-        project_id: projectIdA,
-        part_id: "fit",
-        points: 1,
-        data_type: "customer",
-        source_name: marker,
-        fetched_at: "2026-01-01",
-      },
-      { points: 99 },
-    ));
+  // evidence och score_snapshots är stängda för skrivning sedan
+  // 20261001120000_evidence_write_path.sql (docs/bevislagring.md 2.3): ingen
+  // klient skriver direkt. A skriver bevis bara via record_evidence, och
+  // poängen sätts av databasen ur sorten. Samma regler prövas i CI mot
+  // Postgres i supabase/migrations/evidenceWritePath.pg.test.ts.
+  it("evidence: egna points avvisas, och B kan varken läsa, ändra eller återkalla A:s bevis", async () => {
+    const direct = await clientA.from("evidence").insert({
+      user_id: userIdA,
+      project_id: projectIdA,
+      kind: "customerProblemConfirmed",
+      subject_ref: marker,
+      entered_by: "system",
+      module: "test",
+      part_id: "problem",
+      points: 99,
+      data_type: "customer",
+      source_name: marker,
+      fetched_at: "2026-01-01",
+    });
+    expect(direct.error, "evidence: A kunde skriva en rad med egna points direkt").not.toBeNull();
 
-  it("score_snapshots: RLS-isolering", async () =>
-    expectRowIsolation(
-      "score_snapshots",
-      { user_id: userIdA, project_id: projectIdA, total: 10, phase: "discover" },
-      { total: 99 },
-    ));
+    // record_evidence använder det AKTIVA projektet. Testprojektet är inaktivt
+    // (se beforeAll), så anropet går mot kontots riktiga aktiva projekt om ett
+    // sådant finns. Saknas det nekas anropet, och då prövas bara läsdelen.
+    const recorded = await clientA.rpc("record_evidence", {
+      p_kind: "customerProblemConfirmed",
+      p_subject_ref: marker,
+      p_source_name: marker,
+      p_source_url: null,
+      p_fetched_at: "2026-01-01",
+      p_quote: null,
+      p_step_number: null,
+      p_module: "test",
+    });
+    if (recorded.error) {
+      expect(recorded.error.message).toMatch(/aktivt projekt/i);
+      return;
+    }
+    const evidenceId = (recorded.data as { evidence_id: string }[])[0].evidence_id;
+
+    const { data: row } = await clientA.from("evidence").select("points, entered_by").eq("id", evidenceId).single();
+    expect(Number(row!.points), "evidence: poängen kom inte ur sorten").toBe(1.5);
+    expect(row!.entered_by).toBe("founder");
+
+    const { data: selected } = await clientB.from("evidence").select("id").eq("id", evidenceId);
+    expect(selected ?? [], "evidence: B kunde läsa A:s bevis").toHaveLength(0);
+    const { data: updated } = await clientB.from("evidence").update({ points: 99 }).eq("id", evidenceId).select("id");
+    expect(updated ?? [], "evidence: B kunde ändra A:s bevis").toHaveLength(0);
+    const retractedByB = await clientB.rpc("retract_evidence", { p_evidence_id: evidenceId, p_reason: "kapad" });
+    expect(retractedByB.error, "evidence: B kunde återkalla A:s bevis").not.toBeNull();
+
+    // Städa: A återkallar sitt testbevis (bevis raderas aldrig av en klient).
+    await clientA.rpc("retract_evidence", { p_evidence_id: evidenceId, p_reason: marker });
+  });
+
+  it("score_snapshots: ingen klient kan skriva historiken, inte ens sin egen", async () => {
+    const { error } = await clientA
+      .from("score_snapshots")
+      .insert({ user_id: userIdA, project_id: projectIdA, total: 99, phase: "grow" });
+    expect(error, "score_snapshots: A kunde skriva en egen snapshot").not.toBeNull();
+    const { data: selected } = await clientB.from("score_snapshots").select("id").eq("user_id", userIdA);
+    expect(selected ?? [], "score_snapshots: B kunde läsa A:s historik").toHaveLength(0);
+  });
 
   it("trace_events: RLS-isolering", async () =>
     expectRowIsolation(
