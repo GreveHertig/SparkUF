@@ -418,6 +418,25 @@ describe("/demo", () => {
       }
     });
 
+    it("Marknads registersiffror och Poängs delar bär exempelkällan, aldrig registrets namn", async () => {
+      startInApp(lastBeat);
+      pathname = DEMO_PATHS.market;
+      const market = await renderInApp(<DemoMarketPage />);
+      for (const id of ["fdd-market-kpi", "fdd-market-dist", "fdd-market-layers"]) {
+        const section = (await screen.findByRole("heading", { name: (_, el) => el.id === id })).closest("section")!;
+        expect(section.textContent).not.toMatch(/Bolagsverket|SCB/);
+        expect([...section.querySelectorAll("button")].some((b) => b.textContent?.includes("Påhittad data, steg 03"))).toBe(true);
+      }
+      market.unmount();
+
+      pathname = DEMO_PATHS.score;
+      const score = await renderInApp(<DemoScorePage />);
+      const partTags = [...score.container.querySelectorAll(".fd-part__source")];
+      expect(partTags.length).toBeGreaterThan(0);
+      for (const tag of partTags) expect(tag.textContent).toMatch(/Påhittad data, poängunderlaget|Simulering/);
+      expect(score.container.textContent).not.toMatch(/Bolagsverket|SCB|Kundsamtal/);
+    });
+
     it("Hems källtaggar är exempelkällor i varje moment, aldrig en myndighet eller en påhittad tid", async () => {
       const step05After = saraEngine.beats.findIndex((beat) => beat.stepNumber === 5 && beat.momentKind === "after");
       for (const beatIndex of [0, step05After, lastBeat]) {

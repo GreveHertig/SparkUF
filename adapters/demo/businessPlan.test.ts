@@ -97,8 +97,21 @@ describe("demots affärsplan: källregeln (PR 10 och 11)", () => {
       expect(byText(text)?.dataType).toBe("example");
       expect(byText(text)?.source.namn).toBe("Påhittad data, idégenomlysningen");
     }
-    // Registerfakta står kvar med sin egen källa.
-    expect(byText(screening.registerFacts[0].label)?.source).toEqual(screening.registerFacts[0].source);
+    // Registerfakta i demot är också påhittade: exempeltagg, aldrig registrets.
+    for (const fact of screening.registerFacts) {
+      expect(byText(fact.label)?.dataType).toBe("example");
+      expect(byText(fact.label)?.source.namn).toBe("Påhittad data, idégenomlysningen");
+    }
+  });
+
+  it("Marknaden-avsnittets registersiffror är exempel från steg 03, aldrig registrets", async () => {
+    useDemoStore.setState({ entry: "noIdea", beatIndex: saraEngine.beats.length - 1 });
+    const market = (await getBusinessPlan("sv")).sections.find((s) => s.id === "market")!;
+    expect(market.claims.length).toBeGreaterThan(0);
+    for (const claim of market.claims) {
+      expect(claim.dataType).toBe("example");
+      expect(claim.source.namn).toBe("Påhittad data, steg 03");
+    }
   });
 
   it("konkurrenternas beskrivningar är exempel från steg 03, aldrig registrets", async () => {

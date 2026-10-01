@@ -1013,6 +1013,7 @@ export const en = {
         step: "step {step}",
         ideaScreening: "the idea screening",
         suggestions: "Raise your score",
+        score: "the score evidence",
       },
       navLabel: "Demo menu",
       backToLanding: "Back to the start page",

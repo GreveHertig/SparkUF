@@ -75,7 +75,7 @@ function ideaSection(locale: Locale, steps: StepMap, ideaScreening: IdeaScreenin
   if (!ideaScreening) {
     return { id: "idea", checks: [highlightCheck(locale, steps, 1), highlightCheck(locale, steps, 2)] };
   }
-  // Registerfakta bär var sin källa. Den skarpare idéns motivering är exempeldata.
+  // Registerfakta och den skarpare idéns motivering är påhittade: exempelkälla.
   const claims: BusinessPlanClaim[] = [
     {
       text: ideaScreening.sharperIdea.why,
@@ -86,8 +86,8 @@ function ideaSection(locale: Locale, steps: StepMap, ideaScreening: IdeaScreenin
     ...ideaScreening.registerFacts.map((fact) => ({
       text: fact.label,
       value: fact.value,
-      source: fact.source,
-      dataType: "register" as const,
+      source: exampleSource(locale, "ideaScreening"),
+      dataType: "example" as const,
     })),
   ];
   return { id: "idea", checks: [highlightCheck(locale, steps, 1), { claims, requiredStepNumber: 2 }] };
@@ -115,17 +115,20 @@ function marketSection(t: Dictionary, locale: Locale, market: MarketOverview | n
 
   if (market) {
     const basis = market.basis;
+    // Registersiffrorna i demot är påhittade: exempelkälla, aldrig registrets
+    // (samma som Marknad-sidan i demot).
+    const marketSource = exampleSource(locale, { step: 3 });
     overviewClaims = [
-      { text: t.marketPage.companyCountLabel, value: formatCount(market.companyCount, locale), source: market.source, dataType: "register" },
+      { text: t.marketPage.companyCountLabel, value: formatCount(market.companyCount, locale), source: marketSource, dataType: "example" },
       // Medianomsättningen tas inte med: demodatan bär inget räkenskapsår, och
       // utan år visas luckan, aldrig siffran (PR 8 och 9, docs/plan-en-design.md).
     ];
     // Ett underlag på 0 bolag betyder "okänt" (RegistryProvider): andelen visas inte.
     if (basis?.growthCompanies !== 0) {
-      overviewClaims.push({ text: t.marketPage.growthShareLabel, value: percent(market.growthSharePercent), source: market.source, dataType: "register" });
+      overviewClaims.push({ text: t.marketPage.growthShareLabel, value: percent(market.growthSharePercent), source: marketSource, dataType: "example" });
     }
     if (basis?.regionCompanies !== 0) {
-      overviewClaims.push({ text: t.marketPage.regionShareLabel, value: percent(market.regionSharePercent), source: market.source, dataType: "register" });
+      overviewClaims.push({ text: t.marketPage.regionShareLabel, value: percent(market.regionSharePercent), source: marketSource, dataType: "example" });
     }
     if (basis && basis.growthCompanies > 0 && basis.regionCompanies > 0) {
       // Varje andel har sitt eget urval av helheten, t.ex. "tillväxt: 171 av
@@ -139,8 +142,8 @@ function marketSection(t: Dictionary, locale: Locale, market: MarketOverview | n
             region: formatCount(basis.regionCompanies, locale),
             total: formatCount(market.companyCount, locale),
           }),
-          source: market.source,
-          dataType: "register",
+          source: marketSource,
+          dataType: "example",
         },
       ];
     }
@@ -152,8 +155,8 @@ function marketSection(t: Dictionary, locale: Locale, market: MarketOverview | n
     overviewClaims = ideaScreening.registerFacts.map((fact) => ({
       text: fact.label,
       value: fact.value,
-      source: fact.source,
-      dataType: "register",
+      source: exampleSource(locale, "ideaScreening"),
+      dataType: "example",
     }));
   }
 

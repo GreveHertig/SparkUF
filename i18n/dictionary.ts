@@ -924,7 +924,7 @@ export type Dictionary = {
       /** Namnet på en exempelkälla i demot (PR 11): påhittad data, och var i
        * scenariot den kommer ifrån. Visas med datatypen "example". */
       exampleSourceTemplate: string;
-      exampleOrigins: { step: string; ideaScreening: string; suggestions: string };
+      exampleOrigins: { step: string; ideaScreening: string; suggestions: string; score: string };
       navLabel: string;
       backToLanding: string;
       stepOf: string;

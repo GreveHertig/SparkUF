@@ -1017,6 +1017,7 @@ export const sv = {
         step: "steg {step}",
         ideaScreening: "idégenomlysningen",
         suggestions: "Höj din poäng",
+        score: "poängunderlaget",
       },
       navLabel: "Demomeny",
       backToLanding: "Till startsidan",

@@ -39,6 +39,8 @@ export default function DemoMarketPage() {
         registry: { overview, companies, medianRevenueFiscalYears: null },
         outreach: { rows: campaign, source: outreachSource[locale] },
         simulation,
+        // Registersiffrorna i demot är påhittade: exempelkälla, aldrig registrets.
+        registrySource: { source: exampleSource(locale, { step: 3 }), dataType: "example" },
         // Beskrivningarna är bedömningar i scenariot, inga registeruppgifter.
         competitorsSource: { source: exampleSource(locale, { step: 3 }), dataType: "example" },
       });
