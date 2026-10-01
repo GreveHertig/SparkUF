@@ -133,12 +133,34 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
     expect(deleted ?? []).toHaveLength(0);
   });
 
-  it("journey_steps: RLS-isolering", async () =>
-    expectRowIsolation(
-      "journey_steps",
-      { user_id: userIdA, project_id: projectIdA, step_number: 1 },
-      { why: "kapad" },
-    ));
+  // journey_steps är stängd för skrivning sedan
+  // 20261001150000_journey_step_completion.sql: ett steg markeras klart bara
+  // via complete_journey_step, som prövar stegets krav. Annars kunde A
+  // markera steg 11 som klart själv och låsa upp hela poängen. Samma regler
+  // prövas i CI mot Postgres i supabase/migrations/journeyStepCompletion.pg.test.ts.
+  it("journey_steps: A kan inte markera ett steg som klart direkt, varken med insert, update eller funktionen utan krav", async () => {
+    const insert = await clientA
+      .from("journey_steps")
+      .insert({ user_id: userIdA, project_id: projectIdA, step_number: 11, completed_at: new Date().toISOString() });
+    expect(insert.error, "journey_steps: A kunde skriva ett avklarat steg direkt").not.toBeNull();
+
+    const { data: updated } = await clientA
+      .from("journey_steps")
+      .update({ completed_at: new Date().toISOString() })
+      .eq("user_id", userIdA)
+      .select("id");
+    expect(updated ?? [], "journey_steps: A kunde markera ett steg som klart med update").toHaveLength(0);
+
+    // Steg 12 kräver steg 11, och steg 06 har inget krav alls. Båda nekas
+    // oavsett vad kontots aktiva projekt innehåller.
+    const skipped = await clientA.rpc("complete_journey_step", { p_step_number: 12 });
+    expect(skipped.error, "journey_steps: A kunde hoppa till steg 12").not.toBeNull();
+
+    const { error: impersonationError } = await clientB
+      .from("journey_steps")
+      .insert({ user_id: userIdA, project_id: projectIdA, step_number: 1, completed_at: new Date().toISOString() });
+    expect(impersonationError, "journey_steps: B kunde skriva ett steg på A:s projekt").not.toBeNull();
+  });
 
   // evidence och score_snapshots är stängda för skrivning sedan
   // 20261001120000_evidence_write_path.sql (docs/bevislagring.md 2.3): ingen

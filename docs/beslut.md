@@ -211,9 +211,8 @@ vilket låste upp varje del ett steg för tidigt och sade emot texten.
 Upplåsningstexten gäller, och fasen är rättad (`scorePhaseForCompletedSteps`
 i `core/journey.ts`). Skäl: det stämmer med texten, med demots kalibrerade
 moment (fasen byts i "efter"-momentet för steg 03, 05, 07 och 11) och med
-fasnamnet "tryAfterCalls", efter samtalen i steg 05. Kvar: `UNLOCK_STEP` i
-`core/score.ts` säger 08 för Produkt och 09 för Genomförbarhet, men båda låses
-upp efter steg 07. Ska rättas i `core/score.ts` i en egen ändring.
+fasnamnet "tryAfterCalls", efter samtalen i steg 05. `UNLOCK_STEP` i
+`core/score.ts` är rättat, se beslutet om Produkt och Genomförbarhet nedan.
 Se `docs/bevislagring.md` 11.6.
 
 **Bevislagringen: `evidence`, `score_snapshots` och `evidence_kinds` är
@@ -241,6 +240,100 @@ historiken och den visade förändringen förfalskas.
 - B4: en upplåst del utan bevis ger 0 och visas som en lucka.
 - B6: självrapporterade bevis ger halva poängen, med tak på halva delens vikt.
 - B9: gamla bevis utesluts, med livslängd per sort.
+
+**Ett steg i resan markeras klart bara när dess krav är uppfyllda, och
+villkoret sitter i databasen.** Theodor valde strikta krav, där steg utan
+mätbart krav är låsta. Förut kunde en inloggad användare skriva `completed_at`
+i `journey_steps` direkt mot Supabase. Fasen räknas ur högsta avklarade steg,
+så den som markerade steg 11 kunde låsa upp alla delar och höja taket till 100.
+Nu är `journey_steps` stängd för skrivning (`WRITE_CLOSED_TABLES`) och steg
+markeras bara via `public.complete_journey_step` (security definer,
+`supabase/migrations/20261001150000_journey_step_completion.sql`). Funktionen
+kräver att föregående steg är klart och att kraven i
+`journey_step_requirements` är uppfyllda av bevis som räknas (inte
+återkallade, inte äldre än sortens livslängd). Kraven finns också i
+`core/journeyRequirements.ts`, så att UI:t kan visa vad som saknas. Ett test
+mot Postgres håller de två i synk och kör samma fall mot båda.
+
+| Steg | Krav |
+|---|---|
+| 01 Om dig | Svar på alla fyra passformsfrågor (`profileFitAnswer` med `fit:skills`, `fit:network`, `fit:time`, `fit:money`) |
+| 02 Möjligheter | Ett aktivt projekt |
+| 03 Marknaden | `registerMarketCount` (systembevis ur registret) |
+| 04 Kunden | `registerCompetitorSet` (systembevis ur registret) |
+| 05 Samtalen | Minst ett problembevis (bekräftar eller avvisar) **och** minst ett prisbevis (godtar eller avböjer). Självrapporterat räcker (B6). |
+| 06, 07, 12 | Inget beslutat krav. Kan inte markeras klara. Se de öppna punkterna nedan. |
+| 08 Omfånget | `productScopeFromEvidence` |
+| 09 Det formella | `formalRegistrationDone` |
+| 10 Live | `productPublished` |
+| 11 Första kunderna | `payingCustomer` |
+
+Följd: i live kan bara steg 01 och 02 bli klara i dag. Steg 03 kräver
+registerdata, och Registret är licensgrindat. Se `docs/status.md`, kända
+problem.
+
+**Produkt och Genomförbarhet låses upp efter steg 07, inte efter 08
+respektive 09.** `UNLOCK_STEP` i `core/score.ts` är rättat. Skäl: uppdrag 7.3
+låser upp båda tillsammans i fasen Lansera. Demots kalibrerade moment byter
+fas efter steg 07, och live räknar fasen på samma sätt
+(`scorePhaseForCompletedSteps`). Det var alltså texten "Låses upp efter steg
+08/09" som var fel, inte fasen. Att ändra fasen i stället hade krävt en sjätte
+fas med eget tak, och den finns inte i uppdraget. Ett test
+(`core/journeyRequirements.test.ts`) kräver nu att varje del är upplåst exakt
+när dess steg är klart.
+
+**Passformssvar från profilen räknas fullt och märks "Ditt eget svar".** De
+är inte självrapporterade i B6:s mening, eftersom grundaren själv är källan
+(`docs/bevislagring.md` 11.1). Svaret sparas i `quote`, källan är
+`spark:profile` ("Profilsamtalet") och datumet är dagens. Formuläret ligger
+under Profilen i `/app/minnet`. Profilsamtalet i onboardingen är fortfarande
+en stubbe.
+
+### Öppna punkter till Theodor: krav för steg 06, 07 och 12
+
+De tre stegen har inget mätbart krav. Utan beslut går de aldrig att markera
+som klara. Steg 06 och 07 stoppar då hela resan efter steg 05: fasen kommer
+aldrig till Lansera och taket stannar på 66. Inget av förslagen är byggt.
+
+**Steg 06 Domen.** Förslag: minst **fem** kundbevis som räknas i Problem och
+Betalningsvilja tillsammans, från minst **tre** olika bolag (`subject_ref`).
+- Motiv: uppdrag 1.5 säger att domen fattas "baserat på faktiska svar med
+  citat och siffror". Det mätbara i det är antalet svar och att de inte alla
+  kommer från en kund.
+- Det går att bygga med dagens tabeller, utan ny sort.
+- Fem svar och tre bolag är startvärden att diskutera. Trappan för avtagande
+  värde ger fullt värde åt de tio första.
+- Motsägande svar räknas med. Domen kan lika gärna bli "pivotera".
+- Självrapporterade svar räknas (B6), men taket på halva delen gäller ändå för
+  poängen.
+- Själva valet (kör, förfina eller pivotera) kräver en egen lagring. Domen är
+  en stubbe och ska inte vara ett villkor än.
+
+**Steg 07 Affärsfall och pris.** Förslag: minst ett kundbevis som räknas och
+**godtar ett pris** (`customerPriceAccepted`), plus ett **beslutat pris** som
+en ny sort `priceDecided` (grundaren som källa, `subject_ref` = `price`,
+pris och spann i `quote`).
+- Motiv: 1.5 kräver att priset motiveras av fyra saker, och "vad kunderna
+  själva sagt" är den enda som går att mäta i dag.
+- Ett beslutat pris är stegets faktiska resultat.
+- Kräver en ny sort och därmed en migrering. `base_points > 0` i
+  `evidence_kinds` betyder att sorten måste ge poäng. Antingen ändras villkoret
+  till `>= 0`, eller så ger sorten en liten poäng i Betalningsvilja.
+- Alternativ utan ny sort: bara kravet om ett godtaget pris. Det är enklare men
+  svagare, eftersom steget då kan bli klart utan att grundaren satt något pris.
+
+**Steg 12 Kapital.** Förslag: en ny sort `fundingApplied`: en inskickad
+ansökan eller ett beslut från en finansiär.
+- `enteredBy: either`, `subject_ref` = finansiären och diarie- eller
+  ärendenumret, och källan är programmets URL.
+- Motiv: 1.5 nämner Almi, Vinnova, Tillväxtverket, regionala medel och
+  banklån. En inskickad ansökan är det minsta mätbara utfallet, och det går
+  att kontrollera.
+- Steg 12 påverkar varken fasen eller taket, som redan är Växa och 100 efter
+  steg 11. Kravet styr alltså bara om resan kan avslutas, inte poängen.
+- Alternativ: låt steg 12 vara klart när steg 11 är klart och ett
+  bootstrapping-beslut är angivet. Det är svagare, och 1.5 nämner
+  bootstrapping som ett av alternativen.
 
 **Källtyperna: sex datatyper för källtaggen, och bara registret är grått.**
 Beslut av grundaren. Varje källtagg (`components/ui/SourceTag.tsx`) har en

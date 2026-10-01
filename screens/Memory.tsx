@@ -8,6 +8,8 @@ import { formatDate } from "@/i18n/format";
 import type { DataKind } from "@/core/domain";
 import type { ProfileSummary, TraceEvent } from "@/ports/MemoryRepository";
 import { PageHead } from "./blocks/PageBlocks";
+import { FitPanel, type SaveFitAnswer } from "./blocks/FitPanel";
+import type { EvidenceView } from "@/ports/EvidenceRecorder";
 
 /**
  * Datan skärmen behöver, redan hämtad av den monterande routen (via en
@@ -31,6 +33,10 @@ type MemoryProps = {
   dataKind: DataKind;
   /** Sparar Hjärnan när fältet lämnas. Demot sparar i sitt eget läge, /app via en Server Action. */
   onSaveBrainNotes: (notes: string) => Promise<void> | void;
+  /** Passform från profilen (docs/bevislagring.md 5.1). Bara /app skickar den:
+   * demots poäng är manusstyrd och sparar inga bevis. `evidence: null` är ett
+   * platshållarfel (inget aktivt projekt) och ger "Kommer snart" i rutan. */
+  fit?: { evidence: EvidenceView[] | null; onSave: SaveFitAnswer; scoreHref: string };
 };
 
 /**
@@ -38,7 +44,7 @@ type MemoryProps = {
  * Spåret. Markup flyttad rakt av från demots `app/demo/(app)/minnet/page.tsx`
  * (PR 5, docs/plan-en-design.md).
  */
-export function Memory({ data, dataKind, onSaveBrainNotes }: MemoryProps) {
+export function Memory({ data, dataKind, onSaveBrainNotes, fit }: MemoryProps) {
   const { t, locale } = useI18n();
   const copy = t.memoryPage;
   const { profile, trace } = data;
@@ -97,6 +103,15 @@ export function Memory({ data, dataKind, onSaveBrainNotes }: MemoryProps) {
           ) : (
             <ComingSoon />
           )}
+          {fit &&
+            (fit.evidence ? (
+              <FitPanel evidence={fit.evidence} onSave={fit.onSave} scoreHref={fit.scoreHref} />
+            ) : (
+              <section className="fd-panel" aria-label={t.fitPanel.title}>
+                <p className="fdd-label">{t.fitPanel.title}</p>
+                <ComingSoon />
+              </section>
+            ))}
         </Tabs.Content>
 
         <Tabs.Content value="brain" className="fdd-memory__panel">
