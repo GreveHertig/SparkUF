@@ -98,8 +98,16 @@ PR 1) finns i historiken för den här filen.
 
 ## Regler som ska gälla
 
-- **Portregeln.** Skärmarna får bara ta emot props och typer från
-  `ports/` och `core/`. En befintlig överträdelse ska bort:
+- **Portregeln.** Skärmarna får aldrig importera från `adapters/` (varken
+  demo eller live) eller hämta data själva. All data kommer in som props,
+  och datans typer kommer från `ports/` och `core/`. Utöver det får
+  skärmarna importera presentationen: `design/` (till exempel `DataType` och
+  `cn`), `i18n/` och `components/ui/`, som alla skärmar har gjort sedan PR 1
+  (till exempel `Market.tsx` och `Pulse.tsx`). Vakttestet
+  `screens/noAdapters.guard.test.ts` håller gränsen mot `adapters/`.
+  (Rättat 2026-10-01: regeln stod tidigare som "bara props och typer från
+  `ports/` och `core/`", vilket koden aldrig följt.) En befintlig
+  överträdelse ska bort:
   `screens/Validation.tsx` importerar en typ från
   `adapters/demo/OutreachProvider`. Ett test som förbjuder `screens/**` att
   importera från `adapters/**` läggs till i PR 1.

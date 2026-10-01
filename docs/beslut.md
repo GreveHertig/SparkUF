@@ -231,3 +231,25 @@ Regler:
 `sourceDataType: "media"` till `Pulse` (`app/(app)/app/pulsen/page.tsx`),
 samma som Hem gör sedan i dag (`sourceDataTypes: { pulse: "media" }` i
 `app/(app)/app/page.tsx`). Skärmen behöver ingen ändring.
+
+**Pulsens exempelkällor: de tre startsignalerna räknas till steg 01.**
+Beslut av Bruno i PR 6, godkänt av Theodor. Demots Pulsen-signaler är
+påhittade, så varje signal bär en exempelkälla för steget där den dyker upp
+i scenariot ("Påhittad data, steg NN", PR 11). Två signaler låses upp av ett
+steg och får det stegets nummer: marknadssignalen efter steg 03 och
+segmentsignalen efter steg 06. De tre andra är synliga från första momentet
+och hör inte till något steg; de är "dagens puls" när resan börjar. De får
+steg 01, det första steget, i stället för att uppfinna ett eget ursprung (en
+ny `ExampleOrigin` som "Pulsen" hade krävt ändringar i
+`adapters/demo/exampleSource.ts` och i18n). Datumet är scenariots datum för
+steg 01, som för alla exempelkällor. Stegen kommer ur `getSignalSteps()` i
+`adapters/demo/PulseProvider.ts`, som både adaptern och demots Hem använder.
+Får en ny startsignal ett eget steg ska den listan ändras, inte sidorna.
+
+**Pulsens signaler påstår inget om verkliga aktörer.** Beslut av Theodor
+(2026-10-01). En påhittad signal får inte säga vad en myndighet eller ett
+register har gjort eller visat, även med exempeltagg: "Skatteverket skärper
+kraven …" blev "Fler byråer efterfrågar digital arkivering …" (kategorin
+"Reglering" blev "Bransch"), och "Registret bekräftar …" blev "Fler tecken
+pekar på samma segment …". Demoadaptern bär inga myndighetsnamn längre, inte
+ens i `source`: källan sätts av adaptern som exempelkälla.

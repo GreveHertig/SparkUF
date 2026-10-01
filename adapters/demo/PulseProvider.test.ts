@@ -18,6 +18,17 @@ describe("getSignalSteps", () => {
     }
   });
 
+  it("varje signal bär exempelkällan för sitt steg, aldrig en myndighet (steg 6)", async () => {
+    useDemoStore.setState({ entry: "noIdea", beatIndex: saraBeats.length - 1 });
+    const signals = await demoPulseProvider.getSignals("sv");
+    const steps = getSignalSteps();
+    signals.forEach((signal, index) => {
+      expect(signal.source.namn).toBe(`Påhittad data, steg ${String(steps[index]).padStart(2, "0")}`);
+    });
+    const text = JSON.stringify([signals, await demoPulseProvider.getSignals("en"), await demoPulseProvider.getTodaysSignal("sv")]);
+    expect(text).not.toMatch(/Bolagsverket|Skatteverket|Registret|registry|branschtidning|trade press/);
+  });
+
   it("är tom för Jonas, precis som signalerna", async () => {
     useDemoStore.setState({ entry: "hasIdea", beatIndex: 0 });
     expect(await demoPulseProvider.getSignals("sv")).toEqual([]);

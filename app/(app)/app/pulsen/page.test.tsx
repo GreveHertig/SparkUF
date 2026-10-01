@@ -43,6 +43,8 @@ describe("/app/pulsen (steg 6)", () => {
     // Riktig data får inget fiktionsmärke och ingen exempelkälla (PR 11).
     expect(screen.queryByText(sv.site.demo.badge)).not.toBeInTheDocument();
     expect(screen.queryByText(sv.common.exampleSourceLabel)).not.toBeInTheDocument();
+    // Artikeln är media, inte register (docs/beslut.md, 2026-10-01).
+    expect(screen.getByText(sv.common.mediaSourceLabel)).toBeInTheDocument();
   });
 
   it("visar tomläget när det inte finns några signaler (t.ex. inget aktivt projekt)", async () => {
