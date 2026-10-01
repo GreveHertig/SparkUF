@@ -8,7 +8,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
 import { createMigratedDb, queryAs } from "@/test/pgMigrations";
-import { STEP_REQUIREMENTS, stepCompletion, type CountedEvidenceRef } from "@/core/journeyRequirements";
+import { GROUP_THRESHOLDS, STEP_REQUIREMENTS, stepCompletion, type CountedEvidenceRef } from "@/core/journeyRequirements";
 import { isStale } from "@/core/evidenceInput";
 import { isEvidenceKind } from "@/core/evidenceKinds";
 import { FIT_QUESTION_IDS, fitSubjectRef } from "@/core/fitQuestions";
@@ -44,6 +44,37 @@ async function insertSystemEvidence(userId: string, kind: string, fetchedAt: str
      values ($1, $2, $3, $4, 'system', 'Registret', 'SCB', 'https://www.scb.se', $5, 'market', 'register', 0, false)`,
     [userId, projects[userId], kind, `${kind}-${fetchedAt}`, fetchedAt],
   );
+}
+
+/** Ett kundsvar som Spark tagit emot (entered_by 'system'), skrivet som
+ * servern gör det. Grundaren kan bara ha ett eget besked per bolag och del
+ * (ersättningsregeln i record_evidence), så fem svar från två bolag går bara
+ * att pröva så här. */
+async function insertCustomerAnswer(userId: string, kind: string, company: string, fetchedAt = TODAY) {
+  await db.query(
+    `insert into public.evidence (user_id, project_id, kind, subject_ref, entered_by, module, source_name, source_url, fetched_at, part_id, data_type, points, contradicts)
+     values ($1, $2, $3, $4, 'system', 'Utskick', 'Svar', null, $5, 'problem', 'customer', 0, false)`,
+    [userId, projects[userId], kind, company, fetchedAt],
+  );
+}
+
+/** Markerar steg 1..n som klara direkt, som superanvändare (förbi spärren). */
+async function markDoneDirectly(userId: string, steps: number[]) {
+  for (const step of steps) {
+    await db.query(
+      "insert into public.journey_steps (user_id, project_id, step_number, completed_at) values ($1, $2, $3, now()) on conflict (project_id, step_number) do update set completed_at = now()",
+      [userId, projects[userId], step],
+    );
+  }
+}
+
+function reportAs(userId: string, kind: string, subject: string, sourceUrl: string | null = null) {
+  return queryAs(db, userId, "select * from public.record_evidence($1, $2, 'Bolag AB', $3, $4, null, 5::smallint, 'Validering')", [
+    kind,
+    subject,
+    sourceUrl,
+    TODAY,
+  ]);
 }
 
 /** Vad core/journeyRequirements.ts säger om samma läge i databasen. */
@@ -193,8 +224,53 @@ describe("complete_journey_step: kraven", () => {
     expect((await completeAndCompare(A, 5)).error).toBeNull();
   });
 
-  it("ett steg utan beslutat krav (06) kan inte markeras klart", async () => {
-    expect((await completeAndCompare(A, 6)).error).toMatch(/inget krav/);
+  it("steg 06 kräver fem svar från tre bolag, och grundarens egna svar räknas", async () => {
+    // A har ett problembesked från bolag-1 och ett prisbesked från bolag-2.
+    expect((await completeAndCompare(A, 6)).error).toMatch(/verdictAnswers/);
+    await reportAs(A, "customerPriceDeclined", "bolag-1");
+    await reportAs(A, "customerProblemConfirmed", "bolag-2");
+    expect((await completeAndCompare(A, 6)).error).toMatch(/verdictAnswers/);
+    await reportAs(A, "customerProblemConfirmed", "bolag-3");
+    expect((await completeAndCompare(A, 6)).error).toBeNull();
+  });
+
+  it("steg 07 kräver ett beslutat pris: ett godtaget pris räcker inte, och priset ger ingen poäng", async () => {
+    // A har redan ett godtaget pris från bolag-2 (steg 05).
+    expect((await completeAndCompare(A, 7)).error).toMatch(/priceDecided/);
+    expect((await reportAs(A, "priceDecided", "price")).error).toBeNull();
+    const { rows } = await db.query<{ points: string; entered_by: string }>(
+      "select points, entered_by from public.evidence where user_id = $1 and kind = 'priceDecided'",
+      [A],
+    );
+    expect(rows.map((row) => ({ points: Number(row.points), enteredBy: row.entered_by }))).toEqual([{ points: 0, enteredBy: "founder" }]);
+    expect((await completeAndCompare(A, 7)).error).toBeNull();
+  });
+
+  it("steg 12 kräver en inskickad ansökan till en finansiär", async () => {
+    await markDoneDirectly(A, [8, 9, 10, 11]);
+    expect((await completeAndCompare(A, 12)).error).toMatch(/fundingApplied/);
+    expect((await reportAs(A, "fundingApplied", "Almi 2026-0042", "https://www.almi.se")).error).toBeNull();
+    expect((await completeAndCompare(A, 12)).error).toBeNull();
+  });
+
+  it("steg 06: fem svar från två bolag räcker inte, och föråldrade och återkallade svar räknas inte", async () => {
+    await markDoneDirectly(D, [1, 2, 3, 4, 5]);
+    for (const kind of ["customerProblemConfirmed", "customerProblemRejected", "customerPriceAccepted", "customerPriceDeclined"]) {
+      await insertCustomerAnswer(D, kind, "x");
+    }
+    await insertCustomerAnswer(D, "customerProblemConfirmed", "y");
+    expect((await completeAndCompare(D, 6)).error).toMatch(/verdictAnswers/);
+
+    const old = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    await insertCustomerAnswer(D, "customerPriceDeclined", "z", old);
+    expect((await completeAndCompare(D, 6)).error).toMatch(/verdictAnswers/);
+
+    await insertCustomerAnswer(D, "customerProblemConfirmed", "w");
+    await db.query("update public.evidence set retracted_at = now(), retracted_reason = 'Fel' where user_id = $1 and subject_ref = 'w'", [D]);
+    expect((await completeAndCompare(D, 6)).error).toMatch(/verdictAnswers/);
+
+    await insertCustomerAnswer(D, "customerPriceAccepted", "v");
+    expect((await completeAndCompare(D, 6)).error).toBeNull();
   });
 
   it("ett återkallat bevis uppfyller inget krav", async () => {
@@ -247,6 +323,19 @@ describe("journey_step_requirements stämmer med core/journeyRequirements.ts", (
                 condition: null,
               }),
         ),
+      )
+      .sort();
+    expect(fromDb).toEqual(fromCore);
+  });
+
+  it("samma trösklar per grupp", async () => {
+    const { rows } = await db.query<{ step_number: number; req_group: string; min_count: number; min_subjects: number }>(
+      "select step_number, req_group, min_count, min_subjects from public.journey_step_group_thresholds",
+    );
+    const fromDb = rows.map((row) => `${row.step_number}|${row.req_group}|${row.min_count}|${row.min_subjects}`).sort();
+    const fromCore = Object.entries(GROUP_THRESHOLDS)
+      .flatMap(([step, groups]) =>
+        Object.entries(groups ?? {}).map(([group, threshold]) => `${step}|${group}|${threshold.minCount}|${threshold.minSubjects}`),
       )
       .sort();
     expect(fromDb).toEqual(fromCore);

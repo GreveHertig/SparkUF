@@ -53,7 +53,7 @@ afterEach(() => {
 });
 
 beforeEach(() => {
-  getStepCompletionMock.mockResolvedValue({ stepNumber: 1, status: "missing", missing: ["fit_skills"] });
+  getStepCompletionMock.mockResolvedValue({ stepNumber: 1, status: "missing", missing: ["fit_skills"], progress: [] });
 });
 
 async function renderStep(steg: string) {
@@ -147,22 +147,35 @@ describe("/app/resan/[steg] (PR 9)", () => {
     expect(screen.queryByRole("button", { name: sv.stepCompletion.cta })).not.toBeInTheDocument();
   });
 
+  it("steg 06 visar kravet om fem svar från tre bolag, men inget antal", async () => {
+    getStepDetailMock.mockResolvedValue(detail({ stepNumber: 6 }));
+    getStepCompletionMock.mockResolvedValue({
+      stepNumber: 6,
+      status: "missing",
+      missing: ["verdictAnswers"],
+      progress: [{ group: "verdictAnswers", count: 4, minCount: 5, subjects: 2, minSubjects: 3 }],
+    });
+    await renderStep("6");
+    expect(screen.getByText(sv.stepCompletion.requirements.verdictAnswers)).toBeInTheDocument();
+    expect(screen.queryByText(/4 av 5/)).not.toBeInTheDocument();
+  });
+
   it("visar knappen när kraven är uppfyllda, och ett steg utan krav säger det", async () => {
     getStepDetailMock.mockResolvedValue(detail());
-    getStepCompletionMock.mockResolvedValue({ stepNumber: 1, status: "completable", missing: [] });
+    getStepCompletionMock.mockResolvedValue({ stepNumber: 1, status: "completable", missing: [], progress: [] });
     await renderStep("1");
     expect(screen.getByRole("button", { name: sv.stepCompletion.cta })).toBeInTheDocument();
     cleanup();
 
     getStepDetailMock.mockResolvedValue(detail({ stepNumber: 6 }));
-    getStepCompletionMock.mockResolvedValue({ stepNumber: 6, status: "noRequirementYet", missing: [] });
+    getStepCompletionMock.mockResolvedValue({ stepNumber: 6, status: "noRequirementYet", missing: [], progress: [] });
     await renderStep("6");
     expect(screen.getByText(sv.stepCompletion.noRequirementYet)).toBeInTheDocument();
   });
 
   it("ett låst steg visar ingen stegmarkering", async () => {
     getStepDetailMock.mockResolvedValue(detail({ status: "locked" }));
-    getStepCompletionMock.mockResolvedValue({ stepNumber: 1, status: "previousNotDone", missing: [] });
+    getStepCompletionMock.mockResolvedValue({ stepNumber: 1, status: "previousNotDone", missing: [], progress: [] });
     await renderStep("1");
     expect(screen.queryByText(sv.stepCompletion.title)).not.toBeInTheDocument();
   });

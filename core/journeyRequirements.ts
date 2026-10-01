@@ -12,10 +12,13 @@
 //
 // Regler:
 // - Föregående steg måste vara klart.
-// - Ett steg utan rader här kan inte markeras klart alls (steg 06, 07 och 12
-//   i dag: inget mätbart krav är beslutat, se öppna punkter i docs/beslut.md).
+// - Ett steg utan rader här kan inte markeras klart alls.
 // - Kraven är grupper. Varje grupp måste vara uppfylld, och en grupp är
 //   uppfylld av vilken som helst av sina rader.
+// - En grupp kan ha en tröskel (GROUP_THRESHOLDS, tabellen
+//   public.journey_step_group_thresholds): minst så många bevis som räknas,
+//   sammanlagt över gruppens rader, från minst så många olika subject_ref.
+//   Utan tröskel räcker ett bevis.
 // - Bara bevis som räknas uppfyller ett krav: inte återkallade och inte
 //   äldre än sortens livslängd (beslut B9). Ett självrapporterat bevis över
 //   taket (B6) finns ändå, så det uppfyller kravet.
@@ -32,7 +35,10 @@ export type RequirementGroup =
   | "productScope"
   | "registration"
   | "published"
-  | "payingCustomer";
+  | "payingCustomer"
+  | "verdictAnswers"
+  | "priceDecided"
+  | "fundingApplied";
 
 export type StepRequirement =
   | { group: RequirementGroup; evidenceKind: EvidenceKind; subjectRef: string | null }
@@ -53,11 +59,37 @@ export const STEP_REQUIREMENTS: Readonly<Partial<Record<number, readonly StepReq
     { group: "willingnessToPay", evidenceKind: "customerPriceAccepted", subjectRef: null },
     { group: "willingnessToPay", evidenceKind: "customerPriceDeclined", subjectRef: null },
   ],
+  // Steg 06–07 och 12: beslut 2026-10-01 i docs/beslut.md.
+  6: [
+    { group: "verdictAnswers", evidenceKind: "customerProblemConfirmed", subjectRef: null },
+    { group: "verdictAnswers", evidenceKind: "customerProblemRejected", subjectRef: null },
+    { group: "verdictAnswers", evidenceKind: "customerPriceAccepted", subjectRef: null },
+    { group: "verdictAnswers", evidenceKind: "customerPriceDeclined", subjectRef: null },
+  ],
+  // Ett beslutat pris, inte ett godtaget: ett godtaget pris kräver svar
+  // utifrån, vilket dubblerar steg 05 och 06. En kund som godtar priset är
+  // ett eget bevis i Betalningsvilja, inte ett krav här.
+  7: [{ group: "priceDecided", evidenceKind: "priceDecided", subjectRef: null }],
   8: [{ group: "productScope", evidenceKind: "productScopeFromEvidence", subjectRef: null }],
   9: [{ group: "registration", evidenceKind: "formalRegistrationDone", subjectRef: null }],
   10: [{ group: "published", evidenceKind: "productPublished", subjectRef: null }],
   11: [{ group: "payingCustomer", evidenceKind: "payingCustomer", subjectRef: null }],
+  12: [{ group: "fundingApplied", evidenceKind: "fundingApplied", subjectRef: null }],
 };
+
+export type GroupThreshold = { minCount: number; minSubjects: number };
+
+/** Grupper som kräver mer än ett bevis, per steg. Steg 06: minst fem
+ * kundsvar från minst tre olika bolag (subject_ref). Motsägande svar räknas
+ * med, och självrapporterade också (B6). */
+export const GROUP_THRESHOLDS: Readonly<Partial<Record<number, Partial<Record<RequirementGroup, GroupThreshold>>>>> = {
+  6: { verdictAnswers: { minCount: 5, minSubjects: 3 } },
+};
+
+const NO_THRESHOLD: GroupThreshold = { minCount: 1, minSubjects: 1 };
+
+/** Hur långt en grupp med tröskel har kommit. */
+export type GroupProgress = GroupThreshold & { count: number; subjects: number; group: RequirementGroup };
 
 /** Ett bevis som räknas just nu (inte återkallat, inte för gammalt). */
 export type CountedEvidenceRef = { kind: EvidenceKind; subjectRef: string };
@@ -66,7 +98,7 @@ export type StepCompletion =
   | { status: "done" }
   | { status: "previousNotDone" }
   | { status: "noRequirementYet" }
-  | { status: "missing"; missing: RequirementGroup[] }
+  | { status: "missing"; missing: RequirementGroup[]; progress: GroupProgress[] }
   | { status: "completable" };
 
 export type StepCompletionInput = {
@@ -76,13 +108,36 @@ export type StepCompletionInput = {
   hasActiveProject: boolean;
 };
 
-function satisfied(requirement: StepRequirement, input: StepCompletionInput): boolean {
-  if ("condition" in requirement) return input.hasActiveProject;
-  return input.countedEvidence.some(
-    (evidence) =>
-      evidence.kind === requirement.evidenceKind &&
-      (requirement.subjectRef === null || evidence.subjectRef === requirement.subjectRef),
+function matches(requirement: StepRequirement, evidence: CountedEvidenceRef): boolean {
+  return (
+    "evidenceKind" in requirement &&
+    evidence.kind === requirement.evidenceKind &&
+    (requirement.subjectRef === null || evidence.subjectRef === requirement.subjectRef)
   );
+}
+
+/** Räknar en grupp: bevis som matchar någon av gruppens rader (varje bevis
+ * en gång) och antalet olika subject_ref bland dem. Samma räkning som
+ * public.complete_journey_step. */
+function groupProgress(
+  stepNumber: number,
+  group: RequirementGroup,
+  requirements: readonly StepRequirement[],
+  input: StepCompletionInput,
+): GroupProgress & { satisfied: boolean } {
+  const threshold = GROUP_THRESHOLDS[stepNumber]?.[group] ?? NO_THRESHOLD;
+  const rows = requirements.filter((requirement) => requirement.group === group);
+  const hit = input.countedEvidence.filter((evidence) => rows.some((requirement) => matches(requirement, evidence)));
+  const count = hit.length;
+  const subjects = new Set(hit.map((evidence) => evidence.subjectRef)).size;
+  const condition = rows.some((requirement) => "condition" in requirement) && input.hasActiveProject;
+  return {
+    group,
+    ...threshold,
+    count,
+    subjects,
+    satisfied: condition || (count >= threshold.minCount && subjects >= threshold.minSubjects),
+  };
 }
 
 /** Kan steget markeras klart, och vad saknas annars? Ren funktion, samma
@@ -95,9 +150,16 @@ export function stepCompletion(input: StepCompletionInput): StepCompletion {
   const requirements = STEP_REQUIREMENTS[input.stepNumber];
   if (!requirements || requirements.length === 0) return { status: "noRequirementYet" };
 
-  const groups = [...new Set(requirements.map((requirement) => requirement.group))];
-  const missing = groups.filter(
-    (group) => !requirements.some((requirement) => requirement.group === group && satisfied(requirement, input)),
+  const groups = [...new Set(requirements.map((requirement) => requirement.group))].map((group) =>
+    groupProgress(input.stepNumber, group, requirements, input),
   );
-  return missing.length > 0 ? { status: "missing", missing } : { status: "completable" };
+  const missing = groups.filter((group) => !group.satisfied);
+  if (missing.length === 0) return { status: "completable" };
+  return {
+    status: "missing",
+    missing: missing.map((group) => group.group),
+    progress: missing
+      .filter((group) => GROUP_THRESHOLDS[input.stepNumber]?.[group.group] !== undefined)
+      .map(({ group, minCount, minSubjects, count, subjects }) => ({ group, minCount, minSubjects, count, subjects })),
+  };
 }

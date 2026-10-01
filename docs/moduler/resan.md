@@ -81,8 +81,10 @@ Porten `ports/JourneyProgress.ts` (`getStepCompletion`, `completeStep`). Ett
 steg markeras klart bara via `public.complete_journey_step`, som kräver att
 föregående steg är klart och att stegets krav är uppfyllda
 (`core/journeyRequirements.ts`, tabellen `journey_step_requirements`, beslut i
-`docs/beslut.md` 2026-10-01). Steg 06, 07 och 12 har inget beslutat krav än
-och kan inte markeras klara. Demoadaptern sparar ingenting.
+`docs/beslut.md` 2026-10-01). Alla tolv steg har ett krav. Steg 06 kräver
+fem kundsvar från tre bolag (en tröskel i `journey_step_group_thresholds`),
+steg 07 ett beslutat pris och steg 12 en inskickad ansökan till en finansiär,
+se `docs/bevislagring.md` 11.8. Demoadaptern sparar ingenting.
 
 ## Säkerhet
 

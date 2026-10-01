@@ -296,6 +296,8 @@ export type Dictionary = {
       stale: string;
       /** Beslut B6: över taket för självrapporterade bevis i delen. */
       capped: string;
+      /** En sort utan poäng, som bara uppfyller ett krav i resan. */
+      noPoints: string;
       retracted: string;
     };
     /** Orsaken till en poängförändring. {kind} är sortens namn. */

@@ -253,11 +253,13 @@ mot Postgres håller de två i synk och kör samma fall mot båda.
 | 03 Marknaden | `registerMarketCount` (systembevis ur registret) |
 | 04 Kunden | `registerCompetitorSet` (systembevis ur registret) |
 | 05 Samtalen | Minst ett problembevis (bekräftar eller avvisar) **och** minst ett prisbevis (godtar eller avböjer). Självrapporterat räcker (B6). |
-| 06, 07, 12 | Inget beslutat krav. Kan inte markeras klara. Se de öppna punkterna nedan. |
+| 06 Domen | Minst fem kundsvar (problem eller pris, bekräftar eller avvisar) från minst tre bolag. Se beslutet om steg 06, 07 och 12 nedan. |
+| 07 Affärsfall och pris | Ett beslutat pris (`priceDecided`). Se nedan. |
 | 08 Omfånget | `productScopeFromEvidence` |
 | 09 Det formella | `formalRegistrationDone` |
 | 10 Live | `productPublished` |
 | 11 Första kunderna | `payingCustomer` |
+| 12 Kapital | En inskickad ansökan till en finansiär (`fundingApplied`). Se nedan. |
 
 Följd: i live kan bara steg 01 och 02 bli klara i dag. Steg 03 kräver
 registerdata, och Registret är licensgrindat. Se `docs/status.md`, kända
@@ -280,49 +282,38 @@ när dess steg är klart.
 under Profilen i `/app/minnet`. Profilsamtalet i onboardingen är fortfarande
 en stubbe.
 
-### Öppna punkter till Theodor: krav för steg 06, 07 och 12
-
-De tre stegen har inget mätbart krav. Utan beslut går de aldrig att markera
-som klara. Steg 06 och 07 stoppar då hela resan efter steg 05: fasen kommer
-aldrig till Lansera och taket stannar på 66. Inget av förslagen är byggt.
-
-**Steg 06 Domen.** Förslag: minst **fem** kundbevis som räknas i Problem och
-Betalningsvilja tillsammans, från minst **tre** olika bolag (`subject_ref`).
-- Motiv: uppdrag 1.5 säger att domen fattas "baserat på faktiska svar med
-  citat och siffror". Det mätbara i det är antalet svar och att de inte alla
-  kommer från en kund.
-- Det går att bygga med dagens tabeller, utan ny sort.
-- Fem svar och tre bolag är startvärden att diskutera. Trappan för avtagande
-  värde ger fullt värde åt de tio första.
-- Motsägande svar räknas med. Domen kan lika gärna bli "pivotera".
-- Självrapporterade svar räknas (B6), men taket på halva delen gäller ändå för
-  poängen.
-- Själva valet (kör, förfina eller pivotera) kräver en egen lagring. Domen är
-  en stubbe och ska inte vara ett villkor än.
-
-**Steg 07 Affärsfall och pris.** Förslag: minst ett kundbevis som räknas och
-**godtar ett pris** (`customerPriceAccepted`), plus ett **beslutat pris** som
-en ny sort `priceDecided` (grundaren som källa, `subject_ref` = `price`,
-pris och spann i `quote`).
-- Motiv: 1.5 kräver att priset motiveras av fyra saker, och "vad kunderna
-  själva sagt" är den enda som går att mäta i dag.
-- Ett beslutat pris är stegets faktiska resultat.
-- Kräver en ny sort och därmed en migrering. `base_points > 0` i
-  `evidence_kinds` betyder att sorten måste ge poäng. Antingen ändras villkoret
-  till `>= 0`, eller så ger sorten en liten poäng i Betalningsvilja.
-- Alternativ utan ny sort: bara kravet om ett godtaget pris. Det är enklare men
-  svagare, eftersom steget då kan bli klart utan att grundaren satt något pris.
-
-**Steg 12 Kapital.** Förslag: en ny sort `fundingApplied`: en inskickad
-ansökan eller ett beslut från en finansiär.
-- `enteredBy: either`, `subject_ref` = finansiären och diarie- eller
-  ärendenumret, och källan är programmets URL.
-- Motiv: 1.5 nämner Almi, Vinnova, Tillväxtverket, regionala medel och
-  banklån. En inskickad ansökan är det minsta mätbara utfallet, och det går
-  att kontrollera.
-- Steg 12 påverkar varken fasen eller taket, som redan är Växa och 100 efter
-  steg 11. Kravet styr alltså bara om resan kan avslutas, inte poängen.
-- Alternativ: låt steg 12 vara klart när steg 11 är klart och ett
-  bootstrapping-beslut är angivet. Det är svagare, och 1.5 nämner
-  bootstrapping som ett av alternativen.
-
+**Krav för steg 06, 07 och 12 (Theodor).** Förut hade de tre stegen inget
+mätbart krav och kunde aldrig markeras klara, så resan stannade efter steg 05
+och taket på 66. Byggt på grenen `plattform/stegkrav`, se
+`docs/bevislagring.md` 11.8.
+- **Steg 06 Domen: godkänt som föreslaget.** Minst fem kundsvar som räknas i
+  Problem och Betalningsvilja tillsammans, från minst tre olika bolag
+  (`subject_ref`).
+  - Motiv: uppdrag 1.5 säger att domen fattas "baserat på faktiska svar med
+    citat och siffror". Det mätbara är antalet svar och att de inte alla
+    kommer från en kund.
+  - Motsägande svar räknas med, eftersom domen lika gärna kan bli
+    "pivotera". Självrapporterade svar räknas också, men taket på halva delen
+    (B6) gäller ändå för poängen.
+  - Själva valet (kör, förfina eller pivotera) är inte ett villkor. Domen är
+    en stubbe.
+  - Kravet behövde en tröskel per grupp, i den nya tabellen
+    `journey_step_group_thresholds`.
+- **Steg 07 Affärsfall och pris: ändrat.** Kravet är ett **beslutat pris**, inte
+  ett godtaget. Det är självrapporterbart och märks som självrapporterat (ny
+  sort `priceDecided`, `subject_ref` = `price`, pris och spann i `quote`).
+  - Skäl: ett godtaget pris kräver svar utifrån. Det dubblerar steg 05 och 06
+    och blockeras av att utskicken är avstängda.
+  - Att en kund godtar priset är ett eget bevis (`customerPriceAccepted`) som
+    höjer Betalningsvilja, inte ett krav för att steget ska vara klart.
+- **Steg 12 Kapital: godkänt som föreslaget.** En ny sort `fundingApplied`
+  för en inskickad ansökan till en finansiär. `subject_ref` är finansiären och
+  diarie- eller ärendenumret, och källan är programmets URL. Steg 12 påverkar
+  varken fasen eller taket.
+- **`priceDecided` och `fundingApplied` ger ingen poäng (Theodor).**
+  - Villkoret på `evidence_kinds.base_points` är ändrat från `> 0` till `>= 0`.
+  - Skäl: ett pris grundaren själv satt bevisar inte att någon betalar det, och
+    en ansökan är inte beviljade pengar.
+  - Sorter utan poäng skickas inte till `calculateScore`, så de fyller aldrig
+    en tom del och döljer luckan (B4).
+  - Livslängd: ett beslutat pris räknas i 365 dagar, en ansökan föråldras aldrig.

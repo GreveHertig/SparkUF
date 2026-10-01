@@ -12,7 +12,10 @@
 //    längre" ska gå att säga i en mening.
 // 4. Bevisen ordnas efter när de lades in (created_at, sedan id). Ordningen
 //    styr avtagande värde-trappan och vilken källa delen visar i calculateScore.
-// 5. Självrapporterade bevis kan tillsammans ge en del högst
+// 5. En sort utan poäng (basePoints 0) skickas inte till calculateScore.
+//    Den uppfyller bara ett krav i resan och får inte fylla en tom del, som
+//    då skulle visas som "0" i stället för som en lucka (beslut B4).
+// 6. Självrapporterade bevis kan tillsammans ge en del högst
 //    SELF_REPORTED_PART_SHARE av dess vikt (beslut B6).
 //
 // En del som efter reglerna saknar bevis skickas tom till calculateScore,
@@ -22,6 +25,7 @@ import { ALL_PART_IDS, SCORE_PART_WEIGHTS, type PartEvidence, type ScorePartId }
 import {
   EVIDENCE_KINDS,
   SELF_REPORTED_PART_SHARE,
+  givesPoints,
   isEvidenceKind,
   isSelfReported,
   type EvidenceKind,
@@ -45,8 +49,9 @@ export type StoredEvidence = {
 };
 
 /** Hur ett bevis behandlades. "capped": självrapporterat, och taket för
- * delen var redan helt eller delvis nått. */
-export type EvidenceStatus = "counted" | "capped" | "stale" | "retracted";
+ * delen var redan helt eller delvis nått. "noPoints": sorten ger ingen poäng
+ * men räknas mot resans krav. */
+export type EvidenceStatus = "counted" | "capped" | "noPoints" | "stale" | "retracted";
 
 export type EvidenceInputResult = {
   parts: PartEvidence[];
@@ -107,6 +112,8 @@ export function toPartEvidence(
       status[row.id] = "retracted";
     } else if (isStale(kind, row.source.hämtad, todayIso)) {
       status[row.id] = "stale";
+    } else if (!givesPoints(kind)) {
+      status[row.id] = "noPoints";
     } else {
       counted.push({ row, kind });
     }

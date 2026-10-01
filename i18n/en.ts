@@ -261,11 +261,14 @@ export const en = {
       legalItemDone: "Legal item done",
       payingCustomer: "Paying customer",
       activeUser: "Active users",
+      priceDecided: "Decided price",
+      fundingApplied: "Application to a funder",
     },
     selfReported: "Entered by you",
     status: {
       stale: "Too old to count",
       capped: "Above the cap for what you entered yourself",
+      noPoints: "Gives no points, counts towards the journey's requirements",
       retracted: "Retracted",
     },
     deltaReason: {
@@ -327,6 +330,9 @@ export const en = {
       registration: "The company registered",
       published: "A published product",
       payingCustomer: "A paying customer",
+      verdictAnswers: "At least five customer responses about the problem or the price, from at least three different companies",
+      priceDecided: "A decided price (entered by you and marked as self-reported)",
+      fundingApplied: "A submitted application to a funder, for example Almi or Vinnova",
     },
   },
   marketPage: {

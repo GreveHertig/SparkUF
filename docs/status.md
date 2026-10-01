@@ -3557,3 +3557,48 @@ Skrivvägen i bruk, stegmarkeringen och motsägelsen i `UNLOCK_STEP`. Detaljer i
 - **CLAUDE.md:** listan över uträknade sammanfattningar har fått de två nya poängsiffrorna (`FitPanel` och `StepCompletionPanel`).
 - **`docs/moduler/resan.md` och `docs/moduler/evidens-och-poang.md`:** uppdaterade med skrivvägen.
 
+
+## Krav för steg 06, 07 och 12 (grenen `plattform/stegkrav`, från `plattform/poangen-ror-sig`, 2026-10-01)
+
+Theodors beslut på de tre öppna punkterna, se `docs/beslut.md` 2026-10-01 och `docs/bevislagring.md` 11.8.
+
+### Klart
+- **Alla tolv steg har nu ett krav.** Migrationen `20261001180000_journey_steps_06_07_12.sql` (med rollback-block, rör inte `profiles` eller `projects`):
+  - **Steg 06:** minst fem kundsvar (problem eller pris, bekräftar eller avvisar) från minst tre bolag. Det kräver en ny tabell, `journey_step_group_thresholds` (RLS, bara läsning, i `WRITE_CLOSED_TABLES`). `complete_journey_step` räknar nu varje grupp som helhet.
+  - **Steg 07:** ett beslutat pris, ny sort `priceDecided`. Inte ett godtaget pris.
+  - **Steg 12:** en inskickad ansökan till en finansiär, ny sort `fundingApplied`.
+- **De två nya sorterna ger ingen poäng.**
+  - `base_points` får vara 0.
+  - `core/evidenceInput.ts` skickar dem inte till `calculateScore` och märker dem med den nya statusen `noPoints`. Därför fyller de aldrig en tom del (B4).
+  - Båda är `either`, så de märks "Angivet av dig" när grundaren lägger in dem.
+- **Core och port:**
+  - `GROUP_THRESHOLDS` och `stepCompletion` ger `progress` (antal svar och bolag) för grupper med tröskel.
+  - `StepCompletionView` har fått `progress`.
+- **Tester:**
+  - Postgres:
+    - steg 06: grundarens egna svar, fem svar från två bolag, föråldrade och återkallade svar
+    - steg 07: ett godtaget pris räcker inte, och priset ger 0 poäng
+    - steg 12
+    - synktest för trösklarna
+  - Core: trösklar, framsteg, att varje steg har ett krav och sorter utan poäng.
+  - Sidtest för steg 06.
+- **Verifierat:** `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (1009 gröna) och `pnpm build`. e2e kördes inte: inget i flödet som e2e täcker är ändrat.
+- **Säkerhetsgranskning:** inga fynd. Granskningsagenten stoppades av en kvotgräns, så diffen granskades direkt i sessionen:
+  - `complete_journey_step` är kvar som security definer med `search_path = ''`, och alla namn är kvalificerade.
+  - Användare och projekt kommer fortfarande ur `auth.uid()`. Bevisen filtreras på det aktiva projektet.
+  - En grupp utan bevis räknas som 0 och släpps aldrig igenom: `coalesce` på villkor och tröskel.
+  - `execute` är fortfarande indraget från `public`.
+  - Den nya tabellen har RLS, är bara läsbar och har skrivrätten indragen.
+  - Att grundaren kan självrapportera sig förbi steg 06–07 och höja taket är Theodors beslut, inte ett hål. Poängen i delarna begränsas ändå av B6.
+
+### Kända problem
+- **Inget formulär finns för att ange ett beslutat pris, en ansökan eller kundsvar.** Kraven går att uppfylla så fort något anropar skrivvägen. Live stannar ändå efter steg 02 tills Registret öppnas (se ovan).
+- **Antalet svar och bolag för steg 06 visas inte.** Det räknas (`progress`), men det vore en uträknad sammanfattning vars delar inte visas med källa någonstans i live. Poäng-sidan visar en källa per del, inte varje svar. Kan visas när en lista över kundsvaren finns, och läggs då till i undantagslistan i CLAUDE.md.
+- **`priceDecided` och kundsvar delar del (Betalningsvilja).** Ersättningsregeln i `record_evidence` gäller per del och `subject_ref`. Ett kundsvar med `subject_ref` = `price` skulle därför ersätta det beslutade priset. Konventionen är att `price` bara används för `priceDecided`. Ingen spärr finns.
+- **Ett nytt pris samma dag ger `duplicate`**, på samma sätt som ett passformssvar.
+- **Kör migreringen i Supabase** (`20261001180000`) efter de två tidigare (`20261001120000`, `20261001150000`).
+
+### Beslut nästa session behöver känna till
+- **En tröskel för en kravgrupp** ändras i `journey_step_group_thresholds` via en ny migrering, och i `GROUP_THRESHOLDS`. Synktestet failar annars.
+- **En sort med `basePoints` 0** uppfyller bara krav och påverkar aldrig poängen. Testet i `core/evidenceKinds.test.ts` listar vilka sorter som får sakna poäng.
+- **Status `noRequirementYet` finns kvar** i typen, men inget steg har den i dag.
