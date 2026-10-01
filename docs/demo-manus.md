@@ -42,10 +42,9 @@ Talmanus för de guidade genomgångarna av Spark UF-demot på `/demo`, i en
   du än stod.
 - Varje stopp har **Nästa** och **Bakåt** i rundturskortet. **Hoppa över**
   avslutar rundturen. Sista stoppet har **Avsluta rundtur**.
-- **Rundturen hoppar i tiden.** Stopp 3 visar steg 03, stopp 4 går tillbaka
-  till steg 01 och stopp 5 fram till steg 04, så poängen i sidhuvudet går
-  14 → 6 → 27 → 24 under de första stoppen. Förbered publiken: "Nu spolar vi
-  tillbaka till början av resan."
+- **Rundturen går framåt i tiden.** Poängen i sidhuvudet stiger stopp för
+  stopp: 3, 6, 14, 24, 27, 47. Den sjunker en enda gång, 47 → 43 på stopp
+  10–11, och det är just det stoppen visar.
 - På mobil (390 px) täcker rundturskortet sidans överkant. Det fungerar, men
   visa hellre på en bred skärm.
 
@@ -65,38 +64,38 @@ Talmanus för de guidade genomgångarna av Spark UF-demot på `/demo`, i en
 > vad kan du, hur mycket tid och pengar har du. Har man redan en idé
 > genomlyser Spark den i stället. Båda landar i samma tolvstegsresa."
 
-**3. Medgrundaren hämtar marknadssiffrorna** (`/demo/medgrundaren`) [steg 03, poäng 14]
+**3. Poängen startar på 6 av 100** (`/demo`) [steg 01, poäng 6]
+> "1 till 100, alltid synlig uppe till höger. Sara har precis svarat på
+> profilfrågorna, poängen är 6. Inte för att idén är dålig, utan för att
+> nästan inget är bevisat än."
+
+**4. Medgrundaren hämtar marknadssiffrorna** (`/demo/medgrundaren`) [steg 03, poäng 14]
 > "Varje samtal med Medgrundaren slutar med att den gör något. Här hämtar den
 > marknadsbilden åt Sara, i stället för att ge ett tips om vad hon borde kolla
 > upp. I demot är siffrorna påhittade. Spark är byggt för att hämta dem ur
 > Bolagsverket och SCB."
 
-**4. Poängen startar på 6 av 100** (`/demo`) [steg 01, poäng 6]
-> "Nu spolar vi tillbaka till början. 1 till 100, alltid synlig uppe till
-> höger. Sara har precis svarat på profilfrågorna, poängen är 6. Inte för att
-> idén är dålig, utan för att nästan inget är bevisat än."
-
-**5. Utan kundsvar stannar poängen under 30** (`/demo`) [steg 04, poäng 27]
-> "Nu har hon marknads- och kundunderlag, poängen är 27, men den kan inte gå
-> över 30. Spark kallar inget bevisat förrän ett enda riktigt kundsvar finns.
-> Det är en regel i koden, inte en känsla."
-
-**6. 312 byråer, varje siffra med källa** (`/demo/marknad`) [steg 03, poäng 24]
+**5. 312 byråer, varje siffra med källa** (`/demo/marknad`) [steg 03, poäng 24]
 > "312 byråer, 18 procent växte mer än tio procent förra året, 31 procent i
 > Stockholms län. I Spark bär varje tal en källa, ett datum och hur många
 > bolag det bygger på: 171 av 312, 308 av 312. Och se medianomsättningen: den
 > visas inte, för underlaget saknar räkenskapsår. Spark visar hellre en lucka
 > än en gissning."
 
-**7. Tre namngivna konkurrenter** (`/demo/marknad`)
+**6. Tre namngivna konkurrenter** (`/demo/marknad`)
 > "Varje aktiebolag i Sverige lämnar en offentlig årsredovisning. När Sara
 > kopplat sitt företag bygger Spark konkurrentbilden på dem i stället för på
 > en gissning. De tre här är påhittade, det står på dem."
 
-**8. Hiasynth-simuleringen ger inga poäng** (`/demo/marknad`)
+**7. Hiasynth-simuleringen ger inga poäng** (`/demo/marknad`)
 > "Ovanpå marknadsbilden kan Spark lägga simuleringar över en syntetisk
 > population, alltid märkta 'Simulering' i lila. De ger aldrig poäng och
 > blandas aldrig med fakta. Hiasynth är ett koncept i dag, inget partnerskap."
+
+**8. Utan kundsvar stannar poängen under 30** (`/demo`) [steg 04, poäng 27]
+> "Nu har hon marknads- och kundunderlag, poängen är 27, men den kan inte gå
+> över 30. Spark kallar inget bevisat förrän ett enda riktigt kundsvar finns.
+> Det är en regel i koden, inte en känsla."
 
 **9. Spark mejlade 20 byråer från Saras Gmail** (`/demo/validering`) [steg 05, poäng 47]
 > "Inte bara ett tips om att höra av sig. Spark skriver utskicket på svenska
@@ -168,15 +167,15 @@ Klicka inte på adressen `kvittojakten.lovable.app`. Sidan finns inte.
 ## 5-minutersversionen — ett urval
 
 **Samma rundtur, men klicka Nästa snabbt förbi de stopp som inte står här**
-(2, 6, 7, 8, 13, 14, 15, 18) **och pausa vid:**
+(2, 5, 6, 7, 13, 14, 15, 18) **och pausa vid:**
 
 **1. Välkommen till Spark** — samma text. Säg att allt är exempeldata.
 
-**3. Medgrundaren hämtar marknadssiffrorna** — samma text.
+**3. Poängen startar på 6 av 100** — samma text.
 
-**4. Poängen startar på 6 av 100** — samma text, med "nu spolar vi tillbaka".
+**4. Medgrundaren hämtar marknadssiffrorna** — samma text.
 
-**5. Utan kundsvar stannar poängen under 30** — samma text. Det här är
+**8. Utan kundsvar stannar poängen under 30** — samma text. Det här är
 kärnargumentet, ge det extra tid.
 
 **10. Nio byråer svarade, citerade med namn** — samma text.

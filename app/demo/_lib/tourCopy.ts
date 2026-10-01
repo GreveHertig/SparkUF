@@ -7,7 +7,7 @@ import type { TourStep } from "@/adapters/demo/tourSteps";
 // där de finns. Stopp 1 behåller originalets rubrik.
 //
 // Stopp 10 har också ny brödtext: originalet nämnde 4 % svarsfrekvens,
-// men skärmen visar 9 svar av 20 (45 %). Stopp 3, 5, 6 och 7 har ny brödtext
+// men skärmen visar 9 svar av 20 (45 %). Stopp 4, 5, 6 och 8 har ny brödtext
 // som inte påstår att demots påhittade siffror kommer ur ett register, och
 // stopp 19 har /priser-sidans pris (249 kr, bygget ingår) i stället för 199 kr.
 
