@@ -28,6 +28,9 @@ const PAGES = [
   { path: "/app/medgrundaren", heading: "Medgrundaren" },
   // Bygg: testkontot står på steg 01, så sidan är låst till steg 07.
   { path: "/app/bygg", heading: "Bygg" },
+  // Steg 6: Pulsen. Rubriken är den senaste signalen, eller sidans namn när
+  // kontot inte har några signaler (inget aktivt projekt).
+  { path: "/app/pulsen", heading: /./ },
   // Affärsplanen: ingen hopsamling i /app än, Kommer snart i varje avsnitt.
   { path: "/app/affarsplan", heading: "Affärsplanen" },
   // PR 11: onboardingen, samma skärmar som /demo/start. Profil och Projekt
@@ -109,13 +112,13 @@ test.describe("/app/resan", () => {
     expect(response?.status()).toBe(404);
   });
 
-  // PR 11: flikarna är tända. Pulsen saknar /app-sida och är inaktiv.
-  test("flikarna i /app leder till sidor som finns, och Pulsen är inaktiv", async ({ page }) => {
+  // PR 11: flikarna är tända. Steg 6: Pulsen också, så alla elva leder till sidor.
+  test("flikarna i /app leder till sidor som finns, Pulsen också", async ({ page }) => {
     await page.goto("/app", { waitUntil: "networkidle" });
     const tabs = page.getByRole("navigation", { name: "Meny" }).locator("a");
-    await expect(tabs).toHaveCount(10);
+    await expect(tabs).toHaveCount(11);
     const hrefs = await tabs.evaluateAll((links) => links.map((link) => link.getAttribute("href")));
-    expect(hrefs).not.toContain("/app/pulsen");
+    expect(hrefs).toContain("/app/pulsen");
     for (const href of hrefs) {
       const response = await page.request.get(href!);
       expect(response.status(), `status för ${href}`).toBe(200);

@@ -23,10 +23,10 @@ import type { Profile } from "@/core/domain";
 // en nolla.
 const FALLBACK_PROFILE: Profile = { name: "—", initials: "—" };
 
-// Flikarna länkar till sina sidor (PR 11). Pulsen har ingen /app-sida än
-// (Bruno, steg 6 i docs/plan-en-design.md) och är inaktiv tills den finns.
-// Ta bort den ur listan när /app/pulsen är byggd.
-const UNAVAILABLE_TABS: readonly AppShellTabSlug[] = ["pulsen"];
+// Flikarna länkar till sina sidor (PR 11). Pulsen tändes i steg 6 när
+// /app/pulsen byggdes, så listan är tom. En flik vars /app-sida saknas läggs
+// till här.
+const UNAVAILABLE_TABS: readonly AppShellTabSlug[] = [];
 
 export default async function LiveAppShellLayout({ children }: { children: ReactNode }) {
   // Bindande sessionskontroll (docs/arkitektur.md) — proxy.ts har redan

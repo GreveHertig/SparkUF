@@ -533,6 +533,31 @@ describe("/demo", () => {
       expect(container.textContent).not.toMatch(/sedan|Uppdaterad \d/);
     });
 
+    it("Pulsen följer momentet: fler signaler senare i resan, rubriken är den senaste (steg 6)", async () => {
+      startInApp(0);
+      pathname = DEMO_PATHS.pulse;
+      const first = await renderInApp(<DemoPulsePage />);
+      const atStart = first.container.querySelectorAll(".fdd-signal").length;
+      cleanup();
+
+      startInApp(lastBeat);
+      const last = await renderInApp(<DemoPulsePage />);
+      const signals = last.container.querySelectorAll(".fdd-signal");
+      expect(signals.length).toBeGreaterThan(atStart);
+      const headline = signals[0].querySelector(".fdd-signal__headline")?.textContent;
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(headline!);
+      expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
+    });
+
+    it("Pulsen för Jonas visar tomläget, inga påhittade signaler (steg 6)", async () => {
+      startInApp(0);
+      useDemoStore.setState({ entry: "hasIdea" });
+      pathname = DEMO_PATHS.pulse;
+      const { container } = await renderInApp(<DemoPulsePage />);
+      expect(screen.getByText(sv.pulsePage.emptyState)).toBeInTheDocument();
+      expect(container.querySelectorAll(".fdd-signal")).toHaveLength(0);
+    });
+
     it("sidhuvudet visar demots poäng, samma som motorn räknar (PR 4)", async () => {
       startInApp(8);
       await renderInApp(<DemoHomePage />);

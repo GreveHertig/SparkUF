@@ -1,47 +1,60 @@
 "use client";
 
-import { EditorialHeading } from "@/components/ui/EditorialHeading";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { PulseCard } from "@/components/spark/PulseCard";
+import { ComingSoon } from "@/components/ui/ComingSoon";
+import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n } from "@/i18n/context";
 import type { PulseSignal } from "@/core/domain";
+import { PageHead } from "./blocks/PageBlocks";
 
+/**
+ * Datan skärmen behöver, redan hämtad och språkvald av den monterande routen.
+ * `signals: null` när signalerna inte gick att hämta (platshållarfel): listan
+ * visar då "Kommer snart", och rubriken blir sidans namn. En tom lista är ett
+ * ärligt tomläge ("Ingen signal än"), inte en lucka.
+ */
 export type PulseData = {
-  signals: PulseSignal[];
+  signals: PulseSignal[] | null;
 };
 
-/** Pulsen (avsnitt 6, 9.5): signalflödet, nyast först. */
+/**
+ * Pulsen: signalflödet, nyast först. Rubriken är den senaste signalen. Markup
+ * flyttad rakt av från demots `app/demo/(app)/pulsen/page.tsx` (steg 6,
+ * docs/plan-en-design.md).
+ */
 export function Pulse({ data }: { data: PulseData }) {
   const { t } = useI18n();
-  // Rubriken beskriver den senaste, mest relevanta signalen (avsnitt 9.5:
-  // "nyast först") i stället för att upprepa "Pulsen" (uppgift 2).
-  const latest = data.signals[0];
+  const { signals } = data;
+  const latest = signals?.[0];
 
   return (
-    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
-      <div>
-        {latest && <Eyebrow>{latest.category}</Eyebrow>}
-        <EditorialHeading as="h1" className={latest ? "mt-2" : undefined}>
-          {latest?.headline ?? t.pulsePage.title}
-        </EditorialHeading>
-        <p className="mt-2 text-sm text-slate-600">{latest?.whyItMatters ?? t.pulsePage.subtitle}</p>
-      </div>
+    <div className="fdd-page">
+      <PageHead
+        context={latest?.category}
+        title={latest?.headline ?? t.pulsePage.title}
+        lede={latest?.whyItMatters ?? t.pulsePage.subtitle}
+      />
 
-      {data.signals.length === 0 ? (
-        <p className="text-sm text-slate-600">{t.pulsePage.emptyState}</p>
+      {signals === null ? (
+        <ComingSoon />
+      ) : signals.length === 0 ? (
+        <p className="fdd-muted">{t.pulsePage.emptyState}</p>
       ) : (
-        <div data-tour-id="pulse-list" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {data.signals.map((signal, index) => (
-            <PulseCard
-              key={`${signal.headline}-${index}`}
-              category={signal.category}
-              headline={signal.headline}
-              whyItMatters={signal.whyItMatters}
-              timestamp={signal.timestamp}
-              source={signal.source}
-            />
+        <ul className="fdd-signals" data-tour-id="pulse-list">
+          {signals.map((signal, index) => (
+            <li key={`${signal.headline}-${index}`} className="fd-panel fdd-signal">
+              {/* Bara kategorin: adapterns fasta "3 dagar sedan" stämde inte med
+                  källans datum (docs/buggar-2026-09.md punkt 11). Datumet står i källan. */}
+              <p className="fdd-signal__meta">
+                <span className="fdd-signal__category">{signal.category}</span>
+              </p>
+              <p className="fdd-signal__headline">{signal.headline}</p>
+              <p className="fd-nextstep__why">
+                {t.common.pulseWhyItMattersPrefix} {signal.whyItMatters}
+              </p>
+              <SourceTag source={signal.source} />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

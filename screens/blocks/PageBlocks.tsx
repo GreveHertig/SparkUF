@@ -7,8 +7,8 @@ import { useI18n } from "@/i18n/context";
 /**
  * Sidans byggstenar som flera skärmar delar: huvudet, det låsta läget och
  * statuspillret. Flyttade hit i PR 5 (docs/plan-en-design.md) från
- * `app/demo/_components/DemoBlocks.tsx`, som exporterar dem vidare åt demots
- * sidor som inte är flyttade än. Ligger under `screens/` — portregeln gäller.
+ * `app/demo/_components/DemoBlocks.tsx` (borttagen i steg 6, när den sista
+ * demosidan, Pulsen, var flyttad). Ligger under `screens/` — portregeln gäller.
  */
 
 /** Sidans huvud: en liten rad för sammanhang, rubriken och en ingress. */
