@@ -32,7 +32,10 @@ const spec: Record<Locale, ByggBrief> = {
   },
 };
 
-const PUBLISHED_URL = "https://kvittojakten.lovable.app";
+// Ingen publicerad sida finns. Toppdomänen .example är reserverad för exempel
+// (RFC 2606) och kan aldrig leda till en riktig, eller död, sida. Demots route
+// visar adressen som text, aldrig som länk (screens/Build.tsx).
+const PUBLISHED_URL = "kvittojakten.example";
 
 function statusFor(currentStep: number): BuildStatus {
   if (currentStep < 8) return "not_started";

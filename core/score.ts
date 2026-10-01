@@ -4,7 +4,7 @@
 // låter den här filen räkna ut ScoreSnapshot. score/levels.ts (Session 1)
 // äger bara den visuella tröskeltabellen (7.5) — den här filen äger
 // själva beräkningen (7.2–7.4, 7.6).
-import type { Källa, ScoreSnapshot, ScorePart, LockedScorePart } from "@/core/domain";
+import type { Källa, ScoreSnapshot, ScorePart, LockedScorePart, EmptyScorePart } from "@/core/domain";
 import type { DataType } from "@/design/tokens";
 
 /** De åtta delarna (avsnitt 7.2). Vikterna summerar till 100. */
@@ -70,15 +70,20 @@ export const PHASE_UNLOCKED_PARTS: Record<PhaseId, ScorePartId[]> = {
 };
 
 /** Steget som låser upp respektive del — bara siffror (9.3-tidslinjen), inte
- * användartext, så det hårdkodas här i stället för i18n. */
-const UNLOCK_STEP: Record<ScorePartId, number> = {
+ * användartext, så det hårdkodas här i stället för i18n. Måste stämma med
+ * fasgränserna i scorePhaseForCompletedSteps (core/journey.ts): delen är
+ * upplåst exakt när steget är klart (core/score.test.ts prövar det).
+ * Produkt och Genomförbarhet låses upp tillsammans i Lansera (uppdrag 7.3),
+ * alltså efter steg 07. Tidigare stod 08 och 09 här. Beslut 2026-10-01,
+ * docs/beslut.md. */
+export const UNLOCK_STEP: Record<ScorePartId, number> = {
   fit: 1,
   market: 3,
   competition: 3,
   problem: 5,
   willingnessToPay: 5,
-  product: 8,
-  feasibility: 9,
+  product: 7,
+  feasibility: 7,
   traction: 11,
 };
 
@@ -137,17 +142,13 @@ function effectivePoints(item: EvidenceItem, indexOneBased: number): number {
 const SKEW_THRESHOLD = 0.3;
 const SKEW_PENALTY = 0.85;
 
+/** Anropas bara med minst ett bevis. En upplåst del utan bevis hanteras i
+ * calculateScore (beslut B4): 0 poäng, och delen visas som en lucka. */
 function scorePart(
   items: EvidenceItem[],
   weight: number,
   preliminaryCap: number | undefined,
 ): { points: number; source: Källa; dataType: DataType } {
-  if (items.length === 0) {
-    throw new Error(
-      "calculateScore: en upplåst del saknar bevis med källa. Ingen poäng utan källa (avsnitt 7.4).",
-    );
-  }
-
   const raw = items.reduce((sum, item, index) => sum + effectivePoints(item, index + 1), 0);
   const contradictingShare = items.filter((item) => item.contradicts).length / items.length;
   const skewed = contradictingShare >= SKEW_THRESHOLD ? raw * SKEW_PENALTY : raw;
@@ -165,6 +166,7 @@ export function calculateScore(input: CalculateScoreInput): ScoreSnapshot {
   const unlockedIds = new Set(PHASE_UNLOCKED_PARTS[input.phase]);
   const parts: ScorePart[] = [];
   const lockedParts: LockedScorePart[] = [];
+  const emptyParts: EmptyScorePart[] = [];
   let total = 0;
 
   for (const partId of ALL_PART_IDS) {
@@ -180,6 +182,14 @@ export function calculateScore(input: CalculateScoreInput): ScoreSnapshot {
     }
 
     const weight = SCORE_PART_WEIGHTS[partId];
+    if (evidence.items.length === 0) {
+      // Beslut B4 (docs/bevislagring.md 3.3): en upplåst del utan bevis ger
+      // 0 poäng och visas som en lucka. Aldrig ett kastat fel, och aldrig en
+      // ScorePart med 0 poäng, eftersom en sådan saknar källa (7.4: ingen
+      // källa, ingen poäng) och skulle se ut som ett resultat.
+      emptyParts.push({ name: evidence.label, weight });
+      continue;
+    }
     const preliminaryCap = PRELIMINARY_PART_CAP[input.phase]?.[partId];
     const scored = scorePart(evidence.items, weight, preliminaryCap);
     parts.push({
@@ -205,6 +215,7 @@ export function calculateScore(input: CalculateScoreInput): ScoreSnapshot {
     calculatedAtIso: input.calculatedAtIso,
     parts,
     lockedParts,
+    emptyParts,
   };
 }
 

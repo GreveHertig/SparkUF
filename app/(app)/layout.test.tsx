@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
-import { NotImplementedError } from "@/core/errors";
+import { EmptyStateError, NotImplementedError } from "@/core/errors";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/app" }));
@@ -21,6 +21,17 @@ const getStepsMock = vi.hoisted(() => vi.fn());
 vi.mock("@/adapters/live/JourneyRepository", () => ({
   liveJourneyRepository: { getSteps: getStepsMock },
 }));
+
+const getScoreSnapshotMock = vi.hoisted(() => vi.fn());
+vi.mock("@/adapters/live/EvidenceRepository", () => ({
+  liveEvidenceRepository: { getScoreSnapshot: getScoreSnapshotMock },
+}));
+
+const EVIDENCE_DOC = "docs/moduler/evidens-och-poang.md";
+
+beforeEach(() => {
+  getScoreSnapshotMock.mockRejectedValue(new EmptyStateError("Evidens och poäng", EVIDENCE_DOC));
+});
 
 afterEach(() => {
   cleanup();
@@ -69,15 +80,50 @@ describe("/app-skalet (PR 2)", () => {
     expect(stepPill.textContent).toContain("Marknaden");
   });
 
-  it("inerta flikar utan navBasePath (undersidorna finns inte än)", async () => {
+  it("flikarna länkar till /app-sidorna, Pulsen också (PR 11, steg 6)", async () => {
     getProfileMock.mockRejectedValue(new NotImplementedError("Profil", "docs/moduler/profil.md"));
     getStepsMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
 
     await renderLayout();
 
     const nav = screen.getByRole("navigation", { name: sv.appShell.navMenuLabel });
-    expect(nav.querySelectorAll("a")).toHaveLength(1);
-    expect(screen.getByText(sv.appShell.nav.businessPlan).tagName).toBe("SPAN");
+    expect(nav.querySelectorAll("a")).toHaveLength(11);
+    // Marknadsföring har bara en demosida än (UNAVAILABLE_TABS).
+    expect(nav.querySelectorAll(".fdd-tab--disabled")).toHaveLength(1);
+    expect(screen.getByText(sv.appShell.nav.marketing).tagName).toBe("SPAN");
+    expect(screen.getByRole("link", { name: sv.appShell.nav.businessPlan })).toHaveAttribute("href", "/app/affarsplan");
+    expect(screen.getByRole("link", { name: sv.appShell.nav.cofounder })).toHaveAttribute("href", "/app/medgrundaren");
+    expect(screen.getByRole("link", { name: sv.appShell.nav.pulse })).toHaveAttribute("href", "/app/pulsen");
+  });
+
+  it("sidhuvudet visar poängen från liveadaptern som en liten siffra, länkad till Poäng (PR 4)", async () => {
+    getProfileMock.mockRejectedValue(new NotImplementedError("Profil", "docs/moduler/profil.md"));
+    getStepsMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
+    getScoreSnapshotMock.mockResolvedValue({ total: 43 });
+
+    await renderLayout();
+
+    const link = screen.getByRole("link", { name: /^Poäng 43/ });
+    expect(link).toHaveAttribute("href", "/app/poang");
+  });
+
+  it("utan poäng visar sidhuvudet luckan, aldrig en nolla (PR 4)", async () => {
+    getProfileMock.mockRejectedValue(new NotImplementedError("Profil", "docs/moduler/profil.md"));
+    getStepsMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
+
+    await renderLayout();
+
+    const link = screen.getByRole("link", { name: new RegExp(sv.appShell.headerScoreMissing) });
+    expect(link.textContent).toContain("—");
+    expect(link.textContent).not.toMatch(/\d/);
+  });
+
+  it("ett riktigt fel i poängen sväljs inte", async () => {
+    getProfileMock.mockResolvedValue({ name: "Sara Lindqvist", initials: "SL" });
+    getStepsMock.mockResolvedValue([]);
+    getScoreSnapshotMock.mockRejectedValue(new Error("Poänghistoriken svarar inte"));
+
+    await expect(renderLayout()).rejects.toThrow("Poänghistoriken svarar inte");
   });
 
   it("ett riktigt fel sväljs inte", async () => {

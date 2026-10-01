@@ -48,3 +48,7 @@ supabase/.temp/
 
 # Lokala engångsskript, aldrig i repot
 /scratchpad/
+
+# playwright
+/test-results/
+/playwright-report/

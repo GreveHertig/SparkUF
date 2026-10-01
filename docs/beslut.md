@@ -160,6 +160,31 @@ skadar ingen annan. Flödet står i `docs/moduler/webbresearch-och-pulsen.md`,
 
 ## 2026-09-30
 
+**Juridikens källor: verifieringsstatus, och varför gränssnittet visar alla
+som overifierade.** Statusen har hittills bara funnits i en kodkommentar i
+`adapters/live/legalSources.ts`. Den hör hemma här och i datan.
+- **Kontrollerade av en människa, i webbläsaren 2026-09-30:** alla källor
+  från Bolagsverket, verksamt.se och Bokföringsnämnden (BFN). Kontrollen är
+  inlagd av Oskar (`Jaeger154`) i commit `262dc95`. Verifieringsloggen i
+  `docs/moduler/juridisk-koll.md` återger resultatet ordagrant men namnger
+  inte vem som gjorde kontrollen.
+- **Enbart maskinellt hämtade,** av Claude Code 2026-09-17, fortfarande
+  startsidor: Skatteverket, IMY, EUR-Lex (GDPR), Konsumentverket och
+  Riksdagen.
+- **Ingenting är granskat av jurist:** varken källorna, vilka ämnen som
+  gäller per bolagsform, avgifter, deadlines eller lagrum.
+- **Därför märker gränssnittet alla åtta som overifierade** ("Overifierad"
+  bredvid varje källa på Juridik, i både `/demo` och `/app`, PR 5). Det står
+  kvar tills en port bär verifieringsstatusen som data. En status som bara
+  finns i en kommentar får inte styra vad användaren ser.
+
+**Öppen uppgift till Juridik-modulens ägare (inte genomförd):** lägg till
+ett valfritt fält `kontrollerad?: string` (ISO-datum) i `Källa`
+(`types/evidence.ts`) och sätt det i `KURERADE_KÄLLOR`
+(`adapters/live/legalSources.ts`) för de källor som är kontrollerade. Först
+då kan `screens/Legal.tsx` visa märkningen bara för de källor som saknar
+fältet. Juristgranskning är en egen status och ska inte läggas i samma fält.
+
 **Spark använder SNI 2025 rakt av (Erik).** SNI-koder skrivs som fem siffror
 utan punkt, till exempel `69201`. Ingen omkodning från SNI 2007. Skäl: SCB:s
 företagsregister-API (AFR) och dess kodtabell är SNI 2025 (Verifierat
@@ -178,6 +203,188 @@ bolagsavtal). Skatteverket, IMY, EUR-Lex, Konsumentverket och Riksdagen är
 inte kontrollerade av en människa. Ingenting är juristgranskat.
 
 ## 2026-10-01
+
+**Fasen räknas ur högsta avklarade steg, inte ur steget som pågår.**
+"Låses upp efter steg 05" betyder efter att steg 05 är klart. Förut räknade
+liveadaptern fasen ur aktuellt steg (`scorePhaseForStep(deriveCurrentStepNumber(...))`),
+vilket låste upp varje del ett steg för tidigt och sade emot texten.
+Upplåsningstexten gäller, och fasen är rättad (`scorePhaseForCompletedSteps`
+i `core/journey.ts`). Skäl: det stämmer med texten, med demots kalibrerade
+moment (fasen byts i "efter"-momentet för steg 03, 05, 07 och 11) och med
+fasnamnet "tryAfterCalls", efter samtalen i steg 05. `UNLOCK_STEP` i
+`core/score.ts` är rättat, se beslutet om Produkt och Genomförbarhet nedan.
+Se `docs/bevislagring.md` 11.6.
+
+**Bevislagringen: `evidence`, `score_snapshots` och `evidence_kinds` är
+stängda för skrivning från klienter** (`WRITE_CLOSED_TABLES` i
+`supabase/migrations/migrations.test.ts`). Klienten läser sina egna rader
+men skriver aldrig direkt. Bevis skrivs via `public.record_evidence`
+(security definer), och poängen sätts av databasen ur sorten. Skäl: förut
+kunde vem som helst höja sin egen poäng med ett direkt anrop mot Supabase.
+Se `docs/bevislagring.md` 11.
+
+**Poänghistoriken skrivs av servern med service role**
+(`lib/server/scoreSnapshots.ts`). Det är den andra användningen av
+`SUPABASE_SERVICE_ROLE_KEY`, efter registercachen. Skäl: totalen räknas av
+`calculateScore` i kod och aldrig i SQL, så den kan inte sättas av en
+databasfunktion som användaren själv anropar. Om klienten fick skriva kunde
+historiken och den visade förändringen förfalskas.
+- Nyckeln används bara för insert i `score_snapshots`.
+- Användare och projekt kommer ur sessionen.
+- Den sammansatta främmande nyckeln mot `projects` gör det omöjligt att
+  skriva på någon annans projekt.
+- Lint tillåter bara `adapters/live/EvidenceRecorder.ts` att importera filen.
+
+**Besluten B1–B10 i bevislagringen** står med motiv i
+`docs/bevislagring.md` avsnitt 11. B4, B6 och B9 tog Theodor:
+- B4: en upplåst del utan bevis ger 0 och visas som en lucka.
+- B6: självrapporterade bevis ger halva poängen, med tak på halva delens vikt.
+- B9: gamla bevis utesluts, med livslängd per sort.
+
+**Ett steg i resan markeras klart bara när dess krav är uppfyllda, och
+villkoret sitter i databasen.** Theodor valde strikta krav, där steg utan
+mätbart krav är låsta. Förut kunde en inloggad användare skriva `completed_at`
+i `journey_steps` direkt mot Supabase. Fasen räknas ur högsta avklarade steg,
+så den som markerade steg 11 kunde låsa upp alla delar och höja taket till 100.
+Nu är `journey_steps` stängd för skrivning (`WRITE_CLOSED_TABLES`) och steg
+markeras bara via `public.complete_journey_step` (security definer,
+`supabase/migrations/20261001150000_journey_step_completion.sql`). Funktionen
+kräver att föregående steg är klart och att kraven i
+`journey_step_requirements` är uppfyllda av bevis som räknas (inte
+återkallade, inte äldre än sortens livslängd). Kraven finns också i
+`core/journeyRequirements.ts`, så att UI:t kan visa vad som saknas. Ett test
+mot Postgres håller de två i synk och kör samma fall mot båda.
+
+| Steg | Krav |
+|---|---|
+| 01 Om dig | Svar på alla fyra passformsfrågor (`profileFitAnswer` med `fit:skills`, `fit:network`, `fit:time`, `fit:money`) |
+| 02 Möjligheter | Ett aktivt projekt |
+| 03 Marknaden | `registerMarketCount` (systembevis ur registret) |
+| 04 Kunden | `registerCompetitorSet` (systembevis ur registret) |
+| 05 Samtalen | Minst ett problembevis (bekräftar eller avvisar) **och** minst ett prisbevis (godtar eller avböjer). Självrapporterat räcker (B6). |
+| 06 Domen | Minst fem kundsvar (problem eller pris, bekräftar eller avvisar) från minst tre bolag. Se beslutet om steg 06, 07 och 12 nedan. |
+| 07 Affärsfall och pris | Ett beslutat pris (`priceDecided`). Se nedan. |
+| 08 Omfånget | `productScopeFromEvidence` |
+| 09 Det formella | `formalRegistrationDone` |
+| 10 Live | `productPublished` |
+| 11 Första kunderna | `payingCustomer` |
+| 12 Kapital | En inskickad ansökan till en finansiär (`fundingApplied`). Se nedan. |
+
+Följd: i live kan bara steg 01 och 02 bli klara i dag. Steg 03 kräver
+registerdata, och Registret är licensgrindat. Se `docs/status.md`, kända
+problem.
+
+**Produkt och Genomförbarhet låses upp efter steg 07, inte efter 08
+respektive 09.** `UNLOCK_STEP` i `core/score.ts` är rättat. Skäl: uppdrag 7.3
+låser upp båda tillsammans i fasen Lansera. Demots kalibrerade moment byter
+fas efter steg 07, och live räknar fasen på samma sätt
+(`scorePhaseForCompletedSteps`). Det var alltså texten "Låses upp efter steg
+08/09" som var fel, inte fasen. Att ändra fasen i stället hade krävt en sjätte
+fas med eget tak, och den finns inte i uppdraget. Ett test
+(`core/journeyRequirements.test.ts`) kräver nu att varje del är upplåst exakt
+när dess steg är klart.
+
+**Passformssvar från profilen räknas fullt och märks "Ditt eget svar".** De
+är inte självrapporterade i B6:s mening, eftersom grundaren själv är källan
+(`docs/bevislagring.md` 11.1). Svaret sparas i `quote`, källan är
+`spark:profile` ("Profilsamtalet") och datumet är dagens. Formuläret ligger
+under Profilen i `/app/minnet`. Profilsamtalet i onboardingen är fortfarande
+en stubbe.
+
+**Krav för steg 06, 07 och 12 (Theodor).** Förut hade de tre stegen inget
+mätbart krav och kunde aldrig markeras klara, så resan stannade efter steg 05
+och taket på 66. Byggt på grenen `plattform/stegkrav`, se
+`docs/bevislagring.md` 11.8.
+- **Steg 06 Domen: godkänt som föreslaget.** Minst fem kundsvar som räknas i
+  Problem och Betalningsvilja tillsammans, från minst tre olika bolag
+  (`subject_ref`).
+  - Motiv: uppdrag 1.5 säger att domen fattas "baserat på faktiska svar med
+    citat och siffror". Det mätbara är antalet svar och att de inte alla
+    kommer från en kund.
+  - Motsägande svar räknas med, eftersom domen lika gärna kan bli
+    "pivotera". Självrapporterade svar räknas också, men taket på halva delen
+    (B6) gäller ändå för poängen.
+  - Själva valet (kör, förfina eller pivotera) är inte ett villkor. Domen är
+    en stubbe.
+  - Kravet behövde en tröskel per grupp, i den nya tabellen
+    `journey_step_group_thresholds`.
+- **Steg 07 Affärsfall och pris: ändrat.** Kravet är ett **beslutat pris**, inte
+  ett godtaget. Det är självrapporterbart och märks som självrapporterat (ny
+  sort `priceDecided`, `subject_ref` = `price`, pris och spann i `quote`).
+  - Skäl: ett godtaget pris kräver svar utifrån. Det dubblerar steg 05 och 06
+    och blockeras av att utskicken är avstängda.
+  - Att en kund godtar priset är ett eget bevis (`customerPriceAccepted`) som
+    höjer Betalningsvilja, inte ett krav för att steget ska vara klart.
+- **Steg 12 Kapital: godkänt som föreslaget.** En ny sort `fundingApplied`
+  för en inskickad ansökan till en finansiär. `subject_ref` är finansiären och
+  diarie- eller ärendenumret, och källan är programmets URL. Steg 12 påverkar
+  varken fasen eller taket.
+- **`priceDecided` och `fundingApplied` ger ingen poäng (Theodor).**
+  - Villkoret på `evidence_kinds.base_points` är ändrat från `> 0` till `>= 0`.
+  - Skäl: ett pris grundaren själv satt bevisar inte att någon betalar det, och
+    en ansökan är inte beviljade pengar.
+  - Sorter utan poäng skickas inte till `calculateScore`, så de fyller aldrig
+    en tom del och döljer luckan (B4).
+  - Livslängd: ett beslutat pris räknas i 365 dagar, en ansökan föråldras aldrig.
+
+**Källtyperna: sex datatyper för källtaggen, och bara registret är grått.**
+Beslut av grundaren. Varje källtagg (`components/ui/SourceTag.tsx`) har en
+datatyp (`DataType` i `design/tokens.ts`). Datatypen säger vilket slags källa
+det är, och utseendet ska avslöja det på avstånd. Tidigare fanns tre typer
+plus exempel. Pulsens nyhetsartiklar visades därför med registrets grå tagg,
+fast de inte kommer från något register (Hem och Pulsen i `/app`). Nu finns
+hela uppsättningen, så att ingen modul behöver uppfinna en egen:
+
+| Datatyp | När | Utseende | Etikett före källan |
+|---|---|---|---|
+| `register` | Myndighet eller officiellt register: Bolagsverket, SCB, Skatteverket och de kuraterade juridiska källorna | grå (`slate-700` på `slate-100`) | ingen |
+| `media` | Nyhets- eller mediekälla, artiklar och webbsidor: Pulsens signaler (Tavily), webbresearch | blå (`#2b5a8a` på `#e3ecf6`, 6,0:1) | "Media" |
+| `customer` | Riktiga kunders svar: utskick, samtal, enkäter | petrol (`#38717f` på `#dfeef2`) | ingen (tonen skiljer den från registret) |
+| `user` | Användarens egen uppgift: något grundaren själv har skrivit in eller påstått, till exempel i profilen | bär (`#8a4a6b` på `#f5e6ee`, 5,3:1) | "Din uppgift" / "Your input" |
+| `simulation` | Simulering (uppdrag 2.2), ger aldrig poäng | lila | "Simulering" |
+| `example` | Påhittad exempeldata, **bara i demot** | vit med streckad kant | "Exempel" |
+
+Regler:
+- **Ingen tagg får se ut som registrets om den inte är ett register.** Därför
+  är `register` den enda grå typen, och den enda förutom `customer` utan
+  etikett.
+- **Etiketten gör att typen inte hänger på färgen ensam.** Det är samma princip
+  som "Simulering" (uppdrag 2.2). `customer` har ingen etikett i dag, eftersom
+  en etikett skulle ändra demots sidor. Lägg till den om petrol och grått
+  visar sig svåra att skilja åt.
+- **`SourceTag` har fortfarande `register` som standard.** Den som visar en
+  källa som inte är ett register måste därför sätta datatypen. Pulsens
+  liveadapter ger artiklar: rutten sätter `"media"`.
+- **`example` används aldrig i `/app` eller `/start`** (vakttestet
+  `noExampleSources`). Saknas verkligt underlag visas luckan.
+- Kontrasten är uträknad mot taggens egen botten (WCAG AA, minst 4,5:1).
+
+**Så används det i Pulsen (för Bruno):** `/app/pulsen` skickar
+`sourceDataType: "media"` till `Pulse` (`app/(app)/app/pulsen/page.tsx`),
+samma som Hem gör sedan i dag (`sourceDataTypes: { pulse: "media" }` i
+`app/(app)/app/page.tsx`). Skärmen behöver ingen ändring.
+
+**Pulsens exempelkällor: de tre startsignalerna räknas till steg 01.**
+Beslut av Bruno i PR 6, godkänt av Theodor. Demots Pulsen-signaler är
+påhittade, så varje signal bär en exempelkälla för steget där den dyker upp
+i scenariot ("Påhittad data, steg NN", PR 11). Två signaler låses upp av ett
+steg och får det stegets nummer: marknadssignalen efter steg 03 och
+segmentsignalen efter steg 06. De tre andra är synliga från första momentet
+och hör inte till något steg; de är "dagens puls" när resan börjar. De får
+steg 01, det första steget, i stället för att uppfinna ett eget ursprung (en
+ny `ExampleOrigin` som "Pulsen" hade krävt ändringar i
+`adapters/demo/exampleSource.ts` och i18n). Datumet är scenariots datum för
+steg 01, som för alla exempelkällor. Stegen kommer ur `getSignalSteps()` i
+`adapters/demo/PulseProvider.ts`, som både adaptern och demots Hem använder.
+Får en ny startsignal ett eget steg ska den listan ändras, inte sidorna.
+
+**Pulsens signaler påstår inget om verkliga aktörer.** Beslut av Theodor
+(2026-10-01). En påhittad signal får inte säga vad en myndighet eller ett
+register har gjort eller visat, även med exempeltagg: "Skatteverket skärper
+kraven …" blev "Fler byråer efterfrågar digital arkivering …" (kategorin
+"Reglering" blev "Bransch"), och "Registret bekräftar …" blev "Fler tecken
+pekar på samma segment …". Demoadaptern bär inga myndighetsnamn längre, inte
+ens i `source`: källan sätts av adaptern som exempelkälla.
 
 **Källverifiering juridik, del 2.** Oskar Jaeger läste själv
 myndighetssidorna i webbläsaren 2026-10-01: Skatteverket (F-skatt, moms,

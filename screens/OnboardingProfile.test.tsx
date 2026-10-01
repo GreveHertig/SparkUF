@@ -1,4 +1,4 @@
-import { act, render, screen, fireEvent } from "@testing-library/react";
+import { act, cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
@@ -18,6 +18,7 @@ const script: OnboardingScript = {
 // bygger både chatten och "profilen så här långt", och att Fortsätt bara
 // dyker upp när alla är besvarade.
 describe("OnboardingProfile", () => {
+  afterEach(cleanup);
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -31,7 +32,7 @@ describe("OnboardingProfile", () => {
 
     render(
       <LocaleProvider>
-        <OnboardingProfile data={{ script, continueHref: "/demo/app", onContinue }} />
+        <OnboardingProfile data={{ script }} continueHref="/demo/app" onContinue={onContinue} />
       </LocaleProvider>,
     );
 
@@ -66,11 +67,22 @@ describe("OnboardingProfile", () => {
     expect(continueLink).toHaveAttribute("href", "/demo/app");
 
     // "Profilen så här långt" listar båda svaren.
-    const building = screen.getByText("Din profil så här långt").closest("div") as HTMLElement;
+    const building = screen.getByRole("complementary", { name: "Din profil så här långt" });
     expect(building).toHaveTextContent("Jag jobbar med redovisning.");
     expect(building).toHaveTextContent("15 timmar i veckan.");
 
     fireEvent.click(continueLink);
     expect(onContinue).toHaveBeenCalledTimes(1);
+  });
+
+  it("visar Kommer snart i samtalet och profilen utan samtal, och ingen Fortsätt", () => {
+    render(
+      <LocaleProvider>
+        <OnboardingProfile data={{ script: null }} continueHref="/app" />
+      </LocaleProvider>,
+    );
+    expect(screen.getByRole("heading", { level: 1, name: "Berätta om dig" })).toBeInTheDocument();
+    expect(screen.getAllByText("Kommer snart")).toHaveLength(2);
+    expect(screen.queryByRole("link", { name: "Fortsätt" })).not.toBeInTheDocument();
   });
 });

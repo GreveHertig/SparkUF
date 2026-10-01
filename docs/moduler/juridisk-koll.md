@@ -156,8 +156,10 @@ inte i CI): `GEMINI_API_KEY=... pnpm test adapters/live/LegalAdvisor.live.test.t
 
 **Känt att bevaka:** felmeddelanden från `LegalAdvisorError` kan innehålla
 fragment av Geminis råa (ogiltiga) svar via `z.prettifyError`. I dag stannar
-det på servern (ingen route använder adaptern än) — när `/app/juridik` byggs,
-visa aldrig det felet rakt av för användaren.
+det på servern: `/app/juridik` (PR 5 i `docs/plan-en-design.md`) kastar felet
+vidare, och utan en egen `error.tsx` visar Next i produktion bara ett allmänt
+fel med en digest. Visa aldrig felet rakt av för användaren — en framtida
+`error.tsx` under `app/(app)` får inte rendera `error.message`.
 
 ## Acceptanskriterier
 

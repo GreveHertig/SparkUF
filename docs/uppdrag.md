@@ -214,12 +214,12 @@ Designen ska inspireras av **Fonda** (fonda.co), en amerikansk AI-medgrundare me
 | Token | Värde | Användning |
 |---|---|---|
 | `ink-900` | `#1B1F23` | Djupaste mörka ytor, text med högst kontrast |
-| `ink-800` | `#262B31` | Loggans bakgrund: mörka sektioner, sidomeny, sidfot |
+| `ink-800` | `#262B31` | Loggans bakgrund: mörka sektioner, sidfot |
 | `paper-50` | `#F1F2F6` | Loggans ljusa ton: ljus bakgrund, text på mörkt |
 | `accent` | ljusblå | Sparks accentfärg, för aktiva tillstånd, fokus och poängens starkaste nivå |
 
 - **Bygg fullständiga skalor:** en skiffergrå skala (50–950) mellan `#F1F2F6` och `#1B1F23` med lätt blå underton, och en ljusblå accentskala (startvärde `#CFE3FF`, justera för kontrast).
-- **Temat är ljust.** Arbetsytorna har ljus botten (`paper-50` och vitt) med skiffergrå text. Mörka ytor i `ink-800` används medvetet: sidomenyn, landningssidans hero och sidfot, samt demoraden.
+- **Temat är ljust.** Arbetsytorna har ljus botten (`paper-50` och vitt) med skiffergrå text. Mörka ytor i `ink-800` används medvetet: landningssidans hero och sidfot, samt demoraden.
 - **Poängnivåerna** är egna semantiska tokens och ska vara dämpade och harmonierade, aldrig skrikiga:
   - `score-red` (1–29)
   - `score-orange` (30–49)
@@ -276,7 +276,7 @@ Bygg `/designsystem` som visar alla tokens och komponenter i alla tillstånd. Si
 - **`/start/ide`:** idégenomlysningen.
 
 ### Appen (`/app/*`)
-Layout: mörk sidomeny till vänster med ljus logga. Ljus arbetsyta. Sidhuvudet visar **poängen alltid**, SV/EN-växeln och profilmenyn.
+Layout: ett ljust sidhuvud med loggan och under det en flikrad med sidorna (samma skal, `screens/AppShell.tsx`, i `/demo` och `/app`). Ljus arbetsyta. Sidhuvudet visar **poängen alltid**, som en textsiffra ("Poäng 24") länkad till `/app/poang`, och det aktuella steget, profilen och SV/EN-växeln. Saknas poängen visas "—", aldrig en nolla.
 
 - **`/app` Hem:** Nästa steg, vad som hänt sedan sist, dagens Puls-signal och poängrörelse.
 - **`/app/medgrundaren`:** chatten. Verktygskörningar visas som kort i flödet.
@@ -362,7 +362,7 @@ Skriv Vitest-tester för taken, det avtagande värdet, motsägelserna, att poän
 
 | Komponent | Syfte |
 |---|---|
-| `ScoreBadge` | Poäng med nivåfärg. Kompakt i sidhuvud, stor på Hem och Poäng. Animerad räkning. |
+| `ScoreBadge` | Poäng med nivåfärg. Används inte i skalet: sidhuvudet visar poängen som en textsiffra i toppradens typsnitt (se Appen ovan). Stor siffra med nivå på Hem och Poäng (`screens/blocks/ScoreFigure.tsx`). |
 | `ScoreBreakdown` | De åtta delarna med vikt, delpoäng, källor och låst läge. |
 | `ScoreSuggestion` | Förslag med poäng, tid, förklaring och handling. |
 | `GapTypeTag` | Otillräckligt / Motsägande / Strukturellt. |

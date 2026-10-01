@@ -1,135 +1,148 @@
 "use client";
 
-import { Card } from "@/components/ui/Card";
-import { EditorialHeading } from "@/components/ui/EditorialHeading";
-import { Eyebrow } from "@/components/ui/Eyebrow";
+import { ComingSoon } from "@/components/ui/ComingSoon";
 import { ConceptBadge } from "@/components/ui/ConceptBadge";
 import { SourceTag } from "@/components/ui/SourceTag";
-import { LockedState } from "@/components/ui/LockedState";
-import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
-import type { ByggBrief } from "@/core/domain";
+import type { ByggBrief, Källa } from "@/core/domain";
+import type { DataType } from "@/design/tokens";
 import type { BuildStatus } from "@/ports/BuildProvider";
+import { Locked, PageHead, Pill, type PillTone } from "./blocks/PageBlocks";
 
+/** Byggets status, som `BuildProvider.getStatus` ger den. */
+export type BuildStatusView = { status: BuildStatus; url?: string; creditsUsed?: number };
+
+/**
+ * Platshållare per sektion (docs/plan-en-design.md): `null` ger "Kommer snart"
+ * i just den sektionen. `spec: "none"` betyder att porten svarat att ingen
+ * spec finns än — ett ärligt tomläge, inte en stubbe.
+ */
 export type BuildData = {
-  status: BuildStatus;
-  url?: string;
-  creditsUsed?: number;
-  spec: ByggBrief | null;
+  status: BuildStatusView | null;
+  spec: ByggBrief | "none" | null;
+  /** Källan för `creditsUsed`, som porten inte bär. Bara demot sätter den:
+   * talet är påhittat och får en exempelkälla (PR 11). */
+  creditsSource?: { source: Källa; dataType: DataType };
+  /** Källan för specens underlag, när den inte är underlagets egen. Bara demot
+   * sätter den: underlaget bygger på påhittade kundsamtal och får en
+   * exempelkälla. */
+  underlagSource?: { source: Källa; dataType: DataType };
+  /** Sant när adressen bara är ett exempel (demot): den visas som text, aldrig
+   * som en länk till en sida som inte finns. */
+  publishedUrlIsExample?: boolean;
 };
 
-const statusToneClasses: Record<BuildStatus, string> = {
-  not_started: "bg-slate-100 text-slate-600",
-  building: "bg-score-yellow-bg text-score-yellow",
-  published: "bg-score-green-bg text-score-green",
+/** Samma form som `ValidationLock` och `MarketLock`. */
+export type BuildLock = { unlocksAfterStep: number } | "notInScenario" | null;
+
+const statusTone: Record<BuildStatus, PillTone> = {
+  not_started: "neutral",
+  building: "yellow",
+  published: "green",
 };
 
-/** Grindraden (artefaktens `gatebar`) — samma tre lägen som statuspillen,
- * bara som en färgad banner i stället för en neutral rad. */
-const gateToneClasses: Record<BuildStatus, string> = {
-  not_started: "border-slate-200 bg-slate-50",
-  building: "border-score-yellow bg-score-yellow-bg",
-  published: "border-score-green bg-score-green-bg",
-};
-
-/** Bygg (avsnitt 6, 2.3): Lovable-konceptet — spec, förhandsvisning och
- * publicering, alltid märkt som koncept. */
-export function Build({ data, notInScenario }: { data: BuildData; notInScenario?: boolean }) {
+/** Bygg (PR 10): Lovable-konceptet, alltid märkt koncept. Specen, underlaget och status. */
+export function Build({ data, locked }: { data: BuildData; locked: BuildLock }) {
   const { t } = useI18n();
+  const copy = t.buildPage;
+  const { status } = data;
+  const spec = data.spec === "none" ? null : data.spec;
 
   return (
-    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <EditorialHeading as="h1">{data.spec ? data.spec.sammanfattning : t.buildPage.title}</EditorialHeading>
-          <p className="mt-2 text-sm text-slate-600">{t.buildPage.subtitle}</p>
-        </div>
-        <ConceptBadge className="mt-1" />
-      </div>
+    <div className="fdd-page">
+      <PageHead title={spec ? spec.sammanfattning : copy.title} lede={copy.subtitle} aside={<ConceptBadge />} />
 
-      {!data.spec ? (
-        <LockedState
-          unlockHint={notInScenario ? t.homePage.notInThisScenario : `${t.homePage.unlocksAfterStepBefore} 07`}
+      {locked ? (
+        <Locked
+          hint={
+            locked === "notInScenario"
+              ? t.homePage.notInThisScenario
+              : `${t.homePage.unlocksAfterStepBefore} ${String(locked.unlocksAfterStep).padStart(2, "0")}`
+          }
         />
       ) : (
         <>
-          <div
-            data-tour-id="build-gate"
-            className={cn("flex items-center gap-3 rounded-md border p-4 shadow-lg", gateToneClasses[data.status])}
-          >
-            <span
-              className={cn("rounded-pill px-2.5 py-1 text-xs font-semibold uppercase", statusToneClasses[data.status])}
-              style={{ letterSpacing: "var(--tracking-label)" }}
-            >
-              {t.buildPage.status[data.status]}
-            </span>
-            {data.url && (
-              <a href={data.url} target="_blank" rel="noreferrer" className="text-sm text-accent-700 underline underline-offset-2">
-                {t.buildPage.publishedUrlLabel}: {data.url}
-              </a>
-            )}
-            {data.creditsUsed !== undefined && (
-              <span className="ml-auto text-sm font-medium text-slate-600">
-                {t.buildPage.creditsUsedLabel}: {data.creditsUsed}
-              </span>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 gap-[18px] lg:grid-cols-[300px_1fr]">
-            <Card
-              title={t.buildPage.specTitle}
-              right={<span className="text-xs text-slate-500">{t.buildPage.scopeStepNote}</span>}
-            >
-              <p
-                className="text-xs font-semibold uppercase text-slate-500"
-                style={{ letterSpacing: "var(--tracking-label)" }}
-              >
-                {data.spec.målgrupp}
-              </p>
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {data.spec.sidor.map((sida) => (
-                  <li key={sida} className="rounded-pill bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                    {sida}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-
-            <section
-              data-tour-id="build-spec"
-              className="flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg"
-            >
-              <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-2.5">
-                <span className="flex gap-1.5" aria-hidden="true">
-                  <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-                </span>
-                <span className="font-numeric text-xs text-slate-500">
-                  {data.url ?? "lovable.dev/projects/spark"}
-                </span>
-                <ConceptBadge className="ml-auto" />
-              </div>
-
-              <div className="flex flex-col gap-4 p-5">
-                {data.status === "published" ? (
-                  <div>
-                    <Eyebrow>{t.buildPage.previewTitle}</Eyebrow>
-                    <p className="mt-2 text-sm leading-snug text-slate-600">{data.spec.sammanfattning}</p>
-                  </div>
+          {status ? (
+            <div className={`fdd-gate fdd-gate--${status.status}`} data-tour-id="build-gate">
+              <Pill tone={statusTone[status.status]}>{copy.status[status.status]}</Pill>
+              {status.url &&
+                (data.publishedUrlIsExample ? (
+                  <span>
+                    {copy.publishedUrlLabel}: {status.url}
+                  </span>
                 ) : (
-                  <Eyebrow>{t.buildPage.specTitle}</Eyebrow>
-                )}
-                <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
-                  {data.spec.underlag.map((bevis, index) => (
-                    <div key={index} className="flex flex-col gap-1">
-                      <p className="text-sm text-slate-700">{bevis.påstående}</p>
-                      <SourceTag source={bevis.källa} />
-                    </div>
-                  ))}
-                </div>
+                  <a href={status.url} target="_blank" rel="noreferrer" className="fdd-link">
+                    {copy.publishedUrlLabel}: {status.url}
+                  </a>
+                ))}
+              {status.creditsUsed !== undefined && (
+                <span className="fdd-gate__credits">
+                  {copy.creditsUsedLabel}: {status.creditsUsed}
+                  {data.creditsSource && (
+                    <>
+                      {" "}
+                      <SourceTag source={data.creditsSource.source} dataType={data.creditsSource.dataType} />
+                    </>
+                  )}
+                </span>
+              )}
+            </div>
+          ) : (
+            <ComingSoon />
+          )}
+
+          <div className="fdd-build">
+            <section className="fd-panel" aria-labelledby="fdd-build-spec">
+              <div className="fdd-panel__head">
+                <h2 id="fdd-build-spec" className="fdd-panel__title">
+                  {copy.specTitle}
+                </h2>
+                <span className="fdd-muted">{copy.scopeStepNote}</span>
               </div>
+              {spec ? (
+                <>
+                  <p className="fdd-label">{spec.målgrupp}</p>
+                  <ul className="fdd-tags">
+                    {spec.sidor.map((sida) => (
+                      <li key={sida} className="fdd-pill fdd-pill--neutral">
+                        {sida}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : data.spec === "none" ? (
+                <p className="fdd-muted">{copy.specEmpty}</p>
+              ) : (
+                <ComingSoon />
+              )}
             </section>
+
+            {spec && (
+              <section className="fdd-browser" aria-labelledby="fdd-build-preview" data-tour-id="build-spec">
+                <div className="fdd-browser__bar">
+                  <span className="fdd-browser__url">{status?.url ?? "lovable.dev/projects/spark"}</span>
+                  <ConceptBadge />
+                </div>
+                <div className="fdd-browser__body">
+                  <h2 id="fdd-build-preview" className="fdd-label">
+                    {status?.status === "published" ? copy.previewTitle : copy.specTitle}
+                  </h2>
+                  {status?.status === "published" && <p className="fdd-body">{spec.sammanfattning}</p>}
+                  <ul className="fdd-evidence">
+                    {spec.underlag.map((bevis, index) => (
+                      <li key={index}>
+                        <p>{bevis.påstående}</p>
+                        {data.underlagSource ? (
+                          <SourceTag source={data.underlagSource.source} dataType={data.underlagSource.dataType} />
+                        ) : (
+                          <SourceTag source={bevis.källa} dataType="customer" />
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </section>
+            )}
           </div>
         </>
       )}

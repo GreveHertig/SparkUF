@@ -13,9 +13,9 @@ import type { Locale } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
 import { en } from "@/i18n/en";
 import type { Dictionary } from "@/i18n/dictionary";
-import type { Källa, ScoreSnapshot, LockedScorePart, ByggBrief } from "@/core/domain";
-import type { DataType } from "@/design/tokens";
-import { ALL_PART_IDS, type ScorePartId, type ScoreSuggestion } from "@/core/score";
+import { fill } from "@/i18n/fill";
+import { formatCount } from "@/i18n/format";
+import type { Källa, LockedScorePart, ByggBrief } from "@/core/domain";
 import {
   buildBusinessPlan,
   type BusinessPlan,
@@ -23,6 +23,7 @@ import {
   type BusinessPlanClaim,
   type BusinessPlanSectionInput,
 } from "@/core/businessPlan";
+import type { ScoreSuggestion } from "@/core/score";
 import type { JourneyStepDetail } from "@/ports/JourneyRepository";
 import type { MarketOverview } from "@/ports/RegistryProvider";
 import type { VerdictReport } from "@/ports/VerdictProvider";
@@ -34,108 +35,116 @@ import { demoVerdictProvider } from "./VerdictProvider";
 import { demoProjectRepository } from "./ProjectRepository";
 import { demoBuildProvider } from "./BuildProvider";
 import { useDemoStore } from "./demoStore";
+import { exampleSource } from "./exampleSource";
 
 const dictionaries: Record<Locale, Dictionary> = { sv, en };
 
-/** Stegen planens nio avsnitt (15.2) hämtar highlights ur. */
-const STEP_NUMBERS = [1, 2, 4, 5, 6, 7, 8, 11, 12] as const;
+// Källregeln (PR 10 och 11, docs/status.md): ett påstående visas bara med sin
+// egen källa, aldrig med en lånad. All data i demot är påhittad, så inget
+// påstående här bär registrets eller kundernas tagg: registersiffrorna,
+// citaten, domen och byggspecens underlag får exempelkällan för sitt steg
+// (pitchrättningarna 2026-10-01).
+//
+// Stegens höjdpunkter (`JourneyStepDetail.highlights`), förslagens
+// förklaringar (`ScoreSuggestion.explanation`), den skarpare idéns motivering,
+// idégenomlysningens antaganden, konkurrenternas beskrivningar och stegets
+// dom utan utskick bär ingen källa i sina portar. De är påhittad exempeldata
+// om påhittade personer, och får därför en egen exempelkälla
+// (`exampleSource`, datatypen "example": taggen säger "Exempel · Påhittad
+// data, steg 04"). PR 10 tog bort dem helt, eftersom de då lånade en
+// poängdels eller registrets källa; det felet får inte komma tillbaka.
+//
+// Exempelkällorna finns bara i demot. En live-hopsamling för /app får aldrig
+// använda dem: saknas verkligt underlag visas luckan.
+
+const STEP_NUMBERS = [1, 2, 4, 6, 7, 8, 11, 12] as const;
 type PlanStepNumber = (typeof STEP_NUMBERS)[number];
 type StepMap = Partial<Record<PlanStepNumber, JourneyStepDetail>>;
 
-type PartSource = { source: Källa; dataType: DataType };
-type PartSources = Partial<Record<ScorePartId, PartSource>>;
-
-/** `ScoreSnapshot.parts` bär bara den redan lokaliserade etiketten (`name`),
- * inte ett stabilt `ScorePartId` (score.ts:s `ScorePart`-form, orörd här) —
- * matchar tillbaka mot `t.score.parts` för att hitta rätt dels källa. */
-function partSourcesFrom(snapshot: ScoreSnapshot, locale: Locale): PartSources {
-  const labels = dictionaries[locale].score.parts;
-  const sources: PartSources = {};
-  for (const partId of ALL_PART_IDS) {
-    const part = snapshot.parts.find((p) => p.name === labels[partId]);
-    if (part) sources[partId] = { source: part.source, dataType: part.dataType };
-  }
-  return sources;
-}
-
-function highlightClaims(step: JourneyStepDetail | undefined, partSource: PartSource | undefined): BusinessPlanClaim[] {
-  if (!step || step.highlights.length === 0 || !partSource) return [];
-  return step.highlights.map((text) => ({ text, source: partSource.source, dataType: partSource.dataType }));
-}
-
-function verdictSource(report: VerdictReport, partSources: PartSources): PartSource | undefined {
-  const quoteSource = report.quotes[0]?.source;
-  if (quoteSource) return { source: quoteSource, dataType: "customer" };
-  return partSources.willingnessToPay ?? partSources.problem;
+/** Stegets höjdpunkter som exempelpåståenden, med stegets egen exempelkälla. */
+function highlightCheck(locale: Locale, steps: StepMap, stepNumber: PlanStepNumber): BusinessPlanCheck {
+  const step = steps[stepNumber];
+  const claims: BusinessPlanClaim[] =
+    step && step.status !== "locked"
+      ? step.highlights.map((text) => ({ text, source: exampleSource(locale, { step: stepNumber }), dataType: "example" as const }))
+      : [];
+  return { claims, requiredStepNumber: stepNumber };
 }
 
 // --- Avsnitt 1: Affärsidén (steg 01–02, eller idégenomlysningens skarpare idé) ---
-function ideaSection(steps: StepMap, partSources: PartSources, ideaScreening: IdeaScreening | null): BusinessPlanSectionInput {
-  const checks: BusinessPlanCheck[] = [{ claims: highlightClaims(steps[1], partSources.fit), requiredStepNumber: 1 }];
-
-  const lastFact = ideaScreening?.registerFacts.at(-1);
-  if (ideaScreening && lastFact) {
-    checks.push({
-      claims: [
-        { text: ideaScreening.sharperIdea.why, value: ideaScreening.sharperIdea.name, source: lastFact.source, dataType: "register" },
-        ...ideaScreening.registerFacts.map((fact) => ({
-          text: fact.label,
-          value: fact.value,
-          source: fact.source,
-          dataType: "register" as const,
-        })),
-      ],
-      requiredStepNumber: 2,
-    });
-  } else {
-    checks.push({ claims: highlightClaims(steps[2], partSources.market), requiredStepNumber: 2 });
+function ideaSection(locale: Locale, steps: StepMap, ideaScreening: IdeaScreening | null): BusinessPlanSectionInput {
+  if (!ideaScreening) {
+    return { id: "idea", checks: [highlightCheck(locale, steps, 1), highlightCheck(locale, steps, 2)] };
   }
-
-  return { id: "idea", checks };
+  // Registerfakta och den skarpare idéns motivering är påhittade: exempelkälla.
+  const claims: BusinessPlanClaim[] = [
+    {
+      text: ideaScreening.sharperIdea.why,
+      value: ideaScreening.sharperIdea.name,
+      source: exampleSource(locale, "ideaScreening"),
+      dataType: "example",
+    },
+    ...ideaScreening.registerFacts.map((fact) => ({
+      text: fact.label,
+      value: fact.value,
+      source: exampleSource(locale, "ideaScreening"),
+      dataType: "example" as const,
+    })),
+  ];
+  return { id: "idea", checks: [highlightCheck(locale, steps, 1), { claims, requiredStepNumber: 2 }] };
 }
 
 // --- Avsnitt 2: Kunden och problemet (steg 04 kundprofil, steg 05 svaren) ---
-function customerAndProblemSection(
-  steps: StepMap,
-  market: MarketOverview | null,
-  verdictReport: VerdictReport | null,
-): BusinessPlanSectionInput {
-  const profileClaims: BusinessPlanClaim[] =
-    market && steps[4] && steps[4].highlights.length > 0
-      ? steps[4].highlights.map((text) => ({ text, source: market.source, dataType: "register" as const }))
-      : [];
+function customerAndProblemSection(locale: Locale, steps: StepMap, verdictReport: VerdictReport | null): BusinessPlanSectionInput {
+  // Citaten och kundprofilen (steg 04:s höjdpunkter) är påhittade: exempelkälla.
   const quoteClaims: BusinessPlanClaim[] = verdictReport
-    ? verdictReport.quotes.map((quote) => ({ text: quote.quote, value: quote.companyName, source: quote.source, dataType: "customer" as const }))
+    ? verdictReport.quotes.map((quote) => ({ text: quote.quote, value: quote.companyName, source: exampleSource(locale, { step: 5 }), dataType: "example" as const }))
     : [];
 
   return {
     id: "customerAndProblem",
-    checks: [
-      { claims: profileClaims, requiredStepNumber: 4 },
-      { claims: quoteClaims, requiredStepNumber: 5 },
-    ],
+    checks: [highlightCheck(locale, steps, 4), { claims: quoteClaims, requiredStepNumber: 5 }],
   };
 }
 
 // --- Avsnitt 3: Marknaden (steg 03, registret, alltid med täckning) ---
-function marketSection(t: Dictionary, market: MarketOverview | null, ideaScreening: IdeaScreening | null): BusinessPlanSectionInput {
+function marketSection(t: Dictionary, locale: Locale, market: MarketOverview | null, ideaScreening: IdeaScreening | null): BusinessPlanSectionInput {
   let overviewClaims: BusinessPlanClaim[] = [];
   let coverageClaims: BusinessPlanClaim[] = [];
+  const copy = t.businessPlanPage;
+  const percent = (value: number) => fill(copy.percentValueTemplate, { value: formatCount(value, locale) });
 
   if (market) {
+    const basis = market.basis;
+    // Registersiffrorna i demot är påhittade: exempelkälla, aldrig registrets
+    // (samma som Marknad-sidan i demot).
+    const marketSource = exampleSource(locale, { step: 3 });
     overviewClaims = [
-      { text: t.marketPage.companyCountLabel, value: market.companyCount, source: market.source, dataType: "register" },
-      { text: t.marketPage.medianRevenueLabel, value: market.medianRevenueKsek, source: market.source, dataType: "register" },
-      { text: t.marketPage.growthShareLabel, value: market.growthSharePercent, source: market.source, dataType: "register" },
-      { text: t.marketPage.regionShareLabel, value: market.regionSharePercent, source: market.source, dataType: "register" },
+      { text: t.marketPage.companyCountLabel, value: formatCount(market.companyCount, locale), source: marketSource, dataType: "example" },
+      // Medianomsättningen tas inte med: demodatan bär inget räkenskapsår, och
+      // utan år visas luckan, aldrig siffran (PR 8 och 9, docs/plan-en-design.md).
     ];
-    if (market.basis) {
+    // Ett underlag på 0 bolag betyder "okänt" (RegistryProvider): andelen visas inte.
+    if (basis?.growthCompanies !== 0) {
+      overviewClaims.push({ text: t.marketPage.growthShareLabel, value: percent(market.growthSharePercent), source: marketSource, dataType: "example" });
+    }
+    if (basis?.regionCompanies !== 0) {
+      overviewClaims.push({ text: t.marketPage.regionShareLabel, value: percent(market.regionSharePercent), source: marketSource, dataType: "example" });
+    }
+    if (basis && basis.growthCompanies > 0 && basis.regionCompanies > 0) {
+      // Varje andel har sitt eget urval av helheten, t.ex. "tillväxt: 171 av
+      // 312, region: 308 av 312" — aldrig "171/308", som ser ut som ett urval
+      // men blandar två.
       coverageClaims = [
         {
           text: t.marketPage.basedOnLabel,
-          value: `${market.basis.medianRevenueCompanies}/${market.basis.growthCompanies}/${market.basis.regionCompanies}`,
-          source: market.source,
-          dataType: "register",
+          value: fill(copy.coverageValueTemplate, {
+            growth: formatCount(basis.growthCompanies, locale),
+            region: formatCount(basis.regionCompanies, locale),
+            total: formatCount(market.companyCount, locale),
+          }),
+          source: marketSource,
+          dataType: "example",
         },
       ];
     }
@@ -147,8 +156,8 @@ function marketSection(t: Dictionary, market: MarketOverview | null, ideaScreeni
     overviewClaims = ideaScreening.registerFacts.map((fact) => ({
       text: fact.label,
       value: fact.value,
-      source: fact.source,
-      dataType: "register",
+      source: exampleSource(locale, "ideaScreening"),
+      dataType: "example",
     }));
   }
 
@@ -161,66 +170,68 @@ function marketSection(t: Dictionary, market: MarketOverview | null, ideaScreeni
   };
 }
 
-// --- Avsnitt 4: Konkurrensen (steg 03, registret) ---
-function competitionSection(market: MarketOverview | null): BusinessPlanSectionInput {
-  const claims: BusinessPlanClaim[] =
-    market && market.competitors.length > 0
-      ? market.competitors.map((competitor) => ({ text: competitor.description, value: competitor.name, source: market.source, dataType: "register" as const }))
-      : [];
+// --- Avsnitt 4: Konkurrensen (steg 03) ---
+// Konkurrenternas beskrivningar ("dyrt och tungt att införa") är bedömningar,
+// inte registeruppgifter: de bär en exempelkälla, aldrig registrets.
+function competitionSection(locale: Locale, market: MarketOverview | null): BusinessPlanSectionInput {
+  const claims: BusinessPlanClaim[] = (market?.competitors ?? []).map((competitor) => ({
+    text: competitor.description,
+    value: competitor.name,
+    source: exampleSource(locale, { step: 3 }),
+    dataType: "example",
+  }));
   return { id: "competition", checks: [{ claims, requiredStepNumber: 3 }] };
 }
 
-// --- Avsnitt 5: Erbjudandet och priset (steg 07, prövat mot steg 05) ---
-function offerAndPriceSection(steps: StepMap, partSources: PartSources, verdictReport: VerdictReport | null): BusinessPlanSectionInput {
-  const priceClaims = highlightClaims(steps[7], partSources.willingnessToPay);
+/** Domen bygger på utskickets svar, som i demot är påhittade: exempelkällan
+ * för steget domen hör till. Utan citat finns ingen. */
+function verdictSource(locale: Locale, report: VerdictReport, step: number): Källa | undefined {
+  return report.quotes.length > 0 ? exampleSource(locale, { step }) : undefined;
+}
 
+// --- Avsnitt 5: Erbjudandet och priset (steg 07, prövat mot steg 05) ---
+function offerAndPriceSection(locale: Locale, steps: StepMap, verdictReport: VerdictReport | null): BusinessPlanSectionInput {
   const stats = verdictReport?.verdict.stats;
   const priceTested = stats ? stats.priceAccepted + stats.priceDeclined : 0;
-  const validationSource = verdictReport ? verdictSource(verdictReport, partSources) : undefined;
+  const source = verdictReport ? verdictSource(locale, verdictReport, 5) : undefined;
   const validationClaims: BusinessPlanClaim[] =
-    verdictReport && priceTested > 0 && validationSource
-      ? [{ text: verdictReport.presentation.reasoning, value: verdictReport.presentation.headline, source: validationSource.source, dataType: validationSource.dataType }]
+    verdictReport && priceTested > 0 && source
+      ? [{ text: verdictReport.presentation.reasoning, value: verdictReport.presentation.headline, source, dataType: "example" }]
       : [];
 
+  // Steg 07:s kalkyl (höjdpunkterna) är exempeldata.
   return {
     id: "offerAndPrice",
-    checks: [
-      { claims: priceClaims, requiredStepNumber: 7 },
-      { claims: validationClaims, requiredStepNumber: 5 },
-    ],
+    checks: [highlightCheck(locale, steps, 7), { claims: validationClaims, requiredStepNumber: 5 }],
   };
 }
 
 // --- Avsnitt 6: Beviset (domen i steg 06, antagandena med utfall) ---
 function evidenceSection(
+  locale: Locale,
   steps: StepMap,
-  partSources: PartSources,
   verdictReport: VerdictReport | null,
   ideaScreening: IdeaScreening | null,
 ): BusinessPlanSectionInput {
+  const source = verdictReport ? verdictSource(locale, verdictReport, 6) : undefined;
   let verdictClaims: BusinessPlanClaim[] = [];
-  const beatVerdict = steps[6]?.verdict;
-  const fallbackSource = partSources.problem ?? partSources.willingnessToPay;
-
-  if (verdictReport) {
-    const source = verdictSource(verdictReport, partSources);
-    if (source) {
-      verdictClaims = [
-        { text: verdictReport.presentation.reasoning, value: verdictReport.presentation.headline, source: source.source, dataType: source.dataType },
-        ...verdictReport.quotes.map((quote) => ({ text: quote.quote, value: quote.companyName, source: quote.source, dataType: "customer" as const })),
-      ];
-    }
-  } else if (beatVerdict && fallbackSource) {
+  const stepVerdict = steps[6]?.status !== "locked" ? steps[6]?.verdict : null;
+  if (verdictReport && source) {
     verdictClaims = [
-      { text: beatVerdict.reasoning, value: beatVerdict.headline, source: fallbackSource.source, dataType: fallbackSource.dataType },
+      { text: verdictReport.presentation.reasoning, value: verdictReport.presentation.headline, source, dataType: "example" },
+      ...verdictReport.quotes.map((quote) => ({ text: quote.quote, value: quote.companyName, source: exampleSource(locale, { step: 5 }), dataType: "example" as const })),
     ];
+  } else if (stepVerdict) {
+    // Stegets dom utan utskick bakom sig (t.ex. Jonas) är exempeldata.
+    verdictClaims = [{ text: stepVerdict.reasoning, value: stepVerdict.headline, source: exampleSource(locale, { step: 6 }), dataType: "example" }];
   }
 
-  const lastFact = ideaScreening?.registerFacts.at(-1);
-  const assumptionClaims: BusinessPlanClaim[] =
-    ideaScreening && lastFact
-      ? ideaScreening.assumptions.map((assumption) => ({ text: assumption.text, source: lastFact.source, dataType: "register" as const }))
-      : [];
+  // Idégenomlysningens antaganden är exempeldata, inga registeruppgifter.
+  const assumptionClaims: BusinessPlanClaim[] = (ideaScreening?.assumptions ?? []).map((assumption) => ({
+    text: assumption.text,
+    source: exampleSource(locale, "ideaScreening"),
+    dataType: "example",
+  }));
 
   return {
     id: "evidence",
@@ -232,46 +243,42 @@ function evidenceSection(
 }
 
 // --- Avsnitt 7: Genomförandet (steg 08 omfånget, steg 11 planen) ---
-function executionSection(steps: StepMap, partSources: PartSources, buildSpec: ByggBrief | null): BusinessPlanSectionInput {
-  const scopeClaims: BusinessPlanClaim[] =
-    buildSpec && buildSpec.underlag.length > 0
-      ? buildSpec.underlag.map((bevis) => ({ text: bevis.påstående, source: bevis.källa, dataType: "customer" as const }))
-      : highlightClaims(steps[8], partSources.product);
-  const planClaims = highlightClaims(steps[11], partSources.traction);
+function executionSection(locale: Locale, steps: StepMap, buildSpec: ByggBrief | null): BusinessPlanSectionInput {
+  // Byggspecens underlag (de påhittade kundsamtalen), och utan spec stegens
+  // höjdpunkter, är exempeldata. Underlaget hör till omfånget i steg 08.
+  const scopeClaims: BusinessPlanClaim[] = (buildSpec?.underlag ?? []).map((bevis) => ({
+    text: bevis.påstående,
+    source: exampleSource(locale, { step: 8 }),
+    dataType: "example" as const,
+  }));
 
   return {
     id: "execution",
     checks: [
-      { claims: scopeClaims, requiredStepNumber: 8 },
-      { claims: planClaims, requiredStepNumber: 11 },
+      scopeClaims.length > 0 ? { claims: scopeClaims, requiredStepNumber: 8 } : highlightCheck(locale, steps, 8),
+      highlightCheck(locale, steps, 11),
     ],
   };
 }
 
 // --- Avsnitt 8: Ekonomin (steg 07 kalkylen, steg 12) ---
-function economySection(steps: StepMap, partSources: PartSources): BusinessPlanSectionInput {
-  return {
-    id: "economy",
-    checks: [
-      { claims: highlightClaims(steps[7], partSources.willingnessToPay), requiredStepNumber: 7 },
-      { claims: highlightClaims(steps[12], partSources.feasibility), requiredStepNumber: 12 },
-    ],
-  };
+function economySection(locale: Locale, steps: StepMap): BusinessPlanSectionInput {
+  return { id: "economy", checks: [highlightCheck(locale, steps, 7), highlightCheck(locale, steps, 12)] };
 }
 
 // --- Avsnitt 9: Riskerna (motsagda antaganden, låsta poängdelar) ---
-function risksSection(suggestions: ScoreSuggestion[], partSources: PartSources, lockedParts: LockedScorePart[]): BusinessPlanSectionInput {
-  const claimFor = (suggestion: ScoreSuggestion): BusinessPlanClaim | null => {
-    const partSource = partSources[suggestion.partId];
-    if (!partSource) return null;
-    return { text: suggestion.explanation, value: suggestion.label, source: partSource.source, dataType: partSource.dataType };
-  };
-  const byGap = (gapType: ScoreSuggestion["gapType"]) =>
-    suggestions.filter((s) => s.gapType === gapType).flatMap((s) => {
-      const claim = claimFor(s);
-      return claim ? [claim] : [];
-    });
-
+// Förslagens förklaringar ("3 av 9 säger nej till priset …") är exempeldata med
+// egen exempelkälla, aldrig poängdelens. De låsta delarna visas som förut.
+function risksSection(locale: Locale, suggestions: ScoreSuggestion[], lockedParts: LockedScorePart[]): BusinessPlanSectionInput {
+  const byGap = (gapType: ScoreSuggestion["gapType"]): BusinessPlanClaim[] =>
+    suggestions
+      .filter((suggestion) => suggestion.gapType === gapType)
+      .map((suggestion) => ({
+        text: suggestion.explanation,
+        value: suggestion.label,
+        source: exampleSource(locale, "suggestions"),
+        dataType: "example",
+      }));
   return {
     id: "risks",
     checks: [
@@ -308,17 +315,15 @@ export async function getBusinessPlan(locale: Locale): Promise<BusinessPlan> {
   const market = entry === "hasIdea" ? null : await demoRegistryProvider.getMarketOverview(locale);
   const ideaScreening = entry === "hasIdea" ? await demoProjectRepository.getIdeaScreening(locale) : null;
 
-  const partSources = partSourcesFrom(scoreSnapshot, locale);
-
   return buildBusinessPlan([
-    ideaSection(steps, partSources, ideaScreening),
-    customerAndProblemSection(steps, market, verdictReport),
-    marketSection(t, market, ideaScreening),
-    competitionSection(market),
-    offerAndPriceSection(steps, partSources, verdictReport),
-    evidenceSection(steps, partSources, verdictReport, ideaScreening),
-    executionSection(steps, partSources, buildSpec),
-    economySection(steps, partSources),
-    risksSection(suggestions, partSources, scoreSnapshot.lockedParts),
+    ideaSection(locale, steps, ideaScreening),
+    customerAndProblemSection(locale, steps, verdictReport),
+    marketSection(t, locale, market, ideaScreening),
+    competitionSection(locale, market),
+    offerAndPriceSection(locale, steps, verdictReport),
+    evidenceSection(locale, steps, verdictReport, ideaScreening),
+    executionSection(locale, steps, buildSpec),
+    economySection(locale, steps),
+    risksSection(locale, suggestions, scoreSnapshot.lockedParts),
   ]);
 }

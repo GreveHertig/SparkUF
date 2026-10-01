@@ -4,7 +4,8 @@
 // Håller BARA den delmängd av PostgREST-kedjan adaptrarna faktiskt
 // använder: `from().select().eq().order().limit().maybeSingle()/.single()`,
 // `insert`, `upsert` (matchar bara mot `onConflict`-kolumnen, ingen riktig
-// unik-nyckel-uppslagning). Ingen join, ingen RPC, inget filter utöver `eq`.
+// unik-nyckel-uppslagning) och `rpc` (bara mot handläggare som testet själv
+// skickar in, se `FakeRpcHandlers`). Ingen join, inget filter utöver `eq`.
 //
 // RISK, uttalad: en fejk kan glida semantiskt från riktig PostgREST. Håll
 // adapterfrågorna medvetet enkla (en tabell, `eq`/`order`, inga joins) och
@@ -129,11 +130,29 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
   }
 }
 
-export function makeSupabaseFake(initial: FakeTables = {}) {
+/** En fejkad databasfunktion. Får den delade tabellstoren, så att den kan
+ * skriva rader som efterföljande `from()`-anrop ser. Ett kastat fel blir
+ * `{ data: null, error }`, som PostgREST svarar på ett `raise exception`.
+ * Fejken ersätter aldrig den riktiga funktionen: den prövas mot Postgres i
+ * supabase/migrations/*.pg.test.ts. */
+export type FakeRpcHandlers = Record<string, (args: Record<string, unknown>, store: FakeTables) => unknown>;
+
+export function makeSupabaseFake(initial: FakeTables = {}, rpcHandlers: FakeRpcHandlers = {}) {
   const store: FakeTables = structuredClone(initial);
   return {
     from(tableName: string) {
       return new FakeQueryBuilder(store, tableName);
     },
+    async rpc(name: string, args: Record<string, unknown> = {}) {
+      const handler = rpcHandlers[name];
+      if (!handler) return { data: null, error: { message: `fake: ingen rpc-handläggare för "${name}"` } };
+      try {
+        return { data: handler(args, store), error: null };
+      } catch (error) {
+        return { data: null, error: { message: error instanceof Error ? error.message : String(error) } };
+      }
+    },
+    /** Bara för tester: läs en tabell direkt. */
+    tables: store,
   };
 }
