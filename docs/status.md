@@ -3334,6 +3334,50 @@ Tionde steget i `docs/plan-en-design.md`. `origin/prototyp` fanns redan i grenen
 - `swagger.json` saknar `servers`. Bas-URL:en är härledd och bekräftad med anrop, inte angiven i kontraktet.
 - Gränsen 5 anrop/s är Sekundärt: den står i SCB:s dokumentation enligt Erik, inte i swagger.json, och inga rate limit-headers syntes.
 
+## Onboarding live, PR 1: kontrakt och migrering (gren `plattform/onboarding-live`, PR mot `prototyp`)
+Vecka 1 i lanseringsplanen: inloggning, profil och projekt live. Plan i tre PR:er, godkänd av Erik 2026-09-30. PR 1 lägger portar, demoadaptrar, kontraktstester, frågorna och migreringen. Ingenting ändras för en användare än.
+
+### Klart
+- **Portar.** `ProfileRepository`: `getOnboardingStatus()` → `{ entry, completed }` och `completeOnboarding({ entry, answers })`. `OnboardingQuestion.suggestedAnswer` är `string | null` (demo: färdigt svar, plattform: fritext). `ProjectRepository`: `createProject({ name, oneLiner })`.
+- **`core/onboarding.ts`:** frågornas id:n (`role`, `bio`, `time`, `money`, `risk`), vilka varje ingång ställer (A fem, B tre) och längdgränserna (svar ≤ 1000, projektnamn ≤ 80, ingress ≤ 280).
+- **i18n:** `onboarding.profileQuestions` på sv och en. **Formuleringarna är förslag som Theo godkänner i granskningen.**
+- **Demoadaptrar:** onboardingstatusen går via `demoStore`. Den får bara användas av demot och tester, aldrig från en serverrutt (kommentar i adaptern). Demot sparar inga svar. `createProject` speglar indata och sparar inget.
+- **Liveadaptrar:** de nya metoderna kastar `NotImplementedError` och står tillfälligt i `PARTIELLA_STUBBAR`. De byggs i PR 2.
+- **Kontraktstester:** `getOnboardingScript` och `completeOnboarding` per ingång, samt `createProject`. De körs mot demo och hoppas över mot live tills PR 2.
+- **Migrering `20260930120000_onboarding.sql` (skriven, INTE körd):**
+  - `profiles.onboarding_entry` och `onboarding_completed_at`;
+  - check-villkor på längd och giltig ingång;
+  - villkor på `projects.name` och `one_liner`;
+  - trigger `set_updated_at` på `profiles`, `projects` och `journey_steps`.
+
+  Inga nya tabeller eller policyer, eftersom RLS redan ger insert och update på egna rader. Hela filen körs i en transaktion. Vakten `supabase/migrations/onboarding.test.ts` låser att gränserna är desamma som i `core/onboarding.ts`.
+- **Två skärmar fick en vakt för `suggestedAnswer === null`:** `screens/OnboardingProfile.tsx` och `app/demo/start/profil/page.tsx`. Bara typer, ingen markup och ingen stil. Fritextfältet bygger Theo.
+- Kontroll: `typecheck`, `lint` (0 fel, 3 gamla varningar i `design-referens/`), `test` (636 gröna, 40 skippade), `build`.
+
+### Innan migreringen körs (Erik)
+Kör kontrollfrågan i filhuvudet i SQL Editor. Den ska ge 0 rader. Den visar profiler med ett svarsfält över 1000 tecken och projekt vars namn eller ingress är tomma eller för långa (kvarlämnade `rls-test-…`-projekt klarar gränserna). Rensa eller korta de rader den visar. Kör sedan filen. Den körs i en transaktion, så ett fällt villkor lämnar ingenting halvt.
+
+### Återstår
+- **PR 2:**
+  - liveadaptrarna (`getOnboardingScript`, `getOnboardingStatus`, `completeOnboarding`, `createProject`, `getHomeSummary`);
+  - `deriveCurrentStepNumber` med `onboardingDone`;
+  - `sinceLastTime: SinceLastTime | null` (görs efter Theos PR 3, som skriver om samma rader);
+  - `update()` i `test/stubs/supabaseFake.ts`;
+  - RLS-testet;
+  - Pulsens tomläge utan projekt och att ett konfigurationsfel i Pulsen stannar i Pulsens ruta.
+  - Kräver att migreringen är körd.
+- **PR 3:**
+  - `app/start/actions.ts` (zod);
+  - routefilerna under `/start`;
+  - spärren i `app/(app)/layout.tsx`, med tester för ny användare → `/start`, färdig användare på `/start` → `/app` och ingen loop utan session.
+  - Mergas efter Theos PR 3 och tillsammans med hans skärmar.
+
+### Beslut (Erik 2026-09-30)
+- Steg 1 markeras klart på `profiles`, inte i `journey_steps`, eftersom ingång A inte har något projekt.
+- Ingång B:s nästa steg är steg 2 "Genomlys din idé".
+- A får fem frågor, B tre.
+- `/start` skickar vidare till `/app` efter avslutad onboarding. Ingen omgörning i v1.
+- Fel i en modul stannar i modulens ruta på Hem. Ingen demodata som fallback i `/app`.
 ## PR 11: Onboarding, städning, flikarna och exempelkällorna (2026-09-30, direkt på `design/en-design`)
 Elfte och sista steget i `docs/plan-en-design.md`. `origin/prototyp` fanns redan i grenen. Fyra kodcommits och docs: onboardingen (`744bcf9`), städningen (`a92e613`), flikarna (`6d8674b`) och exempelkällorna (`36c838c`, egen commit så att den kan granskas och backas för sig). **Migrationen är klar**, utom Pulsen (steg 6, Bruno).
 
@@ -3456,6 +3500,152 @@ Steg 6 i `docs/plan-en-design.md`, det sista. Två kodcommits och docs: den rena
 - **#35 kan stängas** nu när steg 6 ligger på `design/en-design`.
 - **Migrationen är helt klar.** Inga skärmar i `screens/` är oanvända och inga demosidor har kvar egen markup.
 
+## Beviselagringen (grenen `plattform/bevislagring`, 2026-10-01)
+
+Byggd enligt `docs/bevislagring.md`. Besluten, med motiv, står i specens avsnitt 11.
+
+### Klart
+- **Bevissorterna** (`core/evidenceKinds.ts`): 14 sorter som en fast lista. Sorten avgör del, datatyp, poäng, motsäger, livslängd och vem som får lägga in den.
+- **Migrationen** (`supabase/migrations/20261001120000_evidence_write_path.sql`, med rollback-block, rör inte `profiles` eller `projects`):
+  - ny tabell `evidence_kinds`
+  - nya kolumner och villkor på `evidence`
+  - dubblettspärr
+  - trigger som sätter poäng, del, datatyp och motsäger ur sorten vid varje insert
+  - trigger som bara tillåter återkallelse
+  - `record_evidence` och `retract_evidence` (security definer)
+  - skrivpolicyerna på `evidence` och `score_snapshots` borttagna
+- **Porten** `ports/EvidenceRecorder.ts`, med demoadapter (sparar ingenting) och liveadapter (`adapters/live/EvidenceRecorder.ts`). Läsvägen är delad med `EvidenceRepository` i `adapters/live/evidenceScore.ts`.
+- **`core/evidenceInput.ts`** (ren funktion): återkallade bevis bort, sortkontroll, föråldring (utesluts), ordning och tak för självrapporterat.
+- **De fyra felen i specens avsnitt 0:**
+  1. Insert-policyn är borttagen. Egna `points` avvisas, både direkt och via funktionen.
+  2. `calculateScore` kastar inte längre på en tom upplåst del. Delen hamnar i `emptyParts` och `/app/poang` visar "Inget underlag än".
+  3. `previousTotal` räknas ur den senaste snapshottens egen förändring.
+  4. Fasen räknas ur högsta avklarade steg, se `docs/beslut.md` 2026-10-01.
+- **Snapshots** skrivs bara av servern med service role (`lib/server/scoreSnapshots.ts`, lint-spärrad, beslut i `docs/beslut.md`).
+- **Tester:**
+  - `core/evidenceKinds.test.ts`, `core/evidenceInput.test.ts` (en grupp per regel)
+  - `supabase/migrations/evidenceWritePath.pg.test.ts`: SQL:en mot en riktig Postgres via PGlite, i CI, utan Docker. Där finns testet att egna `points` avvisas och synktestet mellan SQL och core.
+  - `WRITE_CLOSED_TABLES` i `migrations.test.ts`
+  - `ports/EvidenceRecorder.contract.test.ts`, `adapters/live/EvidenceRecorder.test.ts`
+  - `rls.live.test.ts` och läsvägens tester uppdaterade till det nya schemat
+- **Nytt dev-beroende:** `@electric-sql/pglite`.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test`, `pnpm build` och `pnpm test:e2e` (44 gröna mot det riktiga Supabase-projektet). `/security-review`: inga fynd över tröskeln. Granskningens förslag om en `check` på `source_url` är infört.
+
+### Återstår för att poängen ska röra sig i live
+1. **Kör migrationen i Supabase före nästa driftsättning av koden.** Läsvägen frågar nu efter de nya kolumnerna (`kind`, `entered_by`, `retracted_at`). Utan migrationen kraschar `/app` för alla med ett aktivt projekt och minst ett bevis. e2e gick igenom eftersom testkontot inte når den frågan.
+2. **Ett flöde som anropar skrivvägen.** Ingen skärm eller server action anropar `recordEvidence` än. Första flödet enligt specen är Passform från profilen.
+3. **`journey_steps` saknar skrivväg.** Fasen står kvar i `discover`, där taket är 18 och bara Passform och Marknad är upplåsta.
+4. **Registret är grindat och sändningen spärrad.** Marknad och Konkurrens får inga systembevis, och Problem och Betalningsvilja bara självrapporterade (högst halva vikten).
+5. **`SUPABASE_SERVICE_ROLE_KEY` måste finnas i Vercel,** annars kan snapshots inte skrivas.
+
+### Kända problem
+- ~~`UNLOCK_STEP` i `core/score.ts`~~ rättat på `plattform/poangen-ror-sig`.
+- ~~`journey_steps` går att skriva direkt~~ stängt på `plattform/poangen-ror-sig`.
+- **Samma bolag kan anges under många olika namn.** Varje nytt `subject_ref` är ett nytt bevis. Taket i B6 begränsar effekten till halva delen.
+- **`rls.live.test.ts`:s bevistest** använder kontots aktiva projekt (testprojektet är inaktivt). Saknas ett aktivt projekt prövas bara att direkt insert nekas.
+
+### Beslut nästa session behöver känna till
+- **Ändras en bevissort** krävs en ny migrering som uppdaterar `evidence_kinds`, annars failar synktestet. Gamla bevis behåller sitt lagrade värde (B2).
+- **Systembevis** (`entered_by = 'system'`) ska skrivas av servern, inte via `record_evidence`. Triggern sätter poängen ändå.
+- **Test mot Postgres:** nya migreringar kan prövas med `createMigratedDb()` i `test/pgMigrations.ts`.
+
+### Docs mot kod
+- **Specen (avsnitt 3.1 och 3.3)** sade att `core/score.ts` inte skulle röras. Den rördes för B4 enligt Theodors beslut, se 11.1.
+- **Specen (6.3a)** föreslog att skicka det senaste föråldrade beviset med 0 poäng så att delen inte blir tom. Med B4 behövs det inte. En tom del visas som en lucka, vilket är ärligare än en gammal källa.
+- **`docs/moduler/evidens-och-poang.md`** sade att en upplåst del utan bevis "kastar ett tydligt fel". Uppdaterad.
+- **`.env.example`** sade att service role bara används av registercachen. Uppdaterad.
+
+## Poängen rör sig (grenen `plattform/poangen-ror-sig`, från `plattform/bevislagring`, 2026-10-01)
+
+Skrivvägen i bruk, stegmarkeringen och motsägelsen i `UNLOCK_STEP`. Detaljer i `docs/bevislagring.md` 11.7, besluten i `docs/beslut.md` 2026-10-01.
+
+### Klart
+- **Passform från profilen:** fyra frågor under Profilen i `/app/minnet`.
+  - Varje svar sparas som `profileFitAnswer` via server action `saveFitAnswer` → `liveEvidenceRecorder.recordEvidence`.
+  - Källan är `spark:profile`, datumet är dagens, och svaret sparas i `quote`.
+  - Poängen räknas om på servern. Sidhuvudet uppdateras via `revalidatePath`, och formuläret visar den nya poängen som en länk till Poäng-sidan.
+  - Märkningen är "Ditt eget svar". Profilsvar är inte självrapporterade enligt B6, eftersom grundaren själv är källan.
+- **Stegmarkeringen:**
+  - Migrationen `20261001150000_journey_step_completion.sql` (med rollback-block, rör inte `profiles` eller `projects`):
+    - tabellen `journey_step_requirements`
+    - funktionen `complete_journey_step` (security definer)
+    - skrivpolicyerna på `journey_steps` borttagna.
+  - Kraven per steg finns i `core/journeyRequirements.ts` och i SQL, synktestade mot varandra.
+  - Porten `ports/JourneyProgress.ts` med demo- och liveadapter. Server action `completeJourneyStep`. `/app/resan/[steg]` visar vad som saknas, eller knappen "Markera som klart".
+- **Taket följer med:** efter ett avklarat steg räknas poängen om i den nya fasen, och en snapshot skrivs med orsaken `unlocked`. Testat från 16 till 20 när steg 03 blir klart.
+- **`UNLOCK_STEP`:** Produkt och Genomförbarhet står nu på 07. Ett test binder upplåsningstexten till fasen.
+- **Tester:**
+  - `journeyStepCompletion.pg.test.ts` (Postgres): direkt insert, update och delete på `journey_steps` nekas, och det går inte att hoppa över steg. Testet prövar också krav per steg, föråldrade och återkallade bevis, andra `subject_ref` än de fyra frågorna, och att SQL och core ger samma svar i varje fall.
+  - `core/journeyRequirements.test.ts`, `adapters/live/JourneyProgress.test.ts`, `ports/JourneyProgress.contract.test.ts`, `screens/blocks/FitPanel.test.tsx` och tester för sidorna och actions.
+  - `rls.live.test.ts`: testet för `journey_steps` prövar nu att ett direkt anrop nekas.
+- **Verifierat:**
+  - `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (988 gröna), `pnpm build` och `pnpm test:e2e` (44 gröna).
+  - `/security-review`: inga fynd över tröskeln. Tre iakttagelser står under kända problem.
+
+### Kända problem
+- **Live fastnar efter steg 02 tills Registret öppnas. Det är licensgrinden som blockerar, inte koden.** Steg 03 kräver `registerMarketCount`, ett systembevis ur registret, och Registret är grindat tills licensen är verifierad (`docs/moduler/registret.md`). Fasen stannar därför i Upptäck (tak 18). Eftersom Marknad i Upptäck också kräver registerdata är **högsta möjliga poäng i live i dag 10** (Passform full).
+- **Steg 06, 07 och 12 har inget krav och kan inte markeras klara.** Förslagen står som öppna punkter i `docs/beslut.md` och väntar på Theodor. De är inte byggda. Även när Registret öppnas stannar resan efter steg 05 (tak 66) tills steg 06 har ett krav.
+- **Kör båda migreringarna i Supabase** (`20261001120000` och `20261001150000`) före nästa driftsättning. e2e kördes mot ett Supabase utan dem. Testkontot har inget aktivt projekt, så de nya frågorna nåddes inte.
+- **Steg som skrevs direkt före migreringen ligger kvar som klara.** Kontrollera `journey_steps` i live en gång efter rader som inte uppfyller kraven.
+- **Ett avklarat steg står kvar om beviset bakom det återkallas eller blir för gammalt.** Fasen och taket ligger då kvar. Poängen sjunker ändå, eftersom delen töms (B4).
+- **Ett passformssvar går inte att ändra samma dag.** Samma fråga och samma datum ger `duplicate`. Återkallelse finns i porten men inte i UI:t.
+- **Profilsvaren är fritext utan kontroll.** Fyra svar ger full Passform (10) oavsett innehåll. Det ligger i sakens natur: grundaren är källan.
+- Härdning, inte sårbarhet: `revoke` gäller insert, update och delete men inte truncate på `journey_steps` och `journey_step_requirements`. PostgREST kan inte köra truncate.
+
+### Beslut nästa session behöver känna till
+- **Ändras kraven för ett steg** krävs en ny migrering som uppdaterar `journey_step_requirements`, annars failar synktestet.
+- **Snapshots skrivs fortfarande bara via `adapters/live/EvidenceRecorder.ts`** (`settleScore`, exporterad). Resans adapter anropar den.
+- **`EvidenceView` har fått `subjectRef`**, som är null i demot.
+
+### Docs mot kod
+- **CLAUDE.md:** listan över uträknade sammanfattningar har fått de två nya poängsiffrorna (`FitPanel` och `StepCompletionPanel`).
+- **`docs/moduler/resan.md` och `docs/moduler/evidens-och-poang.md`:** uppdaterade med skrivvägen.
+
+
+## Krav för steg 06, 07 och 12 (grenen `plattform/stegkrav`, från `plattform/poangen-ror-sig`, 2026-10-01)
+
+Theodors beslut på de tre öppna punkterna, se `docs/beslut.md` 2026-10-01 och `docs/bevislagring.md` 11.8.
+
+### Klart
+- **Alla tolv steg har nu ett krav.** Migrationen `20261001180000_journey_steps_06_07_12.sql` (med rollback-block, rör inte `profiles` eller `projects`):
+  - **Steg 06:** minst fem kundsvar (problem eller pris, bekräftar eller avvisar) från minst tre bolag. Det kräver en ny tabell, `journey_step_group_thresholds` (RLS, bara läsning, i `WRITE_CLOSED_TABLES`). `complete_journey_step` räknar nu varje grupp som helhet.
+  - **Steg 07:** ett beslutat pris, ny sort `priceDecided`. Inte ett godtaget pris.
+  - **Steg 12:** en inskickad ansökan till en finansiär, ny sort `fundingApplied`.
+- **De två nya sorterna ger ingen poäng.**
+  - `base_points` får vara 0.
+  - `core/evidenceInput.ts` skickar dem inte till `calculateScore` och märker dem med den nya statusen `noPoints`. Därför fyller de aldrig en tom del (B4).
+  - Båda är `either`, så de märks "Angivet av dig" när grundaren lägger in dem.
+- **Core och port:**
+  - `GROUP_THRESHOLDS` och `stepCompletion` ger `progress` (antal svar och bolag) för grupper med tröskel.
+  - `StepCompletionView` har fått `progress`.
+- **Tester:**
+  - Postgres:
+    - steg 06: grundarens egna svar, fem svar från två bolag, föråldrade och återkallade svar
+    - steg 07: ett godtaget pris räcker inte, och priset ger 0 poäng
+    - steg 12
+    - synktest för trösklarna
+  - Core: trösklar, framsteg, att varje steg har ett krav och sorter utan poäng.
+  - Sidtest för steg 06.
+- **Verifierat:** `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (1009 gröna) och `pnpm build`. e2e kördes inte: inget i flödet som e2e täcker är ändrat.
+- **Säkerhetsgranskning:** inga fynd. Granskningsagenten stoppades av en kvotgräns, så diffen granskades direkt i sessionen:
+  - `complete_journey_step` är kvar som security definer med `search_path = ''`, och alla namn är kvalificerade.
+  - Användare och projekt kommer fortfarande ur `auth.uid()`. Bevisen filtreras på det aktiva projektet.
+  - En grupp utan bevis räknas som 0 och släpps aldrig igenom: `coalesce` på villkor och tröskel.
+  - `execute` är fortfarande indraget från `public`.
+  - Den nya tabellen har RLS, är bara läsbar och har skrivrätten indragen.
+  - Att grundaren kan självrapportera sig förbi steg 06–07 och höja taket är Theodors beslut, inte ett hål. Poängen i delarna begränsas ändå av B6.
+
+### Kända problem
+- **Inget formulär finns för att ange ett beslutat pris, en ansökan eller kundsvar.** Kraven går att uppfylla så fort något anropar skrivvägen. Live stannar ändå efter steg 02 tills Registret öppnas (se ovan).
+- **Antalet svar och bolag för steg 06 visas inte.** Det räknas (`progress`), men det vore en uträknad sammanfattning vars delar inte visas med källa någonstans i live. Poäng-sidan visar en källa per del, inte varje svar. Kan visas när en lista över kundsvaren finns, och läggs då till i undantagslistan i CLAUDE.md.
+- **`priceDecided` och kundsvar delar del (Betalningsvilja).** Ersättningsregeln i `record_evidence` gäller per del och `subject_ref`. Ett kundsvar med `subject_ref` = `price` skulle därför ersätta det beslutade priset. Konventionen är att `price` bara används för `priceDecided`. Ingen spärr finns.
+- **Ett nytt pris samma dag ger `duplicate`**, på samma sätt som ett passformssvar.
+- **Kör migreringen i Supabase** (`20261001180000`) efter de två tidigare (`20261001120000`, `20261001150000`).
+
+### Beslut nästa session behöver känna till
+- **En tröskel för en kravgrupp** ändras i `journey_step_group_thresholds` via en ny migrering, och i `GROUP_THRESHOLDS`. Synktestet failar annars.
+- **En sort med `basePoints` 0** uppfyller bara krav och påverkar aldrig poängen. Testet i `core/evidenceKinds.test.ts` listar vilka sorter som får sakna poäng.
+- **Status `noRequirementYet` finns kvar** i typen, men inget steg har den i dag.
 ## Pulsen inloggad, källtyperna och Hems källor (2026-10-01, direkt på `design/en-design`)
 `origin/prototyp` fanns redan i grenen. Tre commits: källtyperna, Hems källor (egen commit, så att den kan granskas och backas för sig) och docs.
 

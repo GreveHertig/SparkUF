@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
@@ -17,6 +17,14 @@ const getStepDetailMock = vi.hoisted(() => vi.fn());
 vi.mock("@/adapters/live/JourneyRepository", () => ({
   liveJourneyRepository: { getStepDetail: getStepDetailMock },
 }));
+
+const getStepCompletionMock = vi.hoisted(() => vi.fn());
+const completeStepMock = vi.hoisted(() => vi.fn());
+vi.mock("@/adapters/live/JourneyProgress", () => ({
+  liveJourneyProgress: { getStepCompletion: getStepCompletionMock, completeStep: completeStepMock },
+  JourneyStepBlockedError: class JourneyStepBlockedError extends Error {},
+}));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 function detail(overrides: Partial<JourneyStepDetail> = {}): JourneyStepDetail {
   return {
@@ -42,6 +50,10 @@ function detail(overrides: Partial<JourneyStepDetail> = {}): JourneyStepDetail {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+
+beforeEach(() => {
+  getStepCompletionMock.mockResolvedValue({ stepNumber: 1, status: "missing", missing: ["fit_skills"], progress: [] });
 });
 
 async function renderStep(steg: string) {
@@ -125,5 +137,69 @@ describe("/app/resan/[steg] (PR 9)", () => {
       ([, value]) => typeof value === "function",
     );
     expect(functionProps).toEqual([]);
+  });
+
+  it("visar vad som saknas innan steget kan markeras klart, utan knapp", async () => {
+    getStepDetailMock.mockResolvedValue(detail());
+    await renderStep("1");
+    expect(screen.getByText(sv.stepCompletion.missingTitle)).toBeInTheDocument();
+    expect(screen.getByText(sv.stepCompletion.requirements.fit_skills)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: sv.stepCompletion.cta })).not.toBeInTheDocument();
+  });
+
+  it("steg 06 visar kravet om fem svar från tre bolag, men inget antal", async () => {
+    getStepDetailMock.mockResolvedValue(detail({ stepNumber: 6 }));
+    getStepCompletionMock.mockResolvedValue({
+      stepNumber: 6,
+      status: "missing",
+      missing: ["verdictAnswers"],
+      progress: [{ group: "verdictAnswers", count: 4, minCount: 5, subjects: 2, minSubjects: 3 }],
+    });
+    await renderStep("6");
+    expect(screen.getByText(sv.stepCompletion.requirements.verdictAnswers)).toBeInTheDocument();
+    expect(screen.queryByText(/4 av 5/)).not.toBeInTheDocument();
+  });
+
+  it("visar knappen när kraven är uppfyllda, och ett steg utan krav säger det", async () => {
+    getStepDetailMock.mockResolvedValue(detail());
+    getStepCompletionMock.mockResolvedValue({ stepNumber: 1, status: "completable", missing: [], progress: [] });
+    await renderStep("1");
+    expect(screen.getByRole("button", { name: sv.stepCompletion.cta })).toBeInTheDocument();
+    cleanup();
+
+    getStepDetailMock.mockResolvedValue(detail({ stepNumber: 6 }));
+    getStepCompletionMock.mockResolvedValue({ stepNumber: 6, status: "noRequirementYet", missing: [], progress: [] });
+    await renderStep("6");
+    expect(screen.getByText(sv.stepCompletion.noRequirementYet)).toBeInTheDocument();
+  });
+
+  it("ett låst steg visar ingen stegmarkering", async () => {
+    getStepDetailMock.mockResolvedValue(detail({ status: "locked" }));
+    getStepCompletionMock.mockResolvedValue({ stepNumber: 1, status: "previousNotDone", missing: [], progress: [] });
+    await renderStep("1");
+    expect(screen.queryByText(sv.stepCompletion.title)).not.toBeInTheDocument();
+  });
+});
+
+describe("completeJourneyStep (Server Action)", () => {
+  it("markerar steget via liveadaptern och ger den nya poängen", async () => {
+    const { completeJourneyStep } = await import("./actions");
+    completeStepMock.mockResolvedValue({ snapshot: { total: 20 }, phaseBefore: "discover", phaseAfter: "tryBeforeCalls" });
+    expect(await completeJourneyStep(3)).toEqual({ ok: true, total: 20 });
+    expect(completeStepMock).toHaveBeenCalledWith(3, "sv");
+  });
+
+  it("vägrar allt som inte är ett heltal, utan att nå adaptern", async () => {
+    const { completeJourneyStep } = await import("./actions");
+    expect(await completeJourneyStep("3")).toEqual({ ok: false });
+    expect(await completeJourneyStep(2.5)).toEqual({ ok: false });
+    expect(completeStepMock).not.toHaveBeenCalled();
+  });
+
+  it("ett steg vars krav inte är uppfyllda ger ok: false", async () => {
+    const { completeJourneyStep } = await import("./actions");
+    const { JourneyStepBlockedError } = await import("@/adapters/live/JourneyProgress");
+    completeStepMock.mockRejectedValue(new JourneyStepBlockedError("nej"));
+    expect(await completeJourneyStep(3)).toEqual({ ok: false });
   });
 });

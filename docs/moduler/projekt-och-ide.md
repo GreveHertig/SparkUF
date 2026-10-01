@@ -14,8 +14,17 @@ det har hänt finns inget projekt — `getProject()` returnerar `null`, och det
 
 ```ts
 getProject(): Promise<Project | null>
+createProject(input: { name: string; oneLiner: string }): Promise<Project>
 getIdeaScreening(locale: Locale): Promise<IdeaScreening>
 ```
+
+**Onboarding live (2026-09-30, PR 1 av 3):** `createProject` sparar
+grundarens egen idé som aktivt projekt (ingång B, `/start/ide`). Finns redan
+ett aktivt projekt kastar liveadaptern i stället för att skriva över det.
+`setActiveProject` väntar tills det finns ett gränssnitt för att byta projekt.
+`getIdeaScreening` fortsätter kasta tills Registret går live mot SCB AFR
+(vecka 2); ytan visar då luckan, aldrig påhittad data. Gränser: namn 1–80
+tecken, ingress 1–280 (`core/onboarding.ts`, check-villkor i migreringen).
 
 `Project` (definierad i porten, inte i `core/domain.ts`): `{ id: string;
 name: string; oneLiner: string }`.
@@ -77,7 +86,11 @@ aldrig instruktion (avsnitt 14.6).
 
 ## Status
 
-påbörjad (Session P1, branch `plattform-p1-adaptrar`) — `getProject` är
+**Onboarding live, PR 1 (2026-09-30):** porten och demoadaptern har
+`createProject` (demot sparar inget, svaret speglar indata). Liveadaptern
+kastar `NotImplementedError` tills PR 2 (`PARTIELLA_STUBBAR`).
+
+Tidigare: påbörjad (Session P1, branch `plattform-p1-adaptrar`) — `getProject` är
 klar och testad mot Supabase, returnerar `null` för ett konto utan aktivt
 projekt (giltigt). `getIdeaScreening` är MEDVETET kvar som
 `NotImplementedError`: den är i praktiken Medgrundaren/Gemini-analys, och

@@ -24,6 +24,12 @@ export const liveProjectRepository: ProjectRepository = {
     return { id: data.id as string, name: data.name as string, oneLiner: data.one_liner as string };
   },
 
+  // Porten fick metoden i PR 1 av onboardingen (docs/status.md), live byggs
+  // i PR 2 när migreringen 20260930120000_onboarding.sql är körd.
+  async createProject() {
+    throw new NotImplementedError("Projekt och idé", DOC);
+  },
+
   // Idégenomlysningen är i praktiken Medgrundaren/Gemini-analys, inte bara
   // lagring, och porten saknar fortfarande en skrivmetod för att spara vad
   // grundaren väljer (flaggat sedan Session P2/5, docs/moduler/projekt-och-ide.md)

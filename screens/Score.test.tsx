@@ -63,6 +63,13 @@ describe("Score (skärmen, PR 4)", () => {
     expect(locked).toEqual(["Låses upp efter steg 05", "Låses upp efter steg 11"]);
   });
 
+  it("en upplåst del utan bevis visas som en lucka, aldrig som 0/vikt (beslut B4)", () => {
+    renderScore({ snapshot: { ...snapshot, emptyParts: [{ name: "Konkurrens", weight: 8 }] } });
+    const item = screen.getByText("Konkurrens").closest("li");
+    expect(item).toHaveTextContent(sv.scorePage.emptyPart);
+    expect(item).not.toHaveTextContent("/8");
+  });
+
   it("Lovable i ett förslag får koncept-etiketten", () => {
     renderScore();
     expect(screen.getByText(sv.common.conceptBadge)).toBeInTheDocument();
