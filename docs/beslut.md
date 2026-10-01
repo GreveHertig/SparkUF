@@ -176,3 +176,19 @@ bokföringsskyldighet). Adresserna finns i verifieringsloggen i
 `docs/moduler/juridisk-koll.md`. Två texter rättades (aktiekapital och
 bolagsavtal). Skatteverket, IMY, EUR-Lex, Konsumentverket och Riksdagen är
 inte kontrollerade av en människa. Ingenting är juristgranskat.
+
+## 2026-10-01
+
+**Källverifiering juridik, del 2.** Oskar Jaeger läste själv
+myndighetssidorna i webbläsaren 2026-10-01: Skatteverket (F-skatt, moms,
+arbetsgivare), IMY (rättslig grund, register över behandling), EUR-Lex
+(GDPR-förordningen) och Konsumentverket (marknadsföringslagen, ångerrätt).
+Adresserna finns i verifieringsloggen i `docs/moduler/juridisk-koll.md`.
+Fyra texter rättades (F-skatt, moms, GDPR-registret och ångerrätt).
+`gdpr_personuppgifter` delas i `gdpr_rattslig_grund` och `gdpr_register`
+med var sin IMY-sida. Moms delas inte: sidan som används säger både
+huvudregeln och undantaget. Gränsen 120 000 kr för moms står i texten
+till Gemini, eftersom den har källa och datum, på samma sätt som 25 000 kr
+för aktiekapital. EUR-Lex pekar på den svenska versionen. Riksdagen är inte
+kontrollerad och inget ämne använder den. Om den ska finnas kvar väntar på
+Theos beslut. Ingenting är juristgranskat.
