@@ -180,7 +180,7 @@ describe("liveLegalAdvisor.getLegalMap", () => {
       ]),
     );
     const result = await liveLegalAdvisor.getLegalMap("aktiebolag");
-    expect(result[0]?.källa).toEqual(KURERADE_KÄLLOR.skatteverket);
+    expect(result[0]?.källa).toEqual(KURERADE_KÄLLOR.skatteverket_f_skatt);
   });
 
   it("slår ihop ett Gemini-fel till ett tydligt fel i stället för att låta det passera opåverkat", async () => {

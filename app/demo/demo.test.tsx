@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode } from "react";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
@@ -19,6 +19,7 @@ import DemoMarketPage from "./(app)/marknad/page";
 import DemoLegalPage from "./(app)/juridik/page";
 import DemoMemoryPage from "./(app)/minnet/page";
 import DemoValidationPage from "./(app)/validering/page";
+import { saraCompanies } from "@/adapters/demo/RegistryProvider";
 import DemoPulsePage from "./(app)/pulsen/page";
 import DemoJourneyPage from "./(app)/resan/page";
 import DemoJourneyStepPage from "./(app)/resan/[steg]/page";
@@ -416,6 +417,104 @@ describe("/demo", () => {
       for (const chat of document.querySelectorAll(".fdd-chat")) {
         if (!/\d/.test(chat.querySelector(".fdd-chat__bubble")?.textContent ?? "")) expect(chat.querySelector("button")).toBeNull();
       }
+    });
+
+    it("Marknads registersiffror och Poängs delar bär exempelkällan, aldrig registrets namn", async () => {
+      startInApp(lastBeat);
+      pathname = DEMO_PATHS.market;
+      const market = await renderInApp(<DemoMarketPage />);
+      for (const id of ["fdd-market-kpi", "fdd-market-dist", "fdd-market-layers"]) {
+        const section = (await screen.findByRole("heading", { name: (_, el) => el.id === id })).closest("section")!;
+        expect(section.textContent).not.toMatch(/Bolagsverket|SCB/);
+        expect([...section.querySelectorAll("button")].some((b) => b.textContent?.includes("Påhittad data, steg 03"))).toBe(true);
+      }
+      market.unmount();
+
+      pathname = DEMO_PATHS.score;
+      const score = await renderInApp(<DemoScorePage />);
+      const partTags = [...score.container.querySelectorAll(".fd-part__source")];
+      expect(partTags.length).toBeGreaterThan(0);
+      for (const tag of partTags) expect(tag.textContent).toMatch(/Påhittad data, poängunderlaget|Simulering/);
+      expect(score.container.textContent).not.toMatch(/Bolagsverket|SCB|Kundsamtal/);
+    });
+
+    it("Validering, Marknad, Bygg och Affärsplanen bär bara exempel- eller simuleringstaggar, aldrig kundernas eller registrets", async () => {
+      const pages = [
+        [DEMO_PATHS.validation, <DemoValidationPage key="v" />],
+        [DEMO_PATHS.market, <DemoMarketPage key="m" />],
+        [DEMO_PATHS.build, <DemoBuildPage key="b" />],
+        [DEMO_PATHS.businessPlan, <DemoBusinessPlanPage key="p" />],
+      ] as const;
+      for (const [path, page] of pages) {
+        startInApp(lastBeat);
+        pathname = path;
+        const { container, unmount } = await renderInApp(page);
+        await waitFor(() => expect(container.querySelector("main button[aria-label]")).not.toBeNull());
+        const tags = [...container.querySelectorAll("main button")].filter(
+          (b) => b.getAttribute("aria-label") === sv.common.sourceTag.openDetails,
+        );
+        expect(tags.length).toBeGreaterThan(0);
+        for (const tag of tags) {
+          expect(tag.textContent).toMatch(new RegExp(`^(${sv.common.exampleSourceLabel}|${sv.common.simulationLabel})`));
+        }
+        expect(container.querySelector("main")?.textContent).not.toMatch(/Sparks utskick|Kundsamtal|Bolagsverket|SCB/);
+        unmount();
+      }
+    });
+
+    it("Hems källtaggar är exempelkällor i varje moment, aldrig en myndighet eller en påhittad tid", async () => {
+      const step05After = saraEngine.beats.findIndex((beat) => beat.stepNumber === 5 && beat.momentKind === "after");
+      for (const beatIndex of [0, step05After, lastBeat]) {
+        startInApp(beatIndex);
+        pathname = DEMO_PATHS.home;
+        const { container, unmount } = await renderInApp(<DemoHomePage />);
+        const tags = [...container.querySelectorAll("main button")].filter(
+          (b) => b.getAttribute("aria-label") === sv.common.sourceTag.openDetails,
+        );
+        expect(tags.length).toBeGreaterThan(0);
+        for (const tag of tags) expect(tag.textContent).toMatch(new RegExp(`^${sv.common.exampleSourceLabel}·Påhittad data, `));
+        expect(container.querySelector("main")?.textContent).not.toMatch(/Bolagsverket|Skatteverket|Inget utskick ännu/);
+        expect(container.querySelector(".fdd-signal__meta .fdd-muted")).toBeNull();
+        unmount();
+      }
+    });
+
+    it("Hems Sedan sist pekar på steget där siffrorna kommer ifrån", async () => {
+      startInApp(saraEngine.beats.findIndex((beat) => beat.stepNumber === 5 && beat.momentKind === "after"));
+      pathname = DEMO_PATHS.home;
+      const { container } = await renderInApp(<DemoHomePage />);
+      const facts = container.querySelector(".fdd-facts")!;
+      // Mottagarna är lika många som kontaktlistan Validering och Marknad räknar ur.
+      expect(facts).toHaveTextContent(String(saraCompanies.length));
+      expect(saraCompanies.length).toBe(20);
+      for (const tag of facts.querySelectorAll("button")) expect(tag).toHaveTextContent("Påhittad data, steg 05");
+    });
+
+    it("Hems handlingskort bär en exempelkälla bara när texten har en siffra", async () => {
+      startInApp(0);
+      pathname = DEMO_PATHS.home;
+      const first = await renderInApp(<DemoHomePage />);
+      expect(first.container.querySelector(".fdd-next button[aria-label]")).toBeNull();
+      first.unmount();
+
+      const withFigure = saraEngine.beats.findIndex((beat) => /\d/.test(beat.nextStep.sv.why.replace(/steg \d+/gi, "")));
+      startInApp(withFigure);
+      const { container } = await renderInApp(<DemoHomePage />);
+      const step = String(saraEngine.beats[withFigure].stepNumber).padStart(2, "0");
+      expect(container.querySelector(".fdd-next button[aria-label]")).toHaveTextContent(
+        `${sv.common.exampleSourceLabel}·Påhittad data, steg ${step}`,
+      );
+    });
+
+    it("Hems handlingskort bär en exempelkälla när bara Redan klart har en siffra", async () => {
+      const last = saraEngine.beats[lastBeat];
+      expect(last.nextStep.sv.doneItems.join(" ")).toMatch(/\d/);
+      startInApp(lastBeat);
+      pathname = DEMO_PATHS.home;
+      const { container } = await renderInApp(<DemoHomePage />);
+      expect(container.querySelector(".fdd-next button[aria-label]")).toHaveTextContent(
+        `${sv.common.exampleSourceLabel}·Påhittad data, steg ${String(last.stepNumber).padStart(2, "0")}`,
+      );
     });
 
     it("Medgrundarens Sedan tidigare bär exempelkällan på rader med siffror", async () => {

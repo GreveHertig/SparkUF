@@ -7,6 +7,7 @@ import { formatCount, formatDate } from "@/i18n/format";
 import type { DataKind, Källa } from "@/core/domain";
 import { sizeClassFor } from "@/core/sizeClass";
 import { outreachStats } from "@/core/validation";
+import type { DataType } from "@/design/tokens";
 import type { CampaignRow, OutreachStatus, ResponseCard, ValidationAssumption } from "@/ports/OutreachProvider";
 import type { Simulation } from "@/ports/SimulationProvider";
 import { ExampleLabel, Figures, SimulationBlock, VerdictBlock, type Figure } from "./blocks/DataBlocks";
@@ -95,6 +96,9 @@ export function Validation({
 
   const stats = data.rows ? outreachStats(data.rows) : null;
   const source = data.outreachSource ?? undefined;
+  // Demots svar är påhittade: under "Exempel med påhittad data" får de
+  // exempeltaggen, aldrig kundernas (källan sätter demots route).
+  const answersType: DataType = dataKind === "example" ? "example" : "customer";
 
   const figures: Figure[] = [];
   if (stats) {
@@ -106,12 +110,12 @@ export function Validation({
           ? `${formatDate(data.dateRange.startIso, locale)} - ${formatDate(data.dateRange.endIso, locale)}`
           : undefined,
         source,
-        dataType: "customer",
+        dataType: answersType,
       },
-      { label: v.respondedLabel, value: stats.responded, source, dataType: "customer" },
+      { label: v.respondedLabel, value: stats.responded, source, dataType: answersType },
     );
     if (stats.responseRate !== null) {
-      figures.push({ label: v.responseRateLabel, value: stats.responseRate, unit: "%", source, dataType: "customer" });
+      figures.push({ label: v.responseRateLabel, value: stats.responseRate, unit: "%", source, dataType: answersType });
     }
     if (data.openRate !== null && data.openRateSource) {
       figures.push({
@@ -119,7 +123,7 @@ export function Validation({
         value: data.openRate,
         unit: "%",
         source: data.openRateSource,
-        dataType: "customer",
+        dataType: answersType,
       });
     }
   }
@@ -173,7 +177,7 @@ export function Validation({
                   <div className="fdd-rows__main">
                     <p className="fdd-rows__title">{assumption.text}</p>
                     <p className="fdd-muted">{assumption.basis}</p>
-                    <SourceTag source={assumption.source} dataType="customer" />
+                    <SourceTag source={assumption.source} dataType={answersType} />
                   </div>
                   <Pill tone={assumption.verdict === "confirmed" ? "green" : "orange"}>
                     {v.assumptionVerdict[assumption.verdict]}

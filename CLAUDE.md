@@ -37,9 +37,10 @@ Repot hade redan ett Next.js-projekt. Läs `AGENTS.md`, bygg i den befintliga st
     2. Varje del visas med sin egen källa, antingen på samma sida eller på en sida som siffran länkar till.
     3. Den säger inget utöver delarna.
 
-    I dag gäller undantaget två siffror:
+    I dag gäller undantaget tre siffror:
     - poängen i skalets sidhuvud (`screens/AppShell.tsx`, "Poäng 24"), som räknas av `calculateScore` och länkar till Poäng-sidan
     - affärsplanens färdighetsgrad (`screens/BusinessPlan.tsx`, till exempel "2/9"), som `buildBusinessPlan` räknar ur de nio avsnitten på samma sida
+    - poängkortet på Hem (`screens/AppHome.tsx`, "43 av 100" med poängrörelsen), samma siffra som sidhuvudets, räknad av `calculateScore` och länkad till Poäng-sidan
 
     En hämtad siffra omfattas aldrig, även om den ser ut som en sammanfattning: medianer, andelar, antal bolag och underlag kommer ur datan och bär alltid sin egen källa där de visas. En ny siffra under undantaget läggs till i listan ovan.
 - **Ingen hårdkodad text.** Allt ligger i i18n-filerna (sv/en).
