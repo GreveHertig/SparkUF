@@ -262,3 +262,17 @@ kraven …" blev "Fler byråer efterfrågar digital arkivering …" (kategorin
 "Reglering" blev "Bransch"), och "Registret bekräftar …" blev "Fler tecken
 pekar på samma segment …". Demoadaptern bär inga myndighetsnamn längre, inte
 ens i `source`: källan sätts av adaptern som exempelkälla.
+
+**Källverifiering juridik, del 2.** Oskar Jaeger läste själv
+myndighetssidorna i webbläsaren 2026-10-01: Skatteverket (F-skatt, moms,
+arbetsgivare), IMY (rättslig grund, register över behandling), EUR-Lex
+(GDPR-förordningen) och Konsumentverket (marknadsföringslagen, ångerrätt).
+Adresserna finns i verifieringsloggen i `docs/moduler/juridisk-koll.md`.
+Fyra texter rättades (F-skatt, moms, GDPR-registret och ångerrätt).
+`gdpr_personuppgifter` delas i `gdpr_rattslig_grund` och `gdpr_register`
+med var sin IMY-sida. Moms delas inte: sidan som används säger både
+huvudregeln och undantaget. Gränsen 120 000 kr för moms står i texten
+till Gemini, eftersom den har källa och datum, på samma sätt som 25 000 kr
+för aktiekapital. EUR-Lex pekar på den svenska versionen. Riksdagen är inte
+kontrollerad och inget ämne använder den. Om den ska finnas kvar väntar på
+Theos beslut. Ingenting är juristgranskat.
