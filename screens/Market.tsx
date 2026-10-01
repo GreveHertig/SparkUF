@@ -98,11 +98,12 @@ export function Market({
 }) {
   const { t, locale } = useI18n();
   const m = t.marketPage;
+  const subtitle = dataKind === "example" ? m.subtitleExample : m.subtitle;
 
   if (locked) {
     return (
       <div className="fdd-page">
-        <PageHead title={m.title} lede={m.subtitle} />
+        <PageHead title={m.title} lede={subtitle} />
         <Locked
           hint={
             locked === "notInScenario"
@@ -140,13 +141,13 @@ export function Market({
 
   return (
     <div className="fdd-page">
-      <PageHead title={title} lede={m.subtitle} />
+      <PageHead title={title} lede={subtitle} />
 
       {sniPicker && data.registry !== "closed" && <SniForm picker={sniPicker} m={m} />}
 
       <section className="fdd-block" aria-labelledby="fdd-market-kpi">
         <h2 id="fdd-market-kpi" className="fdd-block__title">
-          {m.kpiTitle}
+          {dataKind === "example" ? m.kpiTitleExample : m.kpiTitle}
         </h2>
         {overview && registry ? (
           <>

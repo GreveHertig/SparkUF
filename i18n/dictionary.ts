@@ -287,6 +287,10 @@ export type Dictionary = {
     title: string;
     subtitle: string;
     kpiTitle: string;
+    /** Demot (exempeldata): sidans underrubrik och nyckeltalens rubrik utan
+     * att påstå att de påhittade siffrorna kommer ur registret. */
+    subtitleExample: string;
+    kpiTitleExample: string;
     competitorsTitle: string;
     simulationTitle: string;
     companyCountLabel: string;

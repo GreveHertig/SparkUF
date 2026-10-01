@@ -75,16 +75,16 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
   "02-mojligheter-fore": [
     msg(
       "cofounder",
-      "Dags att hitta en idé. Jag korsar din profil mot registret.",
-      "Time to find an idea. I'll cross your profile against the registry.",
+      "Dags att hitta en idé. Jag korsar din profil mot luckor på marknaden.",
+      "Time to find an idea. I'll cross your profile against gaps in the market.",
     ),
   ],
   "02-mojligheter-korning": [
     tool(
-      "Söker i Bolagsverkets register",
-      "Searching the Bolagsverket registry",
-      ["Läser profilen", "Korsar mot registret", "Rankar tre idéer"],
-      ["Reading the profile", "Cross-referencing the registry", "Ranking three ideas"],
+      "Söker efter luckor på marknaden",
+      "Searching for gaps in the market",
+      ["Läser profilen", "Korsar mot marknaden", "Rankar tre idéer"],
+      ["Reading the profile", "Cross-referencing the market", "Ranking three ideas"],
     ),
     msg(
       "cofounder",
@@ -94,21 +94,21 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
     msg("founder", "Det är precis det jag själv är trött på varje månadsskifte.", "That's exactly what I'm tired of every month-end."),
   ],
   "02-mojligheter-efter": [
-    msg("cofounder", "Då kallar vi den Kvittojakten. Nästa: se vad registret säger om marknaden.", "Then we'll call it Kvittojakten. Next: see what the registry says about the market."),
+    msg("cofounder", "Då kallar vi den Kvittojakten. Nästa: se hur marknaden ser ut.", "Then we'll call it Kvittojakten. Next: see what the market looks like."),
   ],
 
   // --- Steg 03 · Marknaden -----------------------------------------------
   "03-marknaden-fore": [
     msg(
       "cofounder",
-      "Dags att hämta de första riktiga siffrorna ur registret.",
-      "Time to pull the first real numbers from the registry.",
+      "Dags att hämta de första siffrorna om marknaden.",
+      "Time to pull the first numbers about the market.",
     ),
   ],
   "03-marknaden-korning": [
     tool(
-      "Hämtar från Bolagsverket och SCB",
-      "Fetching from Bolagsverket and Statistics Sweden",
+      "Hämtar marknadsbilden",
+      "Fetching the market picture",
       ["Räknar byråer med SNI 69.201", "Hämtar omsättning och tillväxt", "Kartlägger konkurrenter"],
       ["Counting firms with SNI 69.201", "Fetching revenue and growth", "Mapping competitors"],
     ),

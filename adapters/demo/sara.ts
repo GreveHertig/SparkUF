@@ -225,7 +225,7 @@ const step01NextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 01 · OM DIG",
     title: "Svara på profilfrågorna",
-    why: "Spark behöver veta vem du är — bakgrund, kompetens, nätverk, tid, pengar och riskaptit — innan den kan visa några siffror ur registret.",
+    why: "Spark behöver veta vem du är — bakgrund, kompetens, nätverk, tid, pengar och riskaptit — innan den kan visa några siffror om marknaden.",
     maxPoints: 10,
     estimatedTime: "~10 min",
     doneItems: [],
@@ -234,7 +234,7 @@ const step01NextStep: Record<Locale, NextStep> = {
   en: {
     eyebrow: "STEP 01 · ABOUT YOU",
     title: "Answer the profile questions",
-    why: "Spark needs to know who you are — background, skills, network, time, money and risk appetite — before it can show any numbers from the registry.",
+    why: "Spark needs to know who you are — background, skills, network, time, money and risk appetite — before it can show any numbers about the market.",
     maxPoints: 10,
     estimatedTime: "~10 min",
     doneItems: [],
@@ -292,7 +292,7 @@ const step02NextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 02 · MÖJLIGHETER",
     title: "Välj en idé ur tre förslag",
-    why: "Spark föreslår tre idéer grundade i din profil, korsade med luckor i registret.",
+    why: "Spark föreslår tre idéer grundade i din profil och i luckor på marknaden.",
     maxPoints: 12,
     estimatedTime: "~10 min",
     doneItems: ["Profilsamtalet klart"],
@@ -301,7 +301,7 @@ const step02NextStep: Record<Locale, NextStep> = {
   en: {
     eyebrow: "STEP 02 · OPPORTUNITIES",
     title: "Choose one idea from three suggestions",
-    why: "Spark suggests three ideas grounded in your profile, crossed with gaps in the registry.",
+    why: "Spark suggests three ideas grounded in your profile and in gaps in the market.",
     maxPoints: 12,
     estimatedTime: "~10 min",
     doneItems: ["Profile chat done"],
@@ -336,14 +336,14 @@ const [step02Fore, step02Korning, step02Efter] = makeStepBeats({
   deltaReasonAfter: { sv: "efter idéval", en: "after choosing the idea" },
   highlightsAfter: {
     sv: [
-      "Tre idéer föreslagna ur profilen och registret.",
+      "Tre idéer föreslagna ur profilen och luckor på marknaden.",
       "Vald idé: Kvittojakten — automatisk insamling av underlag från byråernas småföretagskunder.",
-      "Preliminär registerträff: redovisningsbyråer, SNI 69.201.",
+      "Preliminär bransch: redovisningsbyråer, SNI 69.201.",
     ],
     en: [
-      "Three ideas suggested from the profile and the registry.",
+      "Three ideas suggested from the profile and gaps in the market.",
       "Chosen idea: Kvittojakten — automatic collection of receipts from accounting firms' small-business clients.",
-      "Preliminary registry match: accounting firms, SNI 69.201.",
+      "Preliminary industry: accounting firms, SNI 69.201.",
     ],
   },
   traceSummaryAfter: {
@@ -358,8 +358,8 @@ const [step02Fore, step02Korning, step02Efter] = makeStepBeats({
 const step03NextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 03 · MARKNADEN",
-    title: "Se de första siffrorna ur registret",
-    why: "Riktiga siffror ur registret: antal företag, storleksfördelning, medianomsättning, tillväxt och geografi.",
+    title: "Se de första siffrorna om marknaden",
+    why: "Marknadsbilden för branschen: antal företag, storleksfördelning, omsättning, tillväxt och geografi.",
     maxPoints: 12,
     estimatedTime: "~5 min",
     doneItems: ["Profilsamtalet klart", "Idé vald"],
@@ -367,8 +367,8 @@ const step03NextStep: Record<Locale, NextStep> = {
   },
   en: {
     eyebrow: "STEP 03 · THE MARKET",
-    title: "See the first numbers from the registry",
-    why: "Real numbers from the registry: number of companies, size distribution, median revenue, growth and geography.",
+    title: "See the first numbers about the market",
+    why: "The market picture for the industry: number of companies, size distribution, revenue, growth and geography.",
     maxPoints: 12,
     estimatedTime: "~5 min",
     doneItems: ["Profile chat done", "Idea chosen"],
@@ -414,7 +414,7 @@ const [step03Fore, step03Korning, step03Efter] = makeStepBeats({
       competition: [pt(3, källa("Bolagsverket", "2026-01-09")), pt(2, källa("Bolagsverket", "2026-01-09"))],
     },
   ),
-  deltaReasonAfter: { sv: "efter registerdata", en: "after registry data" },
+  deltaReasonAfter: { sv: "efter marknadsbilden", en: "after the market picture" },
   highlightsAfter: {
     sv: [
       "312 redovisningsbyråer med 5–19 anställda (SNI 69.201).",
@@ -445,7 +445,7 @@ const step04NextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 04 · KUNDEN",
     title: "Se kundprofilen och listan på namngivna företag",
-    why: "Kundprofil ur registret: SNI 69.201, 5–19 anställda, 3–15 Mkr i omsättning. Resultatet är en lista på namngivna företag.",
+    why: "Kundprofil: SNI 69.201, 5–19 anställda, 3–15 Mkr i omsättning. Resultatet är en lista på namngivna företag.",
     maxPoints: 8,
     estimatedTime: "~5 min",
     doneItems: ["Profilsamtalet klart", "Idé vald", "Marknadsbilden klar"],
@@ -454,7 +454,7 @@ const step04NextStep: Record<Locale, NextStep> = {
   en: {
     eyebrow: "STEP 04 · THE CUSTOMER",
     title: "See the customer profile and the list of named companies",
-    why: "Customer profile from the registry: SNI 69.201, 5–19 employees, SEK 3–15M revenue. The result is a list of named companies.",
+    why: "Customer profile: SNI 69.201, 5–19 employees, SEK 3–15M revenue. The result is a list of named companies.",
     maxPoints: 8,
     estimatedTime: "~5 min",
     doneItems: ["Profile chat done", "Idea chosen", "Market picture done"],
@@ -1796,8 +1796,8 @@ export const SARA_STEPS: readonly StepMeta[] = [
     journeyPhase: "discover",
     title: { sv: "Möjligheter", en: "Opportunities" },
     oneLiner: {
-      sv: "Idéer grundade i profilen, korsade med luckor i registret.",
-      en: "Ideas grounded in the profile, crossed with gaps in the registry.",
+      sv: "Idéer grundade i profilen och i luckor på marknaden.",
+      en: "Ideas grounded in the profile and in gaps in the market.",
     },
     maxPoints: 12,
   },
@@ -1806,8 +1806,8 @@ export const SARA_STEPS: readonly StepMeta[] = [
     journeyPhase: "tryPhase",
     title: { sv: "Marknaden", en: "The market" },
     oneLiner: {
-      sv: "Riktiga siffror ur registret: antal företag, storlek, omsättning, tillväxt och geografi.",
-      en: "Real numbers from the registry: number of firms, size, revenue, growth and geography.",
+      sv: "Marknadsbilden för branschen: antal företag, storlek, omsättning, tillväxt och geografi.",
+      en: "The market picture for the industry: number of firms, size, revenue, growth and geography.",
     },
     maxPoints: 12,
   },
@@ -1815,7 +1815,7 @@ export const SARA_STEPS: readonly StepMeta[] = [
     stepNumber: 4,
     journeyPhase: "tryPhase",
     title: { sv: "Kunden", en: "The customer" },
-    oneLiner: { sv: "Kundprofil ur registret. Resultatet är en lista på namngivna företag.", en: "Customer profile from the registry. The result is a list of named companies." },
+    oneLiner: { sv: "Kundprofilen blir en lista på namngivna företag.", en: "The customer profile becomes a list of named companies." },
     maxPoints: 8,
   },
   {
@@ -1906,7 +1906,7 @@ export const saraSuggestionCandidates: Record<Locale, ScoreSuggestionInput[]> = 
       gapType: "insufficient",
       pointsGain: 3,
       estimatedMinutes: 15,
-      explanation: "Bara delar av registret är hämtat — hämta hela marknadsbilden för fler poäng.",
+      explanation: "Bara delar av marknadsbilden är hämtad — hämta hela för fler poäng.",
       actionLabel: "Se marknadsbilden",
     },
     {
@@ -1980,7 +1980,7 @@ export const saraSuggestionCandidates: Record<Locale, ScoreSuggestionInput[]> = 
       gapType: "insufficient",
       pointsGain: 3,
       estimatedMinutes: 15,
-      explanation: "Only part of the registry is fetched — pull the full market picture for more points.",
+      explanation: "Only part of the market picture is fetched — pull all of it for more points.",
       actionLabel: "See the market picture",
     },
     {
