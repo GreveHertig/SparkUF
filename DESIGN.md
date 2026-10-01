@@ -13,14 +13,17 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
    riktiga appen (`/app`) ska se likadana ut. Skillnaden är bara datan:
    appen visar riktig data via `adapters/live`, demot exempeldata via
    `adapters/demo`.
-2. **`components/spark` fasas ut.** Inga nya komponenter där. Skärmarna i
-   `screens/` flyttas en i taget till demots stil (PR 2–10 i planen). Det
-   som finns kvar används bara av det nuvarande skalet och Hem i `/app`
-   (tills PR 2–3) och av `/priser` (`PublicHeader`/`PublicFooter`).
-3. **`components/ui` får vara kvar till PR 11.** Komponenter där som
-   fortfarande används (`SourceTag`, `ConceptBadge`, `Logo`,
-   `LanguageSwitch`, `ComingSoon`, `TextField` med flera) används som de
-   är. I PR 11 flyttas de som behövs in i demots stil, och resten tas bort.
+2. **`components/spark` fasas ut.** Inga nya komponenter där. Alla skärmar
+   i `screens/` utom `Pulse` har demots stil (PR 2–11). PR 11 tog bort det
+   som inte längre importerades. Kvar finns `SignOutButton` (skalet),
+   `PublicHeader`/`PublicFooter` (`/priser`), `PulseCard` (`screens/Pulse.tsx`,
+   Brunos) och `NextStepCard`, `ScoreBadge`, `VerdictCard`, som bara
+   `/designsystem` visar.
+3. **`components/ui` används som den är.** `SourceTag`, `ConceptBadge`,
+   `ComingSoon`, `Logo`, `LanguageSwitch`, `TextField`, `Eyebrow` och
+   `EditorialHeading` används av skärmarna, inloggningen och `/priser`.
+   `DataFact`, `DemoDataBadge` och `LockedState` används bara av
+   `/designsystem`. `BarChart`, `Card` och `Sparkline` togs bort i PR 11.
 4. **Vyer utan liveadapter visar "Kommer snart"** (`ComingSoon`) och syns i
    menyn, så att appen och demot har samma meny och samma vyer.
 
@@ -32,8 +35,8 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
   - `.fdd` är arbetsytan (demot, och appen när skärmarna flyttat): skalet
     med flikraden, block, nyckeltal, låsta lägen, simuleringar, samtalet,
     onboardingen, en del per vy, demoraden och rundturen.
-  - Klassprefixen `fd-`/`fdd-` behålls tills vidare. Ett byte beslutas
-    senast i PR 11.
+  - Klassprefixen `fd-`/`fdd-` behålls (PR 11). Ett byte hade rört hundratals
+    klasser utan synlig skillnad. Fonda-namnen i koden är borta.
 - **`design/tokens.css`**: färger, radier, skuggor och avstånd
   (`--space-*`). Inga hårdkodade värden i `site.css` där en token finns.
 - **Typsnitt**: Castoro (`--font-sans`) för brödtext och rubriker,
@@ -54,7 +57,85 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
   (`dataKind: "example" | "live"`, typen `DataKind` i `core/domain.ts`).
   Bara demot sätter `"example"`; med `"live"` visas ingen etikett.
 - **Licensgrinden**: vyer som läser Registret visar ett låst läge när
-  grinden är stängd, aldrig demodata.
+  grinden är stängd, aldrig demodata. På Marknad (PR 8) står "Registret är
+  inte öppet än" (`Locked`) i varje registersektion (nyckeltalen,
+  fördelningen, konkurrenterna); utskicket, datalagret och simuleringen
+  visar sina egna lägen. Branschväljaren visas inte när grinden är stängd.
+- **Delade byggstenar mellan skärmar** ligger i `screens/blocks/` (PR 4:
+  `ScoreFigure`, `ScoreDelta`, `levelTone`, `formatDelta`; PR 5:
+  `PageHead`, `Locked`, `Pill` i `PageBlocks.tsx`; PR 7: `ExampleLabel`,
+  `Figures`, `SimulationBlock`, `VerdictBlock` i `DataBlocks.tsx`; PR 9:
+  `JourneyStepper`, stegraden som Hem och Resan delar, med `basePath:
+  string | null` så att en Server Component kan skicka den; PR 10:
+  `ChatLine`, `ToolRun`, `TimeSkipLine` i `ChatBlocks.tsx`, som Medgrundaren
+  och onboardingen delar). Marknads
+  räkning (fördelning, vanligaste klass, spann) ligger i `core/market.ts` och
+  räkenskapsåren i `core/fiscalYear.ts` (PR 8). Samma portregel
+  som skärmarna. Demots `app/demo/_components/DemoBlocks.tsx` importerar
+  därifrån i stället för att ha egna kopior.
+- **Overifierade källor på Juridik** (PR 5): varje krav visar sin källa och
+  sitt datum (`SourceTag`) och bredvid den en streckad märkning,
+  "Overifierad" (`.fdd-unverified`, samma streckade uttryck som
+  exempeletiketten: en reservation, inte en status). Kartans rubrikrad säger
+  att inget är granskat av en jurist. Ingen källa visas som verifierad förrän
+  en adapter skickar en verifieringsstatus som data. Saknas källnamn eller
+  datum visas luckan ("Källa saknas").
+- **Anställda som storleksklass** (PR 7): skärmarna visar SCB:s klass
+  (`core/sizeClass.ts`, "5–9"), aldrig det exakta antalet, i både `/demo`
+  och `/app`.
+- **Omsättning bär sitt räkenskapsår** (PR 8): "4 200 tkr (räkenskapsår
+  2024)" per bolag, och spannet för en median som bygger på flera bolag,
+  "4,2 Mkr (räkenskapsår 2023–2024)". Saknas året i datan visas luckan: "—"
+  i nyckeltalet med texten "Räkenskapsåret saknas i underlaget, så siffran
+  visas inte.", "–" i tabellen med samma text för skärmläsare. Samma lucka
+  när portens underlag är 0 bolag ("Underlaget saknas"). Aldrig en nolla.
+- **Val av bransch i `/app/marknad`** (PR 8): ett vanligt GET-formulär
+  (`?sni=69.201`, `.fdd-sni`, `.fdd-input` i Hjärnans textfältsstil) i
+  stället för länkar, eftersom SNI-koderna är för många. Demot har inget val.
+- **Val av bolagsform i `/app/juridik`** (PR 5): länkar (`?bolagsform=…`) i
+  samma segmenterade kontroll som Minnets flikar (`.fdd-segmented--wrap`,
+  radbryter på smala skärmar). Demot har inget val.
+- **Bara egen källa** (PR 10 och 11): ett påstående lånar aldrig en
+  poängdels eller registrets källa. Andelar bär "%", och urvalet anger varje
+  andels underlag av helheten ("tillväxt: 171 av 312, region: 308 av 312").
+- **Exempelkällor, bara i demot** (PR 11, beslut av grundaren): påhittad
+  data som saknar källa i sin port (stegens höjdpunkter, förslagens
+  förklaringar, antaganden, konkurrenternas beskrivningar, Byggs credits,
+  siffrorna i Medgrundarens samtal) får en egen exempelkälla,
+  `adapters/demo/exampleSource.ts`: "Påhittad data, steg 04" med scenariots
+  datum. Den visas med datatypen `"example"`: `SourceTag` sätter den synliga
+  etiketten "Exempel ·" först, som "Simulering ·", med fiktionsmärkets
+  streckade kant på vit botten (`.fd-pill--fiction`). Den har aldrig
+  registrets gråa färg och aldrig ett myndighetsnamn. I `/app` och `/start`
+  finns inga exempel: saknas verkligt underlag visas luckan
+  (`app/(app)/app/noExampleSources.test.ts`).
+- **Källtyperna, hela uppsättningen** (2026-10-01, beslut av grundaren):
+  `register` (grå, ingen etikett), `media` (blå, "Media"), `customer`
+  (petrol), `user` (bär, "Din uppgift"), `simulation` (lila, "Simulering")
+  och `example` (streckad, "Exempel"). Bara registret är grått. Tonerna
+  ligger i `design/tokens.css` (`--data-media*`, `--data-user*`) och
+  `design/tokens.ts`. Tabellen och motivet står i `docs/beslut.md`.
+- **Luckan i affärsplanen**: ett steg som inte är klart ger det låsta läget
+  "Underlag saknas — kommer från steg N". Ett klart steg som ändå inte gav
+  något påstående med källa ger en dämpad rad, "Steg N är klart, men gav
+  inget underlag med källa till det här avsnittet." (PR 11).
+- **Färdighetsgraden** (PR 10, "8/9") bär ingen källmärkning. Den räknas av
+  `buildBusinessPlan` ur de nio avsnitten på samma sida (undantaget i
+  `CLAUDE.md`). Utan plan visas luckan "—".
+- **Tre lägen för en sektion i `/app`** (tydligast i Bygg, PR 10): en
+  stubbe ger "Kommer snart" (`ComingSoon`), portens eget "inget än" ger ett
+  tomläge med egen text ("Ingen spec än."), och Resans steg ger det låsta
+  läget (`Locked`). De blandas aldrig ihop.
+- **Flikarna i `/app`** (PR 11) länkar till sina sidor. En flik vars sida
+  saknas i läget visas inaktiv (`unavailableTabs`, `.fdd-tab--disabled`), i
+  dag bara Pulsen.
+- **Onboardingen** (PR 11): `/start` har samma topprad som `/demo/start`
+  (`DemoTopBar` med `dataKind="live"` och utloggning), utan flikrad.
+- **Poängen i sidhuvudet** (PR 4): en liten textsiffra, "Poäng 24", i
+  toppradens typsnitt och storlek (`.fdd-top__score`), länkad till Poäng
+  och synlig på alla bredder. Ingen ring och ingen nivåfärg i sidhuvudet;
+  den stora siffran med nivån finns på Hem och Poäng. Saknas poängen
+  visas "—" med skärmläsartexten "Poängen saknas än", aldrig en nolla.
 
 ## Historik
 

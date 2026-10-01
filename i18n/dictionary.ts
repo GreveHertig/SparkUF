@@ -14,6 +14,10 @@ export type Dictionary = {
     };
     conceptBadge: string;
     demoDataBadge: string;
+    /** "räkenskapsår": en omsättning visas alltid med året, eller spannet av år, den avser (PR 8). */
+    fiscalYearLabel: string;
+    /** Luckan där en omsättning saknar räkenskapsår i datan: siffran visas inte. */
+    fiscalYearMissing: string;
     sourceTag: {
       openDetails: string;
       quoteLabel: string;
@@ -23,6 +27,15 @@ export type Dictionary = {
     doneItemsLabel: string;
     /** Uppdrag 2.2: simuleringar ska alltid bära den här etiketten, oavsett källa. */
     simulationLabel: string;
+    /** Synlig etikett först i en källtagg för påhittad exempeldata i demot
+     * (datatypen "example", PR 11). Samma princip som "Simulering": aldrig
+     * bara en färgskillnad. */
+    exampleSourceLabel: string;
+    /** Etikett först i en källtagg för en nyhets- eller mediekälla (datatypen
+     * "media"), så att den aldrig kan tas för en registerkälla. */
+    mediaSourceLabel: string;
+    /** Etikett först i en källtagg för användarens egen uppgift ("user"). */
+    userSourceLabel: string;
     /** SimulationCard (uppdrag 2.2, 8): populationens storlek ska alltid synas. */
     simulationPopulationLabel: string;
     upToPointsBefore: string;
@@ -128,16 +141,15 @@ export type Dictionary = {
       build: string;
       businessPlan: string;
     };
-    profileMenuLabel: string;
     /** `aria-label` på flikraden i /app (PR 2, skalet) — `site.demo.navLabel`
      * ("Demomeny") används bara när `dataKind` är `"example"`. */
     navMenuLabel: string;
-    /** Undertext under ordmärket i sidomenyn (artefaktens `.brand small`). */
-    tagline: string;
-    /** Sidomenyns sidfot (artefaktens `.side-foot .restart`) — bara i demot,
-     * se `components/spark/SidebarRestart.tsx`. Skild från `demoBar.reset`/
-     * `resetConfirm`, som är kortare ord för samma knapp i demoraden. */
-    restartDemo: string;
+    /** Poängen i sidhuvudet (docs/uppdrag.md avsnitt 6, "Appen": sidhuvudet
+     * visar poängen alltid) — etiketten före siffran, t.ex. "Poäng 24". */
+    headerScoreLabel: string;
+    /** Skärmläsartext när poängen inte gick att hämta. Luckan visas som "—",
+     * aldrig som en nolla eller ett påhittat värde. */
+    headerScoreMissing: string;
   };
   homePage: {
     /** Pillen ovanpå handlingskortet (artefaktens `actHTML`: "Gör det här nu"). */
@@ -162,6 +174,10 @@ export type Dictionary = {
     heroHeadingBefore: string;
     heroHeadingEmphasis: string;
     heroHeadingAfter: string;
+    /** Ärligt tomt läge för Pulsen på Hem i /app (PR 3, skalet) — samma plats
+     * som demots `site.demo.noPulse`, men utan "scenario"-ramningen (som är
+     * genuint demospecifik text, inte bara stil). */
+    noPulseSignal: string;
   };
   comingSoon: {
     eyebrow: string;
@@ -212,7 +228,6 @@ export type Dictionary = {
       grow: string;
     };
     stepLabel: string;
-    openStep: string;
     backToJourney: string;
     whatHappened: string;
     whatsNext: string;
@@ -263,11 +278,19 @@ export type Dictionary = {
     /** Tidsuppskattningens enhet i förslagskortens fot (artefaktens `pill(s.tid)`),
      * t.ex. "min" i "~15 min". */
     estimatedMinutesUnit: string;
+    /** Tomläget i historikkortet: ingen poäng sparad än (aldrig en påhittad punkt). */
+    noHistory: string;
+    /** Tomläget under "Höj din poäng": inga förslag skrivna än. */
+    noSuggestions: string;
   };
   marketPage: {
     title: string;
     subtitle: string;
     kpiTitle: string;
+    /** Demot (exempeldata): sidans underrubrik och nyckeltalens rubrik utan
+     * att påstå att de påhittade siffrorna kommer ur registret. */
+    subtitleExample: string;
+    kpiTitleExample: string;
     competitorsTitle: string;
     simulationTitle: string;
     companyCountLabel: string;
@@ -280,6 +303,21 @@ export type Dictionary = {
     basedOnLabel: string;
     ofLabel: string;
     companiesUnit: string;
+    /** /app: antalet utan Saras bransch ("Byråer", "SNI 69.201" gäller bara demot). */
+    companyCountLabelLive: string;
+    companyCountDescriptionLive: string;
+    /** Luckan när underlaget är 0 bolag (porten: siffran är okänd och får inte visas). */
+    basisMissing: string;
+    /** Licensgrinden stängd (RegistryLockedError): inga registersiffror. */
+    registryClosed: string;
+    /** Registret svarade med ett fel. Feltexten visas aldrig. */
+    registryLoadFailed: string;
+    /** Branschväljaren i /app (`?sni=`), samma öppna uppgift som bolagsformen i Juridik. */
+    sniPickerLabel: string;
+    sniPickerSubmit: string;
+    sniPrompt: string;
+    sniInvalid: string;
+    sniChooseFirst: string;
     dataLayers: {
       title: string;
       registerName: string;
@@ -351,6 +389,8 @@ export type Dictionary = {
     verdictTitle: string;
     /** Simulering av betalningstolerans per byråstorlek (uppdrag 2.2, steg 04). */
     simulationTitle: string;
+    /** Rubriken i /app, utan demots byråer. */
+    simulationTitleLive: string;
   };
   pulsePage: {
     title: string;
@@ -372,6 +412,9 @@ export type Dictionary = {
     profileBackgroundLabel: string;
     profileResourcesLabel: string;
     brainHint: string;
+    /** Ledtråden i /app, där anteckningarna är användarens egna (inte Saras). */
+    brainHintLive: string;
+    brainSaveFailed: string;
     traceEmpty: string;
   };
   legalPage: {
@@ -383,6 +426,14 @@ export type Dictionary = {
       ej_uppfyllt: string;
       ej_tillämpligt: string;
     };
+    /** Märkningen bredvid varje källa: ingen källa visas som verifierad. */
+    unverifiedSource: string;
+    notReviewedNote: string;
+    sourceMissing: string;
+    empty: string;
+    bolagsformPickerLabel: string;
+    bolagsformPrompt: string;
+    loadFailed: string;
   };
   buildPage: {
     title: string;
@@ -399,6 +450,8 @@ export type Dictionary = {
     publishedUrlLabel: string;
     /** Avsnitt 2.3: "Visa att bygget kostar credits." */
     creditsUsedLabel: string;
+    /** /app: porten svarar att ingen spec finns än — skiljt från en stubbe ("Kommer snart"). */
+    specEmpty: string;
   };
   /** Demoraden (avsnitt 9.1) — fast rad nederst i /demo/app och /demo/start. */
   demoBar: {
@@ -409,7 +462,6 @@ export type Dictionary = {
     personaBLabel: string;
     stepLabel: string;
     stepOf: string;
-    phaseLabel: string;
     phases: {
       discover: string;
       tryBeforeCalls: string;
@@ -443,21 +495,18 @@ export type Dictionary = {
    * idégenomlysningen. Delade skärmar, monterade under /demo/start och /start. */
   onboarding: {
     entry: {
-      eyebrow: string;
       title: string;
       subtitle: string;
       noIdea: { title: string; body: string; cta: string };
       hasIdea: { title: string; body: string; cta: string };
     };
     profile: {
-      eyebrow: string;
       title: string;
       subtitle: string;
       buildingTitle: string;
       continueCta: string;
     };
     idea: {
-      eyebrow: string;
       title: string;
       founderIntroLabel: string;
       assumptionsTitle: string;
@@ -760,6 +809,13 @@ export type Dictionary = {
     maturityLabel: string;
     status: { solid: string; thin: string; missing: string };
     requiresStepTemplate: string;
+    /** Luckan när steget redan är klart men inte gav något påstående med
+     * källa (PR 11). "Kommer från steg N" vore fel då. */
+    stepDoneNoEvidenceTemplate: string;
+    /** En andel i planen, t.ex. "18 %". */
+    percentValueTemplate: string;
+    /** Urvalet bakom andelarna: varje andel med sitt eget underlag av helheten. */
+    coverageValueTemplate: string;
     contradictionLabel: string;
     lockedPartsTitle: string;
     sections: Record<
@@ -865,6 +921,10 @@ export type Dictionary = {
       badge: string;
       /** Synlig etikett på block med påhittade företag och siffror (Datalöftet). */
       exampleLabel: string;
+      /** Namnet på en exempelkälla i demot (PR 11): påhittad data, och var i
+       * scenariot den kommer ifrån. Visas med datatypen "example". */
+      exampleSourceTemplate: string;
+      exampleOrigins: { step: string; ideaScreening: string; suggestions: string; score: string };
       navLabel: string;
       backToLanding: string;
       stepOf: string;

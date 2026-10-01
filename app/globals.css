@@ -45,6 +45,10 @@
   --color-data-simulation-bg: var(--data-simulation-bg);
   --color-data-customer: var(--data-customer);
   --color-data-customer-bg: var(--data-customer-bg);
+  --color-data-media: var(--data-media);
+  --color-data-media-bg: var(--data-media-bg);
+  --color-data-user: var(--data-user);
+  --color-data-user-bg: var(--data-user-bg);
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
   --color-warn: var(--warn);

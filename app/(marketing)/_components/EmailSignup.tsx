@@ -10,7 +10,7 @@ import { suggestEmailFix } from "../_lib/emailTypos";
 import { fill } from "@/i18n/fill";
 import { HONEYPOT_FIELD } from "../_lib/waitlist";
 
-export const FONDA_PRIVACY_HREF = "/integritet";
+export const PRIVACY_HREF = "/integritet";
 
 type MessageKey = keyof Pick<
   Dictionary["site"]["close"],
@@ -138,7 +138,7 @@ export function EmailSignup() {
       </p>
       <p id={privacyId} className="fd-form__help">
         {copy.privacyNote}{" "}
-        <Link href={FONDA_PRIVACY_HREF} className="fd-form__link">
+        <Link href={PRIVACY_HREF} className="fd-form__link">
           {copy.privacyLink}
         </Link>
       </p>

@@ -1,0 +1,135 @@
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import "@testing-library/jest-dom/vitest";
+import { LocaleProvider } from "@/i18n/context";
+import { sv } from "@/i18n/sv";
+import { NotImplementedError, EmptyStateError } from "@/core/errors";
+import type { JourneyStepView } from "@/ports/JourneyRepository";
+import type { PulseSignal, ScoreSnapshot } from "@/core/domain";
+
+vi.mock("next/navigation", () => ({ usePathname: () => "/app" }));
+
+const getScoreSnapshotMock = vi.hoisted(() => vi.fn());
+vi.mock("@/adapters/live/EvidenceRepository", () => ({
+  liveEvidenceRepository: { getScoreSnapshot: getScoreSnapshotMock },
+}));
+
+const getHomeSummaryMock = vi.hoisted(() => vi.fn());
+const getStepsMock = vi.hoisted(() => vi.fn());
+vi.mock("@/adapters/live/JourneyRepository", () => ({
+  liveJourneyRepository: { getHomeSummary: getHomeSummaryMock, getSteps: getStepsMock },
+}));
+
+const getSignalsMock = vi.hoisted(() => vi.fn());
+vi.mock("@/adapters/live/PulseProvider", () => ({
+  livePulseProvider: { getSignals: getSignalsMock },
+}));
+
+const steps: JourneyStepView[] = [
+  { stepNumber: 1, journeyPhase: "discover", title: "Om dig", oneLiner: "", maxPoints: 8, status: "current" },
+];
+const signals: PulseSignal[] = [];
+const snapshot: ScoreSnapshot = {
+  total: 43,
+  previousTotal: 47,
+  delta: -4,
+  deltaReason: "",
+  calculatedAtIso: "2026-09-16",
+  parts: [],
+  lockedParts: [],
+};
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
+async function renderPage() {
+  const { default: LiveAppHomePage } = await import("./page");
+  const tree = await LiveAppHomePage();
+  return render(<LocaleProvider>{tree}</LocaleProvider>);
+}
+
+describe("/app Hem (PR 3)", () => {
+  it("skickar inga funktioner till klientskärmen (Next vägrar det vid rendering)", async () => {
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getStepsMock.mockResolvedValue(steps);
+    getSignalsMock.mockResolvedValue(signals);
+
+    const { default: LiveAppHomePage } = await import("./page");
+    const tree = await LiveAppHomePage();
+
+    const functionProps = Object.entries(tree.props as Record<string, unknown>)
+      .filter(([, value]) => typeof value === "function")
+      .map(([name]) => name);
+    expect(functionProps).toEqual([]);
+  });
+
+  it("visar Kommer snart bara i handlingskortets/'sedan sist'-rutan när Resan är en stub, men riktig poäng och Resan-raden", async () => {
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getStepsMock.mockResolvedValue(steps);
+    getSignalsMock.mockResolvedValue(signals);
+
+    await renderPage();
+
+    expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(2);
+    expect(screen.getByText(String(snapshot.total))).toBeInTheDocument();
+    // Resans sidor finns sedan PR 9: stegen länkar till /app/resan/<nummer>.
+    expect(screen.getByRole("link", { name: /Om dig/ })).toHaveAttribute("href", "/app/resan/1");
+  });
+
+  it("visar Kommer snart bara i poängrutan när kontot saknar bevis", async () => {
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
+    getScoreSnapshotMock.mockRejectedValue(new EmptyStateError("Evidens och poäng", "docs/moduler/evidens-och-poang.md"));
+    getStepsMock.mockResolvedValue(steps);
+    getSignalsMock.mockResolvedValue(signals);
+
+    await renderPage();
+
+    expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(3);
+  });
+
+  it("visar den neutrala 'ingen signal'-texten, inte demots scenariotext", async () => {
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getStepsMock.mockResolvedValue(steps);
+    getSignalsMock.mockResolvedValue(signals);
+
+    await renderPage();
+
+    expect(screen.getByText(sv.homePage.noPulseSignal)).toBeInTheDocument();
+    expect(screen.queryByText(sv.site.demo.noPulse)).not.toBeInTheDocument();
+  });
+
+  it("Pulsens artikel visas som media, aldrig som register eller exempel (docs/beslut.md 2026-10-01)", async () => {
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getStepsMock.mockResolvedValue(steps);
+    getSignalsMock.mockResolvedValue([
+      {
+        category: "Nyheter",
+        headline: "Ny regel för digitala kvitton",
+        whyItMatters: "Påverkar dina kunder.",
+        timestamp: "30 september",
+        source: { namn: "breakit.se", hämtad: "2026-09-30", url: "https://breakit.se/a" },
+      },
+    ]);
+    const { container } = await renderPage();
+    const tag = container.querySelector(".fdd-signal button")!;
+    expect(tag).toHaveTextContent(`${sv.common.mediaSourceLabel}·breakit.se`);
+    expect(tag.className).not.toMatch(/register/);
+    expect(container).not.toHaveTextContent(sv.common.exampleSourceLabel);
+    expect(document.querySelector(".fdd-signal__meta .fdd-muted")).toHaveTextContent("30 september");
+  });
+
+  it("ett riktigt fel sväljs inte", async () => {
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
+    getScoreSnapshotMock.mockRejectedValue(new Error("Databasen svarar inte"));
+    getStepsMock.mockResolvedValue(steps);
+    getSignalsMock.mockResolvedValue(signals);
+
+    await expect(renderPage()).rejects.toThrow("Databasen svarar inte");
+  });
+});

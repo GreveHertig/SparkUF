@@ -8,7 +8,7 @@ type EditorialHeadingProps = {
 };
 
 /**
- * Redaktionell rubrik i Fonda-stil: sans-serif som grund, med enstaka ord
+ * Redaktionell rubrik: sans-serif som grund, med enstaka ord
  * kursiverade i serif för betoning via <EditorialHeading.Em>. Anropande kod
  * väljer vilka ord som betonas per språk — inget markup-format i i18n-strängar.
  */

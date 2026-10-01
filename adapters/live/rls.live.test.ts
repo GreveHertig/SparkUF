@@ -199,6 +199,61 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
       { headline: "kapad" },
     ));
 
+  // Pulsens dagscache (supabase/migrations/20260925090000_pulse_fetches.sql).
+  // Ingen id-kolumn (nyckeln är user_id + fetch_date) och ingen delete-policy,
+  // så expectRowIsolation passar inte. Testraden får ett datum långt bak i
+  // tiden: den krockar aldrig med dagens riktiga cache, och adaptern läser
+  // bara den nyaste raden. Ett framtida datum skulle blockera kontots egen
+  // sökning (docs/status.md, "Pulsen: liveadaptern", Kända problem). Raden
+  // kan inte raderas av klienten; upsert gör att den inte samlas på hög.
+  it("pulse_fetches: B kan inte läsa, ändra, radera eller skapa A:s dagscache", async () => {
+    const testDate = "2000-01-01";
+    const row = { user_id: userIdA, fetch_date: testDate, status: "done", fetched_at: "2000-01-01T06:00:00Z" };
+
+    const { error: upsertError } = await clientA.from("pulse_fetches").upsert(row, { onConflict: "user_id,fetch_date" });
+    expect(upsertError, "pulse_fetches: A kunde inte skapa sin egen rad").toBeNull();
+    const { data: own } = await clientA
+      .from("pulse_fetches")
+      .select("fetch_date")
+      .eq("user_id", userIdA)
+      .eq("fetch_date", testDate);
+    expect(own ?? [], "pulse_fetches: A kunde inte läsa sin egen rad").toHaveLength(1);
+
+    const { data: selected } = await clientB.from("pulse_fetches").select("fetch_date").eq("user_id", userIdA);
+    expect(selected ?? [], "pulse_fetches: B kunde läsa A:s rader").toHaveLength(0);
+
+    const { data: updated } = await clientB
+      .from("pulse_fetches")
+      .update({ status: "error" })
+      .eq("user_id", userIdA)
+      .eq("fetch_date", testDate)
+      .select("fetch_date");
+    expect(updated ?? [], "pulse_fetches: B kunde ändra A:s rad").toHaveLength(0);
+
+    const { data: deleted } = await clientB
+      .from("pulse_fetches")
+      .delete()
+      .eq("user_id", userIdA)
+      .eq("fetch_date", testDate)
+      .select("fetch_date");
+    expect(deleted ?? [], "pulse_fetches: B kunde radera A:s rad").toHaveLength(0);
+
+    // B försöker lägga en rad i A:s namn, t.ex. ett framtida datum som skulle
+    // blockera A:s sökning. Ska stoppas av insert-policyn.
+    const { error: impersonationError } = await clientB
+      .from("pulse_fetches")
+      .insert({ ...row, fetch_date: "2099-01-01" });
+    expect(impersonationError, "pulse_fetches: B kunde skapa en rad i A:s namn").not.toBeNull();
+
+    const { data: stillThere } = await clientA
+      .from("pulse_fetches")
+      .select("status")
+      .eq("user_id", userIdA)
+      .eq("fetch_date", testDate)
+      .single();
+    expect(stillThere?.status, "pulse_fetches: A:s rad ändrades av B").toBe("done");
+  });
+
   it("outreach_messages + responses: RLS-isolering", async () => {
     const { data: message, error: messageError } = await clientA
       .from("outreach_messages")

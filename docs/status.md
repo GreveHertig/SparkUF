@@ -157,7 +157,7 @@ Se `docs/sessioner.md` — Session 2 (poängmotor + demomotor) är nästa. Reste
 - **Mönstret i `lib/server/gemini.ts`** (tunn SDK-inpackning, domänlogik i adaptern) är tänkt att återanvändas av `CofounderAgent`s liveadapter när den byggs.
 
 ### Kända problem / medvetna begränsningar
-- Tre av åtta kuraterade källor (Bolagsverket, verksamt.se, BFN) kunde inte bekräftas med en live hämtning i den här sessionen (WebFetch-anrop misslyckades utan svar för just de tre domänerna, oklart varför — troligen blockering, inte trasiga adresser). Adresserna är väletablerade, mångåriga svenska myndighetsadresser, men bör dubbelkollas manuellt innan lansering.
+- **Rättat 2026-09-30:** av de åtta myndigheterna bland de kuraterade källorna är tre kontrollerade av en människa i webbläsaren 2026-09-30 (Bolagsverket, verksamt.se, BFN). Fem är enbart maskinellt hämtade, av Claude Code 2026-09-17 (Skatteverket, IMY, EUR-Lex, Konsumentverket, Riksdagen). Ingenting är granskat av jurist. Se `docs/beslut.md` (2026-09-30) och verifieringsloggen i `docs/moduler/juridisk-koll.md`.
 - UF-företag (Ung Företagsamhet) finns inte som ett eget värde i `Bolagsform` — produkten heter Spark UF men typen har bara `enskild_firma`/`aktiebolag`/`handelsbolag`/`ekonomisk_forening`. Oklart om det är en avsiktlig avgränsning eller en lucka; flaggat, inte löst.
 - `getLegalMap` tar inte emot `locale` (till skillnad från t.ex. `CofounderAgent.sendMessage`), så Gemini svarar bara på svenska i dag — se motiveringen i `docs/arkitektur.md` avsnitt 7 om framtida Gemini-svar bör följa användarens språk.
 
@@ -2864,6 +2864,438 @@ Gren `design/pr2-skalet` skapades ur `adc4f24`; `prototyp` hann få två egna PR
 ### Andra sammanslagningen med `prototyp` (2026-09-30, PR #31)
 `prototyp` hade fått ytterligare två PR:er ("Mobil: ingen sidledsskroll…", "Delningsbild och sidtitel"). Konflikt bara i `docs/status.md`, samma orsak som förra gången — men den här gången avslöjade konflikten en riktig dataförlust: commit `91be3ef` ("Delningsbild och sidtitel") hade av misstag **skrivit över** hela sektionen "Modul: Juridisk koll — källorna kontrollerade" (rubrik och allt) i stället för att lägga till sin egen sektion efter den, redan innan den mergades till `prototyp`. Sektionen fanns intakt i `design/pr2-skalet`s egen historik och är återställd här, med en not om det i sig själv (se ovan). Ingen av parternas text tappades i den här mergen — se `.gitattributes` (ny fil, `docs/status.md merge=union`) för den permanenta fixen som ska förhindra att det händer igen. `design/site.css` och `i18n/{sv,en}.ts` merge:ades automatiskt (icke överlappande rader). `pnpm typecheck`/`lint`/`test`/`build` gröna efter sammanslagningen.
 
+## PR 3: Hem (gren `design/pr3-hem`, ur `design/pr2-skalet`, PR mot `prototyp`)
+Tredje PR:en i `docs/plan-en-design.md`. Demots Hem-sida (`app/demo/(app)/page.tsx`) blir `screens/AppHome.tsx` — samma på-plats-utbyte som skalet i PR 2, fast för Hem. Första sidan där `/app` faktiskt syns annorlunda (den fanns redan, bara i den gamla Session 1-designen).
+
+### Klart
+- **`screens/AppHome.tsx`** skriven om helt: `Card`/`DataFact`/`LockedState`/`JourneyRail`/`NextStepCard`/`PulseCard`/`ScorePanel`/`SuggestionList` (Tailwind-designen) ersatta av den flyttade `.fdd-*`-markupen från demots Hem-sida. Filerna rörs inte — landningssidan m.fl. använder fortfarande några av dem. `ScoreFigure`/`ScoreDelta`/`JourneyStepper` dupliceras minimalt som icke-exporterade lokala funktioner i stället för att importeras från `app/demo/_components/DemoBlocks.tsx` (den filen används fortfarande av Poäng och Resan, som inte är konverterade än, och screens/ får bara ta emot props/typer från ports/core).
+- **`AppHomeData` smalnad av och delvis nullbar**: `scoreHistory`/`suggestions` borttagna (visades aldrig av den här sidan, Poäng-sidan hämtar redan sina egna — samma mönster som PR 2:s borttagna `scoreSnapshot`). `score: ScoreSnapshot | null` och `homeSummary: { nextStep; sinceLastTime } | null` — nya nullbara fält, ett per sak som kan saknas oberoende av de andra.
+- **Platshållarfel är nu platsspecifika, inte helsides.** `app/(app)/app/page.tsx` hämtar `score`/`homeSummary` var för sig och fångar var för sig (`isPlaceholderError`); `journeySteps`/`pulseSignals` hämtas ofångade (kastar aldrig platshållarfel, ett äkta fel forsätter kasta). `screens/AppHome.tsx` visar `<ComingSoon />` bara i handlingskortets/poängkortets/"sedan sist"-rutan när respektive fält är `null` — Resan-raden och Pulsen visar riktig data ändå. Tidigare (Session A–P1): ETT stort `Promise.all` + en enda helsides `ComingSoon` om något av sex anrop kastade, även om resten fanns.
+- **`todayIso` hämtas inte längre via en adapter för `/app`** — routen sätter det direkt (`new Date().toISOString().slice(0, 10)`, datum-delen bara — `formatDate`, `i18n/format.ts`, lägger själv till `T00:00:00` och kraschar annars på en full tidsstämpel, en verklig bugg hittad och fixad under arbetet).
+- **Ny `dataKind`-styrd text:** den skärmläsar-dolda ledtråden till handlingsknappen (`t.site.demo.nextAction`, "Spelar upp nästa moment i demot.") visas bara för `dataKind="example"`. Ny nyckel `homePage.noPulseSignal` ("Ingen signal än." / "No signal yet.") ersätter demots scenario-ramade `t.site.demo.noPulse` för `dataKind="live"`.
+- **`app/demo/(app)/page.tsx`** är nu en tunn hämtare (`Promise.all` av fyra demoadaptrar, bygger `AppHomeData`, renderar `<AppHome dataKind="example" onNextStep={next} .../>`) — ingen markup kvar i filen.
+- **`app/(app)/app/page.tsx`s inaktuella kommentar rättad** — påstod att Pulsen fortfarande var en stub, den har varit byggd sedan tidigare (`docs/moduler/webbresearch-och-pulsen.md`).
+- **Tester:** `screens/AppHome.test.tsx` (nytt skärmtest, 7 tester — `dataKind`-styrd text, `ComingSoon` per lucka, `onNextStep`-anrop, Resan-länkarna). `app/(app)/app/page.test.tsx` (nytt routetest, samma mönster som PR 2:s `app/(app)/layout.test.tsx` — anropar sidans async-funktion direkt, 4 tester: stubbad Resan ger `ComingSoon` bara på två ställen men riktig poäng/Resan-rad, tomt konto ger `ComingSoon` bara i poängrutan, neutral pulstext, äkta fel kastar vidare). `app/demo/demo.test.tsx` (befintlig demotest) grönt helt oförändrat.
+- **Skärmbilder FÖRE/EFTER** av `/demo` (Hem) och `/demo/marknad` på 1440/390 px: pixel för pixel identiska (`compare -metric AE`, 0 i alla fyra).
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel), `pnpm test` (626 gröna, upp från 615 — elva nya), `pnpm build`. `screens/noAdapters.guard.test.ts` fortsatt grönt.
+
+### Vad som inte var en ren flytt (innehållsbeslut)
+- **Platshållarfel per sektion i stället för helsides** var den enskilt största avvikelsen — en skarpare tolkning av "platshållarfel och låst läge" än den enda tidigare etablerade (helsides `ComingSoon`), eftersom Pulsen och Resans stegrad redan fungerar och inte borde släckas av att Resans `getHomeSummary` är en stub.
+- **`scoreHistory`/`suggestions` försvinner ur `AppHomeData`** — samma mönster som PR 2, men ett medvetet beslut, inte en bugg.
+- **Två textbeslut** (sr-only-ledtråden gated på `dataKind`, ny `noPulseSignal`-nyckel) — text som skiljer sig i sak mellan demo och app, inte bara flyttad rakt av.
+- **`todayIso`s källa byter helt för `/app`** (systemdatum, ingen adapter) — en arkitekturell nödvändighet eftersom Resans `getHomeSummary` (som äger `todayIso` i demot) är en permanent stub.
+- **En verklig bugg hittades och fixades under arbetet**, inte i den befintliga koden utan i mitt eget första utkast: `formatDate` kraschade på en full ISO-tidsstämpel (dubbel `T`) — upptäckt av det nya routetestet, inte manuellt.
+
+### Beslut nästa session behöver känna till
+- **`AppHome`s props är nu**: `{ data: AppHomeData; dataKind: DataKind; onNextStep?: () => void; journeyStepHref; scoreHref }`. `journeyStepHref`/`scoreHref` är obligatoriska strängar/funktioner — ingen skärm ska anta en specifik bas-väg.
+- **`ScoreFigure`/`ScoreDelta`/`JourneyStepper` finns nu på två ställen** (`app/demo/_components/DemoBlocks.tsx` och `screens/AppHome.tsx`, medvetet duplicerade) — när Poäng (PR 4) och Resan (PR 9) konverteras, avgör då om `DemoBlocks.tsx`s versioner kan tas bort helt eller om en gemensam, icke-demo-bunden plats behövs.
+- **PR 4 (Poäng)** är nästa enligt planen.
+
+## PR 4: Poäng (2026-09-30, direkt på `design/en-design`, ingen egen PR)
+Fjärde steget i `docs/plan-en-design.md`, det första enligt "Arbetsordning" (commits direkt på `design/en-design`). `origin/prototyp` (med Eriks merge av PR 2, #31) togs in först, utan konflikter. Två commits: flytten och dubbletterna (`ce5a58d`), och poängen i sidhuvudet (`9d8fc02`, egen commit så den kan backas separat).
+
+### Klart
+- **`screens/Score.tsx`** skriven om: den gamla Tailwind-skärmen (`KpiRow`/`KpiTile`/`ScorePanel`/`SuggestionList`, oanvänd sedan #25) ersatt av markupen från `app/demo/(app)/poang/page.tsx`, flyttad rakt av. `PartsList` och `ScoreHistory` flyttade med in i skärmen (bara Poäng använder dem); `app/demo/_components/ScoreHistory.tsx` borttagen.
+- **`ScoreData = { snapshot; suggestions; history }`, alla tre nullbara var för sig** (platshållare per sektion): `null` ger `ComingSoon` bara i det kortet (nedbrytningen, historiken, "Höj din poäng"). En tom lista är ett ärligt tomläge med egen text (`scorePage.noHistory`, `scorePage.noSuggestions`), inte "Kommer snart". Utan poäng blir rubriken sidans namn ("Poäng") i stället för en nivå.
+- **Demots poängsida** är en tunn hämtare (tre demoanrop → `<Score data>`), ingen markup kvar.
+- **Ny rutt `app/(app)/app/poang/page.tsx`**: `liveEvidenceRepository` (`getScoreSnapshot`, `getSuggestions`, `getScoreHistory`), varje anrop fångat för sig med `isPlaceholderError`; äkta fel kastas vidare. Hems "Se poängen"-länk (`/app/poang`) pekar nu på en sida som finns.
+- **Dubbletten från PR 3 borta:** `ScoreFigure`, `ScoreDelta`, `levelTone` och `formatDelta` finns bara i `screens/blocks/ScoreFigure.tsx` (DemoBlocks-versionen). `screens/AppHome.tsx` och `screens/Score.tsx` importerar därifrån; `DemoBlocks.tsx` (`VerdictBlock`) och `resan/[steg]` likaså. `JourneyStepper` är orörd, fortfarande i två exemplar (PR 9).
+- **`mentionsConcept` flyttad** från `app/demo/_lib/concepts.ts` till `core/concepts.ts` (ren logik; skärmen behövde den och får inte importera från `app/`). Fyra demosidor pekar om.
+- **Poängen i skalets sidhuvud** (egen commit): `AppShell` tar `score?: number | null` och visar "Poäng 24" i toppradens typsnitt och storlek (`.fdd-top__score`), länkad till `…/poang`, på alla bredder. `null`/utelämnad visar "—" med skärmläsartexten "Poängen saknas än", aldrig en nolla. Demots layout hämtar `getScoreSnapshot` (samma snapshot som Hem och Poäng, följer `beatIndex`); `/app`-layouten hämtar den igen och fångar platshållarfel. Nya i18n-nycklar `appShell.headerScoreLabel`/`headerScoreMissing`.
+- **Tester:** `screens/Score.test.tsx` (6), `app/(app)/app/poang/page.test.tsx` (4), två nya i `app/demo/demo.test.tsx` (Poäng-sidans delar/låsta/historik, sidhuvudets poäng = motorns), tre nya i `screens/AppShell.test.tsx` och tre nya i `app/(app)/layout.test.tsx` (siffra, lucka, äkta fel).
+- **Skärmbilder** (Playwright, 1440 och 390 px, beat 0 och 8, `/demo` och `/demo/poang`): efter del 1–2 alla 16 pixel för pixel identiska med före (AE 0). Efter del 3 skiljer sig bara sidhuvudet (diffen på hela sidan är exakt lika stor som diffen på sidhuvudet): "Poäng 24" bredvid steget på 1440, i andra raden bredvid språkväxeln på 390. Sidhuvudets höjd är oförändrad.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (644 gröna, 35 skippade), `pnpm build` (grönt, bara den kända `metadataBase`-varningen). `screens/noAdapters.guard.test.ts` grön.
+
+### Vad som inte var en ren flytt (innehållsbeslut)
+- **Tomlägen på Poäng:** två nya texter ("Ingen poäng sparad än.", "Inga förslag än.") för `/app`. Liveadapterns `getSuggestions` returnerar medvetet `[]` tills förslagstexterna skrivs, så "Höj din poäng" är alltid tom i `/app` just nu. Sorteringsnoten visas bara när det finns förslag.
+- **Rubriken utan poäng** blir "Poäng" (ingen kontextrad, ingen ingress), i stället för en nivå.
+- **Låst läge:** Poäng har inget låst läge för hela sidan; de låsta delarna ("Låses upp efter steg 05") i nedbrytningen är det låsta läget, samma som i demot.
+- **Sidhuvudets poäng har ingen `SourceTag`.** Den är en sammanfattning av delarna och länkar till Poäng, där varje del har sin källa.
+- **Flikarna i `/app` är fortfarande inerta** (ingen `navBasePath`), fast `/app/poang` finns. Att tända dem skulle länka till nio sidor som inte finns än. Poängen i sidhuvudet och Hems poängkort länkar dit.
+
+### Beslut nästa session behöver känna till
+- **Delade byggstenar mellan skärmar ligger i `screens/blocks/`** (se `DESIGN.md`, "Skärmar och data"). `JourneyStepper` kan flytta dit i PR 9.
+- **`AppShell`s props:** `homeHref`, `navBasePath?`, `dataKind`, `profile`, `currentStep?`, `score?`, `headerRight?`, `children`.
+- **`/app`-layouten gör nu ett extra `getScoreSnapshot` per sidladdning** (Hem och Poäng hämtar det också). Billigt, men om det blir ett problem kan layouten och sidan dela på ett cachat anrop (`React.cache`).
+- Tidigare `app/demo/_lib/concepts.ts` heter nu `core/concepts.ts`.
+
+### Kända problem / docs som inte stämmer
+- `docs/uppdrag.md` avsnitt 6, "Appen (`/app/*`)", beskriver fortfarande "mörk sidomeny till vänster" (nu en flikrad), och komponenttabellen säger `ScoreBadge` "kompakt i sidhuvud" (nu en textsiffra). Kravet "sidhuvudet visar poängen alltid" är det som återställts. Det finns inget avsnitt 11.6 i `uppdrag.md`.
+- `CLAUDE.md` säger att allt arbete sker på `prototyp`; migrationen sker på `design/en-design` enligt `docs/plan-en-design.md`.
+- "Nuläge" i `docs/plan-en-design.md` är en ögonblicksbild från 2026-09-26 (säger att `/app` bara har Hem).
+- `/app` efter inloggning är fortfarande inte fotograferat (inget testkonto); täckt av rutttesterna.
+
+## PR 5: Minnet + Juridik (2026-09-30, direkt på `design/en-design`)
+Femte steget i `docs/plan-en-design.md`. `origin/prototyp` hade inget nytt att ta in. Tre commits: flytten (`f41bc39`), märkningen av overifierade källor (`56f7d72`, egen commit så att den kan backas separat) och docs.
+
+### Klart
+- **`screens/Memory.tsx`** och **`screens/Legal.tsx`** skrivna om: de gamla Tailwind-skärmarna (oanvända sedan #25) ersatta av markupen från `app/demo/(app)/minnet/page.tsx` och `…/juridik/page.tsx`, flyttad rakt av. Demots två sidor är tunna hämtare utan markup.
+- **`PageHead`, `Locked` och `Pill`** flyttade från `app/demo/_components/DemoBlocks.tsx` till `screens/blocks/PageBlocks.tsx` (skärmarna får inte importera från `app/`). `DemoBlocks.tsx` exporterar dem vidare, så demots övriga sidor är orörda; de pekas om när de flyttas.
+- **`MemoryData = { profile; brainNotes; trace }`**, alla nullbara var för sig (platshållare per sektion). Utan profil blir rubriken "Minnet" och bara Profilen-fliken visar `ComingSoon`. Hjärnan sparas via en prop, `onSaveBrainNotes`; ett misslyckat sparande visar "Anteckningarna kunde inte sparas" (`role="alert"`).
+- **`LegalData = { krav }`** (nullbar), **`locked: { unlocksAfterStep } | "notInScenario" | null`** och en valfri **`bolagsformPicker`**. Demots sida räknar ut låsningen som förut (tom karta = låst till steg 04, eller "inte i scenariot" för Jonas). Ansvarsbegränsningen visas alltid när kartan visas.
+- **Ny rutt `/app/minnet`:** `liveMemoryRepository`, tre anrop fångade var för sig. Hjärnan sparas med en Server Action (`app/(app)/app/minnet/actions.ts`) som bara tar emot en sträng; användaren tas ur sessionen i adaptern och RLS på `brain_notes` är spärren.
+- **Ny rutt `/app/juridik`:** användaren väljer bolagsform (`?bolagsform=…`, fyra länkar i en segmenterad kontroll, bara i `/app`). Värdet vitlistas i rutten; utan giltigt val anropas inte `liveLegalAdvisor` (och inte Gemini). `LegalAdvisorError` kastas vidare som ett äkta fel.
+- **Ingen källa visas som verifierad** (egen commit): varje krav visar källa och datum (`SourceTag`) och en streckad märkning "Overifierad"; kartans rubrikrad säger "Ingenting här är granskat av en jurist. Varje källa är overifierad tills den är det." Saknas källnamn eller datum visas "Källa saknas" i stället för en tagg. Gäller både `/demo` och `/app`.
+- **`orNull`** delad i `app/(app)/app/_lib/orNull.ts` (Poäng, Minnet, Juridik); Poängs lokala kopia borttagen.
+- **Nya i18n-nycklar** (sv/en): `memoryPage.brainHintLive`, `brainSaveFailed`; `legalPage.unverifiedSource`, `notReviewedNote`, `sourceMissing`, `empty`, `bolagsformPickerLabel`, `bolagsformPrompt`.
+- **Tester:** `screens/Memory.test.tsx` (6), `screens/Legal.test.tsx` (8), `app/(app)/app/minnet/page.test.tsx` (3 rutt + 3 för Server Action), `app/(app)/app/juridik/page.test.tsx` (5), tre nya/utökade i `app/demo/demo.test.tsx`.
+- **Skärmbilder** (Playwright mot `pnpm build && pnpm start`, 1440 och 390 px, beat 0/8/12 och Jonas, Minnet med alla tre flikar): efter flytten alla 32 pixel för pixel identiska med före (AE 0). Efter märkningen skiljer sig bara Juridik med karta (beat 12, båda bredderna) — märkningen och rubrikradens not; allt annat oförändrat.
+- **Docs:** `CLAUDE.md` (undantaget för sidhuvudets poäng med motivering; grenregeln för `design/en-design`), `docs/uppdrag.md` (flikrad och textsiffra i stället för mörk sidomeny och `ScoreBadge` i sidhuvudet), `docs/plan-en-design.md` ("Nuläge" och tabellen efter PR 1–5), `DESIGN.md` (märkningen, valet av bolagsform, `PageBlocks`), `docs/moduler/juridisk-koll.md` (`/app/juridik` finns nu; felet får aldrig visas rakt av).
+- **`/security-review`** av PR 5:s ändringar: inga fynd. Kontrollerat: Server Action utan session (adaptern kastar `NotAuthenticatedError` före skrivning), att skriva någon annans Hjärna (`user_id` bara ur sessionen, RLS med `with check`), vitlistningen av `bolagsform`, att källans URL kommer ur `KURERADE_KÄLLOR` och aldrig ur modellen, och att inget renderas som HTML.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (671 gröna, 35 skippade), `pnpm build`.
+
+### Vad som inte var en ren flytt (innehållsbeslut)
+- **Märkningen "Overifierad"** ändrar demots Juridik-sida. Ingen adapter skickar verifieringsstatus, så alla källor märks, även Bolagsverket, verksamt.se och BFN som en människa kontrollerat 2026-09-30. Beslut av grundaren: hellre för försiktigt än att något ser verifierat ut.
+- **Val av bolagsform i `/app`** är nytt gränssnitt. Ingen port ger användarens bolagsform; att hårdkoda demots `enskild_firma` hade varit en påhittad uppgift. Beslut av grundaren.
+- **Hjärnans ledtråd** nämner Sara; `/app` får en egen text ("Dina egna anteckningar…").
+- **Tomläge i `/app/juridik`** ("Inga krav hittades för bolagsformen.") — i demot betyder en tom karta låst, i appen inte.
+- **Inget låst läge i `/app/juridik`**: det ska komma ur Resans steg, och Resans liveadapter är en stubbe. Inget låsläge hittas på.
+- **Spårets datum:** liveadaptern ger hela tidsstämplar; skärmen formaterar datumdelen (`slice(0, 10)`, UTC). `formatDate` hade annars kraschat — samma fel som PR 3 hittade.
+
+### Beslut nästa session behöver känna till
+- **`Memory`s props:** `{ data: MemoryData; dataKind; onSaveBrainNotes }`. **`Legal`s props:** `{ data: LegalData; locked: LegalLock; bolagsformPicker? }`.
+- Skärmar tar bara serialiserbara props från `/app`-rutterna (eller Server Actions). `Legal` bygger valets länkar själv ur `basePath` i stället för att ta en funktion.
+- **När en verifieringsstatus finns i datan** (t.ex. ett fält i `Källa` som Juridik-modulens ägare sätter i `legalSources.ts`) kan märkningen visas bara för de overifierade. Ändringen hör till Juridik-modulen, inte migrationen.
+- **När Projekt eller Profil ger bolagsformen** kan `/app/juridik` förvälja den; valet kan stå kvar.
+
+### Kända problem / docs som inte stämmer
+- **Troligt fel i `/app` Hem (PR 3, inte rört här):** `app/(app)/app/page.tsx` skickar en funktion (`journeyStepHref`) från en Server Component till klientkomponenten `AppHome`. Next brukar vägra det vid rendering ("Functions cannot be passed directly to Client Components"). Rutttestet anropar sidan direkt och fångar det inte, och `/app` är inte fotograferat (inget testkonto). Bör kontrolleras och rättas i nästa session (t.ex. en `journeyStepBasePath`-sträng, samma mönster som `Legal`).
+- **"Tre av åtta källor overifierade"** (status.md, modulsessionen 2026-09-17) är inaktuellt: i dag är tre av åtta myndigheter kontrollerade av en människa och fem bara maskinellt hämtade. Ingenting är juristgranskat.
+- **Ett Gemini-anrop per sidladdning av `/app/juridik?bolagsform=…`** — ingen cache. Värt en dagscache som Pulsens om det blir dyrt.
+- **Juridik är fortfarande bara på svenska** (`getLegalMap` tar inget `locale`, Oskars ärende).
+- `/app/minnet` och `/app/juridik` är inte fotograferade (inget testkonto); täckta av rutttesterna.
+
+## /app verifierat inloggat (2026-09-30, direkt på `design/en-design`)
+Första gången `/app` kördes inloggad på riktigt: testkontot finns i Supabase (`APP_TEST_USER_EMAIL`/`APP_TEST_USER_PASSWORD`, bara i `.env.local`, namnen i `.env.example`). `.env.local` stod redan i `.gitignore` (kontrollerat med `git check-ignore`).
+
+### Så såg `/app` ut inloggat (före fixarna)
+Playwright, 1440 och 390 px, mot både `pnpm dev` och `pnpm build && pnpm start`:
+- **`/app` Hem: 500.** Den misstänkta buggen från PR 3 är **bekräftad**. Next kastar "Functions cannot be passed directly to Client Components … `journeyStepHref={function journeyStepHref}`", i serverloggen och i webbläsaren.
+- **`/app/juridik?bolagsform=…`: 500.** Miljön saknar `GEMINI_API_KEY`, och `LegalAdvisorError` kastades vidare som en helsideskrasch.
+- **Hem efter första fixen, bara i produktionsbygget:** tolv länkar till `/app/resan/1–12`. Sidorna finns inte, så Next förhämtade alla tolv, fick 404 och blev hängande (sidan nådde aldrig `networkidle`). `pnpm dev` visade inte felet, `pnpm start` gjorde det.
+- **Fungerade:** `/app/poang`, `/app/minnet` och `/app/juridik` utan val gav 200. Skalet fungerar: "Poäng —" (luckan, ingen nolla), "Steg 01 av 12 · Om dig" (Resans `getSteps` svarar på riktigt), profilen "—", Logga ut. Sidorna visar "Kommer snart" där adaptrarna är stubbar eller kontot är tomt. Pulsen visar "Ingen signal än."
+
+### Klart
+- **Hem lagad:** `AppHome` tar `journeyBasePath: string | null` i stället för funktionen `journeyStepHref`, samma mönster som `Legal`s `basePath`. Demot skickar `FONDA_DEMO_PATHS.journey`, så länkarna blir desamma som förut. `/app` skickar `null` tills Resans sidor finns (PR 9): stegen visas då utan länk (`<span class="fdd-stepper__link">`) i stället för tolv länkar till 404. Hover-ringen gäller bara `a.fdd-stepper__link`, så en icke-länk ser inte klickbar ut.
+- **Gemini-cache på `/app/juridik`:** `app/(app)/app/juridik/legalMapCache.ts` lägger `unstable_cache` runt `liveLegalAdvisor.getLegalMap`, i rutten. Eriks adapter rörs inte.
+  - **Cachetid 7 dygn.** Fakta i kartan (myndighet, källa, datum) kommer ur den kuraterade koden, aldrig ur modellen; Gemini skriver bara rubrik och beskrivning. Svaret beror bara på bolagsformen, inte på användaren, så det blir fyra delade poster. Juridisk information av det här slaget ändras sällan, och när den kuraterade koden ändras byts nyckeln: fingeravtrycket av `KURERADE_KÄLLOR` och `LEGAL_TOPICS` ingår, så en ändrad källa används direkt även om `unstable_cache` annars överlever en ny driftsättning. Fel cachas inte. Taggen `legal-map` kan tömmas med `revalidateTag`.
+  - **Varför inte `"use cache"`:** det kräver `cacheComponents: true` för hela appen, en global ändring som rör allas sidor. `unstable_cache` fungerar i Next 16 men är ersatt av `"use cache"`. Byt när appen går över till Cache Components.
+- **Juridik kraschar inte längre när Gemini fallerar.** `LegalAdvisorError` loggas på servern, och kartans ruta visar "Kartan kunde inte hämtas just nu. Försök igen om en stund." (`legalPage.loadFailed`, sv/en, `role="alert"`). Feltexten visas aldrig. Andra fel kastas vidare. Ansvarsbegränsningen visas fortfarande. PR 5 hade valt att kasta vidare; det här ändrar det beslutet.
+- **Inloggat e2e-test:** `@playwright/test` (devDependency), `playwright.config.ts` och `e2e/app.spec.ts`, körs med `pnpm test:e2e`.
+  - Testet loggar in med testkontot, öppnar Hem, Poäng, Minnet, Juridik och Juridik med vald bolagsform i 1440 och 390 px, och kräver 200, rätt `h1`, Logga ut, inga `pageerror` och inga `console.error`.
+  - Utan `E2E_BASE_URL` bygger och startar testet en egen produktionsserver på port 3300 (det var den som hittade 404-felet); med `E2E_BASE_URL` körs det mot en server som redan är igång.
+  - Saknas testkontot hoppas testerna över. Vitest exkluderar `e2e/`.
+  - **Bevisat att testet fångar buggen:** en funktion-prop återinfördes tillfälligt i `/app` Hem, och testet föll med status 500.
+  - Dessutom ett billigt vakttest i `app/(app)/app/page.test.tsx`: Hems rutt skickar inga funktioner som props till `AppHome`.
+- **Skärmbilder efter fixarna** (produktionsbygget, 1440 och 390 px): alla fem sidor ger 200 utan 404 eller hängande förfrågningar. Juridik med val visar felrutan (ingen nyckel här).
+- **`/security-review`:** inga fynd. Kontrollerat: den delade cachen (vitlistad nyckel, ingen session i det cachade anropet), att felet aldrig når klienten, att inga inloggningsuppgifter finns i spårade filer, och licensgrinden: ingen `/app`-sida använder `RegistryProvider`.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (674 gröna, 35 skippade), `pnpm build` och `pnpm test:e2e` (10 av 10, mot både `pnpm dev` och `pnpm start`).
+
+### Genomgång av "Kända problem"
+**Åtgärdat i den här sessionen:**
+- **PR 5, felet i Hem:** bekräftat och lagat (se ovan).
+- **PR 5, ett Gemini-anrop per sidladdning:** cachat i 7 dygn.
+- **PR 4 och PR 5, `/app` inte fotograferat:** fotograferat och täckt av e2e-testet.
+
+**Redan lösta, ingen ändring behövdes:**
+- **PR 4, `uppdrag.md` och `CLAUDE.md`:** rättades i PR 5.
+- **PR 4, "Nuläge" i `plan-en-design.md`:** rättades i PR 5.
+- **PR 5, "Tre av åtta":** rättat 2026-09-30 i Juridik-sektionen.
+- **Tokenbytet, mappen `design/fonts/jetbrains-mono/`:** finns inte längre.
+- **Session 2, "−0" i Poängrörelse-kortet:** `AppHome` är omskriven sedan dess (PR 3).
+
+**Lämnas kvar:**
+- **Juridik bara på svenska:** `getLegalMap` tar inget `locale`. Oskars ärende i Juridik-modulen.
+- **Pulsen gör Hem långsamt första gången varje dag:** att strömma Pulsen med Suspense är ett eget beslut (Pulsen-sektionen). Ingen försening syntes här, eftersom testkontot inte har någon idé att söka på.
+- **Flikarna i `/app` är inerta:** tänds när sidorna finns (PR 4:s beslut). Bara Hem länkar, därför ser Hem ut som vald på alla sidor.
+- **Registrets, Utskicks, Domens, Dataspikens och SCB-spårets punkter:** andras moduler.
+- **Demots luckor** (Jonas resa, byte av ingång, rundturens rutor, hydreringen vid hård sidladdning): demots ägare, utanför `/app`.
+- **`rls.live.test.ts` kan inte köras:** kräver två testkonton (A och B). Bara ett finns.
+- **`pnpm build` utan `.env.local`:** kräver Supabase-variablerna. Inte undersökt här.
+- **Gamla cachar i `.next/`:** inget fel i koden, se respektive sektion.
+
+### Går fortfarande inte att verifiera
+- **Juridik-kartan med riktig Gemini-data:** ingen `GEMINI_API_KEY` i den här miljön. Därför är inte heller cachens träff i produktion sedd (koden och testet med mockar är det).
+- **Sidor med riktig data:** testkontot är tomt, så alla sektioner som kräver bevis, profil eller Hjärna visar sina tomlägen. Att spara Hjärnan (Server Action) är inte klickat igenom inloggat.
+- **Demots skärmbilder är inte omtagna pixel för pixel.** Demots markup är oförändrad (samma länk, samma barn) och hover-ändringen gäller bara `a.fdd-stepper__link`. Det är täckt av `app/demo/demo.test.tsx` och `screens/AppHome.test.tsx`.
+
+### Beslut nästa session behöver känna till
+- **`AppHome`s props:** `{ data; dataKind; onNextStep?; journeyBasePath: string | null; scoreHref }`.
+- **Skärmar får bara serialiserbara props från `/app`-rutterna.** E2e-testet fångar det nu. Kör `pnpm test:e2e` när en `/app`-sida ändras.
+- **Nya `/app`-sidor läggs till i `PAGES` i `e2e/app.spec.ts`.**
+- **När Resans sidor finns i `/app` (PR 9):** skicka `journeyBasePath="/app/resan"`.
+
+## PR 7: Validering (2026-09-30, direkt på `design/en-design`)
+Sjunde steget i `docs/plan-en-design.md`. `origin/prototyp` hade inget nytt att ta in (redan sammanslagen). En commit för koden och en för docs.
+
+### Klart
+- **`screens/Validation.tsx`** är omskriven. Den gamla Tailwind-skärmen (oanvänd sedan #25) är ersatt av markupen från `app/demo/(app)/validering/page.tsx`, flyttad rakt av. Demots sida är nu en tunn hämtare utan markup.
+- **`ValidationData`, platshållare per sektion.** `null` ger "Kommer snart" i just den sektionen. En tom lista eller `"notReached"` betyder att steget inte är nått än, och då döljs sektionen som i demot.
+  - `rows: null` ger luckan i både nyckeltalen och kontaktlistan, eftersom båda kommer ur samma anrop. Konfidensraden under domen visas då inte.
+  - `assumptions`, `responses`, `verdict` och `simulation` kan saknas var för sig. En saknad kontaktlista släcker inte domen eller antagandena.
+- **`ValidationLock = { unlocksAfterStep } | "notInScenario" | null`**, samma form som `LegalLock`. Demot räknar ut den som förut: tom kontaktlista ger låst till steg 03, och Jonas får "inte i scenariot".
+- **Ny rutt `/app/validering`.** Låsningen kommer ur Resans `getSteps`: sidan är låst tills steg 03 är klart, och i låst läge görs inga andra anrop. Går stegen inte att läsa (platshållarfel) visas inget låst läge, och sektionerna visar sina egna luckor. Varje anrop fångas för sig med `orNull`, och äkta fel kastas vidare.
+  - Kontaktlistan kommer ur `liveOutreachProvider.getCampaign`. Den kastar `OutreachSendDisabledError` (sändspärren), så nyckeltalen och listan visar "Kommer snart".
+  - Antagandena och svaren har ingen portmetod och är alltid `null`.
+  - Domen hämtas med `getStepDetail(6)` när steg 06 är nått. Liveadaptern ger ingen dom, så sektionen visar "Kommer snart".
+  - Simuleringen är alltid `null`, se innehållsbesluten.
+- **Licensgrinden:** `/app/validering` anropar inte Registret. Ruttestet mockar `liveRegistryProvider` med stängd grind och visar att den aldrig anropas, att inga registersiffror visas och att rutten inte importerar adaptern.
+- **Byggstenar:** `ExampleLabel`, `Figures`, `SimulationBlock` och `VerdictBlock` är flyttade till `screens/blocks/DataBlocks.tsx`. `DemoBlocks.tsx` exporterar dem vidare åt Marknad och Resan/steget. `ExampleLabel.test.tsx` följde med och heter nu `DataBlocks.test.tsx`.
+- **Ren logik till `core/`:** `sizeClass.ts` är flyttad från `app/demo/_lib/` (Marknad pekar om). Nyckeltalen ligger i `core/validation.ts` (`outreachStats`: kontaktade utan utkast, svar, svarsfrekvens), enligt punkt 5 i planen. Svarsfrekvensen är `null` när ingen är kontaktad, aldrig 0.
+- **Ny i18n-nyckel** `validationPage.simulationTitleLive` (sv/en).
+- **Tester:**
+  - `screens/Validation.test.tsx` är omskriven (10 tester) och täcker låst läge, nyckeltalen med källa, storleksklass i stället för exakt antal, "Kommer snart" per sektion, dolda sektioner och exempeletiketten per `dataKind`.
+  - `core/validation.test.ts` (3 tester).
+  - `app/(app)/app/validering/page.test.tsx` (8 tester) täcker låst läge, sändspärren, domen från steg 06, riktig kontaktlista, stängd licensgrind, okända steg, äkta fel och att inga funktioner skickas som props.
+  - Två nya tester i `app/demo/demo.test.tsx`: demots moment och Jonas.
+  - `/app/validering` ligger nu i `PAGES` i `e2e/app.spec.ts`.
+- **Skärmbilder** (Playwright mot `pnpm build && pnpm start`, 1440 och 390 px). `/demo/validering` är fotograferad vid beat 0, 9, 11, 12, 14, 16, 17, 19 och 37 (låst, steg 04, 05 och alla utskicksstadier, 06, slutet) och för Jonas. `/demo` är fotograferad vid beat 0, 17 och 37 och för Jonas. Alla 28 är pixel för pixel identiska med före (AE 0).
+- **Inloggat:** testkontot står på steg 01, så `/app/validering` visar "Låses upp efter steg 03" (kontrollerat med skärmbild och sidans text).
+- **`/security-review`:** inga fynd. Kontrollerat: att rutten ligger under `requireUser()` i `app/(app)/layout.tsx` och att Resans adapter själv kräver en session, att ingen demodata når `/app`, licensgrinden (inget registeranrop), sändspärren (bara `getCampaign`, som kastar), att inga felmeddelanden hamnar i props, att klientkomponenterna inte importerar serverkod, och att inget renderas som HTML.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (690 gröna, 35 skippade), `pnpm build` och `pnpm test:e2e` (12 av 12, mot produktionsbygget).
+
+### Vad som inte var en ren flytt (innehållsbeslut)
+- **Inget låst läge för Registret.** Planen säger att Validering läser Registret och ska få ett läge som säger "Registret är inte öppet än". Men varken demosidan, porten eller adaptrarna läser Registret för Valideringen, eftersom kontaktlistan kommer ur Utskick. Ett sådant läge hade påstått något som inte stämmer. Grinden bevisas i stället med ruttestet. Planens regel är rättad.
+- **Låsningen i `/app`** använder samma gräns som demot (steg 03 klart). Tidigare hade `/app/juridik` inget låst läge, med motiveringen att Resans liveadapter var en stubbe. Men `getSteps` är byggd, och det är bara `getHomeSummary` som är en stubbe.
+- **Simuleringen hämtas inte i `/app`.** `SimulationProvider.simulate` kräver en fråga. Den enda som finns (`simulationQuestions.tolerance`) är skriven för Saras byråer och ligger i demoadaptern. Hiasynth är ett koncept och liveadaptern en stubbe, så sektionen visar "Kommer snart" utan att någon fråga hittas på.
+- **Simuleringens rubrik i `/app`** är "Simulering: betalningstolerans" (ny nyckel). Demots rubrik nämner byråstorlek, alltså Saras scenario.
+- **Exempeletiketten** styrs nu av `dataKind` i stället för att vara hårdkodad `"example"`.
+- **Utskickets period, öppningsfrekvens och källa** är `null` i `/app`. Ingen port ger dem, och öppningsspårning ingår inte i MVP:n (sändspärren).
+
+### Genomgång av "Kända problem": Valideringens exakta anställningstal
+- **Vad det gällde:** buggpunkt 13 (`docs/buggar-2026-09.md`): Validering visade exakta antal anställda ("· 18"), men registret ger bara storleksklasser. Raden står i "/app verifierat inloggat" ("hör till Valideringens migration (PR 6) och Registret") och går tillbaka till Marknad-sessionen.
+- **Inom sidans ansvar, och åtgärdat.** Demots sida visade redan storleksklass sedan #25, men den gamla `screens/Validation.tsx` visade `{row.employees}` och `{response.employees}` rakt av. Efter flytten finns bara en skärm, och den visar klassen (`core/sizeClass.ts`) i både `/demo` och `/app`, i tabellen och på svarskorten. Det täcks av skärmtestet, ruttestet och demotestet. Registret behövs inte för det, eftersom klassningen görs i gränssnittet.
+- **Raden är inte borttagen ur den äldre sektionen.** `.gitattributes` (`merge=union`) förutsätter att ingen redigerar en annan sessions text, så den här sektionen är beslutet. Raden säger dessutom "PR 6", men Validering är PR 7 (PR 6 är Pulsen).
+
+### Beslut nästa session behöver känna till
+- **`Validation`s props:** `{ data: ValidationData; dataKind; locked: ValidationLock }`.
+- **När Utskick får en port för svar och antaganden** (i dag demohjälpare i `adapters/demo/OutreachProvider.ts`, typerna i `ports/`): fyll `assumptions` och `responses` i `/app`-rutten. Skärmen behöver inte ändras.
+- **När Resans liveadapter ger en dom och `scoreDelta`** visar `/app/validering` domen utan ändring i skärmen.
+- **PR 8 (Marknad)** kan använda `core/sizeClass.ts` och `Figures` och `SimulationBlock` ur `screens/blocks/DataBlocks.tsx`.
+
+### Kända problem / docs som inte stämmer
+- **Omsättningen per bolag visas exakt** ("4 200 tkr"). Den kommer ur årsredovisningar, som är offentliga, och ingen regel i docs förbjuder det. Den är inte ändrad, men nämns här om samma princip som för anställda ska gälla.
+- **"Utskick" räknas som byggt** i planens lista över liveadaptrar. Det gäller förberedelsen (`OutreachPrep`). `liveOutreachProvider` kastar sändspärren för alla metoder.
+- **Skärmbildsfälla:** en `next start` som lever kvar på samma port efter en ny `pnpm build` serverar trasiga sidor. Stoppa servern före nästa bygge.
+
+## PR 8: Marknad (2026-09-30, direkt på `design/en-design`)
+Åttonde steget i `docs/plan-en-design.md`. `origin/prototyp` hade inget nytt att ta in. En commit för koden och en för docs.
+
+### Klart
+- **`screens/Market.tsx`** är omskriven. Den gamla Tailwind-skärmen (`KpiTile`, `BarChart`, oanvänd sedan #25) är ersatt av markupen från `app/demo/(app)/marknad/page.tsx`, flyttad rakt av. Demots sida är nu en tunn hämtare utan markup.
+- **`MarketData`, platshållare per sektion.** `registry` är antingen ett objekt med `overview`, `companies` och `medianRevenueFiscalYears` (var för sig nullbara) eller ett av lägena `"closed"`, `"failed"` och `"notChosen"`, som inte bär någon data alls. En stängd grind kan alltså inte visa en registersiffra, och det gäller redan på typnivå. `outreach` (`{ rows, source }`, gatas tillsammans) och `simulation` kan saknas var för sig.
+  - I registerlägena visar nyckeltalen, fördelningen och konkurrenterna samma läge. Utskicket, datalagret och simuleringen visar sina egna lägen.
+  - Ett underlag på 0 bolag (`basis`, som porten säger betyder "okänd") visas som luckan, aldrig som 0 %.
+- **`MarketLock = { unlocksAfterStep } | "notInScenario" | null`**, samma form som Validering och Juridik. Demot räknar ut låsningen som förut: låst till steg 02, och Jonas får "inte i scenariot".
+- **Ren logik till `core/`:** `core/market.ts` (`sizeDistribution`, `dominantBucket`, `employeeSpan`) och `core/fiscalYear.ts` (`fiscalYearSpanOf`, `formatFiscalYearSpan`). Utskickets siffror räknas med `outreachStats` ur `core/validation.ts`, samma som Valideringen.
+- **Ny rutt `/app/marknad`.**
+  - Låst tills steg 02 är klart (Resans `getSteps`). I låst läge görs inga andra anrop, inte heller till grinden.
+  - Rutten frågar licensgrinden (`assertRegistryAccessAllowed`) innan Registret anropas, också innan någon bransch är vald. Stängd grind ger `"closed"`, och då visas ingen branschväljare.
+  - Om grinden stängs mellan frågan och anropen (`RegistryLockedError` från adaptern) visas också `"closed"`, även om en del av svaret kom tillbaka.
+  - `RegistryTransportError` ger `"failed"`: "Registerdatan kunde inte hämtas just nu." Serverloggen får bara felets namn och meddelande, aldrig `cause`.
+  - Ingen cache runt registeranropen.
+  - Utskick och simulering är `null` ("Kommer snart"), av samma skäl som i PR 7.
+- **Branschen väljs i adressen** (`?sni=69.201`) med ett GET-formulär (`.fdd-sni`, `.fdd-input`). Värdet vitlistas med samma form som adaptern kräver. En ogiltig kod anropar ingenting och ger "Ogiltig SNI-kod" (`role="alert"`).
+- **Omsättningen bär sitt räkenskapsår** (del 2):
+  - Per bolag visas "4 200 tkr (räkenskapsår 2024)", och för medianen spannet "4,2 Mkr (räkenskapsår 2023–2024)".
+  - Saknas året i datan visas luckan i stället för siffran: "—" i nyckeltalet med förklaringen "Räkenskapsåret saknas i underlaget, så siffran visas inte.", och "–" i tabellen med samma text för skärmläsare.
+  - Valideringens tabell får en egen radtyp, `ValidationRow = CampaignRow & { revenueFiscalYear }`.
+  - Ingen port bär året, så båda rutterna och demot sätter `null`. **Därför visas luckan i dag överallt:** medianen på `/demo/marknad` och `/app/marknad`, och omsättningskolumnen på `/demo/validering` och `/app/validering`.
+- **Nya i18n-nycklar** (sv/en): `common.fiscalYearLabel` och `fiscalYearMissing`. I `marketPage`: `companyCountLabelLive`, `companyCountDescriptionLive`, `basisMissing`, `registryClosed`, `registryLoadFailed`, `sniPickerLabel`, `sniPickerSubmit`, `sniPrompt`, `sniInvalid` och `sniChooseFirst`.
+- **Tester:**
+  - `screens/Market.test.tsx` är omskriven (19 tester). Den täcker låst läge, Jonas, rubriken, urvalet, räkenskapsåren och luckan, underlaget 0, datalagret, klasserna i stället för exakta tal, utskickets tre lägen, `dataKind`, "Kommer snart" per sektion, de tre registerlägena utan registersiffror och branschväljaren.
+  - `core/market.test.ts` (3 tester) och `core/fiscalYear.test.ts` (3 tester).
+  - `app/(app)/app/marknad/page.test.tsx` (10 tester) täcker låst läge utan anrop, stängd grind, grinden som stängs under anropen, inget val, ogiltig kod, öppen grind, transportfel utan feltext, okända steg, äkta fel och att inga funktioner skickas som props.
+  - `app/(app)/app/marknad/licensgrind.test.tsx` (6 tester) använder den riktiga grinden och den riktiga adaptern, se nedan.
+  - `screens/Validation.test.tsx` och `app/(app)/app/validering/page.test.tsx` har fått räkenskapsåret.
+  - Två nya tester i `app/demo/demo.test.tsx`: Marknads moment och luckorna.
+  - I `e2e/app.spec.ts` ligger nu `/app/marknad` och `/app/marknad?sni=69.201` i `PAGES`, plus testet "testkontot ser inga registersiffror".
+- **Skärmbilder** (Playwright mot `pnpm build && pnpm start`, 1440 och 390 px, beat 0, 9, 12, 14, 17 och 37 och Jonas; `/demo`, `/demo/marknad` och `/demo/validering`, 42 par):
+  - `/demo` är pixel för pixel identisk i alla 14 lägen.
+  - `/demo/marknad` är identisk i låst läge och för Jonas. I de olåsta lägena skiljer sig bara medianrutan: "—" och förklaringen i stället för "4,2 Mkr", "Baserat på 194 av 312 bolag." och källtaggen. På 390 px är rutan 11 px lägre, så resten av sidan flyttar upp. Det är den väntade följden av del 2.
+  - `/demo/validering` skiljer sig bara i omsättningskolumnen ("–").
+- **Inloggat:** testkontot står på steg 01, så `/app/marknad` visar "Låses upp efter steg 02" (skärmbild och sidans text). `pnpm test:e2e` gav 18 av 18 mot produktionsbygget.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (725 gröna, 35 skippade) och `pnpm build`.
+
+### Licensgrinden: hur den är kontrollerad
+1. **Kodläsning.** `assertRegistryAccessAllowed` är första satsen i båda adaptermetoderna, i `registryCache.ts` och i Bolagsverkets transport. Den kräver `REGISTRY_LIVE_ENABLED=true` och att användarens id finns i `REGISTRY_ALLOWED_USER_IDS`, och den nekar som standard. Rutten frågar samma grind en gång till först och cachar inget. Den enda delade cachen (`registry_cache`) ligger bakom grinden.
+2. **Test med den riktiga grinden och adaptern** (`licensgrind.test.tsx`). Bara sessionen och transporterna är utbytta, och transporterna svarar med data om de anropas. Fyra fall ger "Registret är inte öppet än" (tre gånger), inga transportanrop och inget bolagsnamn: en användare utanför allowlisten, ingen session, Theo med flaggan av, och Theo med tom allowlist. Theo och Erik på allowlisten når registret.
+3. **Mutationstest.** Med grinden tillfälligt gjord verkningslös (`return;` först i `assertRegistryAccessAllowed`) föll alla fyra fall. Grinden återställdes efteråt (`git diff lib/server/` är tom).
+4. **Inloggat.** Testkontot står inte på allowlisten, och i den här miljön är `REGISTRY_LIVE_ENABLED` och `REGISTRY_ALLOWED_USER_IDS` inte satta alls (kontrollerat utan att värdena skrevs ut). E2e-testet kräver att sidan saknar `.fdd-figures` och `.fdd-bars` och inte innehåller "Baserat på", "Mkr" eller "Bolag i registret".
+   - **Begränsning:** testkontot är låst av Resan (steg 01), så inloggat nås aldrig grindfrågan. Den olåsta vägen är bevisad med testet i punkt 2, inte i webbläsaren. Testkontots steg är inte ändrade.
+5. **`/security-review`**: inga fynd. Granskningen kontrollerade:
+   - att grinden körs före alla registeranrop och nekar som standard
+   - att det inte finns någon cache och att `"closed"` inte bär någon data
+   - att `sni` vitlistas innan det används och att den råa strängen aldrig visas tillbaka
+   - att inget renderas som HTML
+   - att klientskärmen inte importerar `lib/server` eller `adapters/live`
+   - att inga nya `NEXT_PUBLIC_`-variabler finns
+   - att feltexten aldrig når klienten och att loggen saknar `cause`
+   - att demot inte importerar någon liveadapter
+
+### Genomgång av "Kända problem": omsättningen per bolag (PR 7)
+PR 7 noterade att omsättningen visades exakt. Den visas fortfarande exakt, men nu bara med sitt räkenskapsår, och utan år visas luckan (se ovan). Raden i PR 7-avsnittet lämnas orörd (`merge=union`); det här är beslutet. Raden "Validerings exakta anställningstal" i "/app verifierat inloggat" är struken, eftersom den ersattes av beslutet i PR 7-avsnittet.
+
+### Vad som inte var en ren flytt (innehållsbeslut)
+- **Medianen och tabellens omsättning visas inte i demot.** Grundaren har beslutat att räkenskapsåret gäller även medianen. Demodatan har inga år och fick inte röras, så `/demo/marknad` är inte längre identisk med före (se skärmbilderna).
+- **Branschväljaren** är nytt gränssnitt i `/app`, med samma öppna uppgift som bolagsformen: valet finns bara i adressen. De ska lösas tillsammans när en port bär användarens val (`plan-en-design.md`, beslut 5). Beslut av grundaren.
+- **Rubriken i `/app`** är "Marknad". Ingen port ger branschens namn, och demots "Redovisningsbyråer" är Saras.
+- **Antalet i `/app`** heter "Bolag i registret" med en neutral förklaring. Demots "Byråer" och "SNI 69.201" är Saras.
+- **"Registerdatan kunde inte hämtas"** är ett nytt läge. SCB-transporten och årsredovisningarna är inte skrivna (`RegistryTransportError`), så även Theo och Erik ser felrutan i dag. Med PR 7:s mönster (äkta fel kastas vidare) hade sidan kraschat för dem.
+- **Utskicket i `/app` anropas inte.** Kortet kräver en källa som ingen port ger, och sändspärren gäller. Validering anropar `getCampaign` och får spärren; här hade anropet inte kunnat ge något.
+- **Datalagrets källtaggar** visas bara när datan finns. Texterna står kvar.
+- **Registerlägena** visas i varje registersektion (nyckeltal, fördelning, konkurrenter) i stället för en gång, eftersom regeln säger platshållare per sektion.
+
+### Beslut nästa session behöver känna till
+- **`Market`s props:** `{ data: MarketData; dataKind; locked: MarketLock; sniPicker? }`. **`Validation`s rader** är `ValidationRow[]`.
+- **När porten bär räkenskapsår:** fyll `revenueFiscalYear` per rad och `medianRevenueFiscalYears` (`fiscalYearSpanOf` över urvalets år) i rutterna. Skärmarna behöver inte ändras. Det kräver ändringar i `RegistryCompany`, `CampaignRow` och `MarketOverview`, och i `AnnualFiguresSchema`, som inte heller har något år. Det hör till Registrets ägare.
+- **`components/ui/BarChart.tsx`** används inte längre, och `components/spark/KpiTile` bara av `BusinessPlan`. Städas i PR 11.
+- **`docs/moduler/registret.md`**: grindens första lager, "ingen `/app/marknad`-route", finns inte längre, enligt planen. Texten är rättad. Registrets ägare bör bekräfta att tre lager räcker.
+
+### Kända problem / docs som inte stämmer
+- **Medianomsättning utan år visas fortfarande utanför skärmarna**, i text och data som inte fick röras i den här PR:n:
+  - landningssidan (`app/(marketing)/page.tsx`, "4,2 Mkr")
+  - affärsplanen (`adapters/demo/businessPlan.ts`)
+  - rundturens text (`adapters/demo/tourSteps.ts`, "4,2 Mkr i medianomsättning")
+  - Medgrundarens manus (`adapters/demo/cofounderScript.ts`)
+  - Saras steg (`adapters/demo/sara.ts`)
+
+  Rundturens stopp på Marknad säger nu "4,2 Mkr" medan sidan visar luckan. Affärsplanen hör till PR 10, landningssidan till `prototyp-landning`.
+- **Distributionen i `/app` bygger bara på bolag med omsättning.** `searchCompanies` utelämnar bolag utan årsredovisning. Urvalet anges ("Baserat på N av M bolag"), men det är inte hela branschen.
+- **`/app/marknad` med öppen grind är inte fotograferad.** Det finns inget testkonto på allowlisten och transporterna är inte skrivna.
+
+## PR 9: Resan och steget (2026-09-30, direkt på `design/en-design`)
+Nionde steget i `docs/plan-en-design.md`. `origin/prototyp` hade inget nytt att ta in (redan sammanslagen). Tre commits: flytten och `JourneyStepper` (`b59aeaf`), medianomsättningen (`49e87f0`, egen commit så att textändringarna kan granskas för sig) och docs.
+
+### Klart
+- **`screens/Journey.tsx`** och **`screens/JourneyStep.tsx`** är omskrivna. De gamla Tailwind-skärmarna (oanvända sedan #25) är ersatta av markupen från `app/demo/(app)/resan/page.tsx` och `…/resan/[steg]/page.tsx`, flyttad rakt av. Demots två sidor är tunna hämtare utan markup; `notFound()` för ett ogiltigt steg stannar i demots sida (det är hämtlogik).
+- **Props:** `Journey({ data: { steps: JourneyStepView[] | null }, basePath })` och `JourneyStep({ data: JourneyStepDetail | null, stepNumber, journeyHref, verdictMissing? })`. Bara strängar, så att `/app`-rutterna (Server Components) kan skicka dem.
+- **Platshållare per sektion:**
+  - Resan: `steps: null` ger "Kommer snart" i stegraden och faserna, och rubriken blir "Resan".
+  - Steget: `data: null` (platshållarfel) behåller tillbakalänken, visar "Steg 0N" som rubrik och "Kommer snart" i innehållet.
+  - Ett olåst steg utan text i `why` visar "Kommer snart" i den rutan (ny gren; demot har alltid text, bevisat av ett test över alla moment för Sara och Jonas på båda språken).
+  - `verdictMissing` ger "Kommer snart" i domens ruta. Rutten sätter den bara för steg 06 när steget är olåst och domen saknas (samma som `/app/validering`). Övriga tomma sektioner döljs som i demot.
+- **Nya rutter** `/app/resan` och `/app/resan/[steg]` med `liveJourneyRepository` (`getSteps`, `getStepDetail`), fångade med `orNull`; äkta fel kastas vidare. Steget vitlistas (`/^\d{1,2}$/` och `JOURNEY_STEP_META`), allt annat ger 404 utan anrop. Låst läge kommer ur adapterns egen status.
+- **`/app` Hem** skickar `journeyBasePath="/app/resan"`: de tolv stegen länkar nu till sidor som finns.
+- **`JourneyStepper` finns i ett enda exemplar**, `screens/blocks/JourneyStepper.tsx` (`basePath: string | null`). Kopiorna i `app/demo/_components/DemoBlocks.tsx` och `screens/AppHome.tsx` är borta. **Kontrollerat med grep att inga dubbletter från PR 3 finns kvar:** `JourneyStepper`, `StepContent`, `ScoreFigure`, `ScoreDelta`, `levelTone` och `formatDelta` är definierade en gång var i `screens/`, `app/` (utom demots) och `components/`. Den enda andra `levelTone` ligger i `app/(marketing)/_components/ScoreProof.tsx` och kommer från #25, inte PR 3 (se kända problem).
+- **`journeyStatusToneClasses`** flyttad från gamla `screens/Journey.tsx` in i `components/spark/JourneyRail.tsx`, dess enda användare (komponenten själv är oanvänd, PR 11).
+- **Medianomsättningen** (egen commit): demodatan bär inget räkenskapsår, så siffran togs bort i stället för att ett år hittades på. Se listan nedan.
+- **Tester:** `screens/Journey.test.tsx` (5), `screens/JourneyStep.test.tsx` (9), `screens/blocks/JourneyStepper.test.tsx` (2), `app/(app)/app/resan/page.test.tsx` (4), `app/(app)/app/resan/[steg]/page.test.tsx` (14), tre nya i `app/demo/demo.test.tsx` (Resan, steget, inget olåst steg utan text), `app/(app)/app/page.test.tsx` (Hem länkar till `/app/resan/1`). I `e2e/app.spec.ts`: `/app/resan`, `/app/resan/1` och `/app/resan/12` i `PAGES`, plus "stegen i Hem och Resan länkar till sidor som finns" och "ett ogiltigt steg ger 404".
+- **Skärmbilder** (Playwright mot `pnpm build && pnpm start`, 1440 och 390 px; beat 0, 9, 17, 25, 37 och Jonas; `/demo`, `/demo/resan` och stegen 1, 3, 6, 7 och 12; 84 par plus landningssidan):
+  - Efter flytten (del 1–2): alla 84 pixel för pixel identiska med före (AE 0).
+  - Efter del 3: `/demo` och `/demo/resan` fortfarande identiska i alla lägen. Skiljer sig gör bara steg 03 (från beat 9: punkten "Medianomsättning 4,2 Mkr." borta), steg 07 (från beat 25: "medianomsättning 4,2 Mkr," borta ur punkt 1) och landningssidan (registerkortet: "—" i stället för "4,2 Mkr", underlagstexten en rad kortare, så sidan är 22 px lägre på 1440).
+  - **Rundturens stopp går inte att jämföra pixel för pixel:** två bilder av samma bygge skiljer sig (animerad bakgrund bakom kortet). Texten är jämförd i stället: "312 byråer, 4,2 Mkr i medianomsättning, 18 % tillväxt — …" blev "312 byråer, 18 % tillväxt — …".
+- **Inloggat:** testkontot står på steg 01. `/app/resan` visar "Om dig" som aktuellt och resten låst; `/app/resan/1` visar "Kommer snart" i "Vad som återstår" (inget innehåll i `journey_steps`); `/app/resan/12` visar "Låses upp efter steg 11".
+- **`/security-review`:** inga fynd. Kontrollerat: rutterna ligger under `requireUser()`, adaptern tar användaren ur sessionen (inget från klienten når frågan), `steg` vitlistas innan adaptern anropas, inga feltexter i props, inga funktioner som props, inget renderas som HTML, demot importerar ingen liveadapter, inga nya `NEXT_PUBLIC_`-variabler.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (762 gröna, 35 skippade), `pnpm build` och `pnpm test:e2e` (28 av 28 mot produktionsbygget).
+
+### Medianomsättningen: var siffran stod utan år, och vad som gjordes
+| Ställe | Före | Efter |
+|---|---|---|
+| Rundturen, stopp 6 (`adapters/demo/tourSteps.ts`) | "312 byråer, 4,2 Mkr i medianomsättning, 18 % tillväxt — …" | "312 byråer, 18 % tillväxt — …" |
+| Medgrundarens manus, steg 03 (`cofounderScript.ts`) | "… anställda. Medianomsättning 4,2 Mkr. 18 % växte …" | "… anställda. 18 % växte …" |
+| Saras steg 03 (`sara.ts`, höjdpunkter) | punkten "Medianomsättning 4,2 Mkr." | borttagen |
+| Saras steg 07 (`sara.ts`, höjdpunkter) | "1. Vad kunderna tål: medianomsättning 4,2 Mkr, byråer med 10+ …" | "1. Vad kunderna tål: byråer med 10+ …" |
+| Affärsplanen (`adapters/demo/businessPlan.ts`) | påståendet "Medianomsättning" med värdet 4200; underlaget "194/171/308" | påståendet borttaget; underlaget "171/308" (tillväxt/region) |
+| Landningssidan (`app/(marketing)/page.tsx`) | "Median omsättning 4,2 Mkr"; "Omsättning räknas på 194 och tillväxt på 171 av 312 bolag …" | "—" med `common.fiscalYearMissing` för skärmläsare; "Tillväxten räknas på 171 av 312 bolag …" (sv/en) |
+
+Engelska texterna ändrades likadant. Inget ställe fick ett år, eftersom inget år finns i datan.
+
+### Vad som inte var en ren flytt (innehållsbeslut)
+- **"Kommer snart" för ett olåst steg utan text** och **domens ruta i steg 06** i `/app` (se ovan). I demot händer ingetdera.
+- **Stegets rubrik utan data** är "Steg 0N", eftersom titeln kommer ur samma anrop.
+- **Medianen i affärsplanen** är borttagen som påstående, inte ersatt med en lucka; underlaget anger bara de två siffror som visas.
+- **Landningssidans median** visar luckan "—" med förklaringen bara för skärmläsare (samma mönster som Marknads tabell), eftersom kortets tre nyckeltal inte har plats för en synlig förklaring.
+- **Lämnat orört, med motivering:** `i18n/sv.ts`/`en.ts` rad 100 ("till exempel 4,2 Mkr eller 312 företag") är ett typsnittsexempel på `/designsystem`, inget påstående om marknaden. "3–15 Mkr i omsättning" i Saras steg 04 är ett urvalskriterium, ingen registersiffra. "Median 900 kr" kommer ur enkätsvaren, inte ur registret.
+- **`journeyStepPath`** i `app/demo/_lib/paths.ts` används inte längre. Lämnad (städas i PR 11).
+
+### Beslut nästa session behöver känna till
+- **Props:** se "Klart". `AppHome` tar fortfarande `journeyBasePath` och skickar det vidare som `basePath`.
+- **När Resans liveadapter ger dom, poängändring och upplåsta delar** visas de utan ändring i skärmen; `verdictMissing` blir då falsk av sig själv.
+- **Flikarna i `/app` är fortfarande inerta**: Pulsen, Medgrundaren, Bygg och Affärsplanen saknas.
+
+### Kända problem / docs som inte stämmer
+- **"Aktuell · Efter" på ett aktuellt steg i `/app`.** Liveadaptern sätter alltid `momentKind: "after"` (kommentar i `adapters/live/JourneyRepository.ts`), så skärmen visar "Steg 01 · Aktuell · Efter". Det är adapterns värde, inte rört här (någon annans adapter). Resans ägare bör sätta "before" för ett aktuellt steg utan innehåll, eller porten bör tillåta att momentet saknas.
+- **Planen sade "liveadaptern stubbe"** för PR 9. `getSteps` och `getStepDetail` är byggda; bara `getHomeSummary` är en stubbe. Rättat i planen.
+- **`levelTone` finns två gånger**: `screens/blocks/ScoreFigure.tsx` och `app/(marketing)/_components/ScoreProof.tsx` (landningssidan, #25). Inte en PR 3-dubblett; landningssidan hör till `prototyp-landning`.
+- **Landningssidan** hör enligt `CLAUDE.md` till grenen `prototyp-landning`, men medianen ändrades här på uppdrag, i den egna commiten `49e87f0`.
+
+## PR 10: Medgrundaren, Bygg och Affärsplan (2026-09-30, direkt på `design/en-design`)
+Tionde steget i `docs/plan-en-design.md`. `origin/prototyp` fanns redan i grenen. Fyra kodcommits och docs: Medgrundaren (`032a12f`), Bygg (`9a5d347`), Affärsplanen (`98eda3d`) och rättningarna av affärsplanens källor (`73287c4`, egen commit så att den kan granskas och backas för sig). Arbetet avbröts en gång av användningsgränsen efter Medgrundaren och återupptogs.
+
+### Klart
+- **Medgrundaren:** `screens/Cofounder.tsx` är ersatt av demots markup.
+  - `CofounderData = { moment; context }`, nullbara var för sig. En tom `context` döljer spalten, som i demot.
+  - `ChatLine`, `ToolRun` och `TimeSkipLine` är flyttade till `screens/blocks/ChatBlocks.tsx`. `DemoBlocks` exporterar dem vidare åt onboardingen (PR 11).
+  - Demots manus (`cofounderScript`, `journeyEngine`) stannar i demots sida.
+  - `/app/medgrundaren`: `CofounderAgent` har bara `sendMessage` (stubbe), och ingen port ger moment eller kontext. Båda sektionerna visar därför "Kommer snart", och inget anrop görs. Promptfältet är avstängt.
+- **Bygg:** `screens/Build.tsx` är ersatt av demots markup.
+  - `BuildData = { status; spec }`, där `spec: ByggBrief | "none" | null`. `"none"` betyder att porten svarat att ingen spec finns än och ger tomläget "Ingen spec än." (ny nyckel `buildPage.specEmpty`). `null` betyder platshållarfel och ger "Kommer snart".
+  - `BuildLock` har samma form som Validering och Marknad. Demot räknar ut den som förut: ingen spec ger låst till steg 07, och Jonas får "inte i scenariot".
+  - `ConceptBadge` visas alltid, också i låst läge.
+  - `/app/bygg`: låst tills steg 07 är klart (Resans `getSteps`), och i låst läge görs inga andra anrop. `getStatus` och `getSpec` fångas var för sig med `orNull`, och portens `null` skiljs ut före fångsten. Båda är stubbar, så båda sektionerna visar "Kommer snart" för den som har låst upp.
+- **Affärsplanen:** `screens/BusinessPlan.tsx` är ersatt av demots markup. Skärmen visar bara vad `buildBusinessPlan` returnerar, och `core/businessPlan.ts` är orörd.
+  - `BusinessPlanData = { plan: BusinessPlan | null }`. `null` ger alla nio avsnitt med rubrik, beskrivning och "Kommer snart", och färdighetsgraden "—", aldrig 0.
+  - `/app/affarsplan`: det finns ingen port och ingen live-hopsamling, så sidan visar just det. Demots hopsamling används aldrig.
+- **Rättningarna av affärsplanens källor** (`adapters/demo/businessPlan.ts`, beslut av grundaren):
+  - **Ett påstående visas bara med sin egen, verkliga källa.** Följande saknar källa i sina portar men lånade tidigare en poängdels eller registrets källa. De tas nu inte med:
+    - stegens höjdpunkter, alla steg (poängdelens källa)
+    - steg 04:s kundprofil (registrets källa)
+    - förslagens förklaringar i Riskerna (poängdelens källa)
+    - den skarpare idéns motivering (registrets källa)
+    - Jonas antaganden (registrets källa)
+    - konkurrenternas beskrivningar ("dyrt och tungt att införa") (registrets källa)
+    - domens reservkälla (poängdelen)
+  - Kontrollpunkterna står kvar utan påståenden, så avsnittens status sjunker och luckan visas ("Underlag saknas — kommer från steg N"). Ingen källa är påhittad.
+  - **Urvalet** skrivs "tillväxt: 171 av 312, region: 308 av 312" (sv) eller "growth: 171 of 312, region: 308 of 312" (en), i stället för "171/308". **Andelarna** bär % ("18 %"). En andel med underlaget 0 (porten: okänt) visas inte. Nya nycklar: `businessPlanPage.percentValueTemplate` och `coverageValueTemplate`.
+  - **`CLAUDE.md`:** undantaget från källmärkning gäller nu uträknade sammanfattningar som bara bygger på delar som visas med källa, på samma sida eller en länkad. Det gäller i dag två siffror, sidhuvudets poäng och affärsplanens färdighetsgrad, och aldrig en hämtad siffra.
+  - `adapters/demo/businessPlan.test.ts` (5 tester) går igenom alla moment för Sara och Jonas. Mot den gamla hopsamlingen föll alla fem.
+- **Tester:**
+  - skärmtester: `screens/Cofounder.test.tsx` (6), `screens/Build.test.tsx` (5), `screens/BusinessPlan.test.tsx` (4)
+  - ruttester: `/app/medgrundaren` (3), `/app/bygg` (7), `/app/affarsplan` (3)
+  - tre nya i `app/demo/demo.test.tsx`
+  - alla tre sidorna ligger i `PAGES` i `e2e/app.spec.ts`
+- **Skärmbilder** (Playwright mot `pnpm build && pnpm start`, 1440 och 390 px, Sara vid beat 0, 9, 17, 25, 30 och 37 och Jonas vid 0, 10 och sista, 72 par för `/demo`, `/demo/medgrundaren`, `/demo/bygg` och `/demo/affarsplan`):
+  - Efter varje flytt var alla 72 identiska med före (AE 0).
+  - Efter rättningarna skiljer sig bara `/demo/affarsplan` (18 av 72). Sara i sista momentet går från 8/9 till 1/9, och Jonas i sista momentet visar 0/9.
+- **Inloggat:** testkontot står på steg 01. `/app/medgrundaren` och `/app/affarsplan` visar "Kommer snart" per sektion, och `/app/bygg` visar "Låses upp efter steg 07".
+- **`/security-review`:** inga fynd. Kontrollerat:
+  - att rutterna ligger under `requireUser()`
+  - att ingen rutt läser `params`, `searchParams`, cookies eller formulär
+  - att inget renderas som HTML
+  - att `orNull` bara fångar platshållarfel
+  - att skärmarna inte importerar `adapters/` eller `lib/server` och att demot inte importerar någon liveadapter
+  - att det inte finns några nya `NEXT_PUBLIC_`-variabler
+  - att inget registeranrop görs
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (798 gröna, 35 skippade), `pnpm build` och `pnpm test:e2e` (34 av 34 mot produktionsbygget).
+
+### Vad som inte var en ren flytt (innehållsbeslut)
+- **Demots affärsplan ändras synligt** av rättningarna (se ovan). Beslut av grundaren: hellre ett tunt avsnitt än ett påstående med lånad källa.
+- **Luckans text** "Underlag saknas — kommer från steg 1" visas också när steg 1 är klart. Underlaget finns då, men utan egen källa. Texten är orörd.
+- **Medgrundaren utan moment:** kortets rubrik blir sidans namn ("Medgrundaren"), eftersom etiketten kommer ur samma data.
+- **Byggets tomläge** "Ingen spec än." är ny text, eftersom portens `null` inte är samma sak som en stubbe eller ett låst läge.
+- **Affärsplanen utan plan:** avsnitten visar ingen statuspill, eftersom status inte går att avgöra.
+
+### Påståenden och siffror utan täckning som inte är rättade (rapporteras)
+- **Marknad** (`screens/Market.tsx`, demots registeradapter): konkurrenternas beskrivningar visas där med registrets källa. Samma fel som togs bort ur affärsplanen, men det hör till Marknad och Registrets demodata.
+- **Bygg:** "Credits använda: 40/62" är ett fast, fiktivt tal i `adapters/demo/BuildProvider.ts` och visas utan källa. Webbläsarraden har reservadressen "lovable.dev/projects/spark" hårdkodad i markupen, flyttad rakt av.
+- **Medgrundaren:** manusets siffror (till exempel "312 byråer, 18 %" och priser) visas i chattbubblor utan `SourceTag`. Kontextspalten visar resans sammanfattningar utan källa.
+- **Affärsplanen, domen:** domens motivering ("9 av 9 som svarade …") visas med citatens källa (utskicket). Det är utskickets svar som ligger bakom domen, så det bedöms som en verklig källa. Det ska granskas om domen får en egen källa i `VerdictReport`.
+- **Affärsplanen, Jonas:** idégenomlysningens registerfakta visas både i Affärsidén och i Marknaden (fanns före PR 10).
+
+### Beslut nästa session behöver känna till
+- **Props:**
+  - `Cofounder({ data: { moment; context } })`
+  - `Build({ data: { status; spec }, locked })`
+  - `BusinessPlan({ data: { plan } })`
+- **När någon bygger en live-hopsamling för affärsplanen:** följ källregeln i `adapters/demo/businessPlan.ts`. Ett påstående utan egen källa tas inte med. Skärmen behöver inte ändras.
+- **När stegens höjdpunkter får en egen källa i `JourneyStepDetail`** kan de komma tillbaka i planen, men bara med den källan.
+- **Flikarna i `/app`** är fortfarande inerta. Bara Pulsen saknas.
+
+### Kända problem / docs som inte stämmer
+- **Skärmbildsfällan, två gånger till:** en `next start` som lever kvar gav alla 72 som falska skillnader. Kontrollera att porten är fri (`ps`) före `pnpm start`. `pkill -f "next …"` i samma skalkommando dödar skalet självt (exit 144).
+- **Demots läge** ligger i `localStorage` under `spark:fonda-demo-state` (`app/demo/_lib/fondaDemoIsolation.ts`), inte `spark:demo-state` som `demoStore.ts` visar.
+- **`i18n/dictionary.ts`** hänvisar till `screens/Cofounder.tsx` för "Sedan tidigare" och stämmer fortfarande.
 ## Spik: SCB:s företagsregister-API, AFR (klar 2026-09-30, gren `docs/scb-afr-spik`, PR mot `prototyp`, bara docs)
 
 ### Klart
@@ -2902,11 +3334,251 @@ Gren `design/pr2-skalet` skapades ur `adc4f24`; `prototyp` hann få två egna PR
 - `swagger.json` saknar `servers`. Bas-URL:en är härledd och bekräftad med anrop, inte angiven i kontraktet.
 - Gränsen 5 anrop/s är Sekundärt: den står i SCB:s dokumentation enligt Erik, inte i swagger.json, och inga rate limit-headers syntes.
 
+## PR 11: Onboarding, städning, flikarna och exempelkällorna (2026-09-30, direkt på `design/en-design`)
+Elfte och sista steget i `docs/plan-en-design.md`. `origin/prototyp` fanns redan i grenen. Fyra kodcommits och docs: onboardingen (`744bcf9`), städningen (`a92e613`), flikarna (`6d8674b`) och exempelkällorna (`36c838c`, egen commit så att den kan granskas och backas för sig). **Migrationen är klar**, utom Pulsen (steg 6, Bruno).
+
+### Klart
+- **Onboardingen:** `screens/OnboardingEntry`, `OnboardingIdea` och `OnboardingProfile` är ersatta av markupen från `/demo/start`, `/demo/start/ide` och `/demo/start/profil`, flyttad rakt av.
+  - Props: `OnboardingEntry({ basePath, onChoose? })`, `OnboardingIdea({ data: { screening }, continueHref })`, `OnboardingProfile({ data: { script }, continueHref, onContinue? })`.
+  - Demots tre sidor är tunna hämtare.
+  - `/start` använder samma skärmar och demots stil (`site.css`, `DemoTopBar dataKind="live"` med utloggning). `requireUser()` står kvar i layouten.
+  - Platshållare per sektion: Projekt och Profil är stubbar, så idégenomlysningens fem sektioner och samtalets två delar visar "Kommer snart" var för sig. Alla sektioner kommer ur samma anrop och saknas därför tillsammans. Demots data används aldrig.
+- **Städningen.** Kontrollerat med grep att inget importerade dem innan de togs bort:
+  - `components/spark`: `ChatMessage`, `DemoBar`, `JourneyRail`, `KpiRow`, `KpiTile`, `LegalMap`, `NavIcon`, `PromptBox`, `ScorePanel`, `ScoreRing`, `SidebarRestart`, `SimulationCard`, `SuggestionList`, `TimeSkip`, `ToolRunCard`, `TourOverlay` (med test)
+  - `components/ui`: `BarChart`, `Card`, `Sparkline`
+  - `journeyStepPath` i `app/demo/_lib/paths.ts`
+  - i18n-nycklar som bara de använde: `appShell.profileMenuLabel`/`tagline`/`restartDemo`, `journeyPage.openStep`, `demoBar.phaseLabel` och onboardingens tre `eyebrow`
+  - `DemoBlocks.tsx` exporterar bara `PageHead`, åt demots Pulsen-sida.
+- **Fonda-namnen i koden är borta:** `DEMO_PATHS`, `DEMO_BASE`, `DemoBar`, `DemoTour`, `toDemoPath`, `demoTourCopy`, `DEMO_HREF`, `PRIVACY_HREF`, `TOUR_TITLES`/`TOUR_BODIES` och `DemoXxxPage`/`DemoLayout`. `fondaDemoIsolation.ts` är borttagen.
+- **Demots läge** sparas under `spark:demo` (`adapters/demo/demoStore.ts`, `DEMO_STATE_KEY`).
+  - Hur det läses in: `skipHydration`. Demots layout anropar `hydrateDemoStore()` och renderar först när `useDemoStoreHydrated()` är sant, samma tomma skal på servern som förut.
+  - Gamla lägen: `spark:fonda-demo-state` flyttas en gång till `spark:demo` och tas bort (en nyare `spark:demo` skrivs aldrig över). Det gamla demots `spark:demo-state` läses aldrig.
+  - Trasiga lägen: lagringen fångar trasig JSON och blockerad lagring. `sanitizePersisted` behåller bara fält med rätt typ, begränsar `beatIndex` och `tourStepIndex` och slår av en rundtur utan giltigt stopp eller i Jonas scenario. Ett trasigt läge ger utgångsläget, aldrig ett fel. Provat i webbläsaren med gammal nyckel, trasig JSON och fel typer: inga sidfel.
+- **Flikarna i `/app`** länkar till sina sidor. `AppShell` fick `unavailableTabs`. `/app` skickar `["pulsen"]` (`UNAVAILABLE_TABS` i `app/(app)/layout.tsx`), så Pulsen är inaktiv. **Tänd Pulsen när Bruno har byggt `/app/pulsen`:** ta bort `"pulsen"` ur listan och rätta testerna (`app/(app)/layout.test.tsx`, e2e "flikarna i /app …", 10 → 11 länkar).
+- **Exempelkällorna** (del 4, beslut av grundaren):
+  - Ny datatyp `"example"` i `design/tokens.ts`. `SourceTag` visar den med etiketten "Exempel ·" först och fiktionsmärkets streckade kant, aldrig registrets grå.
+  - `adapters/demo/exampleSource.ts` ger källan "Påhittad data, steg 04" ("Made-up data, step 04"), "…, idégenomlysningen" eller "…, Höj din poäng". Datumet är scenariots datum för steget.
+  - **Affärsplanen:** dessa påståenden är tillbaka, med exempelkälla i stället för lånad källa:
+    - stegens höjdpunkter (steg 01, 02, 04, 07, 08, 11, 12)
+    - stegets dom utan utskick
+    - den skarpare idén och Jonas antaganden
+    - konkurrenternas beskrivningar
+    - förslagens förklaringar i Riskerna
+  - **Färdighetsgraden** är densamma som före PR 10 i varje fotograferat moment: Sara 2, 3, 5, 6, 6, 8 av 9 och Jonas 1, 2, 2, 4 av 9. Den enda statusskillnaden mot före PR 10 är Jonas "Kunden och problemet", som är tunt i stället för saknas. Steg 04:s kundprofil krävde tidigare Registret, som Jonas inte har.
+  - **Marknad:** `MarketData.competitorsSource` (valfri), satt av demot till "Påhittad data, steg 03".
+  - **Bygg:** `BuildData.creditsSource` (valfri), satt av demot till "Påhittad data, steg 10", steget där bygget körs.
+  - **Medgrundaren:** `CofounderMoment.itemSources` och `CofounderContextItem.source` (valfria). Demot sätter en exempelkälla på bubblor, verktygskörningar och rader i "Sedan tidigare" som innehåller en siffra. Stegnummer ("steg 06") räknas inte som siffror.
+  - **Buggen i luckan:** `BusinessPlanData.completedStepNumbers`. En lucka från ett klart steg säger "Steg N är klart, men gav inget underlag med källa till det här avsnittet." i stället för "Underlag saknas — kommer från steg N". Demot skickar de klara stegen, `/app` inga.
+  - **I `/app`** sätts ingen exempelkälla. Vakttestet `app/(app)/app/noExampleSources.test.ts` går igenom `app/(app)`, `app/start`, `adapters/live` och `lib/server`. Ruttesterna för Marknad och Bygg kontrollerar att ingen "Exempel"-tagg syns.
+- **Tester:**
+  - skärmtester för onboardingen (3 filer, ett nytt fall var) och `AppShell` (1 nytt), plus 2 nya i `BusinessPlan.test.tsx`
+  - ruttester: `app/start/start.test.tsx` (9) och de uppdaterade för layouten, Marknad och Bygg
+  - `adapters/demo/demoStore.test.ts` (11) och `adapters/demo/businessPlan.test.ts` (9, omskriven: exempel bara med exempelkälla, aldrig registrets eller en poängdels)
+  - 7 nya i `app/demo/demo.test.tsx`
+  - e2e: `/start`, `/start/ide` och `/start/profil` i `PAGES`, plus "flikarna i /app leder till sidor som finns, och Pulsen är inaktiv"
+- **Skärmbilder** (Playwright mot `pnpm build && pnpm start`, 1440 och 390 px). Sara vid beat 0, 9, 17, 25 och 37 och Jonas vid 0 och 12, 80 bilder av `/demo`, `/demo/start`, `/demo/start/ide`, `/demo/start/profil`, `/demo/affarsplan`, `/demo/marknad`, `/demo/bygg` och `/demo/medgrundaren`:
+  - efter del 1–3: alla 80 identiska med före (AE 0)
+  - efter del 4: `/demo`, `/demo/start`, idégenomlysningen och profilsamtalet fortfarande identiska i alla lägen. Skiljer sig gör bara det del 4 ändrar: affärsplanen (alla 14), Marknad från steg 03 (8), Bygg när credits finns (4) och Medgrundaren där "Sedan tidigare" har siffror (10).
+- **Inloggat:** `/start/ide` visar demots stil med "Kommer snart" i varje sektion. `/app` har tio länkade flikar och Pulsen inaktiv.
+- **`/security-review`:** inga fynd. Kontrollerat:
+  - att `/start` och `/app` fortfarande kräver `requireUser()`
+  - att inga demoadaptrar eller exempelkällor används i `/start` och `/app`
+  - att inget renderas som HTML och att inga nya `NEXT_PUBLIC_`-variabler finns
+  - att det sparade läget bara kan ge kända fält med rätt typ
+  - att länkarna byggs av fasta värden och att inga funktioner skickas från servern
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (828 gröna, 35 skippade), `pnpm build` och `pnpm test:e2e` (42 av 42 mot produktionsbygget).
+
+### Vad som står kvar, och varför
+- **`/designsystem`** (Session 1) är den enda som använder `NextStepCard`, `ScoreBadge`, `VerdictCard`, `DataFact`, `DemoDataBadge` och `LockedState`, och den visar det gamla designsystemet. Den togs inte bort, eftersom den är en sida och inte en oanvänd fil. Om den ska tas bort eller skrivas om är ett eget beslut.
+- **`PulseCard`**, `Eyebrow` och `EditorialHeading` används av `screens/Pulse.tsx` (Brunos), `ComingSoon`, inloggningen och `/priser`.
+- **Klassprefixen `.fd`/`.fdd`** och rundturens gamla rutter i `adapters/demo/tourSteps.ts` (`/demo/app/…`, översatta av `toDemoPath`) är kvar. De syns inte och ingen annan kod är beroende av namnen.
+- **Kommentarer om "det riktiga demot"** i `DemoBar.tsx`, `DemoTour.tsx` och `app/demo/(app)/layout.tsx` beskriver det gamla demot. Det är historik och rörs inte här.
+- **Fonda i docs** (`docs/uppdrag.md`, `DESIGN.md`, `design-referens/fonda/`) handlar om designinspirationen, inte om koden.
+
+### Beslut nästa session behöver känna till
+- **Exempelkällor finns bara i demot.** En live-hopsamling för affärsplanen, eller en `/app`-sida, använder aldrig `exampleSource` eller datatypen `"example"`. Saknas verkligt underlag visas luckan. Vakttestet blir rött annars.
+- **Exempelkällans namn** börjar alltid med "Påhittad data," / "Made-up data,". Testerna i `adapters/demo/businessPlan.test.ts` och `app/demo/demo.test.tsx` bygger på det.
+- **Pulsen:** se ovan om att tända fliken.
+
+### Återstår innan migrationen kan kallas helt klar
+- **Pulsen** (steg 6, Bruno): `screens/Pulse.tsx` i demots stil, demots sida som tunn hämtare, `/app/pulsen`, fliken tänd. Därefter kan `DemoBlocks.tsx` och troligen `PulseCard` tas bort.
+- **Val av bolagsform och bransch** i `/app` finns fortfarande bara i adressen (se beslut 5 i planen).
+
+### Kända problem
+- **Credits i `/app`:** om Byggs liveadapter en dag ger `creditsUsed` visas talet utan källa, eftersom porten inte bär någon. Porten behöver en källa, eller så ska talet inte visas.
+- **Konkurrenternas beskrivningar i `/app`** kommer ur Registret och visas utan egen tagg. Sektionens registerkälla står i nyckeltalen.
+- **Skärmbildsfällan:** `kill` via `pgrep -f "next…"` i samma skal dödar skalet självt (exit 144). Hitta pid med `ss -ltnp | grep :PORT` i stället.
+
+## PR 6: Pulsen (2026-10-01, direkt på `design/en-design`)
+Steg 6 i `docs/plan-en-design.md`, det sista. Två kodcommits och docs: den rena flytten (`853323a`) och exempelkällorna (`5b2e7f2`, egen commit så att den kan granskas och backas för sig, som PR 11 del 4). Ersätter #35, som byggde samma rutt mot `prototyp` med det gamla skalet. Av #35 behölls ruttestet. Liveadaptern och Tavily fanns redan här sedan #23.
+
+### Klart
+- **`screens/Pulse.tsx`:** demots markup rakt av, ersätter den gamla oanvända skärmen (Tailwind och `PulseCard`). Props: `Pulse({ data: { signals, sourceDataType? } })`.
+  - Platshållare per sektion: `signals: null` (platshållarfel) ger "Kommer snart" i listan. Sidhuvudet står kvar med sidans namn.
+  - En tom lista är ett ärligt tomläge ("Ingen signal än"), inte en lucka. Det är vad liveadaptern ger utan aktivt projekt och demot ger för Jonas.
+- **Demots sida** (`app/demo/(app)/pulsen/page.tsx`) är en tunn hämtare utan markup.
+- **`/app/pulsen`:** `livePulseProvider.getSignals("sv")` via `orNull`, som de andra rutterna. Ingen exempelkälla, ingen `sourceDataType`: källan är artikelns domän och hämtdatum.
+- **Fliken tänd:** `UNAVAILABLE_TABS` i `app/(app)/layout.tsx` är tom. PR 11:s flikrad och `unavailableTabs` i `AppShell` är orörda.
+- **`app/demo/_components/DemoBlocks.tsx` borttagen** (grep: inget importerade den). Kommentarerna i `PageBlocks.tsx` och `DataBlocks.tsx` som hänvisade till den är rättade.
+- **Exempelkällorna (andra commiten):** demots fem signaler är påhittade men bar myndighetsnamn som källa (Bolagsverket, Skatteverket, "Fiktiv branschtidning"). Nu visas varje signal på demots Pulsen-sida med `exampleSource` för steget där den dyker upp och `sourceDataType: "example"`: "EXEMPEL · Påhittad data, steg 01" (de tre från start), "…, steg 03" och "…, steg 06" (de två som låses upp). Stegen kommer ur nya `getSignalSteps()` i `adapters/demo/PulseProvider.ts`. `getSignals` är oförändrad.
+- **Tester:**
+  - `screens/Pulse.test.tsx` (5): rubrik och källor, inga relativa tider, exempeletiketten bara med `sourceDataType`, tomläge, Kommer snart vid `null`
+  - `app/(app)/app/pulsen/page.test.tsx` (5): signaler utan fiktionsmärke och exempeltagg, tomläge, Kommer snart för stubbe och tomt konto, äkta fel kastas
+  - `adapters/demo/PulseProvider.test.ts` (2): stegen följer signalerna i varje moment, tomt för Jonas
+  - `app/demo/demo.test.tsx` (3 nya): signalerna följer momentet, exempelkälla på varje signal och inget myndighetsnamn, Jonas tomläge
+  - `app/(app)/layout.test.tsx`: 11 länkar, Pulsen länkar till `/app/pulsen`
+  - e2e: `/app/pulsen` i `PAGES`, flik-testet ändrat till "… Pulsen också" (11 länkar)
+- **Skärmbilder** (Playwright mot `pnpm build && pnpm start`, 1440 och 390 px). `/demo` och `/demo/pulsen` för Sara vid beat 0, 9, 17, 25 och 37 och Jonas vid 0 och 12, 28 bilder:
+  - efter den rena flytten: alla 28 identiska med före (AE 0)
+  - efter exempelkällorna: `/demo` (14) och Jonas Pulsen (4) fortfarande identiska. Skiljer sig gör bara Saras `/demo/pulsen` (10), där källtaggarna bytts.
+- **Säkerhet** (manuellt, `/security-review` fanns inte i miljön): `/app/pulsen` ligger under `(app)`-layoutens `requireUser()`; inga nycklar eller `NEXT_PUBLIC_`-variabler i diffen; `screens/` och demot importerar inga liveadaptrar; ingen rå HTML; Registret används inte (licensgrinden berörs inte). Vakttesterna `noExampleSources` och `noAdapters` gröna.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (843 gröna, 35 skippade) och `pnpm build`.
+
+### Inte verifierat
+- **`pnpm test:e2e` kördes inte.** Testkontot (`APP_TEST_USER_*` i `.env.local`) fanns inte i miljön, så testerna hoppas över. Kör e2e lokalt innan PR:en mot `prototyp`.
+- **`/app/pulsen` inloggat mot riktig Supabase och Tavily** är inte klickad.
+
+### Innehållsbeslut (inte ren flytt)
+- **Exempelkällorna:** myndighetsnamnen byttes mot exempelkällor (se ovan). Steg 01 för de tre signalerna från start är ett val: de hör inte till något steg, de är "dagens puls" från första momentet. Datumet är scenariots datum för steget, som i PR 11.
+- **Inget låst läge i `/app/pulsen`:** demots Pulsen har ingen stegspärr att flytta. `/priser` lovar "begränsad Puls" i provveckan, men ingen sådan begränsning finns i kod.
+
+### Kända problem
+- **Hem visar fortfarande dagens signal med "Bolagsverket"** (`screens/AppHome.tsx`, demots Hem). Det är samma påhittade signal. Rättas med samma mönster: en exempelkälla och `dataType` för Hems signal. Rördes inte här, eftersom Hem inte hör till steg 6 och `/demo` skulle sluta vara identisk.
+- **Rubrikerna i demots signaler** påstår fortfarande saker om verkliga aktörer ("Skatteverket skärper kraven …", "Registret bekräftar precis det segment …"). Taggen säger nu att det är påhittat, men texten är oförändrad. Ett eget innehållsbeslut.
+- **Liveadapterns källtagg** visas med datatypen `register` (grå registertagg) fast källan är en nyhetssajt. Samma som på Hem. Ingen datatyp för nyheter finns.
+
+### Docs mot kod
+- **Portregeln** i planen säger att `screens/` bara får ta emot props och typer från `ports/` och `core/`. Koden importerar också `design/tokens` (`DataType`), `i18n` och `components/ui` (t.ex. `Market.tsx`). Vakttestet förbjuder bara `adapters/`. `Pulse.tsx` följer Marknads mönster.
+- **PR 11:s "Vad som står kvar"** säger att `PulseCard` används av `screens/Pulse.tsx`. Nu används den bara av `/designsystem`, så den står kvar av samma skäl som de andra komponenterna där.
+- **`adapters/demo/PulseProvider.ts`** säger "alla med källa" om signalerna, men källorna var myndighetsnamn på påhittad data. Kommentaren om Jonas pekar på `app/demo/app/page.tsx`, som inte finns längre.
+
+### Beslut nästa session behöver känna till
+- **#35 kan stängas** nu när steg 6 ligger på `design/en-design`.
+- **Migrationen är helt klar.** Inga skärmar i `screens/` är oanvända och inga demosidor har kvar egen markup.
+
+## Pulsen inloggad, källtyperna och Hems källor (2026-10-01, direkt på `design/en-design`)
+`origin/prototyp` fanns redan i grenen. Tre commits: källtyperna, Hems källor (egen commit, så att den kan granskas och backas för sig) och docs.
+
+### Del 1: `/app/pulsen` verifierad inloggad (ingen kodändring)
+- **`pnpm test:e2e`:** 44 av 44 gröna mot produktionsbygget, både före och efter ändringarna. PR 6:s "e2e kördes inte" är därmed gjort.
+- **`/app/pulsen` inloggad** (1440 och 390 px): rubriken "Pulsen", underrubriken och tomläget "Inga signaler för det här scenariot." Inga signaler och inga källor, eftersom testkontot saknar aktivt projekt. Status 200, inga konsolfel. Hem i `/app` visar "Ingen signal än."
+- **Registertaggen, exakt var den sitter fel:** `screens/Pulse.tsx:60`, `<SourceTag source={signal.source} dataType={data.sourceDataType} />`. `/app/pulsen` (`app/(app)/app/pulsen/page.tsx`) skickar ingen `sourceDataType`, så `SourceTag` faller tillbaka på sin standard `"register"` (`components/ui/SourceTag.tsx`). En artikel från till exempel `breakit.se` får då klassen `bg-data-register-bg`, alltså registrets grå tagg. Det syns inte med testkontot, men bekräftades genom att rendera skärmen med en signal i liveadapterns form. **Rättningen för Bruno:** skicka `sourceDataType: "media"` från `/app/pulsen`-rutten (se `docs/beslut.md`, 2026-10-01). Skärmen behöver ingen ändring.
+- **Tomtexten i `/app/pulsen`** säger "scenariot", som är demots ord (`pulsePage.emptyState`). Hem använder `homePage.noPulseSignal` ("Ingen signal än."). Inte rättat, eftersom det ligger i `Pulse.tsx` (Brunos).
+
+### Klart
+- **Källtyperna** (beslut av grundaren, `docs/beslut.md` 2026-10-01): `register`, `media` (ny, blå, etiketten "Media"), `customer`, `user` (ny, bär, etiketten "Din uppgift" / "Your input"), `simulation` och `example`. Bara registret är grått. Tonerna ligger i `design/tokens.css`, `app/globals.css` och `design/tokens.ts`, med uträknad kontrast 6,0:1 och 5,3:1. Etiketterna ligger i `common.mediaSourceLabel` och `userSourceLabel`, och `SourceTag` samlar alla etiketter på ett ställe. `/designsystem` visar de nya tonerna av sig själv.
+- **Hem i demot:**
+  - **Dagens signal** bar "Bolagsverket" och en påhittad relativ tid ("4 dagar sedan"). Nu bär den en exempelkälla för steget där signalen dyker upp (`getSignalSteps()`), och tiden visas inte (bugg 11, som Pulsen).
+  - **"Sedan sist":** "40 mottagare" bar källan "Inget utskick ännu" i registergrått, öppningsgraden "Utskicket, steg 05" i registergrått och svaren "Kundsamtal, steg 05" som kunddata. Nu bär alla tre en exempelkälla för steget där siffran kommer ifrån, som läses ur scenariots källnamn. Mottagarna följer utskicket. Utan steg, före utskicket, gäller det aktuella steget.
+  - **Handlingskortet** får en exempelkälla när rubriken, förklaringen eller "Redan klart" innehåller en siffra som inte är ett stegnummer. Det är PR 11:s regel, nu i `app/demo/_lib/figures.ts` och delad med Medgrundaren. Exempel: "7 av 9 bekräftar problemet …" och "5 betalande byråer".
+  - Allt sker i demots rutt (`app/demo/(app)/page.tsx`), med samma mönster som Pulsen. `AppHome` fick två valfria fält: `sourceDataTypes` och `nextStepSource`.
+- **Hem i `/app`:** Pulsens artikel visas som `"media"` (`sourceDataTypes: { pulse: "media" }`), aldrig som register eller exempel. Utan signal ser sidan ut som förut.
+- **CLAUDE.md:** poängkortet på Hem står nu i listan över uträknade sammanfattningar (beslut av grundaren).
+- **Tester:**
+  - `screens/AppHome.test.tsx` (3 nya): standardtaggarna utan fälten, media och exempel
+  - `app/(app)/app/page.test.tsx` (1 ny): media, inget exempel
+  - `app/demo/demo.test.tsx` (5 nya): Hems taggar är exempel i tre moment, utan myndighetsnamn och påhittad tid; "Sedan sist" pekar på steg 05; handlingskortet med och utan siffra; siffra bara i "Redan klart"
+  - De tre första demotesterna föll mot den gamla rutten.
+- **Skärmbilder** (Playwright mot `pnpm build && pnpm start`, 1440 och 390 px). Sara vid beat 0, 9, 17, 25 och 37 och Jonas vid 0 och 12, 18 demosidor, totalt 252 bilder. Två FÖRE-omgångar var identiska (AE 0):
+  - efter ändringarna är 238 identiska med före
+  - skiljer sig gör bara `/demo` (Hem) i alla 14 lägen, som avsett
+  - Medgrundaren, där bara sifferregelns import flyttade, är identisk
+  - `/app` och `/app/pulsen` inloggat är identiska (AE 0)
+- **`/security-review`:** inga fynd. Kontrollerat: ingen rå HTML, inga nycklar eller `NEXT_PUBLIC_`, demot importerar inga liveadaptrar, `requireUser()` är orört, inga funktioner skickas från servern.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (851 gröna, 35 skippade), `pnpm build` och `pnpm test:e2e` (44 av 44).
+
+### Kända problem
+- **Rubrikerna i demots signaler** påstår fortfarande saker om verkliga aktörer, till exempel "Registret bekräftar precis det segment …" och "Skatteverket skärper …". Taggen säger att det är påhittat. Ett eget innehållsbeslut (kvar sedan PR 6).
+- **Handlingskortets texter i demot** säger "Riktiga siffror ur registret". Taggen säger nu "Exempel", men texten lovar fortfarande riktiga siffror. Ett innehållsbeslut.
+- **"Sedan sist" i `/app`** har fortfarande registrets tagg för utskicket och öppningsgraden som standard. Det syns inte, eftersom `getHomeSummary` är en stubbe. När Resan byggs ska rutten sätta rätt datatyp: utskicket är användarens egen data, inte ett register.
+- **Källans steg i "Sedan sist"** läses ur scenariots källnamn ("steg 05"). Om demots källnamn byter form faller det tillbaka på det aktuella steget. Ett test täcker steg 05.
+
+### Beslut nästa session behöver känna till
+- **Källtyperna i `docs/beslut.md` gäller alla moduler.** `SourceTag` har `register` som standard, så sätt alltid datatypen för en källa som inte är ett register.
+- **Bruno:** `/app/pulsen` behöver bara `sourceDataType: "media"` i rutten. Tomtexten i `Pulse.tsx` (se ovan) är hans att avgöra.
+
+## PR 6: Pulsen — källtyperna (2026-10-01, direkt på `design/en-design`)
+Theodors granskning av PR 6: varje källa ska bära sin egen typ, och en signal får inte påstå saker om verkliga aktörer. Bygger på källtyperna från `aeb7a47` (docs/beslut.md, 2026-10-01).
+
+### Klart
+- **`/app/pulsen`** skickar `sourceDataType: "media"`. Artiklarna visas med "Media" i blått, aldrig med registrets grå tagg. Samma som Hem.
+- **Demoadaptern bär inga myndighetsnamn längre** (`adapters/demo/PulseProvider.ts`). `source` är borttagen ur signaltexterna. Adaptern sätter exempelkällan själv (`withSource`, steget ur `getSignalSteps()`), i både `getSignals` och `getTodaysSignal`. Demots Pulsen-sida skriver därför inte längre över källan, den sätter bara `sourceDataType: "example"`. Demots Hem (Theodors) skriver fortfarande över med samma värden, vilket ger samma resultat.
+- **Två texter skrivna om**, på svenska och engelska:
+  - "Skatteverket skärper kraven på digital arkivering av underlag" blev "Fler byråer efterfrågar digital arkivering av kvitton och underlag" (kategorin "Reglering" blev "Bransch")
+  - "Registret bekräftar precis det segment Domen pekade ut …" blev "Fler tecken pekar på samma segment som Domen …"
+- **Portregeln** i `docs/plan-en-design.md` säger nu som koden gör: skärmar importerar aldrig `adapters/`, datans typer kommer från `ports/` och `core/`, och presentationen (`design/`, `i18n/`, `components/ui/`) får importeras.
+- **`docs/beslut.md`:** varför de tre startsignalerna räknas till steg 01, och att signalerna inte påstår något om verkliga aktörer.
+- **Tester:** ruttestet kontrollerar "Media". Adaptertestet kontrollerar att varje signal bär exempelkällan för sitt steg och att inga myndighetsnamn finns (sv, en, `getTodaysSignal`).
+- **Skärmbilder** mot `064ec3f` (28 bilder, samma lägen som förut): skillnad bara där texten ändrats. Det gäller Saras `/demo/pulsen` (10) och Hem vid beat 25 och 37 (4), där segmentsignalen är dagens signal. På Hem ändras bara meningen, och Theodors exempeltagg är identisk. Jonas och övriga Hem-lägen är identiska.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (852 gröna, 35 skippade) och `pnpm build`. e2e och inloggat: Theodor kör dem.
+
+### Kvar
+- **Rubrikerna innehåller fortfarande påhittade siffror** ("14 nya redovisningsbyråer …", "22 % fler …", "10–20 anställda växer snabbare …"). De påstår inte att en myndighet sagt dem och bär exempeltagg, men de är uppfunna statistikpåståenden. Om de ska bort är ett eget innehållsbeslut.
+- **`timestamp`-fälten** i demoadaptern ("3 dagar sedan" m.fl.) visas inte längre någonstans men finns kvar i datan.
+
+## Pitchsäkring av demot (2026-10-01, direkt på `design/en-design`)
+`origin/prototyp` fanns redan i grenen. Två commits: texterna (egen commit) och docs.
+
+### Klart
+- **Texter som lovade en verklig källa under exempeldata är omskrivna** (sv och en). De beskriver nu vad kortet gör utan att namnge en myndighet. Ingen ny källa är uppfunnen.
+  - `adapters/demo/sara.ts`: steg 01–04 på Hem och Resan ("… innan den kan visa några siffror ur registret", "Riktiga siffror ur registret …", "Se de första siffrorna ur registret", "Kundprofil ur registret …"), steg 02:s höjdpunkter ("… ur profilen och registret", "Preliminär registerträff"), poängrörelsen "efter registerdata" och förslaget "Bara delar av registret är hämtat". "Medianomsättning" i steg 03:s text är borta, eftersom siffran inte visas.
+  - `adapters/demo/jonas.ts`: "registerbild" (steg 02, 03 och förslaget), "Kundprofil ur registret", "efter registerdata".
+  - Medgrundaren (`cofounderScript.ts`, `jonasCofounderScript.ts`): "Söker i Bolagsverkets register", "Hämtar från Bolagsverket och SCB", "Hämtar från Bolagsverket", "de första riktiga siffrorna ur registret", "korsar din profil mot registret", "se vad registret säger".
+  - Rundturen (`app/demo/_lib/tourCopy.ts`): stopp 3:s rubrik ("Medgrundaren hämtar siffror från Bolagsverket") och text, stopp 5 ("register- och kundunderlag"), stopp 6 ("Ingen siffra i Spark är gissad" under påhittade siffror), stopp 7:s rubrik och text ("ur registret"; "knappt någon annanstans", bugg 19, är borta).
+  - Marknad i exempelläget: egna nycklar `subtitleExample` och `kpiTitleExample` ("Marknadsbilden"), och "Byråer i branschen" i stället för "Byråer i registret". `/app` är oförändrat.
+  - Berättelsen om att Sara och Jonas registrerar firman hos Bolagsverket står kvar: det är en händelse i scenariot, ingen källa.
+- **Rundturens stopp 19** säger 249 kr och "bygget ingår", som rubriken och `/priser` (bugg 18). Texten sa 199 kr och "bygget säljs separat".
+- **Vakttest:** `adapters/demo/noRealSourceClaims.test.ts` (5): inga källpåståenden i scenariofilerna, inga myndighetsnamn i rundturens texter (utom juridikens riktiga källor).
+- **Genomklickat:** alla 26 demosidor (inkl. `/demo/resan/1–12`) i alla 51 moment som textdump, och 616 skärmbilder i 1440 och 390 px (Sara vid beat 0, 5, 9 … 37, Jonas vid 0, 4, 8, 12). Inga sidfel eller konsolfel.
+- **Rundturen** körd hela vägen i 1440 och 390 px: alla 20 stopp, rätt sida på varje, "Avsluta rundtur" stänger. Från Jonas är den låst.
+- **`docs/demo-manus.md`** omskrivet rad för rad mot demot, med de fyra reglerna vid visning.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar), `pnpm test` (857 gröna, 35 skippade), `pnpm build`.
+
+### Kända problem (hittade vid genomklickningen, inte rättade)
+- **Grå registertaggar på påhittad data.** "Bolagsverket och SCB" på Marknads nyckeltal, storleksfördelning och datalager samt i Affärsplanens Marknaden (`adapters/demo/RegistryProvider.ts`); "Bolagsverket" på poängdelarna Marknad, Konkurrens och Genomförbarhet (`sara.ts`, `jonas.ts`) och i Jonas idégenomlysning (`adapters/demo/ProjectRepository.ts`). Sidan säger "Exempel med påhittad data" ovanför. Största kvarvarande risken.
+- **Andra icke-exempeltaggar på påhittad data:** "Sparks utskick (Gmail)", "Utskicket, steg 05" och "Kundsamtal, steg 05–06" på Validering, Marknad, Bygg och i Affärsplanens citat. Hem visar samma siffror med Exempel-tagg.
+- **40 eller 20 mottagare.** Hem och Resan säger att utskicket gick till 40 byråer (`sara.ts`), Validering och Marknad säger 20 kontaktade och "9 av 20".
+- **Jonas:** Marknad, Validering, Juridik och Bygg står som "Låst — inte genomfört i det här scenariot" fast Hem visar 25 mottagare, 13 svar och alla steg klara. Poäng ger Marknad 12/12. Affärsplanen står på 4/9 vid poäng 89 "Bevisad affär".
+- **"Höj din poäng" följer inte momentet.** Vid steg 12 föreslår den "+3 Marknad" (redan 12/12), "+2 Registrera bolagsformen" (redan gjort, 8/8) och "+4 MVP:n är inte helt byggd" (Produkt 12/12).
+- **"Vad som hänt sedan sist"** på Hem visar utskicket från steg 05 (januari) ända till steg 12 (april). Dagens signal är daterad 23 januari vid 10 april.
+- **Validering på 390 px** har vågrät rullning (sidan 508–514 px bred) från steg 05, troligen tabellen "Alla kontaktade".
+- **Tomma eller upprepade rutor:** omsättningskolumnen i "Alla kontaktade" visar "–" med samma lucktext på alla 20 rader; storleksfördelningen har tre rader med 0; simuleringskortet på Marknad har tre etiketter på rad (Simulering, Koncept, SIMULERING-taggen); Jonas poängkort på Hem har en stor tom yta.
+- **Rundturens stopp 9** lovar fortfarande att Spark "bevakar öppningar och svar automatiskt" (bugg 15), och Validering visar en öppningsfrekvens. Manuset säger åt presentatören att inte lova det.
+- **Rundturen hoppar i tiden:** stopp 3 (steg 03, poäng 14) → stopp 4 (steg 01, poäng 6) → stopp 5 (steg 04, 27) → stopp 6 (steg 03, 24).
+- **Bygg** visar `https://kvittojakten.lovable.app` som publicerad adress (bugg 17). Sidan finns inte.
+- **Simuleringen** säger "Simulerad population: 312", samma tal som byråerna (bugg 16).
+- **Okänt ord:** Hem steg 12 säger "Ansökningsunderlag förberett ur Spåret". "Spåret" är en flik i Minnet men förklaras inte.
+- **Kvar i delad text:** Validerings underrubrik "Allt som prövats mot verkliga kunder" och Affärsplanens "Registerbilden, alltid med täckningen …" delas med `/app` och är inte ändrade. Landningssidans stegtexter (`i18n` `journeySteps`) säger fortfarande "Riktiga siffror ur registret"; de beskriver produkten, inte demot.
+
+### Beslut nästa session behöver känna till
+- **Demots texter namnger ingen verklig källa för påhittad data.** Vakttestet blir rött annars. Juridikens kuraterade källor (riksdagen.se, Skatteverket, IMY) är riktiga och undantagna.
+- **Marknad har exempelnycklar** (`subtitleExample`, `kpiTitleExample`, `companyCountLabel`); `/app` använder de gamla.
 ## Juridisk koll: namn och datum för källkontrollen (klar 2026-10-01, gren `docs/verifiering-namn`, PR #41 mot `prototyp`)
 
 ### Klart
 - Vem som kontrollerade källorna och när står nu i två filer. I `docs/beslut.md` finns beslutet "Källverifiering juridik" under 2026-09-30. Överst i verifieringsloggen i `docs/moduler/juridisk-koll.md` står "Kontrollerat av: Oskar Jaeger, 2026-09-30". Bara dokumentation, ingen kod.
 
+## Fem rättningar inför pitchen (2026-10-01, direkt på `design/en-design`)
+
+`origin/prototyp` mergad först (konflikt i `docs/beslut.md`, båda sidornas text behållen). En commit per rättning, pushad direkt.
+
+### Klart
+1. **Exempeltagg på påhittade registersiffror och poängdelar.** Marknads nyckeltal, storleksfördelning och datalager (ny valfri `MarketData.registrySource`, satt av demots route), Affärsplanens Marknaden-avsnitt och Jonas registerfakta (`adapters/demo/businessPlan.ts`), och alla poängdelar utom simuleringar (`adapters/demo/EvidenceRepository.ts`, nytt exempelursprung "poängunderlaget"). Inget register- eller myndighetsnamn står kvar på de sidorna.
+2. **Exempeltagg på påhittade svar, citat och underlag.** Validering (nyckeltal, öppningsfrekvens, antaganden), Marknads utskick, Byggs underlag (ny valfri `BuildData.underlagSource`) och Affärsplanens citat, dom och underlag. Skärmarna Validering och Marknad ger svaren datatypen `example` när `dataKind` är `example`, annars `customer`. `/app` är oförändrat.
+3. **20 mottagare, inte 40.** Kontaktlistan (`saraCompanies`) har 20 namngivna byråer, och Validering och Marknad räknar ur den. 40 hade krävt 20 påhittade bolag till. Berättelsen och `recipientCount` i `sara.ts` och Medgrundarens manus säger nu 20.
+4. **Rundturen går framåt i tiden.** Stoppen 3–8 är omordnade: profilen (poäng 6), Medgrundarens marknadskörning (14), Marknads tre stopp (24), taket på 30 (27). Poängen sjunker bara vid 47 → 43, som stoppet handlar om. Nytt test, `adapters/demo/tourSteps.test.ts`, håller stoppens moment i ordning. Manuset och stoppnumren i `tourCopy.ts` följer.
+5. **Bygg visar `kvittojakten.example` som text**, ingen länk (ny valfri `BuildData.publishedUrlIsExample`). `.example` är reserverad (RFC 2606) och kan aldrig leda till en död sida.
+- Nya vakttester i `app/demo/demo.test.tsx`: Validering, Marknad, Bygg och Affärsplanen bär bara exempel- eller simuleringstaggar; Poängs delar bär "poängunderlaget"; Hems mottagare är lika många som kontaktlistan.
+- `docs/demo-manus.md`: varningen om grå taggar och "rundturen hoppar i tiden" är borta, stoppen omnumrerade.
+
+### Kända problem
+- **Demot är fryst efter den här sessionen.** De åtta återstående punkterna från genomklickningen (se "Pitchsäkring av demot" ovan) tas efter lanseringen, inte före: Jonas motsägelser, "Höj din poäng" följer inte momentet, "Vad som hänt sedan sist" på Hem, Validering rullar vågrätt på 390 px, tomma eller upprepade rutor, rundturens stopp 9 lovar bevakning av öppningar, simuleringens population 312, och ordet "Spåret".
+- **Öppningsfrekvensen 38 % går inte jämnt ut på 20 mottagare** (7,6 personer). Den kommer från `docs/uppdrag.md` 9.3, som räknar med 40 byråer (15 av 40). Inte ändrad.
+- Landningssidans text "Skriver 40 personliga mejl" (`landingPage.cofounder.toolRun` i i18n) och Jonas `hallprognos.lovable.app` i löptext är inte ändrade.
+
+### Beslut nästa session behöver känna till
+- **I demot bär ingen tagg datatypen `register` eller `customer`.** Påhittad data får exempelkällan för sitt steg. Skärmarna tar emot källan och datatypen från routen (`registrySource`, `underlagSource`, `competitorsSource`, `creditsSource`) eller väljer `example` ur `dataKind`.
+- **Demots utskick gick till 20 byråer.**
 ## Modul: Juridisk koll — källorna kontrollerade, del 2 (klar 2026-10-01, gren `modul/juridisk-koll-kallor-2`, PR mot `prototyp`)
 
 ### Klart
@@ -2928,3 +3600,48 @@ Gren `design/pr2-skalet` skapades ur `adc4f24`; `prototyp` hann få två egna PR
 
 ### Beslut
 - Ämnes-id:t `gdpr_personuppgifter` och källnycklarna `skatteverket`, `imy` och `konsumentverket` finns inte längre.
+
+## Öppningsfrekvensen: 40 %, inte 38 % (2026-10-01, direkt på `design/en-design`)
+Undantag från frysningen, på Theodors begäran inför pitchen. Rättar "Öppningsfrekvensen 38 % går inte jämnt ut på 20 mottagare" under "Fem rättningar inför pitchen", Kända problem.
+
+### Klart
+- **40 % = 8 av 20.** Talet är inte nyvalt. Det är vad demodatan redan visar: två dagar efter utskicket har exakt 8 av de 20 byråerna status "öppnat" (`OPENED_BEFORE_RESPONSES` i `adapters/demo/OutreachProvider.ts`).
+- Ändrat, sv och en:
+  - `adapters/demo/sara.ts`: alla 24 `openRate: 38`, höjdpunkten "2 dagar senare: 40 % har öppnat (8 av 20)." och Minnets spårrad
+  - `adapters/demo/OutreachProvider.ts`: `outreachOpenRate` (Valideringens nyckeltal), med kommentar om var talet kommer ifrån
+  - `adapters/demo/cofounderScript.ts`: "40 % har öppnat, 8 av 20."
+  - `docs/uppdrag.md` 9.3: "till 20 byråer", "40 % har öppnat (8 av 20)" (stod 40 byråer och 38 %)
+- Jonas 44 % på 25 mottagare (11) går redan jämnt ut och är orörd. `screens/Validation.test.tsx` har ett eget testvärde 38 som inte är demodata, också orört.
+- Verifierat: `pnpm typecheck`, `pnpm lint`, `pnpm test` (866 gröna, 35 skippade), `pnpm build`. I webbläsaren: Saras alla 38 moment på Hem, Validering, Medgrundaren, Resan steg 5 och Minnet. 38 % syns ingenstans, 40 % på alla fem.
+
+### Kvar (inte rättat, demot fryst)
+- **Validering visar 40 % öppningsfrekvens, men tabellen "Alla kontaktade" visar alla 20 som "Öppnat" eller "Svarat"** från första svarsvågen. 40 % är läget två dagar efter utskicket, tabellen är läget efter svaren. Antingen ska nyckeltalet räknas ur tabellen (då blir det 100 %) eller märkas med sin tidpunkt. Ett innehållsbeslut.
+
+## Källgenomgången, del 1 (2026-10-01, Bruno, direkt på `design/en-design`)
+Uppdrag från Theodor: varje påstående ska bära rätt källa och rätt typ (docs/beslut.md, 2026-10-01). Demot är fryst, så rättningarna gäller bara `/app`. Demots fynd rapporteras. Ingen fil som demot använder är ändrad.
+
+### Så gjordes det
+- **`/app`:** varje rutt i `app/(app)/app/` och `app/start/` lästes mot sin skärm: vilken `SourceTag` som visas, vilken källa och datatyp som når den från liveadaptern, och vilka siffror som visas utan tagg.
+- **Demot:** en Playwright-skanning av den synliga källtaggen på alla 30 demosidor (Hem, alla flikar, `/resan/1–12`, onboardingen) i 15 moment (Sara vid beat 0, 4 … 36, 37 och Jonas vid 0, 4, 8, 12). Taggar med ett myndighetsnamn eller en kund-/utskickskälla listades.
+
+### Fynd
+
+| # | Var | Fynd | Status |
+|---|---|---|---|
+| 1 | `/app/pulsen` | Artiklar visades med registrets grå tagg | **Rättat** (`690684a`, `media`) |
+| 2 | `/app/marknad`, Konkurrenter | Namn och beskrivning kommer ur registret men visades utan källa (känt sedan PR 11) | **Rättat**: rutten sätter `competitorsSource` till registrets källa och typ `register`, bara när registret svarat. Test i `page.test.tsx`. |
+| 3 | `/demo/start/ide`, "Första registerbilden" (Jonas idégenomlysning, visas för båda) | Påhittade siffror (412 padelhallsbolag, 8 nyregistrerade, 34 nedläggningar) med grå tagg "Bolagsverket" (`adapters/demo/ProjectRepository.ts`, `registerSource`) | **Lämnat**, demot är fryst. Det enda kvarvarande myndighetsnamnet på påhittad data i demot. Rättas som de andra: exempelkälla och typ `example` (skärmen `OnboardingIdea` behöver då ta emot en datatyp). Syns i pitchdemot. |
+| 4 | Demots Juridik | Bolagsverket och Skatteverket som källa | **Korrekt**: kuraterade juridiska källor, undantagna (pitchsäkringen). Datumet är scenariots, inte kontrolldatumet. |
+| 5 | Hem i `/app`, "Vad som hänt sedan sist" (`screens/AppHome.tsx`) | Utan `sourceDataTypes.sinceLastTime` får "Utskick skickat" och "Öppningsfrekvens" registrets typ som standard. Det är grundarens eget utskick, inte ett register. | **Lämnat**, Theodors skärm. Syns inte i dag (Resans `getHomeSummary` är en stubbe). Rätta i Hem-rutten (`sinceLastTime: "customer"` eller `"user"`) innan stubben byggs. |
+| 6 | `/app/minnet`, Profil, "Resurser" (`screens/Memory.tsx`) | Grundarens egna uppgifter med siffror ("15 timmar i veckan", sparat belopp) visas utan tagg. Typen `user` ("Din uppgift") finns nu för just detta. | **Lämnat**, delad skärm (demot fryst). Syns inte i dag (Profil är en stubbe). |
+| 7 | `/start/ide`, idégenomlysningens fakta (`screens/OnboardingIdea.tsx`) | `SourceTag` utan datatyp, alltså registrets typ för allt. Idégenomlysningen kommer delvis från en modell. | **Lämnat**, delad skärm. Syns inte i dag (Projekt är en stubbe). Samma rättning som fynd 3. |
+| 8 | `/app/bygg`, underlaget (`screens/Build.tsx`) | Utan `underlagSource` får varje bevis typen `customer`, oavsett vad beviset är | **Lämnat**, delad skärm. Syns inte i dag (Bygg är en stubbe). Ta typen från beviset. |
+| 9 | Databasen, `evidence.data_type` | Check-villkoret tillåter bara `register`, `simulation` och `customer`. Ett bevis från webbresearch eller grundarens egen uppgift kan inte sparas med rätt typ (`media`, `user`). | **Lämnat**, migration och Evidens ägs av andra. Behöver en migration innan webbresearch skriver bevis. |
+| 10 | `/app/validering`, "Kontaktade" | Antalet kontaktade bär typen `customer` (kundsvar), fast det är grundarens egen handling | **Lämnat**, litet. Övervägs med `user` när Validering ses över. |
+
+Kontrollerat utan fynd i `/app`: Poäng (typen kommer ur databasen), Juridik (kuraterade källor som `register`), Marknads nyckeltal och datalager (registret), Valideringens svar (`customer`), simuleringar (`simulation`), Medgrundaren, Affärsplanen och Bygg (Kommer snart).
+
+### Annat i den här sessionen
+- **RLS-testet för `pulse_fetches`** i `adapters/live/rls.live.test.ts`: B kan inte läsa, ändra eller radera A:s dagscache och kan inte skapa en rad i A:s namn, till exempel ett framtida datum som blockerar A:s sökning. Testraden har datumet 2000-01-01 och upsertas, eftersom klienten inte kan radera. **Inte kört här** (kräver två testkonton mot riktig databas, `SUPABASE_TEST_USER_A/B_*`).
+- **Hem väntar på Tavily** (Pulsen: liveadaptern, Kända problem): inte ändrat, Theodors skärm. Förslag: Hem-rutten hämtar Pulsen i en egen async komponent inom `<Suspense>`, och `AppHome` tar emot "Dagens signal" som en färdig slot (`ReactNode`) i stället för `pulseSignals`. Resten av Hem visas direkt, och signalen kommer när Tavily svarat. Kräver en prop i `AppHome`, alltså `screens/`.
+- Verifierat: `pnpm typecheck`, `pnpm lint`, `pnpm test` (866 gröna, 36 skippade), `pnpm build`. Ändrade filer: `app/(app)/app/marknad/page.tsx` och dess test samt `adapters/live/rls.live.test.ts`. Ingen av dem används av demot.
