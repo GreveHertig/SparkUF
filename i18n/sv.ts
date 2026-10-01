@@ -263,11 +263,14 @@ export const sv = {
       legalItemDone: "Juridisk punkt klar",
       payingCustomer: "Betalande kund",
       activeUser: "Aktiva användare",
+      priceDecided: "Beslutat pris",
+      fundingApplied: "Ansökan till finansiär",
     },
     selfReported: "Angivet av dig",
     status: {
       stale: "För gammalt för att räknas",
       capped: "Över taket för det du själv angett",
+      noPoints: "Ger ingen poäng, räknas mot resans krav",
       retracted: "Återkallat",
     },
     deltaReason: {
@@ -329,6 +332,9 @@ export const sv = {
       registration: "Bolaget registrerat",
       published: "En publicerad produkt",
       payingCustomer: "En betalande kund",
+      verdictAnswers: "Minst fem kundsvar om problemet eller priset, från minst tre olika bolag",
+      priceDecided: "Ett beslutat pris (anges av dig och märks som självrapporterat)",
+      fundingApplied: "En inskickad ansökan till en finansiär, till exempel Almi eller Vinnova",
     },
   },
   marketPage: {

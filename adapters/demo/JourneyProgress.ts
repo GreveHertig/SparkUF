@@ -19,7 +19,7 @@ export const demoJourneyProgress: JourneyProgress = {
   async getStepCompletion(stepNumber: number): Promise<StepCompletionView> {
     const { currentStep } = current();
     const status = stepNumber < currentStep ? "done" : stepNumber === currentStep ? "completable" : "previousNotDone";
-    return { stepNumber, status, missing: [] };
+    return { stepNumber, status, missing: [], progress: [] };
   },
 
   async completeStep(_stepNumber: number, locale: Locale): Promise<CompleteStepResult> {

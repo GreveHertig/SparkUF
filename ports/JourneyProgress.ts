@@ -1,7 +1,7 @@
 import type { Locale } from "@/i18n/context";
 import type { ScoreSnapshot } from "@/core/domain";
 import type { PhaseId } from "@/core/score";
-import type { RequirementGroup, StepCompletion } from "@/core/journeyRequirements";
+import type { GroupProgress, RequirementGroup, StepCompletion } from "@/core/journeyRequirements";
 
 /** Kan steget markeras klart, och vad saknas annars? */
 export type StepCompletionView = {
@@ -10,6 +10,11 @@ export type StepCompletionView = {
   /** Kraven som saknas, i den ordning de står i core/journeyRequirements.ts.
    * Tom utom vid status "missing". Texten slås upp i i18n (`stepCompletion.requirements`). */
   missing: RequirementGroup[];
+  /** Hur långt de saknade grupperna med en tröskel har kommit (steg 06: antal
+   * svar och bolag). Tom utom vid status "missing". Visas inte än: antalet är
+   * en uträknad sammanfattning, och de enskilda kundsvaren visas inte med
+   * källa någonstans i live (CLAUDE.md, produktreglerna). */
+  progress: GroupProgress[];
 };
 
 export type CompleteStepResult = {

@@ -75,7 +75,9 @@ export const liveJourneyProgress: JourneyProgress = {
       countedEvidence: countedEvidence(rows, stockholmToday()),
       hasActiveProject: projectId !== null,
     });
-    return { stepNumber, status: result.status, missing: result.status === "missing" ? result.missing : [] };
+    return result.status === "missing"
+      ? { stepNumber, status: result.status, missing: result.missing, progress: result.progress }
+      : { stepNumber, status: result.status, missing: [], progress: [] };
   },
 
   async completeStep(stepNumber: number, locale: Locale): Promise<CompleteStepResult> {

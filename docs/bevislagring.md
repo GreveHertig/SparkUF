@@ -638,3 +638,21 @@ SQL:en prövas mot en riktig Postgres i CI med PGlite (`supabase/migrations/evid
 
 **Taket följer med.** Fasen räknas ur högsta avklarade steg, så taket höjs när steg 03 blir klart (`adapters/live/JourneyProgress.test.ts` prövar 16 → 20). I live stannar fasen ändå i Upptäck så länge Registret är grindat, eftersom steg 03 kräver registerdata.
 
+### 11.8 Krav för steg 06, 07 och 12 (grenen `plattform/stegkrav`, 2026-10-01)
+
+Theodors beslut på de tre öppna punkterna står i `docs/beslut.md` 2026-10-01. Migrationen är `supabase/migrations/20261001180000_journey_steps_06_07_12.sql`.
+
+- **Steg 06:** minst fem kundsvar som räknas i Problem och Betalningsvilja tillsammans, från minst tre olika bolag (`subject_ref`).
+  - Det kräver en tröskel per kravgrupp: tabellen `journey_step_group_thresholds` och `GROUP_THRESHOLDS` i `core/journeyRequirements.ts`.
+  - En grupp räknas som helhet. Varje bevis som matchar någon av gruppens rader räknas en gång, och antalet olika `subject_ref` jämförs med `min_subjects`. Utan tröskel räcker ett bevis, som förut.
+  - Ersättningsregeln i `record_evidence` (7.2b) gör att grundaren har högst två egna besked per bolag (ett om problemet, ett om priset). Fem svar kräver alltså minst tre bolag redan där. Tröskeln om tre bolag gäller ändå, även för svar som Spark tagit emot.
+- **Steg 07:** ett beslutat pris, ny sort `priceDecided` (Betalningsvilja). Ett godtaget pris är inte ett krav. En kund som godtar priset är fortfarande `customerPriceAccepted` och höjer Betalningsvilja.
+- **Steg 12:** en inskickad ansökan till en finansiär, ny sort `fundingApplied` (Genomförbarhet).
+- **De två nya sorterna ger ingen poäng** (`base_points` 0, villkoret ändrat till `>= 0`):
+  - Ett pris grundaren själv satt bevisar inte att någon betalar det, och en ansökan är inte beviljade pengar.
+  - Båda är `either`, så att de märks "Angivet av dig" när grundaren lägger in dem.
+  - `core/evidenceInput.ts` skickar dem inte till `calculateScore` och märker dem `noPoints`. Därför fyller de aldrig en tom del, som annars skulle visas som 0 i stället för som en lucka (B4).
+- **Livslängd:** `priceDecided` 365 dagar, eftersom ett pris blir gammalt. `fundingApplied` föråldras aldrig.
+- **UI:** `/app/resan/06` visar kravet i text. Antalet svar och bolag hittills räknas (`progress` i `StepCompletionView`) men visas inte. Det vore en uträknad sammanfattning, och de enskilda kundsvaren visas inte med källa någonstans i live. Poäng-sidan visar en källa per del. Antalet kan visas när en lista över svaren finns (CLAUDE.md, undantaget för uträknade sammanfattningar).
+- **Inte byggt:** något formulär för att ange ett beslutat pris, en ansökan eller kundsvar. Kraven går att uppfylla så fort skrivvägen anropas.
+

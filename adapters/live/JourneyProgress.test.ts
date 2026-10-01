@@ -57,6 +57,7 @@ describe("liveJourneyProgress", () => {
       stepNumber: 1,
       status: "missing",
       missing: ["fit_skills", "fit_network", "fit_time", "fit_money"],
+      progress: [],
     });
     expect((await liveJourneyProgress.getStepCompletion(2, "sv")).status).toBe("previousNotDone");
   });
