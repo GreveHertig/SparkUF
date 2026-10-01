@@ -32,14 +32,15 @@ Typer i `types/legal.ts` (Bolagsform, JuridisktKrav) och `types/evidence.ts` (K�
 - GEMINI_API_KEY — skaffa på aistudio.google.com, server-only
   (`lib/server/gemini.ts`, `import "server-only"`), sätts i `.env.local`
   (aldrig committad, se `.env.example`).
-- **Verifieringsstatus (2026-09-30):**
+- **Verifieringsstatus (2026-10-01):**
   - **Kontrollerade av en människa:** alla källor från Bolagsverket,
-    verksamt.se och Bokföringsnämnden, i webbläsaren 2026-09-30 (se
-    verifieringsloggen nedan). Källorna pekar nu på de undersidor där
-    uppgiften står, inte på startsidorna.
-  - **Bara maskinellt hämtade, inte kontrollerade av en människa:**
-    Skatteverket, IMY, EUR-Lex (GDPR), Konsumentverket och Riksdagen (hämtade
-    av Claude Code 2026-09-17, fortfarande startsidor).
+    verksamt.se och Bokföringsnämnden (2026-09-30), och alla källor från
+    Skatteverket, IMY, EUR-Lex och Konsumentverket (2026-10-01), i
+    webbläsaren (se verifieringsloggen nedan). Källorna pekar på de undersidor
+    där uppgiften står, inte på startsidorna.
+  - **Inte kontrollerad:** Riksdagen (startsida, maskinellt hämtad av Claude
+    Code 2026-09-17). Inget ämne använder källan. Om den ska finnas kvar
+    väntar på Theos beslut.
   - **Ingenting är juristgranskat.** Ämneskatalogen i
     `adapters/live/legalSources.ts` är en rimlig tolkning av svenska
     bolagsregler, inte sakgranskad av jurist — särskilt vilka ämnen som gäller
@@ -48,6 +49,50 @@ Typer i `types/legal.ts` (Bolagsform, JuridisktKrav) och `types/evidence.ts` (K�
     aldrig modellgenererat.
 
 ## Verifieringslogg
+
+Kontrollerat av: Oskar Jaeger, 2026-09-30 och 2026-10-01
+
+### 2026-10-01 — kontroll i webbläsaren av en människa (Skatteverket, IMY, EUR-Lex, Konsumentverket)
+
+Kontrollerat i webbläsaren 2026-10-01 av Oskar Jaeger. Resultat, ordagrant:
+
+1. Skatteverket – f_skatt: DELVIS. F-skatt söks hos Skatteverket (e-tjänst via verksamt.se eller blankett SKV 4620). FA-skatt gäller bara enskild näringsverksamhet; AB och HB kan aldrig ha FA-skatt.
+   https://www.skatteverket.se/foretag/drivaforetag/startaochregistrera/fochfaskatt.4.58d555751259e4d661680006355.html
+2. Skatteverket – moms: DELVIS. Momsregistrering krävs vid momspliktig försäljning över 120 000 kr per år. Högst 120 000 kr är i de flesta fall undantaget (frivillig registrering möjlig). Vissa verksamheter är momsfria.
+   https://www.skatteverket.se/foretag/moms/momsregistrering/registreradittforetagformoms.4.deeebd105a602bfe38000256.html
+   https://www.skatteverket.se/foretag/moms/momsregistrering/ivissafallbehoverduinteregistreradittforetagformoms.4.3152d9ac158968eb8fd1efe.html
+3. Skatteverket – arbetsgivare: STÄMMER. Registrering när man anställer, innan ersättning betalas ut. AB-ägare som tar lön räknas som anställd.
+   https://www.skatteverket.se/foretag/arbetsgivare/arbetsgivarregistrering/dittansvarsomarbetsgivare.4.361dc8c15312eff6fd16ec2.html
+   https://www.skatteverket.se/foretag/arbetsgivare/arbetsgivarregistrering/registreradig.4.18e1b10334ebe8bc80003496.html
+4. IMY – gdpr_personuppgifter: Rättslig grund STÄMMER. Register DELVIS: huvudregel är undantag under 250 anställda, men registret krävs ändå om behandlingen inte är tillfällig, innebär risk eller gäller känsliga uppgifter.
+   https://www.imy.se/verksamhet/dataskydd/det-har-galler-enligt-gdpr/rattslig-grund/
+   https://www.imy.se/verksamhet/dataskydd/det-har-galler-enligt-gdpr/fora-register-over-behandling/
+5. EUR-Lex – gdpr_forordningen: STÄMMER. Föreslå svensk version: https://eur-lex.europa.eu/legal-content/SV/TXT/?uri=CELEX:32016R0679
+6. Konsumentverket – marknadsforing_epost: STÄMMER. E-post/sms-reklam till konsumenter kräver godkännande; undantag för tidigare kunder om alla tre villkor är uppfyllda (inte tackat nej, liknande produkter, enkelt att tacka nej).
+   https://www.konsumentverket.se/lagar/marknadsforingslagen-konsument/
+7. Konsumentverket – konsument_angerratt: DELVIS. 14 dagars ångerrätt vid distansköp gäller konsumenter som köper av företag, inte alla. Undantag finns.
+   https://www.konsumentverket.se/konsumentratt-process/angerratt/
+
+Riksdagen: ingen kontroll gjord, ingen topic använder källan. Väntar på Theos beslut.
+
+**Vad som ändrades i `adapters/live/legalSources.ts` efter kontrollen:**
+- De gemensamma källorna `skatteverket`, `imy` och `konsumentverket`
+  (startsidor) är ersatta av en källa per undersida:
+  `skatteverket_f_skatt`, `skatteverket_moms`, `skatteverket_arbetsgivare`,
+  `imy_rattslig_grund`, `imy_register`, `konsumentverket_marknadsforing` och
+  `konsumentverket_angerratt`, alla med `hämtad: "2026-10-01"`.
+- `eurlex_gdpr` (punkt 5) pekar på den svenska versionen.
+- `gdpr_personuppgifter` (punkt 4) är uppdelat i `gdpr_rattslig_grund` och
+  `gdpr_register`, med var sin IMY-sida. Katalogen har nu 18 ämnen.
+- Nya texter för DELVIS-punkterna: `f_skatt` (punkt 1, FA-skatt bara för
+  enskild näringsverksamhet), `moms` (punkt 2, gränsen 120 000 kr, frivillig
+  registrering, momsfria verksamheter), `gdpr_register` (punkt 4) och
+  `konsument_angerratt` (punkt 7, konsumenter som köper av företag, undantag
+  finns).
+- `moms` och `arbetsgivare` pekar på den första adressen i punkt 2 och 3.
+  Den andra adressen står bara här i loggen. Momssidan som används säger både
+  huvudregeln och undantaget.
+- `riksdagen` är oförändrad (startsida, 2026-09-17, oanvänd).
 
 ### 2026-09-30 — kontroll i webbläsaren av en människa (Bolagsverket, verksamt.se, BFN)
 
@@ -85,8 +130,9 @@ Kontrollerat i webbläsaren 2026-09-30. Resultat, ordagrant:
   näringsidkare och verksamt.se:s sida "Om webbplatsen" (punkt 6) används
   inte som källa i koden, bara här i loggen.
 
-**Inte kontrollerat av en människa:** Skatteverket, IMY, EUR-Lex,
-Konsumentverket och Riksdagen. **Inget av detta är juristgranskat.**
+**Inte kontrollerat av en människa (vid kontrollen 2026-09-30):**
+Skatteverket, IMY, EUR-Lex, Konsumentverket och Riksdagen. De fyra första
+kontrollerades 2026-10-01, se ovan. **Inget av detta är juristgranskat.**
 
 ## Hur demoadaptern fungerar i dag
 

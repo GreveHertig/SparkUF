@@ -3,6 +3,7 @@ import type { Locale } from "@/i18n/context";
 import { deriveSuggestions, ALL_PART_IDS, PHASE_UNLOCKED_PARTS, type ScorePartId } from "@/core/score";
 import { useDemoStore } from "./demoStore";
 import { engineFor } from "./journeyEngine";
+import { exampleSource } from "./exampleSource";
 
 // Poängen sätts aldrig direkt i mockdata (avsnitt 7.1) — den räknas av
 // calculateScore (core/score.ts) från det aktuella momentets bevis i
@@ -13,7 +14,18 @@ import { engineFor } from "./journeyEngine";
 export const demoEvidenceRepository: EvidenceRepository = {
   async getScoreSnapshot(locale: Locale) {
     const { beatIndex, entry } = useDemoStore.getState();
-    return engineFor(entry).getScoreSnapshotForBeat(beatIndex, locale);
+    const snapshot = engineFor(entry).getScoreSnapshotForBeat(beatIndex, locale);
+    // Bevisen i sara.ts/jonas.ts är påhittade. Deras källnamn ("Bolagsverket",
+    // "Kundsamtal, steg 05") visas därför aldrig som register- eller kundkälla
+    // under "Exempel med påhittad data": varje del får exempelkällan.
+    // Simuleringar behåller sin egen tagg.
+    const source = exampleSource(locale, "score");
+    return {
+      ...snapshot,
+      parts: snapshot.parts.map((part) =>
+        part.dataType === "simulation" ? part : { ...part, source, dataType: "example" as const },
+      ),
+    };
   },
 
   async getSuggestions(locale: Locale) {

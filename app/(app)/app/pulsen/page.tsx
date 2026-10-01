@@ -9,10 +9,13 @@ import { orNull } from "../_lib/orNull";
  * "Kommer snart" i listan i stället för en krasch. Ett äkta fel kastas vidare.
  *
  * Inget låst läge: demots Pulsen är öppen i alla moment och har ingen
- * stegspärr att flytta. Ingen exempelkälla sätts här (vakttestet
- * noExampleSources): liveadapterns källa är artikelns domän och hämtdatum.
+ * stegspärr att flytta.
+ *
+ * Källan är en artikel (domän och hämtdatum), inte ett register: datatypen
+ * `"media"` (docs/beslut.md, 2026-10-01), samma som Hem. Aldrig `"example"`
+ * (vakttestet noExampleSources).
  */
 export default async function LivePulsePage() {
   const signals = await orNull(livePulseProvider.getSignals("sv"));
-  return <Pulse data={{ signals }} />;
+  return <Pulse data={{ signals, sourceDataType: "media" }} />;
 }

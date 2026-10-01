@@ -172,7 +172,7 @@ const step02: Beat = makeJonasBeat({
     sv: {
       eyebrow: "STEG 02 · GENOMLYSNINGEN",
       title: "Skarpare idé: Beläggningsprognosen",
-      why: "Idén bröts ner i fem antaganden, en första registerbild visades, och Medgrundaren föreslog en skarpare, B2B-version.",
+      why: "Idén bröts ner i fem antaganden, en första marknadsbild visades, och Medgrundaren föreslog en skarpare, B2B-version.",
       maxPoints: 12,
       estimatedTime: "~10 min",
       doneItems: ["Passform-samtalet klart"],
@@ -181,7 +181,7 @@ const step02: Beat = makeJonasBeat({
     en: {
       eyebrow: "STEP 02 · THE SCREENING",
       title: "Sharper idea: The Occupancy Forecast",
-      why: "The idea was broken into five assumptions, a first registry picture was shown, and the co-founder suggested a sharper, B2B version.",
+      why: "The idea was broken into five assumptions, a first market picture was shown, and the co-founder suggested a sharper, B2B version.",
       maxPoints: 12,
       estimatedTime: "~10 min",
       doneItems: ["Fit chat done"],
@@ -232,7 +232,7 @@ const step03: Beat = makeJonasBeat({
   nextStep: {
     sv: {
       eyebrow: "STEG 03 · MARKNADEN",
-      title: "Registerbilden fördjupad",
+      title: "Marknadsbilden fördjupad",
       why: "412 padelhallsbolag, beläggningsmönster och två konkurrerande bokningssystem kartlagda.",
       maxPoints: 12,
       estimatedTime: "~10 min",
@@ -241,7 +241,7 @@ const step03: Beat = makeJonasBeat({
     },
     en: {
       eyebrow: "STEP 03 · THE MARKET",
-      title: "The registry picture deepened",
+      title: "The market picture deepened",
       why: "412 padel-court companies, occupancy patterns and two competing booking systems mapped.",
       maxPoints: 12,
       estimatedTime: "~10 min",
@@ -270,7 +270,7 @@ const step03: Beat = makeJonasBeat({
       competition: [pt(6, källa("Bolagsverket", "2026-02-05"))],
     },
   ),
-  deltaReason: { sv: "efter registerdata", en: "after registry data" },
+  deltaReason: { sv: "efter marknadsbilden", en: "after the market picture" },
   highlights: {
     sv: [
       "412 padelhallsbolag (SNI 93.110), 8 nyregistrerade senaste kvartalet (ner från 19), 34 nedläggningar senaste året (upp från 21).",
@@ -300,7 +300,7 @@ const step04: Beat = makeJonasBeat({
     sv: {
       eyebrow: "STEG 04 · KUNDEN",
       title: "Kundprofilen och listan på hallar",
-      why: "Kundprofil ur registret: hallar med 3+ banor och regelbunden beläggning över 60 %. Resultatet är en lista på 25 namngivna hallar.",
+      why: "Kundprofil: hallar med 3+ banor och regelbunden beläggning över 60 %. Resultatet är en lista på 25 namngivna hallar.",
       maxPoints: 8,
       estimatedTime: "~10 min",
       doneItems: ["Marknadsbilden klar"],
@@ -309,7 +309,7 @@ const step04: Beat = makeJonasBeat({
     en: {
       eyebrow: "STEP 04 · THE CUSTOMER",
       title: "The customer profile and hall list",
-      why: "Customer profile from the registry: halls with 3+ courts and regular occupancy above 60%. The result is a list of 25 named halls.",
+      why: "Customer profile: halls with 3+ courts and regular occupancy above 60%. The result is a list of 25 named halls.",
       maxPoints: 8,
       estimatedTime: "~10 min",
       doneItems: ["Market picture done"],
@@ -1438,8 +1438,8 @@ export const JONAS_STEPS: readonly StepMeta[] = [
     journeyPhase: "discover",
     title: { sv: "Genomlysningen", en: "The screening" },
     oneLiner: {
-      sv: "Idén bruten ner i antaganden, en första registerbild, och en skarpare B2B-idé.",
-      en: "The idea broken into assumptions, a first registry picture, and a sharper B2B idea.",
+      sv: "Idén bruten ner i antaganden, en första marknadsbild, och en skarpare B2B-idé.",
+      en: "The idea broken into assumptions, a first market picture, and a sharper B2B idea.",
     },
     maxPoints: 12,
   },
@@ -1458,8 +1458,8 @@ export const JONAS_STEPS: readonly StepMeta[] = [
     journeyPhase: "tryPhase",
     title: { sv: "Kunden", en: "The customer" },
     oneLiner: {
-      sv: "Kundprofil ur registret. Resultatet är en lista på 25 namngivna hallar.",
-      en: "Customer profile from the registry. The result is a list of 25 named halls.",
+      sv: "Kundprofilen blir en lista på 25 namngivna hallar.",
+      en: "The customer profile becomes a list of 25 named halls.",
     },
     maxPoints: 8,
   },
@@ -1550,7 +1550,7 @@ export const jonasSuggestionCandidates: Record<Locale, ScoreSuggestionInput[]> =
       gapType: "insufficient",
       pointsGain: 1,
       estimatedMinutes: 10,
-      explanation: "Registerbilden är komplett för de 412 hallbolagen — marginell vinst kvar.",
+      explanation: "Marknadsbilden är komplett för de 412 hallbolagen — marginell vinst kvar.",
       actionLabel: "Se marknadsbilden",
     },
     {
@@ -1624,7 +1624,7 @@ export const jonasSuggestionCandidates: Record<Locale, ScoreSuggestionInput[]> =
       gapType: "insufficient",
       pointsGain: 1,
       estimatedMinutes: 10,
-      explanation: "The registry picture is complete for the 412 hall companies — marginal gain left.",
+      explanation: "The market picture is complete for the 412 hall companies — marginal gain left.",
       actionLabel: "See the market picture",
     },
     {

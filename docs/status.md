@@ -3557,3 +3557,147 @@ Skrivvägen i bruk, stegmarkeringen och motsägelsen i `UNLOCK_STEP`. Detaljer i
 - **CLAUDE.md:** listan över uträknade sammanfattningar har fått de två nya poängsiffrorna (`FitPanel` och `StepCompletionPanel`).
 - **`docs/moduler/resan.md` och `docs/moduler/evidens-och-poang.md`:** uppdaterade med skrivvägen.
 
+## Pulsen inloggad, källtyperna och Hems källor (2026-10-01, direkt på `design/en-design`)
+`origin/prototyp` fanns redan i grenen. Tre commits: källtyperna, Hems källor (egen commit, så att den kan granskas och backas för sig) och docs.
+
+### Del 1: `/app/pulsen` verifierad inloggad (ingen kodändring)
+- **`pnpm test:e2e`:** 44 av 44 gröna mot produktionsbygget, både före och efter ändringarna. PR 6:s "e2e kördes inte" är därmed gjort.
+- **`/app/pulsen` inloggad** (1440 och 390 px): rubriken "Pulsen", underrubriken och tomläget "Inga signaler för det här scenariot." Inga signaler och inga källor, eftersom testkontot saknar aktivt projekt. Status 200, inga konsolfel. Hem i `/app` visar "Ingen signal än."
+- **Registertaggen, exakt var den sitter fel:** `screens/Pulse.tsx:60`, `<SourceTag source={signal.source} dataType={data.sourceDataType} />`. `/app/pulsen` (`app/(app)/app/pulsen/page.tsx`) skickar ingen `sourceDataType`, så `SourceTag` faller tillbaka på sin standard `"register"` (`components/ui/SourceTag.tsx`). En artikel från till exempel `breakit.se` får då klassen `bg-data-register-bg`, alltså registrets grå tagg. Det syns inte med testkontot, men bekräftades genom att rendera skärmen med en signal i liveadapterns form. **Rättningen för Bruno:** skicka `sourceDataType: "media"` från `/app/pulsen`-rutten (se `docs/beslut.md`, 2026-10-01). Skärmen behöver ingen ändring.
+- **Tomtexten i `/app/pulsen`** säger "scenariot", som är demots ord (`pulsePage.emptyState`). Hem använder `homePage.noPulseSignal` ("Ingen signal än."). Inte rättat, eftersom det ligger i `Pulse.tsx` (Brunos).
+
+### Klart
+- **Källtyperna** (beslut av grundaren, `docs/beslut.md` 2026-10-01): `register`, `media` (ny, blå, etiketten "Media"), `customer`, `user` (ny, bär, etiketten "Din uppgift" / "Your input"), `simulation` och `example`. Bara registret är grått. Tonerna ligger i `design/tokens.css`, `app/globals.css` och `design/tokens.ts`, med uträknad kontrast 6,0:1 och 5,3:1. Etiketterna ligger i `common.mediaSourceLabel` och `userSourceLabel`, och `SourceTag` samlar alla etiketter på ett ställe. `/designsystem` visar de nya tonerna av sig själv.
+- **Hem i demot:**
+  - **Dagens signal** bar "Bolagsverket" och en påhittad relativ tid ("4 dagar sedan"). Nu bär den en exempelkälla för steget där signalen dyker upp (`getSignalSteps()`), och tiden visas inte (bugg 11, som Pulsen).
+  - **"Sedan sist":** "40 mottagare" bar källan "Inget utskick ännu" i registergrått, öppningsgraden "Utskicket, steg 05" i registergrått och svaren "Kundsamtal, steg 05" som kunddata. Nu bär alla tre en exempelkälla för steget där siffran kommer ifrån, som läses ur scenariots källnamn. Mottagarna följer utskicket. Utan steg, före utskicket, gäller det aktuella steget.
+  - **Handlingskortet** får en exempelkälla när rubriken, förklaringen eller "Redan klart" innehåller en siffra som inte är ett stegnummer. Det är PR 11:s regel, nu i `app/demo/_lib/figures.ts` och delad med Medgrundaren. Exempel: "7 av 9 bekräftar problemet …" och "5 betalande byråer".
+  - Allt sker i demots rutt (`app/demo/(app)/page.tsx`), med samma mönster som Pulsen. `AppHome` fick två valfria fält: `sourceDataTypes` och `nextStepSource`.
+- **Hem i `/app`:** Pulsens artikel visas som `"media"` (`sourceDataTypes: { pulse: "media" }`), aldrig som register eller exempel. Utan signal ser sidan ut som förut.
+- **CLAUDE.md:** poängkortet på Hem står nu i listan över uträknade sammanfattningar (beslut av grundaren).
+- **Tester:**
+  - `screens/AppHome.test.tsx` (3 nya): standardtaggarna utan fälten, media och exempel
+  - `app/(app)/app/page.test.tsx` (1 ny): media, inget exempel
+  - `app/demo/demo.test.tsx` (5 nya): Hems taggar är exempel i tre moment, utan myndighetsnamn och påhittad tid; "Sedan sist" pekar på steg 05; handlingskortet med och utan siffra; siffra bara i "Redan klart"
+  - De tre första demotesterna föll mot den gamla rutten.
+- **Skärmbilder** (Playwright mot `pnpm build && pnpm start`, 1440 och 390 px). Sara vid beat 0, 9, 17, 25 och 37 och Jonas vid 0 och 12, 18 demosidor, totalt 252 bilder. Två FÖRE-omgångar var identiska (AE 0):
+  - efter ändringarna är 238 identiska med före
+  - skiljer sig gör bara `/demo` (Hem) i alla 14 lägen, som avsett
+  - Medgrundaren, där bara sifferregelns import flyttade, är identisk
+  - `/app` och `/app/pulsen` inloggat är identiska (AE 0)
+- **`/security-review`:** inga fynd. Kontrollerat: ingen rå HTML, inga nycklar eller `NEXT_PUBLIC_`, demot importerar inga liveadaptrar, `requireUser()` är orört, inga funktioner skickas från servern.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (851 gröna, 35 skippade), `pnpm build` och `pnpm test:e2e` (44 av 44).
+
+### Kända problem
+- **Rubrikerna i demots signaler** påstår fortfarande saker om verkliga aktörer, till exempel "Registret bekräftar precis det segment …" och "Skatteverket skärper …". Taggen säger att det är påhittat. Ett eget innehållsbeslut (kvar sedan PR 6).
+- **Handlingskortets texter i demot** säger "Riktiga siffror ur registret". Taggen säger nu "Exempel", men texten lovar fortfarande riktiga siffror. Ett innehållsbeslut.
+- **"Sedan sist" i `/app`** har fortfarande registrets tagg för utskicket och öppningsgraden som standard. Det syns inte, eftersom `getHomeSummary` är en stubbe. När Resan byggs ska rutten sätta rätt datatyp: utskicket är användarens egen data, inte ett register.
+- **Källans steg i "Sedan sist"** läses ur scenariots källnamn ("steg 05"). Om demots källnamn byter form faller det tillbaka på det aktuella steget. Ett test täcker steg 05.
+
+### Beslut nästa session behöver känna till
+- **Källtyperna i `docs/beslut.md` gäller alla moduler.** `SourceTag` har `register` som standard, så sätt alltid datatypen för en källa som inte är ett register.
+- **Bruno:** `/app/pulsen` behöver bara `sourceDataType: "media"` i rutten. Tomtexten i `Pulse.tsx` (se ovan) är hans att avgöra.
+
+## PR 6: Pulsen — källtyperna (2026-10-01, direkt på `design/en-design`)
+Theodors granskning av PR 6: varje källa ska bära sin egen typ, och en signal får inte påstå saker om verkliga aktörer. Bygger på källtyperna från `aeb7a47` (docs/beslut.md, 2026-10-01).
+
+### Klart
+- **`/app/pulsen`** skickar `sourceDataType: "media"`. Artiklarna visas med "Media" i blått, aldrig med registrets grå tagg. Samma som Hem.
+- **Demoadaptern bär inga myndighetsnamn längre** (`adapters/demo/PulseProvider.ts`). `source` är borttagen ur signaltexterna. Adaptern sätter exempelkällan själv (`withSource`, steget ur `getSignalSteps()`), i både `getSignals` och `getTodaysSignal`. Demots Pulsen-sida skriver därför inte längre över källan, den sätter bara `sourceDataType: "example"`. Demots Hem (Theodors) skriver fortfarande över med samma värden, vilket ger samma resultat.
+- **Två texter skrivna om**, på svenska och engelska:
+  - "Skatteverket skärper kraven på digital arkivering av underlag" blev "Fler byråer efterfrågar digital arkivering av kvitton och underlag" (kategorin "Reglering" blev "Bransch")
+  - "Registret bekräftar precis det segment Domen pekade ut …" blev "Fler tecken pekar på samma segment som Domen …"
+- **Portregeln** i `docs/plan-en-design.md` säger nu som koden gör: skärmar importerar aldrig `adapters/`, datans typer kommer från `ports/` och `core/`, och presentationen (`design/`, `i18n/`, `components/ui/`) får importeras.
+- **`docs/beslut.md`:** varför de tre startsignalerna räknas till steg 01, och att signalerna inte påstår något om verkliga aktörer.
+- **Tester:** ruttestet kontrollerar "Media". Adaptertestet kontrollerar att varje signal bär exempelkällan för sitt steg och att inga myndighetsnamn finns (sv, en, `getTodaysSignal`).
+- **Skärmbilder** mot `064ec3f` (28 bilder, samma lägen som förut): skillnad bara där texten ändrats. Det gäller Saras `/demo/pulsen` (10) och Hem vid beat 25 och 37 (4), där segmentsignalen är dagens signal. På Hem ändras bara meningen, och Theodors exempeltagg är identisk. Jonas och övriga Hem-lägen är identiska.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (852 gröna, 35 skippade) och `pnpm build`. e2e och inloggat: Theodor kör dem.
+
+### Kvar
+- **Rubrikerna innehåller fortfarande påhittade siffror** ("14 nya redovisningsbyråer …", "22 % fler …", "10–20 anställda växer snabbare …"). De påstår inte att en myndighet sagt dem och bär exempeltagg, men de är uppfunna statistikpåståenden. Om de ska bort är ett eget innehållsbeslut.
+- **`timestamp`-fälten** i demoadaptern ("3 dagar sedan" m.fl.) visas inte längre någonstans men finns kvar i datan.
+
+## Pitchsäkring av demot (2026-10-01, direkt på `design/en-design`)
+`origin/prototyp` fanns redan i grenen. Två commits: texterna (egen commit) och docs.
+
+### Klart
+- **Texter som lovade en verklig källa under exempeldata är omskrivna** (sv och en). De beskriver nu vad kortet gör utan att namnge en myndighet. Ingen ny källa är uppfunnen.
+  - `adapters/demo/sara.ts`: steg 01–04 på Hem och Resan ("… innan den kan visa några siffror ur registret", "Riktiga siffror ur registret …", "Se de första siffrorna ur registret", "Kundprofil ur registret …"), steg 02:s höjdpunkter ("… ur profilen och registret", "Preliminär registerträff"), poängrörelsen "efter registerdata" och förslaget "Bara delar av registret är hämtat". "Medianomsättning" i steg 03:s text är borta, eftersom siffran inte visas.
+  - `adapters/demo/jonas.ts`: "registerbild" (steg 02, 03 och förslaget), "Kundprofil ur registret", "efter registerdata".
+  - Medgrundaren (`cofounderScript.ts`, `jonasCofounderScript.ts`): "Söker i Bolagsverkets register", "Hämtar från Bolagsverket och SCB", "Hämtar från Bolagsverket", "de första riktiga siffrorna ur registret", "korsar din profil mot registret", "se vad registret säger".
+  - Rundturen (`app/demo/_lib/tourCopy.ts`): stopp 3:s rubrik ("Medgrundaren hämtar siffror från Bolagsverket") och text, stopp 5 ("register- och kundunderlag"), stopp 6 ("Ingen siffra i Spark är gissad" under påhittade siffror), stopp 7:s rubrik och text ("ur registret"; "knappt någon annanstans", bugg 19, är borta).
+  - Marknad i exempelläget: egna nycklar `subtitleExample` och `kpiTitleExample` ("Marknadsbilden"), och "Byråer i branschen" i stället för "Byråer i registret". `/app` är oförändrat.
+  - Berättelsen om att Sara och Jonas registrerar firman hos Bolagsverket står kvar: det är en händelse i scenariot, ingen källa.
+- **Rundturens stopp 19** säger 249 kr och "bygget ingår", som rubriken och `/priser` (bugg 18). Texten sa 199 kr och "bygget säljs separat".
+- **Vakttest:** `adapters/demo/noRealSourceClaims.test.ts` (5): inga källpåståenden i scenariofilerna, inga myndighetsnamn i rundturens texter (utom juridikens riktiga källor).
+- **Genomklickat:** alla 26 demosidor (inkl. `/demo/resan/1–12`) i alla 51 moment som textdump, och 616 skärmbilder i 1440 och 390 px (Sara vid beat 0, 5, 9 … 37, Jonas vid 0, 4, 8, 12). Inga sidfel eller konsolfel.
+- **Rundturen** körd hela vägen i 1440 och 390 px: alla 20 stopp, rätt sida på varje, "Avsluta rundtur" stänger. Från Jonas är den låst.
+- **`docs/demo-manus.md`** omskrivet rad för rad mot demot, med de fyra reglerna vid visning.
+- Verifierat: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar), `pnpm test` (857 gröna, 35 skippade), `pnpm build`.
+
+### Kända problem (hittade vid genomklickningen, inte rättade)
+- **Grå registertaggar på påhittad data.** "Bolagsverket och SCB" på Marknads nyckeltal, storleksfördelning och datalager samt i Affärsplanens Marknaden (`adapters/demo/RegistryProvider.ts`); "Bolagsverket" på poängdelarna Marknad, Konkurrens och Genomförbarhet (`sara.ts`, `jonas.ts`) och i Jonas idégenomlysning (`adapters/demo/ProjectRepository.ts`). Sidan säger "Exempel med påhittad data" ovanför. Största kvarvarande risken.
+- **Andra icke-exempeltaggar på påhittad data:** "Sparks utskick (Gmail)", "Utskicket, steg 05" och "Kundsamtal, steg 05–06" på Validering, Marknad, Bygg och i Affärsplanens citat. Hem visar samma siffror med Exempel-tagg.
+- **40 eller 20 mottagare.** Hem och Resan säger att utskicket gick till 40 byråer (`sara.ts`), Validering och Marknad säger 20 kontaktade och "9 av 20".
+- **Jonas:** Marknad, Validering, Juridik och Bygg står som "Låst — inte genomfört i det här scenariot" fast Hem visar 25 mottagare, 13 svar och alla steg klara. Poäng ger Marknad 12/12. Affärsplanen står på 4/9 vid poäng 89 "Bevisad affär".
+- **"Höj din poäng" följer inte momentet.** Vid steg 12 föreslår den "+3 Marknad" (redan 12/12), "+2 Registrera bolagsformen" (redan gjort, 8/8) och "+4 MVP:n är inte helt byggd" (Produkt 12/12).
+- **"Vad som hänt sedan sist"** på Hem visar utskicket från steg 05 (januari) ända till steg 12 (april). Dagens signal är daterad 23 januari vid 10 april.
+- **Validering på 390 px** har vågrät rullning (sidan 508–514 px bred) från steg 05, troligen tabellen "Alla kontaktade".
+- **Tomma eller upprepade rutor:** omsättningskolumnen i "Alla kontaktade" visar "–" med samma lucktext på alla 20 rader; storleksfördelningen har tre rader med 0; simuleringskortet på Marknad har tre etiketter på rad (Simulering, Koncept, SIMULERING-taggen); Jonas poängkort på Hem har en stor tom yta.
+- **Rundturens stopp 9** lovar fortfarande att Spark "bevakar öppningar och svar automatiskt" (bugg 15), och Validering visar en öppningsfrekvens. Manuset säger åt presentatören att inte lova det.
+- **Rundturen hoppar i tiden:** stopp 3 (steg 03, poäng 14) → stopp 4 (steg 01, poäng 6) → stopp 5 (steg 04, 27) → stopp 6 (steg 03, 24).
+- **Bygg** visar `https://kvittojakten.lovable.app` som publicerad adress (bugg 17). Sidan finns inte.
+- **Simuleringen** säger "Simulerad population: 312", samma tal som byråerna (bugg 16).
+- **Okänt ord:** Hem steg 12 säger "Ansökningsunderlag förberett ur Spåret". "Spåret" är en flik i Minnet men förklaras inte.
+- **Kvar i delad text:** Validerings underrubrik "Allt som prövats mot verkliga kunder" och Affärsplanens "Registerbilden, alltid med täckningen …" delas med `/app` och är inte ändrade. Landningssidans stegtexter (`i18n` `journeySteps`) säger fortfarande "Riktiga siffror ur registret"; de beskriver produkten, inte demot.
+
+### Beslut nästa session behöver känna till
+- **Demots texter namnger ingen verklig källa för påhittad data.** Vakttestet blir rött annars. Juridikens kuraterade källor (riksdagen.se, Skatteverket, IMY) är riktiga och undantagna.
+- **Marknad har exempelnycklar** (`subtitleExample`, `kpiTitleExample`, `companyCountLabel`); `/app` använder de gamla.
+## Juridisk koll: namn och datum för källkontrollen (klar 2026-10-01, gren `docs/verifiering-namn`, PR #41 mot `prototyp`)
+
+### Klart
+- Vem som kontrollerade källorna och när står nu i två filer. I `docs/beslut.md` finns beslutet "Källverifiering juridik" under 2026-09-30. Överst i verifieringsloggen i `docs/moduler/juridisk-koll.md` står "Kontrollerat av: Oskar Jaeger, 2026-09-30". Bara dokumentation, ingen kod.
+
+## Fem rättningar inför pitchen (2026-10-01, direkt på `design/en-design`)
+
+`origin/prototyp` mergad först (konflikt i `docs/beslut.md`, båda sidornas text behållen). En commit per rättning, pushad direkt.
+
+### Klart
+1. **Exempeltagg på påhittade registersiffror och poängdelar.** Marknads nyckeltal, storleksfördelning och datalager (ny valfri `MarketData.registrySource`, satt av demots route), Affärsplanens Marknaden-avsnitt och Jonas registerfakta (`adapters/demo/businessPlan.ts`), och alla poängdelar utom simuleringar (`adapters/demo/EvidenceRepository.ts`, nytt exempelursprung "poängunderlaget"). Inget register- eller myndighetsnamn står kvar på de sidorna.
+2. **Exempeltagg på påhittade svar, citat och underlag.** Validering (nyckeltal, öppningsfrekvens, antaganden), Marknads utskick, Byggs underlag (ny valfri `BuildData.underlagSource`) och Affärsplanens citat, dom och underlag. Skärmarna Validering och Marknad ger svaren datatypen `example` när `dataKind` är `example`, annars `customer`. `/app` är oförändrat.
+3. **20 mottagare, inte 40.** Kontaktlistan (`saraCompanies`) har 20 namngivna byråer, och Validering och Marknad räknar ur den. 40 hade krävt 20 påhittade bolag till. Berättelsen och `recipientCount` i `sara.ts` och Medgrundarens manus säger nu 20.
+4. **Rundturen går framåt i tiden.** Stoppen 3–8 är omordnade: profilen (poäng 6), Medgrundarens marknadskörning (14), Marknads tre stopp (24), taket på 30 (27). Poängen sjunker bara vid 47 → 43, som stoppet handlar om. Nytt test, `adapters/demo/tourSteps.test.ts`, håller stoppens moment i ordning. Manuset och stoppnumren i `tourCopy.ts` följer.
+5. **Bygg visar `kvittojakten.example` som text**, ingen länk (ny valfri `BuildData.publishedUrlIsExample`). `.example` är reserverad (RFC 2606) och kan aldrig leda till en död sida.
+- Nya vakttester i `app/demo/demo.test.tsx`: Validering, Marknad, Bygg och Affärsplanen bär bara exempel- eller simuleringstaggar; Poängs delar bär "poängunderlaget"; Hems mottagare är lika många som kontaktlistan.
+- `docs/demo-manus.md`: varningen om grå taggar och "rundturen hoppar i tiden" är borta, stoppen omnumrerade.
+
+### Kända problem
+- **Demot är fryst efter den här sessionen.** De åtta återstående punkterna från genomklickningen (se "Pitchsäkring av demot" ovan) tas efter lanseringen, inte före: Jonas motsägelser, "Höj din poäng" följer inte momentet, "Vad som hänt sedan sist" på Hem, Validering rullar vågrätt på 390 px, tomma eller upprepade rutor, rundturens stopp 9 lovar bevakning av öppningar, simuleringens population 312, och ordet "Spåret".
+- **Öppningsfrekvensen 38 % går inte jämnt ut på 20 mottagare** (7,6 personer). Den kommer från `docs/uppdrag.md` 9.3, som räknar med 40 byråer (15 av 40). Inte ändrad.
+- Landningssidans text "Skriver 40 personliga mejl" (`landingPage.cofounder.toolRun` i i18n) och Jonas `hallprognos.lovable.app` i löptext är inte ändrade.
+
+### Beslut nästa session behöver känna till
+- **I demot bär ingen tagg datatypen `register` eller `customer`.** Påhittad data får exempelkällan för sitt steg. Skärmarna tar emot källan och datatypen från routen (`registrySource`, `underlagSource`, `competitorsSource`, `creditsSource`) eller väljer `example` ur `dataKind`.
+- **Demots utskick gick till 20 byråer.**
+## Modul: Juridisk koll — källorna kontrollerade, del 2 (klar 2026-10-01, gren `modul/juridisk-koll-kallor-2`, PR mot `prototyp`)
+
+### Klart
+- **Källorna från Skatteverket, IMY, EUR-Lex och Konsumentverket är nu kontrollerade av en människa** (Oskar Jaeger, i webbläsaren 2026-10-01). Kontrollistan med adresser står ordagrant i verifieringsloggen i `docs/moduler/juridisk-koll.md`. Beslutet står i `docs/beslut.md` under 2026-10-01. **Ingenting är juristgranskat.**
+- `adapters/live/legalSources.ts`:
+  - `skatteverket`, `imy` och `konsumentverket` (startsidor) är ersatta av en källa per undersida, `hämtad: "2026-10-01"`. `eurlex_gdpr` pekar på den svenska versionen.
+  - `gdpr_personuppgifter` är uppdelat i `gdpr_rattslig_grund` och `gdpr_register`, med var sin IMY-sida. Katalogen har nu 18 ämnen.
+  - Nya texter för de fyra DELVIS-punkterna: `f_skatt`, `moms` (med gränsen 120 000 kr), `gdpr_register` och `konsument_angerratt`.
+  - `moms` och `arbetsgivare` pekar på den första av de två adresserna. Den andra står bara i loggen.
+  - Verifieringskommentaren i filhuvudet är omskriven.
+- `adapters/live/legalSources.test.ts`: domäntestet matchar nu på prefix. Tre nya tester: varje ämne pekar på en källa som en människa kontrollerat (`hämtad` 2026-09-30 eller senare), EUR-Lex pekar på den svenska versionen, och GDPR-ämnena har var sin IMY-sida. Testet för undersidor gäller nu alla källor utom `riksdagen`.
+- `adapters/live/LegalAdvisor.test.ts`: en rad ändrad, `KURERADE_KÄLLOR.skatteverket` → `KURERADE_KÄLLOR.skatteverket_f_skatt`. Det är den enda ändringen utanför `legalSources.ts` och dess test.
+- Inga ändringar i `ports/`, `types/`, `LegalAdvisor.ts`, `legalSchema.ts` eller demoadaptern.
+
+### Återstår
+- **Riksdagen:** inte kontrollerad, inget ämne använder källan. Theo beslutar om den ska vara kvar.
+- **Frågan om krav och rekommendationer** (se förra Juridisk koll-avsnittet) gäller nu fler ämnen: moms under 120 000 kr, GDPR-registret under 250 anställda och FA-skatt gäller bara vissa. `LegalAdvisor.ts` sätter fortfarande `status: "ej_uppfyllt"` på varje krav.
+- Juristgranskning av hela ämneskatalogen.
+
+### Beslut
+- Ämnes-id:t `gdpr_personuppgifter` och källnycklarna `skatteverket`, `imy` och `konsumentverket` finns inte längre.

@@ -57,6 +57,10 @@ export type MarketData = {
    * Bara demot sätter den: beskrivningarna är exempeldata och får en
    * exempelkälla (PR 11), aldrig registrets. */
   competitorsSource?: { source: Källa; dataType: DataType };
+  /** Källan för registrets siffror, när den inte är registrets egen. Bara
+   * demot sätter den: demots registersiffror är påhittade och får en
+   * exempelkälla, aldrig registrets grå tagg. */
+  registrySource?: RegistryTag;
 };
 
 /** Låst läge för hela sidan. Demot räknar ut det ur sitt moment, /app ur Resans steg. */
@@ -71,6 +75,7 @@ export type MarketLock = { unlocksAfterStep: number } | "notInScenario" | null;
 export type SniPicker = { basePath: string; current: string | null; invalid: boolean };
 
 type M = Dictionary["marketPage"];
+type RegistryTag = { source: Källa; dataType: DataType };
 
 function basedOn(m: M, n: number, total: number, locale: Locale): string {
   return `${m.basedOnLabel} ${formatCount(n, locale)} ${m.ofLabel} ${formatCount(total, locale)} ${m.companiesUnit}.`;
@@ -98,11 +103,12 @@ export function Market({
 }) {
   const { t, locale } = useI18n();
   const m = t.marketPage;
+  const subtitle = dataKind === "example" ? m.subtitleExample : m.subtitle;
 
   if (locked) {
     return (
       <div className="fdd-page">
-        <PageHead title={m.title} lede={m.subtitle} />
+        <PageHead title={m.title} lede={subtitle} />
         <Locked
           hint={
             locked === "notInScenario"
@@ -116,6 +122,9 @@ export function Market({
 
   const registry = typeof data.registry === "object" ? data.registry : null;
   const overview = registry?.overview ?? null;
+  const registryTag: RegistryTag | null = overview
+    ? (data.registrySource ?? { source: overview.source, dataType: "register" })
+    : null;
   const companies = registry?.companies ?? null;
   const span = companies ? employeeSpan(companies) : null;
   const title = !data.industryLabel
@@ -140,20 +149,20 @@ export function Market({
 
   return (
     <div className="fdd-page">
-      <PageHead title={title} lede={m.subtitle} />
+      <PageHead title={title} lede={subtitle} />
 
       {sniPicker && data.registry !== "closed" && <SniForm picker={sniPicker} m={m} />}
 
       <section className="fdd-block" aria-labelledby="fdd-market-kpi">
         <h2 id="fdd-market-kpi" className="fdd-block__title">
-          {m.kpiTitle}
+          {dataKind === "example" ? m.kpiTitleExample : m.kpiTitle}
         </h2>
         {overview && registry ? (
           <>
             <ExampleLabel dataKind={dataKind} />
             <Figures
               tourId="market-kpi"
-              items={kpiFigures(m, overview, registry.medianRevenueFiscalYears, dataKind, t.common, locale)}
+              items={kpiFigures(m, overview, registryTag, registry.medianRevenueFiscalYears, dataKind, t.common, locale)}
             />
           </>
         ) : (
@@ -174,7 +183,7 @@ export function Market({
             )}
           </div>
           {companies && overview ? (
-            <Distribution companies={companies} overview={overview} m={m} locale={locale} />
+            <Distribution companies={companies} overview={overview} tag={registryTag} m={m} locale={locale} />
           ) : (
             registryGap
           )}
@@ -185,7 +194,7 @@ export function Market({
             <h2 id="fdd-market-outreach" className="fdd-panel__title">
               {m.outreach.title}
             </h2>
-            {data.outreach ? <Outreach outreach={data.outreach} m={m} locale={locale} /> : <ComingSoon />}
+            {data.outreach ? <Outreach outreach={data.outreach} dataKind={dataKind} m={m} locale={locale} /> : <ComingSoon />}
           </section>
 
           <section className="fd-panel" aria-labelledby="fdd-market-layers" data-tour-id="market-datalayers">
@@ -196,12 +205,12 @@ export function Market({
               <li>
                 <p className="fdd-layers__name">{m.dataLayers.registerName}</p>
                 <p className="fdd-muted">{m.dataLayers.registerNote}</p>
-                {overview && <SourceTag source={overview.source} />}
+                {registryTag && <SourceTag source={registryTag.source} dataType={registryTag.dataType} />}
               </li>
               <li>
                 <p className="fdd-layers__name">{m.dataLayers.annualReportName}</p>
                 <p className="fdd-muted">{m.dataLayers.annualReportNote}</p>
-                {overview && <SourceTag source={overview.source} />}
+                {registryTag && <SourceTag source={registryTag.source} dataType={registryTag.dataType} />}
               </li>
               <li>
                 <p className="fdd-layers__name">{m.dataLayers.simulationName}</p>
@@ -258,6 +267,7 @@ export function Market({
 function kpiFigures(
   m: M,
   overview: MarketOverview,
+  tag: RegistryTag | null,
   medianYears: FiscalYearSpan | null,
   dataKind: DataKind,
   common: Dictionary["common"],
@@ -276,7 +286,8 @@ function kpiFigures(
             value: formatSek(overview.medianRevenueKsek * 1000, locale),
             unit: `(${common.fiscalYearLabel} ${formatFiscalYearSpan(medianYears)})`,
             description: basis ? basedOn(m, basis.medianRevenueCompanies, overview.companyCount, locale) : undefined,
-            source: overview.source,
+            source: tag?.source,
+            dataType: tag?.dataType,
           };
 
   const share = (label: string, value: number, basisCount: number | undefined): Figure =>
@@ -287,7 +298,8 @@ function kpiFigures(
           value,
           unit: "%",
           description: basisCount !== undefined ? basedOn(m, basisCount, overview.companyCount, locale) : undefined,
-          source: overview.source,
+          source: tag?.source,
+          dataType: tag?.dataType,
         };
 
   return [
@@ -296,7 +308,8 @@ function kpiFigures(
       value: formatCount(overview.companyCount, locale),
       unit: m.companyCountUnit,
       description: dataKind === "example" ? m.companyCountDescription : m.companyCountDescriptionLive,
-      source: overview.source,
+      source: tag?.source,
+      dataType: tag?.dataType,
     },
     median,
     share(m.growthShareLabel, overview.growthSharePercent, basis?.growthCompanies),
@@ -307,11 +320,13 @@ function kpiFigures(
 function Distribution({
   companies,
   overview,
+  tag,
   m,
   locale,
 }: {
   companies: RegistryCompany[];
   overview: MarketOverview;
+  tag: RegistryTag | null;
   m: M;
   locale: Locale;
 }) {
@@ -338,17 +353,19 @@ function Distribution({
           {dominant.percent} %). {basedOn(m, companies.length, overview.companyCount, locale)}
         </p>
       )}
-      <SourceTag source={overview.source} />
+      {tag && <SourceTag source={tag.source} dataType={tag.dataType} />}
     </>
   );
 }
 
 function Outreach({
   outreach,
+  dataKind,
   m,
   locale,
 }: {
   outreach: { rows: CampaignRow[]; source: Källa };
+  dataKind: DataKind;
   m: M;
   locale: Locale;
 }) {
@@ -374,7 +391,7 @@ function Outreach({
           <dd>{stats.responseRate} %</dd>
         </div>
       </dl>
-      <SourceTag source={source} dataType="customer" />
+      <SourceTag source={source} dataType={dataKind === "example" ? "example" : "customer"} />
     </>
   );
 }

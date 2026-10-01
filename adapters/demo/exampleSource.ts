@@ -19,7 +19,7 @@ import { useDemoStore } from "./demoStore";
 
 const dictionaries: Record<Locale, Dictionary> = { sv, en };
 
-export type ExampleOrigin = { step: number } | "ideaScreening" | "suggestions";
+export type ExampleOrigin = { step: number } | "ideaScreening" | "suggestions" | "score";
 
 /** Datumet i scenariot: det senaste momentet i steget som demot hunnit till,
  * annars det aktuella momentet. */

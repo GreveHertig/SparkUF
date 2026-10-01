@@ -25,8 +25,8 @@ export const jonasCofounderScript: Record<string, TranscriptItem[]> = {
     tool(
       "Bryter ner idén",
       "Breaking down the idea",
-      ["Delar upp i fem antaganden", "Hämtar en första registerbild", "Väger passformen"],
-      ["Splitting into five assumptions", "Pulling a first registry picture", "Weighing the fit"],
+      ["Delar upp i fem antaganden", "Hämtar en första marknadsbild", "Väger passformen"],
+      ["Splitting into five assumptions", "Pulling a first market picture", "Weighing the fit"],
     ),
     m(
       "cofounder",
@@ -37,8 +37,8 @@ export const jonasCofounderScript: Record<string, TranscriptItem[]> = {
   ],
   "03-marknaden": [
     tool(
-      "Hämtar från Bolagsverket",
-      "Fetching from Bolagsverket",
+      "Hämtar marknadsbilden",
+      "Fetching the market picture",
       ["Räknar padelhallsbolag (SNI 93.110)", "Kartlägger nyregistreringar och nedläggningar", "Identifierar konkurrerande bokningssystem"],
       ["Counting padel-court companies (SNI 93.110)", "Mapping new registrations and closures", "Identifying competing booking systems"],
     ),
