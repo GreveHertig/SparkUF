@@ -38,6 +38,9 @@ const WRITE_CLOSED_TABLES: Record<string, string> = {
   score_snapshots:
     "Poänghistoriken. Skrivs bara av servern (lib/server/scoreSnapshots.ts), så att historiken inte går att förfalska. Beslut 2026-10-01, docs/beslut.md.",
   evidence_kinds: "Bevissorterna. Ändras bara via migreringar. Beslut 2026-10-01, docs/beslut.md.",
+  journey_steps:
+    "Resans framsteg. Ett steg markeras klart bara via public.complete_journey_step, som prövar stegets krav. Beslut 2026-10-01, docs/beslut.md.",
+  journey_step_requirements: "Stegens krav. Ändras bara via migreringar. Beslut 2026-10-01, docs/beslut.md.",
 };
 
 function readAllMigrationsSql(): string {

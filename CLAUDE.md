@@ -40,6 +40,7 @@ Repot hade redan ett Next.js-projekt. Läs `AGENTS.md`, bygg i den befintliga st
     I dag gäller undantaget två siffror:
     - poängen i skalets sidhuvud (`screens/AppShell.tsx`, "Poäng 24"), som räknas av `calculateScore` och länkar till Poäng-sidan
     - affärsplanens färdighetsgrad (`screens/BusinessPlan.tsx`, till exempel "2/9"), som `buildBusinessPlan` räknar ur de nio avsnitten på samma sida
+    - den nya poängen efter ett sparat passformssvar (`screens/blocks/FitPanel.tsx`, "Poängen är nu 4 (+3)") och efter ett avklarat steg (`screens/blocks/StepCompletionPanel.tsx`), båda räknade av `calculateScore` på servern och länkade till Poäng-sidan
 
     En hämtad siffra omfattas aldrig, även om den ser ut som en sammanfattning: medianer, andelar, antal bolag och underlag kommer ur datan och bär alltid sin egen källa där de visas. En ny siffra under undantaget läggs till i listan ovan.
 - **Ingen hårdkodad text.** Allt ligger i i18n-filerna (sv/en).

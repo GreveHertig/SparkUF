@@ -1,6 +1,8 @@
 /** Typad form för översättningarna. sv.ts och en.ts måste båda uppfylla den
  * här — saknas en nyckel i endera filen larmar TypeScript. */
 import type { EvidenceKind } from "@/core/evidenceKinds";
+import type { FitQuestionId } from "@/core/fitQuestions";
+import type { RequirementGroup } from "@/core/journeyRequirements";
 
 export type Dictionary = {
   /** Sidtitel och förhandsvisning när länken delas (app/layout.tsx). */
@@ -303,6 +305,8 @@ export type Dictionary = {
       retracted: string;
       stale: string;
       recalculated: string;
+      /** Ett steg i resan är klart, och poängen räknades i den nya fasen. */
+      unlocked: string;
     };
     /** Sparks egna källor, lagrade som nyckel och inte som text (7.12). */
     internalSources: {
@@ -313,6 +317,42 @@ export type Dictionary = {
       recorded: string;
       retracted: string;
     };
+  };
+  /** Passform från profilen (/app/minnet, docs/bevislagring.md 5.1). */
+  fitPanel: {
+    title: string;
+    lede: string;
+    /** Frågorna, en per FitQuestionId (core/fitQuestions.ts). */
+    questions: Record<FitQuestionId, string>;
+    answerLabel: string;
+    save: string;
+    saving: string;
+    failed: string;
+    /** Märkningen på ett eget svar (5.4). Inte "självrapporterat" i B6:s
+     * mening: grundaren är själv källan, så svaret räknas fullt. */
+    ownAnswer: string;
+    /** {total} är den nya poängen, {delta} förändringen med tecken. */
+    scoreAfter: string;
+    /** Svaret sparades men poängen ändrades inte (delen full eller fasens tak nått). */
+    scoreUnchanged: string;
+  };
+  /** Markera ett steg i resan som klart (beslut 2026-10-01, docs/beslut.md). */
+  stepCompletion: {
+    title: string;
+    cta: string;
+    completing: string;
+    done: string;
+    completable: string;
+    previousNotDone: string;
+    noRequirementYet: string;
+    missingTitle: string;
+    failed: string;
+    /** {total} är den nya poängen. */
+    scoreAfter: string;
+    /** {step} är stegnumret med två siffror. */
+    trace: string;
+    /** Ett krav per grupp i core/journeyRequirements.ts. */
+    requirements: Record<RequirementGroup, string>;
   };
   marketPage: {
     title: string;

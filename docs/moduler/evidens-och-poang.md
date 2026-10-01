@@ -104,6 +104,8 @@ nytt.
 klar (Session P1, branch `plattform-p1-adaptrar`) — alla tre metoderna
 byggda och testade mot Supabase.
 
+**2026-10-01 (`plattform/poangen-ror-sig`):** Det första flödet som skriver bevis är byggt: Passform från profilen (`/app/minnet`, server action `saveFitAnswer`). Ett avklarat steg i resan (`ports/JourneyProgress.ts`) räknar också om poängen och skriver en snapshot med orsaken `unlocked`. Se `docs/bevislagring.md` 11.7.
+
 ### Hur liveadaptern fungerar i dag
 
 `adapters/live/EvidenceRepository.ts` hämtar `evidence`-rader (ordnade

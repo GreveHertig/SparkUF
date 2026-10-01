@@ -134,8 +134,11 @@ async function requireProject(): Promise<{ supabase: SupabaseClient; userId: str
 }
 
 /** Skriver en snapshot om totalen skiljer sig från den senaste (beslut B8)
- * och returnerar poängen med förändringen mot läget före händelsen. */
-async function settle(
+ * och returnerar poängen med förändringen mot läget före händelsen.
+ * Exporterad för Resans skrivväg (adapters/live/JourneyProgress.ts): ett
+ * avklarat steg kan låsa upp delar och höja taket. Snapshots skrivs ändå bara
+ * härifrån (lint-regeln för lib/server/scoreSnapshots). */
+export async function settleScore(
   context: { supabase: SupabaseClient; userId: string; projectId: string },
   before: ComputedScore,
   locale: Locale,
@@ -188,7 +191,7 @@ export const liveEvidenceRecorder: EvidenceRecorder = {
       return { status, evidenceId: result.evidence_id, snapshot: withPrevious(before, { total: before.snapshot.total }) };
     }
 
-    const snapshot = await settle(context, before, locale, `${status}:${valid.kind}`);
+    const snapshot = await settleScore(context, before, locale, `${status}:${valid.kind}`);
     const copy = dictionaries[locale].evidence;
     await liveMemoryRepository.recordTraceEvent({
       module: MODULE,
@@ -217,7 +220,7 @@ export const liveEvidenceRecorder: EvidenceRecorder = {
     const { error } = await context.supabase.rpc("retract_evidence", { p_evidence_id: evidenceId, p_reason: cleanReason });
     if (error) throw new EvidenceInputError(`Beviset kunde inte återkallas (${error.message}).`);
 
-    const snapshot = await settle(context, before, locale, `retracted:${row.kind}`);
+    const snapshot = await settleScore(context, before, locale, `retracted:${row.kind}`);
     const copy = dictionaries[locale].evidence;
     await liveMemoryRepository.recordTraceEvent({
       module: MODULE,
@@ -246,6 +249,7 @@ export const liveEvidenceRecorder: EvidenceRecorder = {
           partId,
           kind,
           kindLabel: copy.kinds[kind],
+          subjectRef: row.subject_ref,
           source: stored.source,
           quote: row.quote ?? undefined,
           enteredBy: row.entered_by,

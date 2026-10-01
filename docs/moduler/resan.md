@@ -75,9 +75,20 @@ Evidens och poäng.
   `maxPoints > 0`.
 - Klarar kontraktstestet i `ports/JourneyRepository.contract.test.ts`.
 
+## Skrivvägen (2026-10-01)
+
+Porten `ports/JourneyProgress.ts` (`getStepCompletion`, `completeStep`). Ett
+steg markeras klart bara via `public.complete_journey_step`, som kräver att
+föregående steg är klart och att stegets krav är uppfyllda
+(`core/journeyRequirements.ts`, tabellen `journey_step_requirements`, beslut i
+`docs/beslut.md` 2026-10-01). Steg 06, 07 och 12 har inget beslutat krav än
+och kan inte markeras klara. Demoadaptern sparar ingenting.
+
 ## Säkerhet
 
 RLS på `journey_steps`, policy begränsad till ägarens `user_id`/`project_id`.
+Sedan 2026-10-01 kan klienten bara läsa tabellen. Skrivning sker via
+`public.complete_journey_step` (security definer).
 Ingen extern nyckel. Fritext i `why`/`highlights` som eventuellt genereras av
 Medgrundaren är då text som redan validerats av den modulen (`docs/moduler/medgrundaren.md`)
 — den här porten lagrar/serverar den, genererar den inte.

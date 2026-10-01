@@ -9,6 +9,8 @@ import { mentionsConcept } from "@/core/concepts";
 import { SimulationBlock, VerdictBlock } from "./blocks/DataBlocks";
 import { Locked, PageHead } from "./blocks/PageBlocks";
 import { formatDelta } from "./blocks/ScoreFigure";
+import { StepCompletionPanel, type CompleteStep } from "./blocks/StepCompletionPanel";
+import type { StepCompletionView } from "@/ports/JourneyProgress";
 
 /**
  * Ett steg i resan: vad som återstår eller hänt, domen, poängändringen och det
@@ -30,11 +32,15 @@ export function JourneyStep({
   stepNumber,
   journeyHref,
   verdictMissing = false,
+  completion,
 }: {
   data: JourneyStepDetail | null;
   stepNumber: number;
   journeyHref: string;
   verdictMissing?: boolean;
+  /** Markera steget som klart (beslut 2026-10-01). Bara /app skickar den:
+   * demots steg byts med demoraden. Visas inte för ett låst steg. */
+  completion?: { view: StepCompletionView; onComplete: CompleteStep; scoreHref: string } | null;
 }) {
   const { t } = useI18n();
   const j = t.journeyPage;
@@ -126,6 +132,14 @@ export function JourneyStep({
           </div>
 
           <div className="fdd-stack">
+            {completion && (
+              <StepCompletionPanel
+                completion={completion.view}
+                onComplete={completion.onComplete}
+                scoreHref={completion.scoreHref}
+              />
+            )}
+
             {data.verdict && data.scoreDelta ? (
               <div data-tour-id="journey-verdict">
                 <VerdictBlock

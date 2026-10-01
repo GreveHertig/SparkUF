@@ -37,6 +37,8 @@ export type EvidenceView = {
   /** null i demot, där scenariots bevis inte har någon sort. */
   kind: EvidenceKind | null;
   kindLabel: string;
+  /** Vad beviset gäller (till exempel "fit:time"). null i demot. */
+  subjectRef: string | null;
   source: Källa;
   quote?: string;
   enteredBy: "founder" | "system";
