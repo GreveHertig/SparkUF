@@ -1,5 +1,5 @@
 /**
- * Rörelsen i demots rundtur (FondaTour): ren matematik utan DOM, så att
+ * Rörelsen i demots rundtur (DemoTour): ren matematik utan DOM, så att
  * tider och kurvor går att testa och justera på ett ställe.
  *
  * Koreografi vid Nästa/Bakåt (tider från klicket):

@@ -225,7 +225,7 @@ const step01NextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 01 · OM DIG",
     title: "Svara på profilfrågorna",
-    why: "Spark behöver veta vem du är — bakgrund, kompetens, nätverk, tid, pengar och riskaptit — innan den kan visa några siffror ur registret.",
+    why: "Spark behöver veta vem du är — bakgrund, kompetens, nätverk, tid, pengar och riskaptit — innan den kan visa några siffror om marknaden.",
     maxPoints: 10,
     estimatedTime: "~10 min",
     doneItems: [],
@@ -234,7 +234,7 @@ const step01NextStep: Record<Locale, NextStep> = {
   en: {
     eyebrow: "STEP 01 · ABOUT YOU",
     title: "Answer the profile questions",
-    why: "Spark needs to know who you are — background, skills, network, time, money and risk appetite — before it can show any numbers from the registry.",
+    why: "Spark needs to know who you are — background, skills, network, time, money and risk appetite — before it can show any numbers about the market.",
     maxPoints: 10,
     estimatedTime: "~10 min",
     doneItems: [],
@@ -292,7 +292,7 @@ const step02NextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 02 · MÖJLIGHETER",
     title: "Välj en idé ur tre förslag",
-    why: "Spark föreslår tre idéer grundade i din profil, korsade med luckor i registret.",
+    why: "Spark föreslår tre idéer grundade i din profil och i luckor på marknaden.",
     maxPoints: 12,
     estimatedTime: "~10 min",
     doneItems: ["Profilsamtalet klart"],
@@ -301,7 +301,7 @@ const step02NextStep: Record<Locale, NextStep> = {
   en: {
     eyebrow: "STEP 02 · OPPORTUNITIES",
     title: "Choose one idea from three suggestions",
-    why: "Spark suggests three ideas grounded in your profile, crossed with gaps in the registry.",
+    why: "Spark suggests three ideas grounded in your profile and in gaps in the market.",
     maxPoints: 12,
     estimatedTime: "~10 min",
     doneItems: ["Profile chat done"],
@@ -336,14 +336,14 @@ const [step02Fore, step02Korning, step02Efter] = makeStepBeats({
   deltaReasonAfter: { sv: "efter idéval", en: "after choosing the idea" },
   highlightsAfter: {
     sv: [
-      "Tre idéer föreslagna ur profilen och registret.",
+      "Tre idéer föreslagna ur profilen och luckor på marknaden.",
       "Vald idé: Kvittojakten — automatisk insamling av underlag från byråernas småföretagskunder.",
-      "Preliminär registerträff: redovisningsbyråer, SNI 69.201.",
+      "Preliminär bransch: redovisningsbyråer, SNI 69.201.",
     ],
     en: [
-      "Three ideas suggested from the profile and the registry.",
+      "Three ideas suggested from the profile and gaps in the market.",
       "Chosen idea: Kvittojakten — automatic collection of receipts from accounting firms' small-business clients.",
-      "Preliminary registry match: accounting firms, SNI 69.201.",
+      "Preliminary industry: accounting firms, SNI 69.201.",
     ],
   },
   traceSummaryAfter: {
@@ -358,8 +358,8 @@ const [step02Fore, step02Korning, step02Efter] = makeStepBeats({
 const step03NextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 03 · MARKNADEN",
-    title: "Se de första siffrorna ur registret",
-    why: "Riktiga siffror ur registret: antal företag, storleksfördelning, medianomsättning, tillväxt och geografi.",
+    title: "Se de första siffrorna om marknaden",
+    why: "Marknadsbilden för branschen: antal företag, storleksfördelning, omsättning, tillväxt och geografi.",
     maxPoints: 12,
     estimatedTime: "~5 min",
     doneItems: ["Profilsamtalet klart", "Idé vald"],
@@ -367,8 +367,8 @@ const step03NextStep: Record<Locale, NextStep> = {
   },
   en: {
     eyebrow: "STEP 03 · THE MARKET",
-    title: "See the first numbers from the registry",
-    why: "Real numbers from the registry: number of companies, size distribution, median revenue, growth and geography.",
+    title: "See the first numbers about the market",
+    why: "The market picture for the industry: number of companies, size distribution, revenue, growth and geography.",
     maxPoints: 12,
     estimatedTime: "~5 min",
     doneItems: ["Profile chat done", "Idea chosen"],
@@ -414,11 +414,10 @@ const [step03Fore, step03Korning, step03Efter] = makeStepBeats({
       competition: [pt(3, källa("Bolagsverket", "2026-01-09")), pt(2, källa("Bolagsverket", "2026-01-09"))],
     },
   ),
-  deltaReasonAfter: { sv: "efter registerdata", en: "after registry data" },
+  deltaReasonAfter: { sv: "efter marknadsbilden", en: "after the market picture" },
   highlightsAfter: {
     sv: [
       "312 redovisningsbyråer med 5–19 anställda (SNI 69.201).",
-      "Medianomsättning 4,2 Mkr.",
       "18 % växte mer än 10 % förra året.",
       "31 % finns i Stockholms län.",
       "Tre fiktiva konkurrenter identifierade, bara ytligt kartlagda så här långt.",
@@ -426,7 +425,6 @@ const [step03Fore, step03Korning, step03Efter] = makeStepBeats({
     ],
     en: [
       "312 accounting firms with 5–19 employees (SNI 69.201).",
-      "Median revenue SEK 4.2M.",
       "18% grew more than 10% last year.",
       "31% are located in the Stockholm region.",
       "Three fictional competitors identified, only shallowly mapped so far.",
@@ -447,7 +445,7 @@ const step04NextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 04 · KUNDEN",
     title: "Se kundprofilen och listan på namngivna företag",
-    why: "Kundprofil ur registret: SNI 69.201, 5–19 anställda, 3–15 Mkr i omsättning. Resultatet är en lista på namngivna företag.",
+    why: "Kundprofil: SNI 69.201, 5–19 anställda, 3–15 Mkr i omsättning. Resultatet är en lista på namngivna företag.",
     maxPoints: 8,
     estimatedTime: "~5 min",
     doneItems: ["Profilsamtalet klart", "Idé vald", "Marknadsbilden klar"],
@@ -456,7 +454,7 @@ const step04NextStep: Record<Locale, NextStep> = {
   en: {
     eyebrow: "STEP 04 · THE CUSTOMER",
     title: "See the customer profile and the list of named companies",
-    why: "Customer profile from the registry: SNI 69.201, 5–19 employees, SEK 3–15M revenue. The result is a list of named companies.",
+    why: "Customer profile: SNI 69.201, 5–19 employees, SEK 3–15M revenue. The result is a list of named companies.",
     maxPoints: 8,
     estimatedTime: "~5 min",
     doneItems: ["Profile chat done", "Idea chosen", "Market picture done"],
@@ -504,20 +502,20 @@ const [step04Fore, step04Korning, step04Efter] = makeStepBeats({
   highlightsAfter: {
     sv: [
       "Kundprofil: SNI 69.201, 5–19 anställda, 3–15 Mkr i omsättning.",
-      "Lista över de 40 snabbast växande fiktiva byråerna som matchar profilen.",
+      "Lista över de 20 snabbast växande fiktiva byråerna som matchar profilen.",
       "Konkurrentbilden fördjupad i samma veva som kundlistan togs fram.",
       "Nästa steg: bygga kontaktlista och skriva outreach.",
     ],
     en: [
       "Customer profile: SNI 69.201, 5–19 employees, SEK 3–15M revenue.",
-      "List of the 40 fastest-growing fictional firms matching the profile.",
+      "List of the 20 fastest-growing fictional firms matching the profile.",
       "The competitor picture deepened alongside the customer list.",
       "Next: build the contact list and write the outreach.",
     ],
   },
   traceSummaryAfter: {
-    sv: "Kundlistan klar: 40 namngivna byråer som matchar profilen, konkurrensbilden fördjupad.",
-    en: "Customer list done: 40 named firms matching the profile, competitor picture deepened.",
+    sv: "Kundlistan klar: 20 namngivna byråer som matchar profilen, konkurrensbilden fördjupad.",
+    en: "Customer list done: 20 named firms matching the profile, competitor picture deepened.",
   },
   simulationKindAfter: "tolerance",
 });
@@ -528,7 +526,7 @@ const [step04Fore, step04Korning, step04Efter] = makeStepBeats({
 const step05aNextStep: Record<Locale, NextStep> = {
   sv: {
     eyebrow: "STEG 05 · SAMTALEN",
-    title: "Skicka outreach till de 40 byråerna",
+    title: "Skicka outreach till de 20 byråerna",
     why: "Spark skriver ett svenskt B2B-mejl och skickar det från din egen Gmail. Poängen kan inte gå över 30 förrän riktiga kunder har svarat.",
     maxPoints: 18,
     estimatedTime: "~20 min",
@@ -537,7 +535,7 @@ const step05aNextStep: Record<Locale, NextStep> = {
   },
   en: {
     eyebrow: "STEP 05 · THE CALLS",
-    title: "Send outreach to the 40 firms",
+    title: "Send outreach to the 20 firms",
     why: "Spark writes a Swedish B2B email and sends it from your own Gmail. Your score can't pass 30 until real customers have responded.",
     maxPoints: 18,
     estimatedTime: "~20 min",
@@ -559,13 +557,13 @@ const [step05aFore, step05aKorning, step05aEfter] = makeStepBeats({
   sinceLastTimeFore: zeroSinceLastTimeBoth("2026-01-14"),
   sinceLastTimeKorning: {
     sv: noSinceLastTime("sv", "2026-01-18", {
-      recipientCount: 40,
+      recipientCount: 20,
       openRate: 38,
       openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
     }),
     en: noSinceLastTime("en", "2026-01-18", {
-      recipientCount: 40,
+      recipientCount: 20,
       openRate: 38,
       openRateSource: källa("The outreach, step 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
@@ -573,7 +571,7 @@ const [step05aFore, step05aKorning, step05aEfter] = makeStepBeats({
   },
   sinceLastTimeEfter: {
     sv: noSinceLastTime("sv", "2026-01-19", {
-      recipientCount: 40,
+      recipientCount: 20,
       openRate: 38,
       openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
@@ -581,7 +579,7 @@ const [step05aFore, step05aKorning, step05aEfter] = makeStepBeats({
       responsesSource: källa("Kundsamtal, steg 05", "2026-01-19"),
     }),
     en: noSinceLastTime("en", "2026-01-19", {
-      recipientCount: 40,
+      recipientCount: 20,
       openRate: 38,
       openRateSource: källa("The outreach, step 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
@@ -619,14 +617,14 @@ const [step05aFore, step05aKorning, step05aEfter] = makeStepBeats({
   deltaReasonAfter: { sv: "efter de första 6 svaren", en: "after the first 6 responses" },
   highlightsAfter: {
     sv: [
-      "Svenskt B2B-mejl skickat från Saras Gmail till 40 byråer.",
+      "Svenskt B2B-mejl skickat från Saras Gmail till 20 byråer.",
       "2 dagar senare: 38 % har öppnat.",
       "4 dagar senare: påminnelse skickad.",
       "6 svar kommer in — alla bekräftar att problemet är verkligt.",
       "Juridisk koll: regler för marknadsföring via e-post, B2B jämfört med fysiska personer.",
     ],
     en: [
-      "Swedish B2B email sent from Sara's Gmail to 40 firms.",
+      "Swedish B2B email sent from Sara's Gmail to 20 firms.",
       "2 days later: 38% have opened it.",
       "4 days later: reminder sent.",
       "6 responses come in — all confirm the problem is real.",
@@ -634,8 +632,8 @@ const [step05aFore, step05aKorning, step05aEfter] = makeStepBeats({
     ],
   },
   traceSummaryAfter: {
-    sv: "Utskicket skickat till 40 byråer — 38 % öppningsfrekvens, sex svar bekräftar problemet.",
-    en: "Outreach sent to 40 firms — 38% open rate, six responses confirm the problem.",
+    sv: "Utskicket skickat till 20 byråer — 38 % öppningsfrekvens, sex svar bekräftar problemet.",
+    en: "Outreach sent to 20 firms — 38% open rate, six responses confirm the problem.",
   },
 });
 
@@ -736,7 +734,7 @@ const step05bEfter: Beat = {
   nextStep: step05bNextStep,
   sinceLastTime: {
     sv: noSinceLastTime("sv", "2026-01-20", {
-      recipientCount: 40,
+      recipientCount: 20,
       openRate: 38,
       openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
@@ -744,7 +742,7 @@ const step05bEfter: Beat = {
       responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
     }),
     en: noSinceLastTime("en", "2026-01-20", {
-      recipientCount: 40,
+      recipientCount: 20,
       openRate: 38,
       openRateSource: källa("The outreach, step 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
@@ -808,7 +806,7 @@ const step06NextStep: Record<Locale, NextStep> = {
 
 const step06SinceLastTime: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-01-23", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -816,7 +814,7 @@ const step06SinceLastTime: Record<Locale, SinceLastTime> = {
     responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
   }),
   en: noSinceLastTime("en", "2026-01-23", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -923,7 +921,7 @@ const step07NextStep: Record<Locale, NextStep> = {
 
 const step07SinceLastTime: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-01-26", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -931,7 +929,7 @@ const step07SinceLastTime: Record<Locale, SinceLastTime> = {
     responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
   }),
   en: noSinceLastTime("en", "2026-01-26", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -994,7 +992,7 @@ const [step07Fore, step07Korning, step07Efter] = makeStepBeats({
   highlightsAfter: {
     sv: [
       "Pris satt till 1 190 kr/mån exkl. moms, spann 900–1 500 kr.",
-      "1. Vad kunderna tål: medianomsättning 4,2 Mkr, byråer med 10+ anställda tål mer än de mindre.",
+      "1. Vad kunderna tål: byråer med 10+ anställda tål mer än de mindre.",
       "2. Vad jämförbara aktörer tar: näraliggande verktyg tar 800–1 600 kr/mån.",
       "3. Vad kunderna själva sagt: median 900 kr bland de nio svaren, men alla som sa ja har 10 eller fler anställda.",
       "4. Vad som krävs för att gå ihop: kostnadsgolv ~8 500 kr/mån, break-even vid 8 kunder (8 × 1 190 kr = 9 520 kr).",
@@ -1002,7 +1000,7 @@ const [step07Fore, step07Korning, step07Efter] = makeStepBeats({
     ],
     en: [
       "Price set to SEK 1,190/month excl. VAT, range SEK 900–1,500.",
-      "1. What customers can afford: median revenue SEK 4.2M, firms with 10+ employees can afford more than smaller ones.",
+      "1. What customers can afford: firms with 10+ employees can afford more than smaller ones.",
       "2. What comparable players charge: adjacent tools charge SEK 800–1,600/month.",
       "3. What customers themselves said: median SEK 900 among the nine responses, but everyone who said yes has 10 or more employees.",
       "4. What's needed to break even: cost floor ~SEK 8,500/month, break-even at 8 customers (8 × SEK 1,190 = SEK 9,520).",
@@ -1042,7 +1040,7 @@ const step08NextStep: Record<Locale, NextStep> = {
 
 const step08SinceLastTime: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-02-01", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1050,7 +1048,7 @@ const step08SinceLastTime: Record<Locale, SinceLastTime> = {
     responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
   }),
   en: noSinceLastTime("en", "2026-02-01", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1158,7 +1156,7 @@ const step09NextStep: Record<Locale, NextStep> = {
 
 const step09SinceLastTime: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-02-05", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1166,7 +1164,7 @@ const step09SinceLastTime: Record<Locale, SinceLastTime> = {
     responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
   }),
   en: noSinceLastTime("en", "2026-02-05", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1268,7 +1266,7 @@ const step10NextStep: Record<Locale, NextStep> = {
 
 const step10SinceLastTime: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-02-08", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1276,7 +1274,7 @@ const step10SinceLastTime: Record<Locale, SinceLastTime> = {
     responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
   }),
   en: noSinceLastTime("en", "2026-02-08", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1396,7 +1394,7 @@ const step11NextStep: Record<Locale, NextStep> = {
 
 const step11SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-02-17", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1404,7 +1402,7 @@ const step11SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
     responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
   }),
   en: noSinceLastTime("en", "2026-02-17", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1415,7 +1413,7 @@ const step11SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
 
 const step11SinceLastTimeAfter: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-03-18", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1423,7 +1421,7 @@ const step11SinceLastTimeAfter: Record<Locale, SinceLastTime> = {
     responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
   }),
   en: noSinceLastTime("en", "2026-03-18", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1535,7 +1533,7 @@ const step12NextStep: Record<Locale, NextStep> = {
 
 const step12SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-03-19", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1543,7 +1541,7 @@ const step12SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
     responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
   }),
   en: noSinceLastTime("en", "2026-03-19", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1554,7 +1552,7 @@ const step12SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
 
 const step12SinceLastTimeAfter: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-04-10", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1562,7 +1560,7 @@ const step12SinceLastTimeAfter: Record<Locale, SinceLastTime> = {
     responsesSource: källa("Kundsamtal, steg 05", "2026-01-20"),
   }),
   en: noSinceLastTime("en", "2026-04-10", {
-    recipientCount: 40,
+    recipientCount: 20,
     openRate: 38,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
@@ -1798,8 +1796,8 @@ export const SARA_STEPS: readonly StepMeta[] = [
     journeyPhase: "discover",
     title: { sv: "Möjligheter", en: "Opportunities" },
     oneLiner: {
-      sv: "Idéer grundade i profilen, korsade med luckor i registret.",
-      en: "Ideas grounded in the profile, crossed with gaps in the registry.",
+      sv: "Idéer grundade i profilen och i luckor på marknaden.",
+      en: "Ideas grounded in the profile and in gaps in the market.",
     },
     maxPoints: 12,
   },
@@ -1808,8 +1806,8 @@ export const SARA_STEPS: readonly StepMeta[] = [
     journeyPhase: "tryPhase",
     title: { sv: "Marknaden", en: "The market" },
     oneLiner: {
-      sv: "Riktiga siffror ur registret: antal företag, storlek, omsättning, tillväxt och geografi.",
-      en: "Real numbers from the registry: number of firms, size, revenue, growth and geography.",
+      sv: "Marknadsbilden för branschen: antal företag, storlek, omsättning, tillväxt och geografi.",
+      en: "The market picture for the industry: number of firms, size, revenue, growth and geography.",
     },
     maxPoints: 12,
   },
@@ -1817,7 +1815,7 @@ export const SARA_STEPS: readonly StepMeta[] = [
     stepNumber: 4,
     journeyPhase: "tryPhase",
     title: { sv: "Kunden", en: "The customer" },
-    oneLiner: { sv: "Kundprofil ur registret. Resultatet är en lista på namngivna företag.", en: "Customer profile from the registry. The result is a list of named companies." },
+    oneLiner: { sv: "Kundprofilen blir en lista på namngivna företag.", en: "The customer profile becomes a list of named companies." },
     maxPoints: 8,
   },
   {
@@ -1908,7 +1906,7 @@ export const saraSuggestionCandidates: Record<Locale, ScoreSuggestionInput[]> = 
       gapType: "insufficient",
       pointsGain: 3,
       estimatedMinutes: 15,
-      explanation: "Bara delar av registret är hämtat — hämta hela marknadsbilden för fler poäng.",
+      explanation: "Bara delar av marknadsbilden är hämtad — hämta hela för fler poäng.",
       actionLabel: "Se marknadsbilden",
     },
     {
@@ -1982,7 +1980,7 @@ export const saraSuggestionCandidates: Record<Locale, ScoreSuggestionInput[]> = 
       gapType: "insufficient",
       pointsGain: 3,
       estimatedMinutes: 15,
-      explanation: "Only part of the registry is fetched — pull the full market picture for more points.",
+      explanation: "Only part of the market picture is fetched — pull all of it for more points.",
       actionLabel: "See the market picture",
     },
     {

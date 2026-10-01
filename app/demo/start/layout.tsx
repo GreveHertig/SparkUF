@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { DemoTopBar } from "@/screens/AppShell";
 
 /** Onboardingen: inget skal med meny, grundaren har ingen profil än. */
-export default function FondaDemoStartLayout({ children }: { children: ReactNode }) {
+export default function DemoStartLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <DemoTopBar />

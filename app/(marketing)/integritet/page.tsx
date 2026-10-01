@@ -6,7 +6,7 @@ import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import { useI18n } from "@/i18n/context";
 
 /** Den korta integritetstexten som mejlfältet på / länkar till. */
-export default function FondaPrivacyPage() {
+export default function PrivacyPage() {
   const { t } = useI18n();
   const copy = t.site;
 

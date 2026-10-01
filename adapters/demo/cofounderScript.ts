@@ -75,16 +75,16 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
   "02-mojligheter-fore": [
     msg(
       "cofounder",
-      "Dags att hitta en idé. Jag korsar din profil mot registret.",
-      "Time to find an idea. I'll cross your profile against the registry.",
+      "Dags att hitta en idé. Jag korsar din profil mot luckor på marknaden.",
+      "Time to find an idea. I'll cross your profile against gaps in the market.",
     ),
   ],
   "02-mojligheter-korning": [
     tool(
-      "Söker i Bolagsverkets register",
-      "Searching the Bolagsverket registry",
-      ["Läser profilen", "Korsar mot registret", "Rankar tre idéer"],
-      ["Reading the profile", "Cross-referencing the registry", "Ranking three ideas"],
+      "Söker efter luckor på marknaden",
+      "Searching for gaps in the market",
+      ["Läser profilen", "Korsar mot marknaden", "Rankar tre idéer"],
+      ["Reading the profile", "Cross-referencing the market", "Ranking three ideas"],
     ),
     msg(
       "cofounder",
@@ -94,28 +94,28 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
     msg("founder", "Det är precis det jag själv är trött på varje månadsskifte.", "That's exactly what I'm tired of every month-end."),
   ],
   "02-mojligheter-efter": [
-    msg("cofounder", "Då kallar vi den Kvittojakten. Nästa: se vad registret säger om marknaden.", "Then we'll call it Kvittojakten. Next: see what the registry says about the market."),
+    msg("cofounder", "Då kallar vi den Kvittojakten. Nästa: se hur marknaden ser ut.", "Then we'll call it Kvittojakten. Next: see what the market looks like."),
   ],
 
   // --- Steg 03 · Marknaden -----------------------------------------------
   "03-marknaden-fore": [
     msg(
       "cofounder",
-      "Dags att hämta de första riktiga siffrorna ur registret.",
-      "Time to pull the first real numbers from the registry.",
+      "Dags att hämta de första siffrorna om marknaden.",
+      "Time to pull the first numbers about the market.",
     ),
   ],
   "03-marknaden-korning": [
     tool(
-      "Hämtar från Bolagsverket och SCB",
-      "Fetching from Bolagsverket and Statistics Sweden",
+      "Hämtar marknadsbilden",
+      "Fetching the market picture",
       ["Räknar byråer med SNI 69.201", "Hämtar omsättning och tillväxt", "Kartlägger konkurrenter"],
       ["Counting firms with SNI 69.201", "Fetching revenue and growth", "Mapping competitors"],
     ),
     msg(
       "cofounder",
-      "312 redovisningsbyråer med 5–20 anställda. Medianomsättning 4,2 Mkr. 18 % växte mer än 10 % förra året.",
-      "312 accounting firms with 5–20 employees. Median revenue SEK 4.2M. 18% grew more than 10% last year.",
+      "312 redovisningsbyråer med 5–20 anställda. 18 % växte mer än 10 % förra året.",
+      "312 accounting firms with 5–20 employees. 18% grew more than 10% last year.",
     ),
     msg("founder", "Och konkurrenterna?", "And the competitors?"),
     msg(
@@ -140,13 +140,13 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
     tool(
       "Bygger kundprofilen",
       "Building the customer profile",
-      ["Filtrerar på storlek och omsättning", "Namnger de 40 snabbast växande", "Fördjupar konkurrentbilden"],
-      ["Filtering by size and revenue", "Naming the 40 fastest-growing", "Deepening the competitor picture"],
+      ["Filtrerar på storlek och omsättning", "Namnger de 20 snabbast växande", "Fördjupar konkurrentbilden"],
+      ["Filtering by size and revenue", "Naming the 20 fastest-growing", "Deepening the competitor picture"],
     ),
     msg(
       "cofounder",
-      "Här är listan: 40 byråer som växer snabbast och matchar profilen.",
-      "Here's the list: 40 firms that are growing fastest and match the profile.",
+      "Här är listan: 20 byråer som växer snabbast och matchar profilen.",
+      "Here's the list: 20 firms that are growing fastest and match the profile.",
     ),
     msg("founder", "Kan du skriva ett mejl till dem?", "Can you write them an email?"),
     msg(
@@ -165,14 +165,14 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
 
   // --- Steg 05a · Samtalen (utskicket) --------------------------------------
   "05a-utskicket-fore": [
-    msg("cofounder", "Dags att skicka till de 40 byråerna. Redo?", "Time to send to the 40 firms. Ready?"),
+    msg("cofounder", "Dags att skicka till de 20 byråerna. Redo?", "Time to send to the 20 firms. Ready?"),
   ],
   "05a-utskicket-korning": [
     tool(
       "Skickar från din Gmail",
       "Sending from your Gmail",
-      ["Skriver svenskt B2B-mejl", "Skickar till 40 byråer", "Följer öppningar"],
-      ["Writing the Swedish B2B email", "Sending to 40 firms", "Tracking opens"],
+      ["Skriver svenskt B2B-mejl", "Skickar till 20 byråer", "Följer öppningar"],
+      ["Writing the Swedish B2B email", "Sending to 20 firms", "Tracking opens"],
     ),
     msg("cofounder", "Mejlet är ute. Om två dagar vet vi hur många som öppnat.", "The email is out. In two days we'll know how many opened it."),
     skip("2 dagar senare", "2 days later"),

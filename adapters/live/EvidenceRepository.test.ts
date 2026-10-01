@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { calculateScore, ALL_PART_IDS, type EvidenceItem, type PartEvidence } from "@/core/score";
+import { EVIDENCE_KINDS, type EvidenceKind } from "@/core/evidenceKinds";
+import { EvidenceIntegrityError } from "@/core/evidenceInput";
 import { EmptyStateError } from "@/core/errors";
 import { makeSupabaseFake } from "@/test/stubs/supabaseFake";
 import { sv } from "@/i18n/sv";
@@ -16,18 +18,39 @@ function projectFixture() {
   return [{ id: PROJECT_ID, user_id: USER_ID, name: "Test", one_liner: "En testidé.", is_active: true }];
 }
 
-function evidenceRow(overrides: Partial<Record<string, unknown>> & { id: string; part_id: string; points: number }) {
+/** En rad som databasen skulle ha skrivit den: del, datatyp, motsäger och
+ * poäng ur sorten (supabase/migrations/20261001120000_evidence_write_path.sql). */
+function evidenceRow(overrides: Partial<Record<string, unknown>> & { id: string; kind: EvidenceKind }) {
+  const spec = EVIDENCE_KINDS[overrides.kind];
   return {
     user_id: USER_ID,
     project_id: PROJECT_ID,
-    contradicts: false,
-    data_type: "customer",
-    source_name: "Kundintervju",
+    part_id: spec.partId,
+    points: spec.basePoints,
+    contradicts: spec.contradicts,
+    data_type: spec.dataType,
+    entered_by: "system",
+    source_name: "Testkälla",
     source_url: null,
     fetched_at: "2026-09-01",
+    quote: null,
     created_at: `2026-09-01T00:00:${overrides.id.padStart(2, "0")}Z`,
+    retracted_at: null,
     ...overrides,
   };
+}
+
+function completedSteps(...steps: number[]) {
+  return steps.map((n) => ({ user_id: USER_ID, project_id: PROJECT_ID, step_number: n, completed_at: "2026-09-01T00:00:00Z" }));
+}
+
+async function snapshotFor(tables: Record<string, Record<string, unknown>[]>) {
+  requireSupabaseUserMock.mockResolvedValue({
+    supabase: makeSupabaseFake({ projects: projectFixture(), ...tables }),
+    userId: USER_ID,
+  });
+  const { liveEvidenceRepository } = await import("@/adapters/live/EvidenceRepository");
+  return liveEvidenceRepository.getScoreSnapshot("sv");
 }
 
 describe("liveEvidenceRepository.getScoreSnapshot", () => {
@@ -42,32 +65,15 @@ describe("liveEvidenceRepository.getScoreSnapshot", () => {
   });
 
   it("kastar EmptyStateError utan några bevis (ett nytt konto)", async () => {
-    requireSupabaseUserMock.mockResolvedValue({
-      supabase: makeSupabaseFake({ projects: projectFixture() }),
-      userId: USER_ID,
-    });
-    const { liveEvidenceRepository } = await import("@/adapters/live/EvidenceRepository");
-    await expect(liveEvidenceRepository.getScoreSnapshot("sv")).rejects.toBeInstanceOf(EmptyStateError);
+    await expect(snapshotFor({})).rejects.toBeInstanceOf(EmptyStateError);
   });
 
   it("räknar ALDRIG poäng själv — identiskt med ett direkt calculateScore-anrop på samma underlag", async () => {
     const evidenceRows = [
-      evidenceRow({ id: "1", part_id: "fit", points: 5 }),
-      evidenceRow({
-        id: "2",
-        part_id: "market",
-        points: 6,
-        data_type: "register",
-        source_name: "Bolagsverket",
-        source_url: "https://bolagsverket.se",
-      }),
+      evidenceRow({ id: "1", kind: "profileFitAnswer", entered_by: "founder" }),
+      evidenceRow({ id: "2", kind: "registerMarketCount", source_name: "Bolagsverket", source_url: "https://bolagsverket.se" }),
     ];
-    requireSupabaseUserMock.mockResolvedValue({
-      supabase: makeSupabaseFake({ projects: projectFixture(), evidence: evidenceRows }),
-      userId: USER_ID,
-    });
-    const { liveEvidenceRepository } = await import("@/adapters/live/EvidenceRepository");
-    const result = await liveEvidenceRepository.getScoreSnapshot("sv");
+    const result = await snapshotFor({ evidence: evidenceRows });
 
     const labels = sv.score.parts;
     const expectedParts: PartEvidence[] = ALL_PART_IDS.map((partId) => ({
@@ -77,10 +83,10 @@ describe("liveEvidenceRepository.getScoreSnapshot", () => {
         .filter((row) => row.part_id === partId)
         .map(
           (row): EvidenceItem => ({
-            points: row.points,
-            contradicts: row.contradicts,
+            points: row.points as number,
+            contradicts: row.contradicts as boolean,
             dataType: row.data_type as EvidenceItem["dataType"],
-            source: { namn: row.source_name, hämtad: row.fetched_at, url: row.source_url ?? undefined },
+            source: { namn: row.source_name as string, hämtad: row.fetched_at as string, url: (row.source_url as string | null) ?? undefined },
           }),
         ),
     }));
@@ -90,83 +96,100 @@ describe("liveEvidenceRepository.getScoreSnapshot", () => {
     expect(result).toEqual(expected);
   });
 
-  it("simuleringsbevis ger 0 poäng (7.4) — beräknat av calculateScore, inte adaptern", async () => {
-    const evidenceRows = [
-      evidenceRow({ id: "1", part_id: "fit", points: 999, data_type: "simulation", source_name: "Hiasynth" }),
-      evidenceRow({ id: "2", part_id: "market", points: 6, data_type: "register", source_name: "Bolagsverket" }),
-    ];
-    requireSupabaseUserMock.mockResolvedValue({
-      supabase: makeSupabaseFake({ projects: projectFixture(), evidence: evidenceRows }),
-      userId: USER_ID,
-    });
-    const { liveEvidenceRepository } = await import("@/adapters/live/EvidenceRepository");
-    const result = await liveEvidenceRepository.getScoreSnapshot("sv");
-    const fitPart = result.parts.find((p) => p.name === sv.score.parts.fit);
-    expect(fitPart?.points).toBe(0);
+  it("en rad som inte stämmer med sin sort (till exempel en simulering) räknas aldrig — läsningen avvisar den", async () => {
+    // Databasen tillåter inte raden (evidence_not_simulation och triggern).
+    // Om den ändå fanns har någon skrivit förbi skrivvägen.
+    await expect(
+      snapshotFor({ evidence: [evidenceRow({ id: "1", kind: "profileFitAnswer", points: 999, data_type: "simulation" })] }),
+    ).rejects.toBeInstanceOf(EvidenceIntegrityError);
   });
 
-  it("motsägande bevis (negativa poäng) sänker delens poäng, sänker inte adaptern", async () => {
-    const evidenceRows = [
-      evidenceRow({ id: "1", part_id: "fit", points: 8 }),
-      evidenceRow({ id: "2", part_id: "fit", points: -4, contradicts: true }),
-      evidenceRow({ id: "3", part_id: "market", points: 6, data_type: "register", source_name: "Bolagsverket" }),
+  it("motsägande bevis sänker delens poäng jämfört med ett samstämmigt — räknat av calculateScore", async () => {
+    const base = [
+      evidenceRow({ id: "1", kind: "profileFitAnswer", entered_by: "founder" }),
+      evidenceRow({ id: "2", kind: "registerMarketCount" }),
+      evidenceRow({ id: "3", kind: "registerCompetitorSet" }),
+      evidenceRow({ id: "4", kind: "customerProblemConfirmed", subject_ref: "a" }),
+      evidenceRow({ id: "5", kind: "customerPriceAccepted", subject_ref: "a" }),
+      evidenceRow({ id: "6", kind: "customerPriceAccepted", subject_ref: "b" }),
     ];
-    requireSupabaseUserMock.mockResolvedValue({
-      supabase: makeSupabaseFake({ projects: projectFixture(), evidence: evidenceRows }),
-      userId: USER_ID,
-    });
-    const { liveEvidenceRepository } = await import("@/adapters/live/EvidenceRepository");
-    const result = await liveEvidenceRepository.getScoreSnapshot("sv");
-    const fitPart = result.parts.find((p) => p.name === sv.score.parts.fit);
-    expect(fitPart?.points).toBeLessThan(8);
+    const steps = completedSteps(1, 2, 3, 4, 5);
+    const agreeing = await snapshotFor({ evidence: [...base, evidenceRow({ id: "7", kind: "customerPriceAccepted", subject_ref: "c" })], journey_steps: steps });
+    const contradicting = await snapshotFor({ evidence: [...base, evidenceRow({ id: "7", kind: "customerPriceDeclined", subject_ref: "c" })], journey_steps: steps });
+    const points = (snapshot: typeof agreeing) =>
+      snapshot.parts.find((p) => p.name === sv.score.parts.willingnessToPay)?.points ?? 0;
+    expect(points(contradicting)).toBeLessThan(points(agreeing));
   });
 
   it("hämtar bevisen i kronologisk ordning (created_at), inte i svarets godtyckliga radordning", async () => {
-    // Array-ordningen nedan är AVSIKTLIGT omvänd mot created_at, för att
-    // avslöja om adaptern skulle glömma .order("created_at") och råka lita
-    // på svarets egen ordning i stället. core/score.ts's scorePart tar
-    // källan ur det SISTA elementet i items — bara rätt om ordern stämmer.
-    const evidenceRows = [
-      { ...evidenceRow({ id: "2", part_id: "fit", points: 5, source_name: "Senaste källan" }), created_at: "2026-09-05T00:00:00Z" },
-      { ...evidenceRow({ id: "1", part_id: "fit", points: 5, source_name: "Äldsta källan" }), created_at: "2026-09-01T00:00:00Z" },
-      evidenceRow({ id: "3", part_id: "market", points: 6, data_type: "register", source_name: "Bolagsverket" }),
-    ];
-    requireSupabaseUserMock.mockResolvedValue({
-      supabase: makeSupabaseFake({ projects: projectFixture(), evidence: evidenceRows }),
-      userId: USER_ID,
+    // Array-ordningen nedan är AVSIKTLIGT omvänd mot created_at.
+    // core/score.ts's scorePart tar källan ur det SISTA elementet i items —
+    // bara rätt om ordningen stämmer.
+    const result = await snapshotFor({
+      evidence: [
+        { ...evidenceRow({ id: "2", kind: "profileFitAnswer", source_name: "Senaste källan" }), entered_by: "founder", created_at: "2026-09-05T00:00:00Z" },
+        { ...evidenceRow({ id: "1", kind: "profileFitAnswer", source_name: "Äldsta källan" }), entered_by: "founder", created_at: "2026-09-01T00:00:00Z" },
+        evidenceRow({ id: "3", kind: "registerMarketCount", source_name: "Bolagsverket" }),
+      ],
     });
-    const { liveEvidenceRepository } = await import("@/adapters/live/EvidenceRepository");
-    const result = await liveEvidenceRepository.getScoreSnapshot("sv");
     const fitPart = result.parts.find((p) => p.name === sv.score.parts.fit);
     expect(fitPart?.source.namn).toBe("Senaste källan");
   });
 
   it("härleder fasen ur avklarade steg (journey_steps.completed_at), inte ur ett hårdkodat värde", async () => {
-    // Steg 1-5 avklarade -> aktuellt steg 6 -> fasen tryAfterCalls, som låser
-    // upp fit/market/competition/problem/willingnessToPay (core/score.ts).
-    const journeySteps = [1, 2, 3, 4, 5].map((n) => ({
-      user_id: USER_ID,
-      project_id: PROJECT_ID,
-      step_number: n,
-      completed_at: "2026-09-01T00:00:00Z",
-    }));
-    const evidenceRows = [
-      evidenceRow({ id: "1", part_id: "fit", points: 5 }),
-      evidenceRow({ id: "2", part_id: "market", points: 5, data_type: "register", source_name: "Bolagsverket" }),
-      evidenceRow({ id: "3", part_id: "competition", points: 4, data_type: "register", source_name: "Bolagsverket" }),
-      evidenceRow({ id: "4", part_id: "problem", points: 6 }),
-      evidenceRow({ id: "5", part_id: "willingnessToPay", points: 6 }),
-    ];
-    requireSupabaseUserMock.mockResolvedValue({
-      supabase: makeSupabaseFake({ projects: projectFixture(), evidence: evidenceRows, journey_steps: journeySteps }),
-      userId: USER_ID,
+    // Steg 1-5 avklarade -> fasen tryAfterCalls, som låser upp
+    // fit/market/competition/problem/willingnessToPay (core/score.ts).
+    const result = await snapshotFor({
+      evidence: [
+        evidenceRow({ id: "1", kind: "profileFitAnswer", entered_by: "founder" }),
+        evidenceRow({ id: "2", kind: "registerMarketCount" }),
+        evidenceRow({ id: "3", kind: "registerCompetitorSet" }),
+        evidenceRow({ id: "4", kind: "customerProblemConfirmed" }),
+        evidenceRow({ id: "5", kind: "customerPriceAccepted" }),
+      ],
+      journey_steps: completedSteps(1, 2, 3, 4, 5),
     });
-    const { liveEvidenceRepository } = await import("@/adapters/live/EvidenceRepository");
-    const result = await liveEvidenceRepository.getScoreSnapshot("sv");
     const unlockedNames = result.parts.map((p) => p.name);
     expect(unlockedNames).toContain(sv.score.parts.problem);
     expect(unlockedNames).toContain(sv.score.parts.willingnessToPay);
     expect(result.lockedParts.map((p) => p.name)).toContain(sv.score.parts.product);
+  });
+
+  it("fel 4: Problem är låst medan steg 05 pågår — \"Låses upp efter steg 05\" gäller", async () => {
+    const result = await snapshotFor({
+      evidence: [evidenceRow({ id: "1", kind: "profileFitAnswer", entered_by: "founder" }), evidenceRow({ id: "2", kind: "registerMarketCount" })],
+      journey_steps: completedSteps(1, 2, 3, 4),
+    });
+    expect(result.lockedParts).toContainEqual({ name: sv.score.parts.problem, unlocksAfterStep: 5 });
+  });
+
+  it("fel 2 (beslut B4): en upplåst del utan bevis kraschar inte, den visas som en lucka", async () => {
+    // Steg 1-5 klara låser upp Problem och Betalningsvilja, men inga kundsvar finns.
+    const result = await snapshotFor({
+      evidence: [
+        evidenceRow({ id: "1", kind: "profileFitAnswer", entered_by: "founder" }),
+        evidenceRow({ id: "2", kind: "registerMarketCount" }),
+      ],
+      journey_steps: completedSteps(1, 2, 3, 4, 5),
+    });
+    expect(result.emptyParts?.map((p) => p.name)).toEqual([
+      sv.score.parts.competition,
+      sv.score.parts.problem,
+      sv.score.parts.willingnessToPay,
+    ]);
+    expect(result.parts.map((p) => p.name)).not.toContain(sv.score.parts.problem);
+  });
+
+  it("återkallade och för gamla bevis räknas inte", async () => {
+    const result = await snapshotFor({
+      evidence: [
+        evidenceRow({ id: "1", kind: "profileFitAnswer", entered_by: "founder" }),
+        evidenceRow({ id: "2", kind: "profileFitAnswer", entered_by: "founder", subject_ref: "q2", retracted_at: "2026-09-02T00:00:00Z" }),
+        evidenceRow({ id: "3", kind: "registerMarketCount", fetched_at: "2020-01-01" }),
+      ],
+    });
+    expect(result.parts.find((p) => p.name === sv.score.parts.fit)?.points).toBe(3);
+    expect(result.emptyParts?.map((p) => p.name)).toEqual([sv.score.parts.market]);
   });
 });
 

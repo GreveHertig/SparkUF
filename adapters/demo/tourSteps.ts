@@ -58,17 +58,6 @@ export const TOUR_STEPS: TourStep[] = [
     },
   },
   {
-    id: "medgrundaren-verktyg",
-    route: "/demo/app/medgrundaren",
-    beatId: "03-marknaden-korning",
-    target: "cofounder-moment",
-    title: { sv: "Medgrundaren kör verktyg åt dig", en: "The co-founder runs tools for you" },
-    body: {
-      sv: "Varje samtal slutar med att ett verktyg körs — här hämtar Spark siffror direkt ur Bolagsverket och SCB, inte bara ett tips om vad Sara borde göra.",
-      en: "Every conversation ends with a tool run — here Spark fetches numbers straight from Bolagsverket and SCB, not just a tip on what Sara should do.",
-    },
-  },
-  {
     id: "poangen-mater-bevis",
     route: "/demo/app",
     beatId: "01-om-dig-efter",
@@ -80,14 +69,14 @@ export const TOUR_STEPS: TourStep[] = [
     },
   },
   {
-    id: "taket-pa-30",
-    route: "/demo/app",
-    beatId: "04-kunden-efter",
-    target: "hem-score",
-    title: { sv: "Taket på 30 utan kundsamtal", en: "The cap at 30 without customer calls" },
+    id: "medgrundaren-verktyg",
+    route: "/demo/app/medgrundaren",
+    beatId: "03-marknaden-korning",
+    target: "cofounder-moment",
+    title: { sv: "Medgrundaren kör verktyg åt dig", en: "The co-founder runs tools for you" },
     body: {
-      sv: "Sara har nu register- och kundunderlag, men poängen (27) kan ändå inte gå över 30 — Spark tillåter inte betyget \"bevisat\" förrän ett enda riktigt kundsvar finns.",
-      en: "Sara now has registry and customer data, but the score (27) still can't pass 30 — Spark won't call anything \"proven\" until a single real customer has responded.",
+      sv: "Varje samtal slutar med att ett verktyg körs — här hämtar Spark siffror direkt ur Bolagsverket och SCB, inte bara ett tips om vad Sara borde göra.",
+      en: "Every conversation ends with a tool run — here Spark fetches numbers straight from Bolagsverket and SCB, not just a tip on what Sara should do.",
     },
   },
   {
@@ -97,8 +86,8 @@ export const TOUR_STEPS: TourStep[] = [
     target: "market-kpi",
     title: { sv: "Datalöftet: källa och datum på varje siffra", en: "The data promise: a source and a date on every number" },
     body: {
-      sv: "312 byråer, 4,2 Mkr i medianomsättning, 18 % tillväxt — varje tal bär en källpill man kan klicka på. Ingen siffra i Spark är gissad.",
-      en: "312 firms, SEK 4.2M median revenue, 18% growth — every number carries a clickable source pill. Nothing in Spark is guessed.",
+      sv: "312 byråer, 18 % tillväxt — varje tal bär en källpill man kan klicka på. Ingen siffra i Spark är gissad.",
+      en: "312 firms, 18% growth — every number carries a clickable source pill. Nothing in Spark is guessed.",
     },
   },
   {
@@ -119,6 +108,17 @@ export const TOUR_STEPS: TourStep[] = [
     body: {
       sv: "Ovanpå registret ligger simuleringar av en syntetisk population. Alltid märkta \"Simulering\", aldrig blandade med registerfakta, och de ger aldrig poäng. Hiasynth är ett koncept — inget partnerskap finns än.",
       en: "On top of the registry sit simulations over a synthetic population. Always labeled \"Simulation\", never mixed with registry facts, and they never earn points. Hiasynth is a concept — no partnership exists yet.",
+    },
+  },
+  {
+    id: "taket-pa-30",
+    route: "/demo/app",
+    beatId: "04-kunden-efter",
+    target: "hem-score",
+    title: { sv: "Taket på 30 utan kundsamtal", en: "The cap at 30 without customer calls" },
+    body: {
+      sv: "Sara har nu register- och kundunderlag, men poängen (27) kan ändå inte gå över 30 — Spark tillåter inte betyget \"bevisat\" förrän ett enda riktigt kundsvar finns.",
+      en: "Sara now has registry and customer data, but the score (27) still can't pass 30 — Spark won't call anything \"proven\" until a single real customer has responded.",
     },
   },
   {

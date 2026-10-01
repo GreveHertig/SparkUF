@@ -111,6 +111,12 @@
   --data-simulation-bg: #ece5f5;
   --data-customer: #38717f;
   --data-customer-bg: #dfeef2;
+  /* Nyhets- och mediekälla (Pulsen) och användarens egen uppgift. Se
+     docs/beslut.md 2026-10-01: ingen av dem får likna registrets grå. */
+  --data-media: #2b5a8a;
+  --data-media-bg: #e3ecf6;
+  --data-user: #8a4a6b;
+  --data-user-bg: #f5e6ee;
 
   /* Spacing, 4px-bas. */
   --space-1: 0.25rem;

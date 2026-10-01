@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveCurrentStepNumber, deriveStepStatus, scorePhaseForStep, JOURNEY_STEP_META } from "@/core/journey";
+import { deriveCurrentStepNumber, deriveStepStatus, scorePhaseForCompletedSteps, JOURNEY_STEP_META } from "@/core/journey";
 
 describe("deriveStepStatus", () => {
   it("markerar steg före det aktuella som klara", () => {
@@ -42,18 +42,23 @@ describe("deriveCurrentStepNumber", () => {
   });
 });
 
-describe("scorePhaseForStep", () => {
-  it("följer core/score.ts's UNLOCK_STEP-gränser (1/2 discover, 3/4 tryBeforeCalls, 5/6 tryAfterCalls, 7-10 launch, 11/12 grow)", () => {
-    expect(scorePhaseForStep(1)).toBe("discover");
-    expect(scorePhaseForStep(2)).toBe("discover");
-    expect(scorePhaseForStep(3)).toBe("tryBeforeCalls");
-    expect(scorePhaseForStep(4)).toBe("tryBeforeCalls");
-    expect(scorePhaseForStep(5)).toBe("tryAfterCalls");
-    expect(scorePhaseForStep(6)).toBe("tryAfterCalls");
-    expect(scorePhaseForStep(7)).toBe("launch");
-    expect(scorePhaseForStep(10)).toBe("launch");
-    expect(scorePhaseForStep(11)).toBe("grow");
-    expect(scorePhaseForStep(12)).toBe("grow");
+describe("scorePhaseForCompletedSteps (beslut 2026-10-01: efter avklarat steg)", () => {
+  it("räknar fasen ur högsta avklarade steg, inte ur steget som pågår", () => {
+    expect(scorePhaseForCompletedSteps([])).toBe("discover");
+    expect(scorePhaseForCompletedSteps([1, 2])).toBe("discover");
+    expect(scorePhaseForCompletedSteps([1, 2, 3])).toBe("tryBeforeCalls");
+    expect(scorePhaseForCompletedSteps([4])).toBe("tryBeforeCalls");
+    expect(scorePhaseForCompletedSteps([5])).toBe("tryAfterCalls");
+    expect(scorePhaseForCompletedSteps([6])).toBe("tryAfterCalls");
+    expect(scorePhaseForCompletedSteps([7])).toBe("launch");
+    expect(scorePhaseForCompletedSteps([10])).toBe("launch");
+    expect(scorePhaseForCompletedSteps([11])).toBe("grow");
+    expect(scorePhaseForCompletedSteps([12, 3])).toBe("grow");
+  });
+
+  it("Problem och Betalningsvilja är låsta medan steg 05 pågår (\"Låses upp efter steg 05\")", () => {
+    // Steg 1-4 klara: steg 05 pågår. Fasen får inte låsa upp delarna än.
+    expect(scorePhaseForCompletedSteps([1, 2, 3, 4])).toBe("tryBeforeCalls");
   });
 });
 
