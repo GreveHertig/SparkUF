@@ -19,15 +19,10 @@ Talmanus för de guidade genomgångarna av Spark UF-demot på `/demo`, i en
   aldrig att en siffra i demot kommer från Bolagsverket, SCB eller någon annan
   verklig källa.
 - **Källtaggarnas färger** (visa gärna en gång, det är en poäng i sig):
-  streckad vit = exempel, lila "Simulering" = simulering (ger aldrig poäng),
-  petrol = kundsvar, blå "Media" = nyhetskälla (bara i den inloggade appen),
-  grå = register.
-- **Varning: några taggar i demot är fortfarande grå "Bolagsverket" eller
-  "Bolagsverket och SCB"** fast datan under är påhittad: nyckeltalen på
-  Marknad, Marknaden-avsnittet i Affärsplanen, tre av poängdelarna på Poäng
-  (Marknad, Konkurrens, Genomförbarhet) och Jonas idégenomlysning. Klicka inte
-  på de taggarna och säg inte att de är verkliga. Peka på "Exempel"-märkningen
-  ovanför i stället.
+  streckad vit = exempel, lila "Simulering" = simulering (ger aldrig poäng).
+  I den inloggade appen finns också petrol = kundsvar, blå "Media" =
+  nyhetskälla och grå = register. I demot är varje tagg på Marknad,
+  Validering, Bygg, Poäng och Affärsplanen exempel eller simulering.
 - **Medianomsättningen visas inte.** Marknad visar ett streck och "Räkenskapsåret
   saknas i underlaget, så siffran visas inte." Det är avsiktligt: Spark visar
   hellre en lucka än en siffra utan räkenskapsår. Säg inte "4,2 miljoner".
@@ -127,8 +122,6 @@ men spårningen är struken ur MVP:n (docs/buggar-2026-09.md punkt 15).
 > "Åtta delar, var och en med källa. Ingen modell bedömer. Nedbrytningen går
 > att räkna för hand ur samma underlag som visas här."
 
-Klicka inte på de grå "Bolagsverket"-taggarna här (se ovan).
-
 **15. Snabbaste poängen står överst** (`/demo/poang`)
 > "Högst avkastning per insats överst. Varje förslag har en av tre sorters
 > luckor: för lite underlag, motsägande underlag, eller en strukturell lucka
@@ -202,8 +195,8 @@ Tio stopp á 25–30 sekunder plus klicktid, strax under fem minuter.
   Visa en lucka: "Underlag saknas — kommer från steg N" eller "Steg N är
   klart, men gav inget underlag med källa till det här avsnittet." Poängen:
   Spark fyller aldrig i det som inte är bevisat.
-- **Källtyperna.** På Marknad syns exempel (streckad), simulering (lila) och
-  utskickets kundsvar (petrol) på samma sida.
+- **Källtyperna.** På Marknad syns exempel (streckad) och simulering (lila)
+  på samma sida.
 - **Jonas resa** (ingång B, "Byt ingång" i demoraden). Börja på
   `/demo/start/ide`: idégenomlysningen bryter ner en svag konsumentidé och
   föreslår en skarpare B2B-idé. Kör inte rundturen härifrån. Undvik
