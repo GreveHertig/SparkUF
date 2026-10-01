@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { NotImplementedError, OutreachLockedError, RegistryLockedError } from "@/core/errors";
-import { liveProfileRepository } from "@/adapters/live/ProfileRepository";
 import { liveProjectRepository } from "@/adapters/live/ProjectRepository";
-import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
 import { liveCofounderAgent } from "@/adapters/live/CofounderAgent";
 import { liveRegistryProvider } from "@/adapters/live/RegistryProvider";
 import { liveResearchProvider } from "@/adapters/live/ResearchProvider";
@@ -41,44 +39,15 @@ describe("Stub-vakt: obyggda liveadaptrar kastar fortfarande NotImplementedError
  * Session P1:s dokumenterade blinda fläck (docs/status.md, Session P2):
  * `contractIt` kan skilja "hela modulen är en stub" från "en enskild metod i
  * en annars byggd adapter kastar av misstag" — MEN bara om det fångas här
- * också. Profil, Projekt och idé och Resan är alla "påbörjade" (inte
- * "klara") — huvudmetoderna fungerar, men metoden nedan per modul är
- * MEDVETET kvar som stub (olösta designbeslut eller ett beroende på en
- * annan, obyggd modul — se respektive docs/moduler/<modul>.md) — inte
- * bortglömd.
+ * också. Sedan PR 2 av onboardingen är bara Projekt och idé kvar här:
+ * `getIdeaScreening` väntar på Registret mot SCB AFR
+ * (docs/moduler/projekt-och-ide.md). MEDVETET kvar som stub, inte bortglömd.
  */
 const PARTIELLA_STUBBAR: { module: string; metod: string; call: () => Promise<unknown> }[] = [
-  {
-    module: "Profil",
-    metod: "getOnboardingScript",
-    call: () => liveProfileRepository.getOnboardingScript("noIdea", "sv"),
-  },
-  // Tillfälligt: porten fick metoderna i PR 1 av onboardingen, live byggs i
-  // PR 2 (docs/status.md). Raderna tas bort i samma PR.
-  {
-    module: "Profil",
-    metod: "getOnboardingStatus",
-    call: () => liveProfileRepository.getOnboardingStatus(),
-  },
-  {
-    module: "Profil",
-    metod: "completeOnboarding",
-    call: () => liveProfileRepository.completeOnboarding({ entry: "noIdea", answers: [] }),
-  },
-  {
-    module: "Projekt och idé",
-    metod: "createProject",
-    call: () => liveProjectRepository.createProject({ name: "Test", oneLiner: "Test" }),
-  },
   {
     module: "Projekt och idé",
     metod: "getIdeaScreening",
     call: () => liveProjectRepository.getIdeaScreening("sv"),
-  },
-  {
-    module: "Resan",
-    metod: "getHomeSummary",
-    call: () => liveJourneyRepository.getHomeSummary("sv"),
   },
 ];
 

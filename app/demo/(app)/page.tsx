@@ -70,7 +70,8 @@ export default function DemoHomePage() {
         score,
         homeSummary: {
           nextStep: journey.nextStep,
-          sinceLastTime: exampleSinceLastTime(journey.sinceLastTime, locale, currentStep),
+          // Demot har alltid ett "sedan sist"; null är plattformens fall.
+          sinceLastTime: journey.sinceLastTime && exampleSinceLastTime(journey.sinceLastTime, locale, currentStep),
         },
         // Den påhittade relativa tiden ("4 dagar sedan") stämde inte med
         // källans datum (docs/buggar-2026-09.md punkt 11) och visas inte.

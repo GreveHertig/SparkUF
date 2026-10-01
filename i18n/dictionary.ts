@@ -232,6 +232,10 @@ export type Dictionary = {
       grow: string;
     };
     stepLabel: string;
+    /** Handlingskortet på Hem i /app (liveadapterns getHomeSummary): "STEG 02 · MÖJLIGHETER". */
+    nextStepEyebrowTemplate: string;
+    /** Knappen när steget saknar en egen action_label: "Öppna steg 02". */
+    openStepTemplate: string;
     backToJourney: string;
     whatHappened: string;
     whatsNext: string;
@@ -622,6 +626,9 @@ export type Dictionary = {
     step10: { title: string; oneLiner: string };
     step11: { title: string; oneLiner: string };
     step12: { title: string; oneLiner: string };
+    /** Steg 2 för ingång B ("Jag har redan en idé", beslut 2026-09-30):
+     * idégenomlysningen i stället för Möjligheter. */
+    step2Idea: { title: string; oneLiner: string };
   };
   /** Den guidade rundturen (avsnitt 9.2) — bara gränssnittstexten (knappar,
    * stoppräknare). Själva de 20 stoppens titel/text ligger i

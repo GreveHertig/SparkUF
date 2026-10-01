@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NotImplementedError } from "@/core/errors";
 import { makeSupabaseFake } from "@/test/stubs/supabaseFake";
 
 const requireSupabaseUserMock = vi.fn();
@@ -9,6 +8,16 @@ vi.mock("@/lib/server/session", () => ({
 
 const USER_ID = "user-1";
 const PROJECT_ID = "proj-1";
+
+function profileFixture(entry: "noIdea" | "hasIdea" | null) {
+  return [
+    {
+      user_id: USER_ID,
+      onboarding_entry: entry,
+      onboarding_completed_at: entry ? "2026-10-01T08:00:00Z" : null,
+    },
+  ];
+}
 
 function projectFixture() {
   return [{ id: PROJECT_ID, user_id: USER_ID, name: "Test", one_liner: "En testidé.", is_active: true }];
@@ -110,9 +119,112 @@ describe("liveJourneyRepository.getStepDetail", () => {
   });
 });
 
-describe("liveJourneyRepository.getHomeSummary", () => {
-  it("kastar NotImplementedError — beror på Utskick och svar (SinceLastTime), inte byggd i P1", async () => {
+describe("liveJourneyRepository: onboardingen (steg 1 klart enligt profilen)", () => {
+  beforeEach(() => {
+    requireSupabaseUserMock.mockReset();
+  });
+
+  it("ingång A utan projekt: steg 1 klart, steg 2 Möjligheter aktuellt", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({ profiles: profileFixture("noIdea") }),
+      userId: USER_ID,
+    });
     const { liveJourneyRepository } = await import("@/adapters/live/JourneyRepository");
-    await expect(liveJourneyRepository.getHomeSummary("sv")).rejects.toBeInstanceOf(NotImplementedError);
+    const steps = await liveJourneyRepository.getSteps("sv");
+    expect(steps[0].status).toBe("done");
+    expect(steps[1]).toMatchObject({ status: "current", title: "Möjligheter" });
+  });
+
+  it("ingång B med projekt: steg 2 heter Genomlys din idé, på båda språken", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({ profiles: profileFixture("hasIdea"), projects: projectFixture() }),
+      userId: USER_ID,
+    });
+    const { liveJourneyRepository } = await import("@/adapters/live/JourneyRepository");
+    const [svSteps, enSteps] = await Promise.all([
+      liveJourneyRepository.getSteps("sv"),
+      liveJourneyRepository.getSteps("en"),
+    ]);
+    expect(svSteps[1]).toMatchObject({ status: "current", title: "Genomlys din idé" });
+    expect(enSteps[1].title).toBe("Screen your idea");
+    expect((await liveJourneyRepository.getStepDetail(2, "sv"))?.title).toBe("Genomlys din idé");
+  });
+
+  it("en ej klar onboarding lämnar steg 1 aktuellt", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({ profiles: profileFixture(null) }),
+      userId: USER_ID,
+    });
+    const { liveJourneyRepository } = await import("@/adapters/live/JourneyRepository");
+    expect((await liveJourneyRepository.getSteps("sv"))[0].status).toBe("current");
+  });
+});
+
+describe("liveJourneyRepository.getHomeSummary", () => {
+  beforeEach(() => {
+    requireSupabaseUserMock.mockReset();
+  });
+
+  it("ett nytt konto: handlingskortet är steg 1 med ingress, maxpoäng och standardknapp, och inget 'sedan sist'", async () => {
+    requireSupabaseUserMock.mockResolvedValue({ supabase: makeSupabaseFake({}), userId: USER_ID });
+    const { liveJourneyRepository } = await import("@/adapters/live/JourneyRepository");
+    const { sv } = await import("@/i18n/sv");
+    const summary = await liveJourneyRepository.getHomeSummary("sv");
+    expect(summary.todayIso).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(summary.nextStep).toEqual({
+      eyebrow: "STEG 01 · OM DIG",
+      title: "Om dig",
+      why: sv.journeySteps.step1.oneLiner,
+      maxPoints: 10,
+      estimatedTime: "",
+      doneItems: [],
+      actionLabel: "Öppna steg 01",
+    });
+    expect(summary.sinceLastTime).toBeNull();
+  });
+
+  it("efter onboardingen (ingång B) pekar kortet på steg 2, Genomlys din idé, på engelska när locale är en", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({ profiles: profileFixture("hasIdea"), projects: projectFixture() }),
+      userId: USER_ID,
+    });
+    const { liveJourneyRepository } = await import("@/adapters/live/JourneyRepository");
+    const summary = await liveJourneyRepository.getHomeSummary("en");
+    expect(summary.nextStep).toMatchObject({
+      eyebrow: "STEP 02 · SCREEN YOUR IDEA",
+      title: "Screen your idea",
+      maxPoints: 12,
+      actionLabel: "Open step 02",
+    });
+  });
+
+  it("använder stegets egen text ur journey_steps när den finns", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({
+        profiles: profileFixture("noIdea"),
+        projects: projectFixture(),
+        journey_steps: [
+          {
+            user_id: USER_ID,
+            project_id: PROJECT_ID,
+            step_number: 2,
+            completed_at: null,
+            why: "Tre idéer väntar på dig.",
+            done_items: ["Profilen klar"],
+            highlights: [],
+            action_label: "Se idéerna",
+          },
+        ],
+      }),
+      userId: USER_ID,
+    });
+    const { liveJourneyRepository } = await import("@/adapters/live/JourneyRepository");
+    const summary = await liveJourneyRepository.getHomeSummary("sv");
+    expect(summary.nextStep).toMatchObject({
+      eyebrow: "STEG 02 · MÖJLIGHETER",
+      why: "Tre idéer väntar på dig.",
+      doneItems: ["Profilen klar"],
+      actionLabel: "Se idéerna",
+    });
   });
 });
