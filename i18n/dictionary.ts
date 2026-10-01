@@ -31,6 +31,11 @@ export type Dictionary = {
      * (datatypen "example", PR 11). Samma princip som "Simulering": aldrig
      * bara en färgskillnad. */
     exampleSourceLabel: string;
+    /** Etikett först i en källtagg för en nyhets- eller mediekälla (datatypen
+     * "media"), så att den aldrig kan tas för en registerkälla. */
+    mediaSourceLabel: string;
+    /** Etikett först i en källtagg för användarens egen uppgift ("user"). */
+    userSourceLabel: string;
     /** SimulationCard (uppdrag 2.2, 8): populationens storlek ska alltid synas. */
     simulationPopulationLabel: string;
     upToPointsBefore: string;

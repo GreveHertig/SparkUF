@@ -24,6 +24,8 @@ export const en = {
     doneItemsLabel: "Already done",
     simulationLabel: "Simulation",
     exampleSourceLabel: "Example",
+    mediaSourceLabel: "Media",
+    userSourceLabel: "Your input",
     simulationPopulationLabel: "Simulated population",
     upToPointsBefore: "Can earn up to",
     upToPointsAfter: "points",

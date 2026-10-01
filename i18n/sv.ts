@@ -24,6 +24,8 @@ export const sv = {
     doneItemsLabel: "Redan klart",
     simulationLabel: "Simulering",
     exampleSourceLabel: "Exempel",
+    mediaSourceLabel: "Media",
+    userSourceLabel: "Din uppgift",
     simulationPopulationLabel: "Simulerad population",
     upToPointsBefore: "Kan ge upp till",
     upToPointsAfter: "poäng",

@@ -192,3 +192,42 @@ företagsregister-API (AFR) och dess kodtabell är SNI 2025 (Verifierat
 mellan versionerna är inte en-till-en. Porten (`RegistryQuery.sniCode`),
 liveadapterns validering och demodatan (`69.201`) ändras inte nu. Vad som
 ska ändras står i `docs/moduler/registret.md`, "SNI 2025".
+
+## 2026-10-01
+
+**Källtyperna: sex datatyper för källtaggen, och bara registret är grått.**
+Beslut av grundaren. Varje källtagg (`components/ui/SourceTag.tsx`) har en
+datatyp (`DataType` i `design/tokens.ts`). Datatypen säger vilket slags källa
+det är, och utseendet ska avslöja det på avstånd. Tidigare fanns tre typer
+plus exempel. Pulsens nyhetsartiklar visades därför med registrets grå tagg,
+fast de inte kommer från något register (Hem och Pulsen i `/app`). Nu finns
+hela uppsättningen, så att ingen modul behöver uppfinna en egen:
+
+| Datatyp | När | Utseende | Etikett före källan |
+|---|---|---|---|
+| `register` | Myndighet eller officiellt register: Bolagsverket, SCB, Skatteverket och de kuraterade juridiska källorna | grå (`slate-700` på `slate-100`) | ingen |
+| `media` | Nyhets- eller mediekälla, artiklar och webbsidor: Pulsens signaler (Tavily), webbresearch | blå (`#2b5a8a` på `#e3ecf6`, 6,0:1) | "Media" |
+| `customer` | Riktiga kunders svar: utskick, samtal, enkäter | petrol (`#38717f` på `#dfeef2`) | ingen (tonen skiljer den från registret) |
+| `user` | Användarens egen uppgift: något grundaren själv har skrivit in eller påstått, till exempel i profilen | bär (`#8a4a6b` på `#f5e6ee`, 5,3:1) | "Din uppgift" / "Your input" |
+| `simulation` | Simulering (uppdrag 2.2), ger aldrig poäng | lila | "Simulering" |
+| `example` | Påhittad exempeldata, **bara i demot** | vit med streckad kant | "Exempel" |
+
+Regler:
+- **Ingen tagg får se ut som registrets om den inte är ett register.** Därför
+  är `register` den enda grå typen, och den enda förutom `customer` utan
+  etikett.
+- **Etiketten gör att typen inte hänger på färgen ensam.** Det är samma princip
+  som "Simulering" (uppdrag 2.2). `customer` har ingen etikett i dag, eftersom
+  en etikett skulle ändra demots sidor. Lägg till den om petrol och grått
+  visar sig svåra att skilja åt.
+- **`SourceTag` har fortfarande `register` som standard.** Den som visar en
+  källa som inte är ett register måste därför sätta datatypen. Pulsens
+  liveadapter ger artiklar: rutten sätter `"media"`.
+- **`example` används aldrig i `/app` eller `/start`** (vakttestet
+  `noExampleSources`). Saknas verkligt underlag visas luckan.
+- Kontrasten är uträknad mot taggens egen botten (WCAG AA, minst 4,5:1).
+
+**Så används det i Pulsen (för Bruno):** `/app/pulsen` skickar
+`sourceDataType: "media"` till `Pulse` (`app/(app)/app/pulsen/page.tsx`),
+samma som Hem gör sedan i dag (`sourceDataTypes: { pulse: "media" }` i
+`app/(app)/app/page.tsx`). Skärmen behöver ingen ändring.

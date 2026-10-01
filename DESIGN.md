@@ -109,6 +109,12 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
   registrets gråa färg och aldrig ett myndighetsnamn. I `/app` och `/start`
   finns inga exempel: saknas verkligt underlag visas luckan
   (`app/(app)/app/noExampleSources.test.ts`).
+- **Källtyperna, hela uppsättningen** (2026-10-01, beslut av grundaren):
+  `register` (grå, ingen etikett), `media` (blå, "Media"), `customer`
+  (petrol), `user` (bär, "Din uppgift"), `simulation` (lila, "Simulering")
+  och `example` (streckad, "Exempel"). Bara registret är grått. Tonerna
+  ligger i `design/tokens.css` (`--data-media*`, `--data-user*`) och
+  `design/tokens.ts`. Tabellen och motivet står i `docs/beslut.md`.
 - **Luckan i affärsplanen**: ett steg som inte är klart ger det låsta läget
   "Underlag saknas — kommer från steg N". Ett klart steg som ändå inte gav
   något påstående med källa ger en dämpad rad, "Steg N är klart, men gav
