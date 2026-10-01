@@ -54,27 +54,42 @@ describe("legalSources — kuraterad data", () => {
       if (id.startsWith("bolagsverket")) return "bolagsverket.se";
       if (id.startsWith("verksamt")) return "verksamt.se";
       if (id.startsWith("bfn")) return "www.bfn.se";
-      return {
-        skatteverket: "www.skatteverket.se",
-        imy: "www.imy.se",
-        eurlex_gdpr: "eur-lex.europa.eu",
-        konsumentverket: "www.konsumentverket.se",
-        riksdagen: "www.riksdagen.se",
-      }[id as string]!;
+      if (id.startsWith("skatteverket")) return "www.skatteverket.se";
+      if (id.startsWith("imy")) return "www.imy.se";
+      if (id.startsWith("eurlex")) return "eur-lex.europa.eu";
+      if (id.startsWith("konsumentverket")) return "www.konsumentverket.se";
+      if (id === "riksdagen") return "www.riksdagen.se";
+      throw new Error(`Okänd källa: ${id}`);
     };
     for (const [id, källa] of Object.entries(KURERADE_KÄLLOR) as [KällId, (typeof KURERADE_KÄLLOR)[KällId]][]) {
       expect(new URL(källa.url!).hostname, id).toBe(domänFör(id));
     }
   });
 
-  it("källorna som en människa kontrollerat (Bolagsverket, verksamt.se, BFN) pekar på en undersida, inte startsidan", () => {
-    const kontrollerade = Object.entries(KURERADE_KÄLLOR).filter(([id]) =>
-      /^(bolagsverket|verksamt|bfn)_/.test(id),
-    );
+  it("alla källor utom den okontrollerade riksdagen pekar på en undersida, inte startsidan", () => {
+    const kontrollerade = Object.entries(KURERADE_KÄLLOR).filter(([id]) => id !== "riksdagen");
     expect(kontrollerade.length).toBeGreaterThan(0);
     for (const [id, källa] of kontrollerade) {
       expect(new URL(källa.url!).pathname.length, id).toBeGreaterThan(1);
     }
+  });
+
+  it("varje ämne pekar på en källa som en människa kontrollerat (hämtad 2026-09-30 eller senare)", () => {
+    for (const topic of LEGAL_TOPICS) {
+      expect(KURERADE_KÄLLOR[topic.källId].hämtad >= "2026-09-30", topic.id).toBe(true);
+    }
+  });
+
+  it("GDPR-förordningen pekar på den svenska versionen hos EUR-Lex", () => {
+    expect(KURERADE_KÄLLOR.eurlex_gdpr.url).toContain("/legal-content/SV/");
+  });
+
+  it("rättslig grund och register för GDPR är två ämnen med var sin IMY-sida", () => {
+    const ämnen = LEGAL_TOPICS.filter((topic) => ["gdpr_rattslig_grund", "gdpr_register"].includes(topic.id));
+    expect(ämnen).toHaveLength(2);
+    const urls = ämnen.map((topic) => KURERADE_KÄLLOR[topic.källId].url!);
+    expect(new Set(urls).size).toBe(2);
+    for (const url of urls) expect(new URL(url).hostname).toBe("www.imy.se");
   });
 
   it("aktiebolag och ekonomisk förening får var sin årsredovisningskälla", () => {
