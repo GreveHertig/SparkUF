@@ -36,7 +36,16 @@ export default async function LiveAppHomePage() {
     liveJourneyRepository.getSteps("sv"),
   ]);
 
-  const data: AppHomeData = { todayIso, score, homeSummary, pulseSignals, journeySteps };
+  // Pulsens källa är en artikel (domän och hämtdatum), inte ett register:
+  // datatypen "media" (docs/beslut.md, 2026-10-01). "Sedan sist" är en stubbe.
+  const data: AppHomeData = {
+    todayIso,
+    score,
+    homeSummary,
+    pulseSignals,
+    journeySteps,
+    sourceDataTypes: { pulse: "media" },
+  };
 
   return (
     <AppHome data={data} dataKind="live" journeyBasePath="/app/resan" scoreHref="/app/poang" />

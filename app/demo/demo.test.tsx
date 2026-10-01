@@ -418,6 +418,59 @@ describe("/demo", () => {
       }
     });
 
+    it("Hems källtaggar är exempelkällor i varje moment, aldrig en myndighet eller en påhittad tid", async () => {
+      const step05After = saraEngine.beats.findIndex((beat) => beat.stepNumber === 5 && beat.momentKind === "after");
+      for (const beatIndex of [0, step05After, lastBeat]) {
+        startInApp(beatIndex);
+        pathname = DEMO_PATHS.home;
+        const { container, unmount } = await renderInApp(<DemoHomePage />);
+        const tags = [...container.querySelectorAll("main button")].filter(
+          (b) => b.getAttribute("aria-label") === sv.common.sourceTag.openDetails,
+        );
+        expect(tags.length).toBeGreaterThan(0);
+        for (const tag of tags) expect(tag.textContent).toMatch(new RegExp(`^${sv.common.exampleSourceLabel}·Påhittad data, `));
+        expect(container.querySelector("main")?.textContent).not.toMatch(/Bolagsverket|Skatteverket|Inget utskick ännu/);
+        expect(container.querySelector(".fdd-signal__meta .fdd-muted")).toBeNull();
+        unmount();
+      }
+    });
+
+    it("Hems Sedan sist pekar på steget där siffrorna kommer ifrån", async () => {
+      startInApp(saraEngine.beats.findIndex((beat) => beat.stepNumber === 5 && beat.momentKind === "after"));
+      pathname = DEMO_PATHS.home;
+      const { container } = await renderInApp(<DemoHomePage />);
+      const facts = container.querySelector(".fdd-facts")!;
+      expect(facts).toHaveTextContent("40");
+      for (const tag of facts.querySelectorAll("button")) expect(tag).toHaveTextContent("Påhittad data, steg 05");
+    });
+
+    it("Hems handlingskort bär en exempelkälla bara när texten har en siffra", async () => {
+      startInApp(0);
+      pathname = DEMO_PATHS.home;
+      const first = await renderInApp(<DemoHomePage />);
+      expect(first.container.querySelector(".fdd-next button[aria-label]")).toBeNull();
+      first.unmount();
+
+      const withFigure = saraEngine.beats.findIndex((beat) => /\d/.test(beat.nextStep.sv.why.replace(/steg \d+/gi, "")));
+      startInApp(withFigure);
+      const { container } = await renderInApp(<DemoHomePage />);
+      const step = String(saraEngine.beats[withFigure].stepNumber).padStart(2, "0");
+      expect(container.querySelector(".fdd-next button[aria-label]")).toHaveTextContent(
+        `${sv.common.exampleSourceLabel}·Påhittad data, steg ${step}`,
+      );
+    });
+
+    it("Hems handlingskort bär en exempelkälla när bara Redan klart har en siffra", async () => {
+      const last = saraEngine.beats[lastBeat];
+      expect(last.nextStep.sv.doneItems.join(" ")).toMatch(/\d/);
+      startInApp(lastBeat);
+      pathname = DEMO_PATHS.home;
+      const { container } = await renderInApp(<DemoHomePage />);
+      expect(container.querySelector(".fdd-next button[aria-label]")).toHaveTextContent(
+        `${sv.common.exampleSourceLabel}·Påhittad data, steg ${String(last.stepNumber).padStart(2, "0")}`,
+      );
+    });
+
     it("Medgrundarens Sedan tidigare bär exempelkällan på rader med siffror", async () => {
       startInApp(lastBeat);
       pathname = DEMO_PATHS.cofounder;

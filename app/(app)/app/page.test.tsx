@@ -103,6 +103,27 @@ describe("/app Hem (PR 3)", () => {
     expect(screen.queryByText(sv.site.demo.noPulse)).not.toBeInTheDocument();
   });
 
+  it("Pulsens artikel visas som media, aldrig som register eller exempel (docs/beslut.md 2026-10-01)", async () => {
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getStepsMock.mockResolvedValue(steps);
+    getSignalsMock.mockResolvedValue([
+      {
+        category: "Nyheter",
+        headline: "Ny regel för digitala kvitton",
+        whyItMatters: "Påverkar dina kunder.",
+        timestamp: "30 september",
+        source: { namn: "breakit.se", hämtad: "2026-09-30", url: "https://breakit.se/a" },
+      },
+    ]);
+    const { container } = await renderPage();
+    const tag = container.querySelector(".fdd-signal button")!;
+    expect(tag).toHaveTextContent(`${sv.common.mediaSourceLabel}·breakit.se`);
+    expect(tag.className).not.toMatch(/register/);
+    expect(container).not.toHaveTextContent(sv.common.exampleSourceLabel);
+    expect(document.querySelector(".fdd-signal__meta .fdd-muted")).toHaveTextContent("30 september");
+  });
+
   it("ett riktigt fel sväljs inte", async () => {
     getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
     getScoreSnapshotMock.mockRejectedValue(new Error("Databasen svarar inte"));

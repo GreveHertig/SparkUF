@@ -10,14 +10,7 @@ import { exampleSource } from "@/adapters/demo/exampleSource";
 import type { TranscriptItem } from "@/ports/CofounderAgent";
 import type { Locale } from "@/i18n/context";
 import { Cofounder, type CofounderData } from "@/screens/Cofounder";
-
-/** Hänvisningar till steg ("steg 06", "step 10") är inga siffror om världen. */
-const STEP_REFERENCE = /\b(steg|steget|step|steps)\s+\d+/gi;
-
-/** Sant när texten innehåller en siffra som behöver källa. */
-function textHasFigure(text: string): boolean {
-  return /\d/.test(text.replace(STEP_REFERENCE, ""));
-}
+import { textHasFigure } from "../../_lib/figures";
 
 function hasFigure(item: TranscriptItem, locale: Locale): boolean {
   if (item.kind === "message") return textHasFigure(item.text[locale]);

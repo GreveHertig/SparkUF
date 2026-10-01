@@ -6,7 +6,8 @@ import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n } from "@/i18n/context";
 import { formatDate } from "@/i18n/format";
 import { fill } from "@/i18n/fill";
-import type { DataKind, NextStep, PulseSignal, ScoreSnapshot, SinceLastTime } from "@/core/domain";
+import type { DataKind, Källa, NextStep, PulseSignal, ScoreSnapshot, SinceLastTime } from "@/core/domain";
+import type { DataType } from "@/design/tokens";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
 import { JourneyStepper } from "./blocks/JourneyStepper";
 import { ScoreDelta, ScoreFigure } from "./blocks/ScoreFigure";
@@ -32,6 +33,20 @@ export type AppHomeData = {
   /** [] när ingen pulssignal finns — ett ärligt tomt läge, aldrig påhittat. */
   pulseSignals: PulseSignal[];
   journeySteps: JourneyStepView[];
+  /**
+   * Valfritt: källtaggarnas datatyp, satt av routen (samma mönster som
+   * `PulseData.sourceDataType`). Demot skickar `"example"` för båda,
+   * tillsammans med exempelkällor, eftersom signalen och "sedan sist" är
+   * påhittade. /app skickar `"media"` för Pulsen (artiklar, inte ett
+   * register). Utan värde gäller registrets respektive kundens tagg som förut.
+   */
+  sourceDataTypes?: { pulse?: DataType; sinceLastTime?: DataType };
+  /**
+   * Valfri källa för handlingskortet, när dess text innehåller siffror.
+   * `NextStep` bär ingen källa; demot sätter en exempelkälla (PR 11:s regel),
+   * /app ingen.
+   */
+  nextStepSource?: { source: Källa; dataType: DataType };
 };
 
 // ScoreFigure/ScoreDelta delas med Poäng-skärmen (PR 4), JourneyStepper med
@@ -90,6 +105,9 @@ export function AppHome({
                 {data.homeSummary.nextStep.title}
               </h2>
               <p className="fd-nextstep__why">{data.homeSummary.nextStep.why}</p>
+              {data.nextStepSource && (
+                <SourceTag source={data.nextStepSource.source} dataType={data.nextStepSource.dataType} />
+              )}
               {data.homeSummary.nextStep.doneItems.length > 0 && (
                 <div className="fd-nextstep__done">
                   <p>{t.common.doneItemsLabel}</p>
@@ -165,19 +183,28 @@ export function AppHome({
                   <dd>
                     {data.homeSummary.sinceLastTime.recipientCount} <span>{t.homePage.recipientsUnit}</span>
                   </dd>
-                  <SourceTag source={data.homeSummary.sinceLastTime.emailSentSource} dataType="register" />
+                  <SourceTag
+                    source={data.homeSummary.sinceLastTime.emailSentSource}
+                    dataType={data.sourceDataTypes?.sinceLastTime ?? "register"}
+                  />
                 </div>
                 <div>
                   <dt>{t.homePage.openRateLabel}</dt>
                   <dd>{data.homeSummary.sinceLastTime.openRate} %</dd>
-                  <SourceTag source={data.homeSummary.sinceLastTime.openRateSource} dataType="register" />
+                  <SourceTag
+                    source={data.homeSummary.sinceLastTime.openRateSource}
+                    dataType={data.sourceDataTypes?.sinceLastTime ?? "register"}
+                  />
                 </div>
                 <div>
                   <dt>{t.homePage.responsesReceivedLabel}</dt>
                   <dd>
                     {data.homeSummary.sinceLastTime.responsesReceived} <span>{t.homePage.responsesUnit}</span>
                   </dd>
-                  <SourceTag source={data.homeSummary.sinceLastTime.responsesSource} dataType="customer" />
+                  <SourceTag
+                    source={data.homeSummary.sinceLastTime.responsesSource}
+                    dataType={data.sourceDataTypes?.sinceLastTime ?? "customer"}
+                  />
                 </div>
               </dl>
               <p className="fdd-muted fdd-facts__foot">
@@ -197,13 +224,15 @@ export function AppHome({
             <article className="fd-panel fdd-signal">
               <p className="fdd-signal__meta">
                 <span className="fdd-signal__category">{signal.category}</span>
-                <span className="fdd-muted">{signal.timestamp}</span>
+                {/* Tom tid visas inte: demot tömmer sin påhittade relativa tid
+                    (docs/buggar-2026-09.md punkt 11, som Pulsen). */}
+                {signal.timestamp && <span className="fdd-muted">{signal.timestamp}</span>}
               </p>
               <p className="fdd-signal__headline">{signal.headline}</p>
               <p className="fd-nextstep__why">
                 {t.common.pulseWhyItMattersPrefix} {signal.whyItMatters}
               </p>
-              <SourceTag source={signal.source} />
+              <SourceTag source={signal.source} dataType={data.sourceDataTypes?.pulse} />
             </article>
           ) : (
             <p className="fdd-muted">{dataKind === "example" ? copy.demo.noPulse : t.homePage.noPulseSignal}</p>
