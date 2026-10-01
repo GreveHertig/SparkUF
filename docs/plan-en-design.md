@@ -6,16 +6,16 @@ enda skillnaden ska vara datan: appen visar riktig data via
 samma skärmar i `screens/`.
 
 Skriven 2026-09-26 efter PR #25 (ny startsida och nytt demo). PR 1–3 är
-gjorda (egna grenar och PR:er mot `prototyp`); PR 4, 5, 7, 8, 9, 10 och 11 är gjorda på
+gjorda (egna grenar och PR:er mot `prototyp`); PR 4–11 är gjorda på
 `design/en-design` enligt avsnittet "Arbetsordning" nedan. Läget per PR står
 i `docs/status.md`.
 
-**Migrationen är klar (2026-09-30, PR 11).** Alla skärmar utom Pulsen
-delas av `/demo` och `/app`, och demots sidor är tunna hämtare. Pulsen är
-steg 6 och Brunos: skärmen `screens/Pulse.tsx`, demots sida och
-`/app/pulsen` flyttas av honom. När `/app/pulsen` finns tas `"pulsen"` bort
-ur `UNAVAILABLE_TABS` i `app/(app)/layout.tsx`, så att fliken tänds. Vad som
-återstår utanför själva migrationen står under "PR 11" i `docs/status.md`.
+**Migrationen är klar (2026-09-30, PR 11; Pulsen 2026-10-01, PR 6).** Alla
+skärmar delas av `/demo` och `/app`, och demots sidor är tunna hämtare.
+Pulsen (steg 6) flyttades sist: `screens/Pulse.tsx`, demots sida och
+`/app/pulsen`, och `"pulsen"` är borttagen ur `UNAVAILABLE_TABS`. Vad som
+återstår utanför själva migrationen står under "PR 11" och "PR 6: Pulsen" i
+`docs/status.md`.
 
 ## Nuläge
 
@@ -34,18 +34,17 @@ PR 1) finns i historiken för den här filen.
   `/app/juridik`, `/app/validering`, `/app/marknad`, `/app/resan`,
   `/app/resan/[steg]`, `/app/medgrundaren`, `/app/bygg` och `/app/affarsplan`, plus onboardingen på `/start` (`OnboardingEntry`,
   `OnboardingIdea`, `OnboardingProfile`, samma skärmar som `/demo/start`
-  sedan PR 11). Flikarna i `/app` länkar till sina sidor (PR 11); bara
-  Pulsen är inaktiv tills `/app/pulsen` finns.
-- **Oanvända skärmar i `screens/`** (väntar på sitt steg): `Pulse`.
-  Oanvända komponenter togs bort i PR 11.
+  sedan PR 11), och `/app/pulsen` (PR 6). Alla flikar i `/app` länkar till
+  sina sidor (PR 11, Pulsen PR 6).
+- **Oanvända skärmar i `screens/`:** inga. Oanvända komponenter togs bort i
+  PR 11.
 - **Delade byggstenar** ligger i `screens/blocks/`: `ScoreFigure.tsx` (PR 4),
   `PageBlocks.tsx` (`PageHead`, `Locked`, `Pill`, PR 5) och
   `DataBlocks.tsx` (`ExampleLabel`, `Figures`, `SimulationBlock`,
   `VerdictBlock`, PR 7), `JourneyStepper.tsx` (PR 9, delad av Hem och
   Resan) och `ChatBlocks.tsx` (`ChatLine`, `ToolRun`, `TimeSkipLine`, PR 10).
-  `app/demo/_components/DemoBlocks.tsx` exporterar bara `PageHead` vidare,
-  åt demots Pulsen-sida.
-- **Demots egna sidor kvar att flytta:** Pulsen (Bruno).
+  `app/demo/_components/DemoBlocks.tsx` togs bort i PR 6.
+- **Demots egna sidor kvar att flytta:** inga.
 - **Liveadaptrarna:** byggda är Evidens, Juridik, Minnet, OutreachPrep,
   Utskick, Pulsen och Registret (bakom licensgrinden). Helt eller delvis
   stubbar (`NotImplementedError`) är Build, Medgrundaren, Resan
@@ -63,7 +62,7 @@ PR 1) finns i historiken för den här filen.
 | Poäng | `poang` | `Score` | ja, PR 4 | byggd |
 | Marknad | `marknad` | `Market` | ja, PR 8 (branschen väljs i adressen, låst till steg 02) | Registret, bakom licensgrinden; transporterna är inte skrivna, så även Theo och Erik får felrutan |
 | Validering | `validering` | `Validation` | ja, PR 7 (låst till steg 03 ur Resans steg) | Utskick: sändspärren ger "Kommer snart"; läser inte Registret |
-| Pulsen | `pulsen` | `Pulse` | nej | byggd |
+| Pulsen | `pulsen` | `Pulse` | ja, PR 6 (inget låst läge: demot har ingen stegspärr) | byggd |
 | Medgrundaren | `medgrundaren` | `Cofounder` | ja, PR 10 (ingen port för samtalet: Kommer snart i båda sektionerna) | stubbe (`sendMessage`) |
 | Minnet | `minnet` | `Memory` | ja, PR 5 | byggd |
 | Juridik | `juridik` | `Legal` | ja, PR 5 (bolagsformen väljs av användaren) | byggd, inget juristgranskat |
@@ -151,10 +150,9 @@ migrationen — de rör varken `screens/` eller `design/site.css`.
 
 ## Pågående arbete, så att vi inte krockar
 
-- **Bruno** (`Litfot`): `modul/pulsen` är mergad (#23), ingen öppen gren.
-  Kvar för Pulsen enligt `status.md`: live-rutten `/app/pulsen`,
-  kommentaren i `app/(app)/app/page.tsx` och RLS-testet för
-  `pulse_fetches`. `/app/pulsen` krockar med den här planen, se beslut 3.
+- **Bruno** (`Litfot`): `modul/pulsen` är mergad (#23). `/app/pulsen` är
+  byggd i PR 6 på `design/en-design`. Kvar för Pulsen: RLS-testet för
+  `pulse_fetches`. #35 (samma rutt mot `prototyp`, gammalt skal) stängs.
 - **Oskar** (`Jaeger154`):
   - `landning-bilder` (2 commits före `prototyp`, bara `DESIGN.md` och
     `status.md` än) planerar skärmbilder av det gamla demot i en sektion
@@ -191,7 +189,7 @@ likadant ut före och efter, kontrollerat med skärmbilder.
    DemoBlocks-versionen (eller en gemensam, icke-demo-bunden variant) och
    ta bort den andra kopian — dubbletten får inte överleva PR 4.
 5. **Minnet** och **Juridik** (byggda). Juridik i samråd med Oskar.
-6. **Pulsen**: Bruno, på den nya skärmen (beslut 3).
+6. **Pulsen**: Bruno, på den nya skärmen (beslut 3). Gjort 2026-10-01.
 7. **Validering** (Utskick byggt, låst läge för Registret).
 8. **Marknad** (Registret bakom licensgrinden, tester för stängd grind).
 9. **Resan och steget** (gjort; `getSteps` och `getStepDetail` är byggda,
