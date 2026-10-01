@@ -11,6 +11,8 @@ import { Build, type BuildData, type BuildLock } from "@/screens/Build";
 const UNLOCKS_AFTER_STEP = 7;
 /** Steget där bygget körs och credits går åt (cofounderScript.ts, "10-live-korning"). */
 const BUILD_STEP = 10;
+/** Steget där omfånget och specens underlag sätts. */
+const SCOPE_STEP = 8;
 
 /**
  * Demots Bygg: hämtar status och spec för det aktuella momentet och lämnar
@@ -35,6 +37,8 @@ export default function DemoBuildPage() {
           // Credits-talet är påhittat i scenariot (BuildProvider.ts) och hör till
           // bygget i steg 10: egen exempelkälla.
           creditsSource: { source: exampleSource(locale, { step: BUILD_STEP }), dataType: "example" },
+          // Underlaget bygger på påhittade kundsamtal och hör till omfånget i steg 08.
+          underlagSource: { source: exampleSource(locale, { step: SCOPE_STEP }), dataType: "example" },
         },
         locked: spec ? null : notInScenario ? "notInScenario" : { unlocksAfterStep: UNLOCKS_AFTER_STEP },
       });

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/context";
 import { demoRegistryProvider, SARA_INDUSTRY_LABEL, SARA_MARKET_SNI_CODE } from "@/adapters/demo/RegistryProvider";
 import { demoSimulationProvider, simulationQuestions } from "@/adapters/demo/SimulationProvider";
-import { demoOutreachProvider, outreachSource } from "@/adapters/demo/OutreachProvider";
+import { demoOutreachProvider } from "@/adapters/demo/OutreachProvider";
 import { getCurrentStepNumber, useDemoStore } from "@/adapters/demo/demoStore";
 import { exampleSource } from "@/adapters/demo/exampleSource";
 import { Market, type MarketData, type MarketLock } from "@/screens/Market";
@@ -37,7 +37,8 @@ export default function DemoMarketPage() {
       setData({
         industryLabel: SARA_INDUSTRY_LABEL[locale],
         registry: { overview, companies, medianRevenueFiscalYears: null },
-        outreach: { rows: campaign, source: outreachSource[locale] },
+        // Utskicket i steg 05 är påhittat: exempelkälla, aldrig "Sparks utskick".
+        outreach: { rows: campaign, source: exampleSource(locale, { step: 5 }) },
         simulation,
         // Registersiffrorna i demot är påhittade: exempelkälla, aldrig registrets.
         registrySource: { source: exampleSource(locale, { step: 3 }), dataType: "example" },

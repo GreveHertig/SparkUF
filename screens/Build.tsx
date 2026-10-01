@@ -23,6 +23,10 @@ export type BuildData = {
   /** Källan för `creditsUsed`, som porten inte bär. Bara demot sätter den:
    * talet är påhittat och får en exempelkälla (PR 11). */
   creditsSource?: { source: Källa; dataType: DataType };
+  /** Källan för specens underlag, när den inte är underlagets egen. Bara demot
+   * sätter den: underlaget bygger på påhittade kundsamtal och får en
+   * exempelkälla. */
+  underlagSource?: { source: Källa; dataType: DataType };
 };
 
 /** Samma form som `ValidationLock` och `MarketLock`. */
@@ -120,7 +124,11 @@ export function Build({ data, locked }: { data: BuildData; locked: BuildLock }) 
                     {spec.underlag.map((bevis, index) => (
                       <li key={index}>
                         <p>{bevis.påstående}</p>
-                        <SourceTag source={bevis.källa} />
+                        {data.underlagSource ? (
+                          <SourceTag source={data.underlagSource.source} dataType={data.underlagSource.dataType} />
+                        ) : (
+                          <SourceTag source={bevis.källa} dataType="customer" />
+                        )}
                       </li>
                     ))}
                   </ul>

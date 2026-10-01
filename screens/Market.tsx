@@ -194,7 +194,7 @@ export function Market({
             <h2 id="fdd-market-outreach" className="fdd-panel__title">
               {m.outreach.title}
             </h2>
-            {data.outreach ? <Outreach outreach={data.outreach} m={m} locale={locale} /> : <ComingSoon />}
+            {data.outreach ? <Outreach outreach={data.outreach} dataKind={dataKind} m={m} locale={locale} /> : <ComingSoon />}
           </section>
 
           <section className="fd-panel" aria-labelledby="fdd-market-layers" data-tour-id="market-datalayers">
@@ -360,10 +360,12 @@ function Distribution({
 
 function Outreach({
   outreach,
+  dataKind,
   m,
   locale,
 }: {
   outreach: { rows: CampaignRow[]; source: Källa };
+  dataKind: DataKind;
   m: M;
   locale: Locale;
 }) {
@@ -389,7 +391,7 @@ function Outreach({
           <dd>{stats.responseRate} %</dd>
         </div>
       </dl>
-      <SourceTag source={source} dataType="customer" />
+      <SourceTag source={source} dataType={dataKind === "example" ? "example" : "customer"} />
     </>
   );
 }

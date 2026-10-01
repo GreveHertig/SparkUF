@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode } from "react";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
@@ -435,6 +435,30 @@ describe("/demo", () => {
       expect(partTags.length).toBeGreaterThan(0);
       for (const tag of partTags) expect(tag.textContent).toMatch(/Påhittad data, poängunderlaget|Simulering/);
       expect(score.container.textContent).not.toMatch(/Bolagsverket|SCB|Kundsamtal/);
+    });
+
+    it("Validering, Marknad, Bygg och Affärsplanen bär bara exempel- eller simuleringstaggar, aldrig kundernas eller registrets", async () => {
+      const pages = [
+        [DEMO_PATHS.validation, <DemoValidationPage key="v" />],
+        [DEMO_PATHS.market, <DemoMarketPage key="m" />],
+        [DEMO_PATHS.build, <DemoBuildPage key="b" />],
+        [DEMO_PATHS.businessPlan, <DemoBusinessPlanPage key="p" />],
+      ] as const;
+      for (const [path, page] of pages) {
+        startInApp(lastBeat);
+        pathname = path;
+        const { container, unmount } = await renderInApp(page);
+        await waitFor(() => expect(container.querySelector("main button[aria-label]")).not.toBeNull());
+        const tags = [...container.querySelectorAll("main button")].filter(
+          (b) => b.getAttribute("aria-label") === sv.common.sourceTag.openDetails,
+        );
+        expect(tags.length).toBeGreaterThan(0);
+        for (const tag of tags) {
+          expect(tag.textContent).toMatch(new RegExp(`^(${sv.common.exampleSourceLabel}|${sv.common.simulationLabel})`));
+        }
+        expect(container.querySelector("main")?.textContent).not.toMatch(/Sparks utskick|Kundsamtal|Bolagsverket|SCB/);
+        unmount();
+      }
     });
 
     it("Hems källtaggar är exempelkällor i varje moment, aldrig en myndighet eller en påhittad tid", async () => {
