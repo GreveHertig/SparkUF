@@ -39,6 +39,8 @@ export default function DemoBuildPage() {
           creditsSource: { source: exampleSource(locale, { step: BUILD_STEP }), dataType: "example" },
           // Underlaget bygger på påhittade kundsamtal och hör till omfånget i steg 08.
           underlagSource: { source: exampleSource(locale, { step: SCOPE_STEP }), dataType: "example" },
+          // Ingen sida är publicerad: adressen är ett exempel och ingen länk.
+          publishedUrlIsExample: true,
         },
         locked: spec ? null : notInScenario ? "notInScenario" : { unlocksAfterStep: UNLOCKS_AFTER_STEP },
       });

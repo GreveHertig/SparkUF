@@ -37,6 +37,12 @@ describe("Build (PR 10)", () => {
     expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
   });
 
+  it("en exempeladress visas som text, aldrig som länk", () => {
+    renderBuild({ status: { status: "published", url: "kvittojakten.example" }, spec, publishedUrlIsExample: true });
+    expect(screen.getByText(`${sv.buildPage.publishedUrlLabel}: kvittojakten.example`)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: new RegExp(sv.buildPage.publishedUrlLabel) })).not.toBeInTheDocument();
+  });
+
   it("koncept-etiketten visas alltid, också i låst läge", () => {
     renderBuild({ status: null, spec: null }, { unlocksAfterStep: 7 });
     expect(screen.getByText(sv.common.conceptBadge)).toBeInTheDocument();

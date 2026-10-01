@@ -145,7 +145,7 @@ Klicka inte på de grå "Bolagsverket"-taggarna här (se ovan).
 > kommer sist av en anledning: Spark bygger bara det kunderna redan bett om.
 > Lovable är ett koncept i dag, inget avtal."
 
-Klicka inte på adressen `kvittojakten.lovable.app`. Sidan finns inte.
+Adressen `kvittojakten.example` är ett exempel och ingen länk: ingen sida är publicerad.
 
 **18. Dagliga marknadssignaler om Saras bransch** (`/demo/pulsen`) [steg 12, poäng 92]
 > "En daglig marknadssignal kopplad till Saras idé och kundsegment, med en

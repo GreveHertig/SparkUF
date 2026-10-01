@@ -27,6 +27,9 @@ export type BuildData = {
    * sätter den: underlaget bygger på påhittade kundsamtal och får en
    * exempelkälla. */
   underlagSource?: { source: Källa; dataType: DataType };
+  /** Sant när adressen bara är ett exempel (demot): den visas som text, aldrig
+   * som en länk till en sida som inte finns. */
+  publishedUrlIsExample?: boolean;
 };
 
 /** Samma form som `ValidationLock` och `MarketLock`. */
@@ -62,11 +65,16 @@ export function Build({ data, locked }: { data: BuildData; locked: BuildLock }) 
           {status ? (
             <div className={`fdd-gate fdd-gate--${status.status}`} data-tour-id="build-gate">
               <Pill tone={statusTone[status.status]}>{copy.status[status.status]}</Pill>
-              {status.url && (
-                <a href={status.url} target="_blank" rel="noreferrer" className="fdd-link">
-                  {copy.publishedUrlLabel}: {status.url}
-                </a>
-              )}
+              {status.url &&
+                (data.publishedUrlIsExample ? (
+                  <span>
+                    {copy.publishedUrlLabel}: {status.url}
+                  </span>
+                ) : (
+                  <a href={status.url} target="_blank" rel="noreferrer" className="fdd-link">
+                    {copy.publishedUrlLabel}: {status.url}
+                  </a>
+                ))}
               {status.creditsUsed !== undefined && (
                 <span className="fdd-gate__credits">
                   {copy.creditsUsedLabel}: {status.creditsUsed}
