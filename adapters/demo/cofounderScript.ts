@@ -178,8 +178,8 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
     skip("2 dagar senare", "2 days later"),
     msg(
       "cofounder",
-      "38 % har öppnat. Jag skickar en påminnelse om fyra dagar om det är tyst.",
-      "38% have opened it. I'll send a reminder in four days if it's quiet.",
+      "40 % har öppnat, 8 av 20. Jag skickar en påminnelse om fyra dagar om det är tyst.",
+      "40% have opened it, 8 of 20. I'll send a reminder in four days if it's quiet.",
     ),
     skip("4 dagar senare", "4 days later"),
     msg("cofounder", "Påminnelsen är skickad. Nu väntar vi på svar.", "The reminder is sent. Now we wait for responses."),

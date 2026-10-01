@@ -558,13 +558,13 @@ const [step05aFore, step05aKorning, step05aEfter] = makeStepBeats({
   sinceLastTimeKorning: {
     sv: noSinceLastTime("sv", "2026-01-18", {
       recipientCount: 20,
-      openRate: 38,
+      openRate: 40,
       openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
     }),
     en: noSinceLastTime("en", "2026-01-18", {
       recipientCount: 20,
-      openRate: 38,
+      openRate: 40,
       openRateSource: källa("The outreach, step 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
     }),
@@ -572,7 +572,7 @@ const [step05aFore, step05aKorning, step05aEfter] = makeStepBeats({
   sinceLastTimeEfter: {
     sv: noSinceLastTime("sv", "2026-01-19", {
       recipientCount: 20,
-      openRate: 38,
+      openRate: 40,
       openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
       responsesReceived: 6,
@@ -580,7 +580,7 @@ const [step05aFore, step05aKorning, step05aEfter] = makeStepBeats({
     }),
     en: noSinceLastTime("en", "2026-01-19", {
       recipientCount: 20,
-      openRate: 38,
+      openRate: 40,
       openRateSource: källa("The outreach, step 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
       responsesReceived: 6,
@@ -618,22 +618,22 @@ const [step05aFore, step05aKorning, step05aEfter] = makeStepBeats({
   highlightsAfter: {
     sv: [
       "Svenskt B2B-mejl skickat från Saras Gmail till 20 byråer.",
-      "2 dagar senare: 38 % har öppnat.",
+      "2 dagar senare: 40 % har öppnat (8 av 20).",
       "4 dagar senare: påminnelse skickad.",
       "6 svar kommer in — alla bekräftar att problemet är verkligt.",
       "Juridisk koll: regler för marknadsföring via e-post, B2B jämfört med fysiska personer.",
     ],
     en: [
       "Swedish B2B email sent from Sara's Gmail to 20 firms.",
-      "2 days later: 38% have opened it.",
+      "2 days later: 40% have opened it (8 of 20).",
       "4 days later: reminder sent.",
       "6 responses come in — all confirm the problem is real.",
       "Legal check: rules for email marketing, B2B versus individuals.",
     ],
   },
   traceSummaryAfter: {
-    sv: "Utskicket skickat till 20 byråer — 38 % öppningsfrekvens, sex svar bekräftar problemet.",
-    en: "Outreach sent to 20 firms — 38% open rate, six responses confirm the problem.",
+    sv: "Utskicket skickat till 20 byråer — 40 % öppningsfrekvens, sex svar bekräftar problemet.",
+    en: "Outreach sent to 20 firms — 40% open rate, six responses confirm the problem.",
   },
 });
 
@@ -735,7 +735,7 @@ const step05bEfter: Beat = {
   sinceLastTime: {
     sv: noSinceLastTime("sv", "2026-01-20", {
       recipientCount: 20,
-      openRate: 38,
+      openRate: 40,
       openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
       responsesReceived: 9,
@@ -743,7 +743,7 @@ const step05bEfter: Beat = {
     }),
     en: noSinceLastTime("en", "2026-01-20", {
       recipientCount: 20,
-      openRate: 38,
+      openRate: 40,
       openRateSource: källa("The outreach, step 05", "2026-01-16"),
       reminderSentDateIso: "2026-01-18",
       responsesReceived: 9,
@@ -807,7 +807,7 @@ const step06NextStep: Record<Locale, NextStep> = {
 const step06SinceLastTime: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-01-23", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -815,7 +815,7 @@ const step06SinceLastTime: Record<Locale, SinceLastTime> = {
   }),
   en: noSinceLastTime("en", "2026-01-23", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -922,7 +922,7 @@ const step07NextStep: Record<Locale, NextStep> = {
 const step07SinceLastTime: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-01-26", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -930,7 +930,7 @@ const step07SinceLastTime: Record<Locale, SinceLastTime> = {
   }),
   en: noSinceLastTime("en", "2026-01-26", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1041,7 +1041,7 @@ const step08NextStep: Record<Locale, NextStep> = {
 const step08SinceLastTime: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-02-01", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1049,7 +1049,7 @@ const step08SinceLastTime: Record<Locale, SinceLastTime> = {
   }),
   en: noSinceLastTime("en", "2026-02-01", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1157,7 +1157,7 @@ const step09NextStep: Record<Locale, NextStep> = {
 const step09SinceLastTime: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-02-05", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1165,7 +1165,7 @@ const step09SinceLastTime: Record<Locale, SinceLastTime> = {
   }),
   en: noSinceLastTime("en", "2026-02-05", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1267,7 +1267,7 @@ const step10NextStep: Record<Locale, NextStep> = {
 const step10SinceLastTime: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-02-08", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1275,7 +1275,7 @@ const step10SinceLastTime: Record<Locale, SinceLastTime> = {
   }),
   en: noSinceLastTime("en", "2026-02-08", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1395,7 +1395,7 @@ const step11NextStep: Record<Locale, NextStep> = {
 const step11SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-02-17", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1403,7 +1403,7 @@ const step11SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
   }),
   en: noSinceLastTime("en", "2026-02-17", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1414,7 +1414,7 @@ const step11SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
 const step11SinceLastTimeAfter: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-03-18", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1422,7 +1422,7 @@ const step11SinceLastTimeAfter: Record<Locale, SinceLastTime> = {
   }),
   en: noSinceLastTime("en", "2026-03-18", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1534,7 +1534,7 @@ const step12NextStep: Record<Locale, NextStep> = {
 const step12SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-03-19", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1542,7 +1542,7 @@ const step12SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
   }),
   en: noSinceLastTime("en", "2026-03-19", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1553,7 +1553,7 @@ const step12SinceLastTimeBefore: Record<Locale, SinceLastTime> = {
 const step12SinceLastTimeAfter: Record<Locale, SinceLastTime> = {
   sv: noSinceLastTime("sv", "2026-04-10", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("Utskicket, steg 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,
@@ -1561,7 +1561,7 @@ const step12SinceLastTimeAfter: Record<Locale, SinceLastTime> = {
   }),
   en: noSinceLastTime("en", "2026-04-10", {
     recipientCount: 20,
-    openRate: 38,
+    openRate: 40,
     openRateSource: källa("The outreach, step 05", "2026-01-16"),
     reminderSentDateIso: "2026-01-18",
     responsesReceived: 9,

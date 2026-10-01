@@ -153,8 +153,9 @@ export const outreachDateRange = { startIso: "2026-01-14", endIso: SECOND_WAVE_D
 /** Öppningsfrekvensen (samma tal som `sara.ts`s `SinceLastTime.openRate`
  * för steg 05) — Valideringens fjärde nyckeltal (uppgift 3): ett verkligt,
  * källbelagt jämförelsetal, i stället för ett påhittat branschsnitt som
- * inte finns som strukturerad data någonstans i demot. */
-export const outreachOpenRate = 38;
+ * inte finns som strukturerad data någonstans i demot. 40 % = 8 av 20, de
+ * som öppnat två dagar efter utskicket (`OPENED_BEFORE_RESPONSES`). */
+export const outreachOpenRate = 40;
 export const outreachOpenRateSource: Record<Locale, Källa> = {
   sv: { namn: "Utskicket, steg 05", hämtad: "2026-01-16" },
   en: { namn: "The outreach, step 05", hämtad: "2026-01-16" },
