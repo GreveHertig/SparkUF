@@ -129,8 +129,8 @@ Först när alla tre är klara får `REGISTRY_ALLOWED_USER_IDS` utökas eller
 grinden tas bort, i en commit som också uppdaterar det här avsnittet.
 
 **Mekanism (fyra lager, inget ensamt tillräckligt):**
-1. Ingen liveyta: ingen `/app/marknad`-route finns, `screens/` och routes rörs inte. Demon använder fiktiv data.
-2. `lib/server/registryAccess.ts`: kräver både `REGISTRY_LIVE_ENABLED=true` och att inloggad `user.id` finns i `REGISTRY_ALLOWED_USER_IDS`. Avstängd som standard. Anropas som första sats i båda portmetoderna. Nekat ger `RegistryLockedError` (visas som `ComingSoon`) innan något externt anrop görs.
+1. ~~Ingen liveyta~~ **Borta sedan PR 8 (2026-09-30), enligt `docs/plan-en-design.md`:** `/app/marknad` finns och anropar `liveRegistryProvider`. Rutten frågar grinden först och visar "Registret är inte öppet än" i varje registersektion när den är stängd; ingen cache runt registeranropen. Bevisas av `app/(app)/app/marknad/licensgrind.test.tsx` (riktig grind, riktig adapter, bara sessionen och transporterna utbytta). Demon använder fortfarande fiktiv data. Kvar är lager 2–4.
+2. `lib/server/registryAccess.ts`: kräver både `REGISTRY_LIVE_ENABLED=true` och att inloggad `user.id` finns i `REGISTRY_ALLOWED_USER_IDS`. Avstängd som standard. Anropas som första sats i båda portmetoderna. Nekat ger `RegistryLockedError` (visas som `ComingSoon`, på `/app/marknad` som låsläget "Registret är inte öppet än") innan något externt anrop görs.
 3. CI-vakt i `ports/stubStatus.test.ts` (blocket "Licensvakt: Registret nekar utan öppen grind"): testerna blir röda om grinden tas bort eller försvagas.
 4. Ingen lagring: inget skrivs till `public.companies` förrän licensen är Verifierat.
 
@@ -142,7 +142,7 @@ grinden tas bort, i en commit som också uppdaterar det här avsnittet.
 **Regler för framtiden (security-review 2026-09-19):**
 - `competitors[].name/description` är extern text, rensad men inte neutraliserad. Om Gemini/Tavily någon gång får läsa dem: lägg dem i ett avgränsat databloc, säg i systemprompten att de är opålitliga, och aktivera inga verktygsanrop utifrån dem.
 - **Uppfyllt för Bolagsverket 2026-09-23:** (a) transporten anropar grinden själv, och lint-regeln `registryTransportPattern` i `eslint.config.mjs` låter bara liveadaptern och tester importera `bolagsverket`/`scb`; (b) bas-URL:en kommer bara från miljövariabeln och måste vara https mot `*.api.bolagsverket.se`; (c) timeout 10 s och minst 200 ms mellan anrop i processen (Bolagsverket skickar inga rate limit-headers, så det finns ingen throttle per användare); (d) felen bär aldrig `cause`, request-id eller svarstext. Org.nr med tredje siffran under 2 (personnummer) avvisas före anropet. Kvar för SCB:
-- När transporterna skrivs: (a) de ska själva anropa `assertRegistryAccessAllowed()` eller bara importeras av `adapters/live/RegistryProvider.ts` (lägg en `no-restricted-imports`-regel), så en framtida route inte kan gå förbi grinden; (b) bas-URL bara från miljövariabel, aldrig från indata (SSRF); (c) timeout, paginering och throttle per användare (SCB: 2 000 rader/anrop, 10 anrop/10 s) — `getMarketOverview` utan `sniCode` hämtar hela registret; (d) logga aldrig `RegistryTransportError.cause` (ZodError kan innehålla registervärden), bara `issues[].path` och `code`.
+- När transporterna skrivs: (a) de ska själva anropa `assertRegistryAccessAllowed()` eller bara importeras av `adapters/live/RegistryProvider.ts` (lägg en `no-restricted-imports`-regel), så en framtida route inte kan gå förbi grinden; (b) bas-URL bara från miljövariabel, aldrig från indata (SSRF); (c) timeout, paginering och throttle per nyckel (SCB AFR: limit 1 000 per sida och högst 5 anrop/s, rättat 2026-09-30, se "SCB AFR" nedan) — `getMarketOverview` utan `sniCode` hämtar hela registret och ska därför inte gå mot AFR; (d) logga aldrig `RegistryTransportError.cause` (ZodError kan innehålla registervärden), bara `issues[].path` och `code`.
 - `REGISTRY_LIVE_ENABLED` måste vara exakt `true` (`1`/`TRUE` nekas, avsiktligt).
 - Bolagsnamn kan innehålla personnamn. Aktiebolag är juridiska personer och reklamspärr respekteras, men det är en GDPR-nyans att ta upp med Juridisk koll (§6 fråga 4).
 
@@ -216,6 +216,155 @@ svarsform** (`lib/server/registrySchemas.ts`). **Exponering är spärrad**, se
   att prova med mindre aktiebolag** som har lämnat årsredovisningen
   digitalt. Det behövs innan `/dokument` och iXBRL byggs.
 
+## SCB AFR (`lib/server/scb.ts`, inte skriven)
+
+Spiken mot SCB:s allmänna företagsregister-API gjordes 2026-09-30, se
+`docs/dataspiken.md`, "SCB AFR, provkörning 2026-09-30". Det här avsnittet
+är förslaget för transporten och adaptern. Ingen kod är ändrad.
+
+### Adress, nyckel och gränser
+- **Kontrakt:** `https://apiafr.scb.se/swagger/v1/swagger.json` är
+  normativt. Filen saknar `servers`.
+- **Bas-URL:** `https://apiafr.scb.se`, verifierad med riktiga anrop. Sätts i
+  `SCB_AFR_API_BASE_URL`. Transporten ska kräva https mot exakt
+  `apiafr.scb.se`, samma mönster som Bolagsverket.
+- **Version:** `/v1` blir en konstant i koden, eftersom kontraktet är
+  versionerat.
+- **Nyckel:** `SCB_AFR_API_KEY`, skickas i headern `X-API-Key`. Den är
+  personlig (Eriks), server-only och delas inte.
+- **Gränser:** högst 5 anrop/s per nyckel (Sekundärt, SCB:s dokumentation)
+  och `limit` högst 5 000 (Verifierat). Vid 429 läses `Retry-After`. Fel är
+  `application/problem+json`, och felen vi kastar bär aldrig `detail` eller
+  `instance` (samma regel som Bolagsverket).
+- **Nattfönster:** API:t ligger nere 04:00–04:30 varje natt. Ett 503 i det
+  fönstret ska visas som "registret uppdateras, försök igen om en stund",
+  inte som ett tyst tomt svar.
+- **Sidstorlek:** `limit=1000` (~430 kB per sida). `scb.ts` får **ett eget
+  tak för svarsstorlek**, anpassat till limit 1 000 (till exempel ~1 MB). Det
+  ärver inte Bolagsverkets `MAX_RESPONSE_CHARS` på 512 000 tecken. En sida
+  med 5 000 rader är ~2,2 MB och skulle slå i det taket.
+- **Kostnad för en kundlista:** SNI 69201 har 25 791 juridiska enheter, 26
+  sidor och ~20–35 s. SNI 62100 har 31 495, 32 sidor och ~25–40 s. Sidorna
+  hämtas i tur och ordning.
+
+### Filtermodellen
+- **Ett filter per anrop**, som inte går att kombinera: `naringsgren`
+  (bara `rangordning=1`), `kommun`, `lan`, `anstalldaklass` och för JE även
+  `omsattningsklass` och `juridiskform`. Varje filter har ett `/count`.
+- **Inget filter** på verksam eller reklamspärr.
+- **Därför:** hämta per SNI och filtrera allt annat hos oss:
+  - juridisk form: `jurform` i {41, 42, 43, 49}, alla aktiebolag;
+  - verksam: `ftgStat` = 1;
+  - reklamspärr: bara `reklamSparrTyp` = 1 ("Tar emot reklam"). 2 och
+    okända värden räknas som spärr;
+  - storleksklass: `anstKl`.
+- Fysiska personer (`jurform` 10) och dödsbon (91) kommer med namn i
+  listan. De filtreras bort i transporten eller adaptern **innan** något
+  returneras eller lagras.
+
+### Förslag: `searchCompanies`
+1. Validera SNI som fem siffror (se "SNI 2025").
+2. Gå igenom `GET /v1/juridiskaenheter/naringsgren/{sni}?limit=1000`
+   tills `hasMore` är false (eller läs cachen, se nedan).
+3. Filtrera hos oss: aktiebolag, verksamma, utan reklamspärr. `anstKl`
+   översätts från `minEmployees`/`maxEmployees` till klasser. En klass tas
+   med bara om hela intervallet ligger inom gränserna.
+4. Sortera deterministiskt (orgNr), ta högst 50, och berika bara dem med
+   Bolagsverkets `lookupOrganisation` (beskrivning, registreringsdatum,
+   Bolagsverkets reklamspärr).
+5. Län: `lanSate` blir namn via `lankoder`. 00 och 99 blir okänt.
+
+### Förslag: `getMarketOverview(locale, sniCode)`
+- **Utan `sniCode` går vi inte mot AFR** (hela registret är 1+ miljon rader).
+- **`companyCount`:** räknat ur samma genomgång som `searchCompanies`, som
+  verksamma aktiebolag med huvudbransch `sniCode`. Etiketten ska säga just
+  det. `/count` (ett anrop) ger alla juridiska enheter i huvudbranschen och
+  kan visas bredvid som "registrerade totalt".
+- **`regionSharePercent`:** andel av de verksamma aktiebolagen med
+  `lanSate` = 01 (Stockholm), räknat på de med känt län. Det ersätter planen
+  att härleda län ur postnummer.
+- **`competitors`:** de största namngivbara aktiebolagen efter `anstKl`,
+  med beskrivning från Bolagsverket.
+- **`medianRevenueKsek`** och **`growthSharePercent`** kommer inte från AFR
+  (iXBRL eller statistikdatabasen). Tills vidare är `basis` 0, alltså okänt.
+
+### Cache i `registry_cache` (förslag)
+- **Inget cachas förrän SCB:s användarvillkor är citerade ordagrant i
+  `docs/dataspiken.md` och Erik själv har kört
+  `registry_cache`-migreringen.** Till dess hämtas allt live.
+- Nycklar (`source = 'scb_foretagsregistret'`):
+  - `je:sni:{kod}` för den filtrerade, reducerade listan, bara aktiebolag,
+    verksamma och utan reklamspärr, med fälten orgNr, namn, anstKl, lanSate,
+    kommunSate och postOrt. Aldrig råsvaret, aldrig fysiska personer;
+  - `je:sni:{kod}:count` för `/count`;
+  - `kod:{tabell}` för kodtabeller.
+- **Giltighet:**
+  - 24 h för listor och antal. SCB uppdaterar varje natt, och en kort tid
+    gör att en ny reklamspärr slår igenom snabbt;
+  - 7 dagar för kodtabeller, vilket är migreringens tak.
+
+### SNI 2025 (beslut 2026-09-30, se `docs/beslut.md`)
+Spark använder SNI 2025 rakt av, fem siffror utan punkt, till exempel
+`69201`. Ingen omkodning från SNI 2007. AFR:s kodtabell är SNI 2025
+(62010 finns inte, 62100 = Dataprogrammering). **Ingenting ändras nu**, men
+följande ska ändras när porten och demodatan ses över:
+- **Porten:** `RegistryQuery.sniCode` och `RegistryCompany.sniCode` blir
+  fem siffror utan punkt. Kommentaren i `ports/RegistryProvider.ts` ska
+  säga SNI 2025.
+- **Liveadaptern:** `SNI_PATTERN` (`/^\d{2}\.\d{3}$/`) och felmeddelandet
+  "formen 12.345" i `adapters/live/RegistryProvider.ts` blir `/^\d{5}$/`.
+- **Demodatan:**
+  - `adapters/demo/RegistryProvider.ts` (`sniCode: "69.201"` på 20 bolag
+    och `SARA_MARKET_SNI_CODE`);
+  - texterna "SNI 69.201" i `adapters/demo/sara.ts`,
+    `adapters/demo/cofounderScript.ts` och `i18n/sv.ts`/`en.ts`;
+  - testerna som använder formen: `ports/RegistryProvider.contract.test.ts`,
+    `ports/stubStatus.test.ts`, `adapters/live/RegistryProvider*.test.ts`,
+    `lib/server/registryCache.test.ts`, `lib/server/registryTransport.test.ts`,
+    `screens/Market.test.tsx` och `screens/Validation.test.tsx`.
+
+  69201 finns i SNI 2025 med samma innebörd (redovisning och bokföring), så
+  Saras bransch behöver bara byta form, inte kod.
+
+### Skillnader mot `lib/server/registrySchemas.ts` och porten
+Att göra när transporten skrivs.
+
+| Antaget (`RegistryRowSchema`) | Verkligt i AFR |
+|---|---|
+| `{ companies: [...] }`, `.strict()` | `{ jes: [...], pagination: { nextCursorId, limit, hasMore } }`. `.strict()` fäller alla extra fält (`postAdress`, `kommunSate`, spärrfälten) |
+| `orgNr` | `orgNr` (10 siffror). Dessutom `peOrgNr` (12) |
+| `name` | `namn` |
+| `legalForm`, `AKTIEBOLAG_FORM = "AB"` | `jurform`. Aktiebolag är `"41"`, `"42"`, `"43"` och `"49"` hos SCB. `"AB"` gäller bara Bolagsverket |
+| `sniCode` | `primarNaringsgren.naringsgren`, fem siffror, SNI 2025, bara huvudbranschen, plus `andelProcent` |
+| `employees: number \| null` | `anstKl`, klasskod som sträng. `"0"` betyder okänt |
+| `county: string \| null` (härlett) | `lanSate`, en kod. 00 och 99 betyder okänt |
+| `description` | Finns inte, bara hos Bolagsverket |
+| `deregistered: boolean` | `ftgStat`: 1 verksam, 0 aldrig verksam, 9 inte längre verksam |
+| `advertisingBlock: boolean` | `reklamSparrTyp`: 1 tar emot, 2 frånsagt. Dessutom `telefonSparrTyp` och `epostSparrTyp` |
+| `AnnualFigures` | Finns inte i AFR |
+
+**Porten:**
+- `RegistryCompany.employees` och `revenueKsek` är tal som inte får vara
+  null. AFR ger en klass respektive ingenting, se punkt 4 under "Kvar innan
+  modulen är klar".
+- `min/maxEmployees` översätts till klasser.
+- `sniCode` byter form enligt beslutet ovan.
+
+### Öppen fråga: /full och omsättningsklass
+`/full` används inte eftersom den innehåller `tel` och `epost`.
+Omsättningsklassen (`omsKl`) skulle kunna fylla en del av
+`medianRevenueKsek`, men det kräver ett eget beslut om personuppgifter
+först.
+
+### Att göra när transporten skrivs
+- Skriv om `lib/server/registrySchemas.ts` enligt tabellen ovan.
+- Byt felmeddelandet i `fetchCompanies` ("saknar nycklar och API-spec").
+  Kommentaren i `lib/server/scb.ts` är redan uppdaterad (docs-commit
+  2026-09-30).
+- Låt varje exporterad funktion i `scb.ts` anropa
+  `assertRegistryAccessAllowed()` först, som i `bolagsverket.ts`. Lint-regeln
+  `registryTransportPattern` täcker redan `scb`.
+
 ## Hur liveadaptern fungerar i dag
 
 - **Första satsen** i båda metoderna: `assertRegistryAccessAllowed()`.
@@ -264,7 +413,7 @@ svarsform** (`lib/server/registrySchemas.ts`). **Exponering är spärrad**, se
    verkliga svaret (**Bolagsverket `/organisationer` och `/dokumentlista`
    klart 2026-09-23**; kvar är SCB, `/dokument`/iXBRL och att koppla in
    `lookupOrganisation` i adaptern); byt `RegistryProvider.live.test.ts` mot riktiga anrop.
-   Respektera SCB:s gränser (2 000 rader/anrop, 10 anrop/10 s). Adaptern kastar `RegistryTransportError` om ett svar når 2 000 rader (troligen avkortat) tills paginering finns.
+   Respektera SCB:s gränser: cursor-paginering med limit 1 000 och högst 5 anrop/s (rättat 2026-09-30, de gamla uppgifterna 2 000 rader/anrop och 10 anrop/10 s gällde det gamla API:t). Se "SCB AFR" ovan.
 3. ~~Läs Bolagsverkets villkor (Verifierat)~~ klart 2026-09-23. Grinden lyfts först när de tre kraven under "Licensgrind" är uppfyllda.
 4. Portens `employees`/`revenueKsek` är icke-nullbara, så bolag med okänt värde
    utelämnas i dag. Överväg nullbara fält när en skärm ska visa dem.

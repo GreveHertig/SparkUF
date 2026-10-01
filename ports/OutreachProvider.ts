@@ -1,4 +1,5 @@
 import type { Locale } from "@/i18n/context";
+import type { Källa } from "@/core/domain";
 import type { ConfirmedOutreach } from "./outreachConfirmation";
 
 export type OutreachStatus = "draft" | "sent" | "opened" | "responded";
@@ -11,6 +12,30 @@ export type CampaignRow = {
   revenueKsek: number;
   status: OutreachStatus;
   quote?: string;
+};
+
+export type ResponseVerdict = "confirms" | "partial";
+
+/** Ett svar från en namngiven svarare, som Valideringen visar det. */
+export type ResponseCard = {
+  companyName: string;
+  county: string;
+  employees: number;
+  dateIso: string;
+  quote: string;
+  verdict: ResponseVerdict;
+  priceTestedKr: number;
+};
+
+export type AssumptionVerdict = "confirmed" | "contradicted";
+
+/** Ett antagande som prövats mot kunderna, med motivering och källa. */
+export type ValidationAssumption = {
+  id: string;
+  text: string;
+  verdict: AssumptionVerdict;
+  basis: string;
+  source: Källa;
 };
 
 /**

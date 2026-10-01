@@ -133,34 +133,98 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
     expect(deleted ?? []).toHaveLength(0);
   });
 
-  it("journey_steps: RLS-isolering", async () =>
-    expectRowIsolation(
-      "journey_steps",
-      { user_id: userIdA, project_id: projectIdA, step_number: 1 },
-      { why: "kapad" },
-    ));
+  // journey_steps är stängd för skrivning sedan
+  // 20261001150000_journey_step_completion.sql: ett steg markeras klart bara
+  // via complete_journey_step, som prövar stegets krav. Annars kunde A
+  // markera steg 11 som klart själv och låsa upp hela poängen. Samma regler
+  // prövas i CI mot Postgres i supabase/migrations/journeyStepCompletion.pg.test.ts.
+  it("journey_steps: A kan inte markera ett steg som klart direkt, varken med insert, update eller funktionen utan krav", async () => {
+    const insert = await clientA
+      .from("journey_steps")
+      .insert({ user_id: userIdA, project_id: projectIdA, step_number: 11, completed_at: new Date().toISOString() });
+    expect(insert.error, "journey_steps: A kunde skriva ett avklarat steg direkt").not.toBeNull();
 
-  it("evidence: RLS-isolering", async () =>
-    expectRowIsolation(
-      "evidence",
-      {
-        user_id: userIdA,
-        project_id: projectIdA,
-        part_id: "fit",
-        points: 1,
-        data_type: "customer",
-        source_name: marker,
-        fetched_at: "2026-01-01",
-      },
-      { points: 99 },
-    ));
+    const { data: updated } = await clientA
+      .from("journey_steps")
+      .update({ completed_at: new Date().toISOString() })
+      .eq("user_id", userIdA)
+      .select("id");
+    expect(updated ?? [], "journey_steps: A kunde markera ett steg som klart med update").toHaveLength(0);
 
-  it("score_snapshots: RLS-isolering", async () =>
-    expectRowIsolation(
-      "score_snapshots",
-      { user_id: userIdA, project_id: projectIdA, total: 10, phase: "discover" },
-      { total: 99 },
-    ));
+    // Steg 12 kräver steg 11, och steg 06 har inget krav alls. Båda nekas
+    // oavsett vad kontots aktiva projekt innehåller.
+    const skipped = await clientA.rpc("complete_journey_step", { p_step_number: 12 });
+    expect(skipped.error, "journey_steps: A kunde hoppa till steg 12").not.toBeNull();
+
+    const { error: impersonationError } = await clientB
+      .from("journey_steps")
+      .insert({ user_id: userIdA, project_id: projectIdA, step_number: 1, completed_at: new Date().toISOString() });
+    expect(impersonationError, "journey_steps: B kunde skriva ett steg på A:s projekt").not.toBeNull();
+  });
+
+  // evidence och score_snapshots är stängda för skrivning sedan
+  // 20261001120000_evidence_write_path.sql (docs/bevislagring.md 2.3): ingen
+  // klient skriver direkt. A skriver bevis bara via record_evidence, och
+  // poängen sätts av databasen ur sorten. Samma regler prövas i CI mot
+  // Postgres i supabase/migrations/evidenceWritePath.pg.test.ts.
+  it("evidence: egna points avvisas, och B kan varken läsa, ändra eller återkalla A:s bevis", async () => {
+    const direct = await clientA.from("evidence").insert({
+      user_id: userIdA,
+      project_id: projectIdA,
+      kind: "customerProblemConfirmed",
+      subject_ref: marker,
+      entered_by: "system",
+      module: "test",
+      part_id: "problem",
+      points: 99,
+      data_type: "customer",
+      source_name: marker,
+      fetched_at: "2026-01-01",
+    });
+    expect(direct.error, "evidence: A kunde skriva en rad med egna points direkt").not.toBeNull();
+
+    // record_evidence använder det AKTIVA projektet. Testprojektet är inaktivt
+    // (se beforeAll), så anropet går mot kontots riktiga aktiva projekt om ett
+    // sådant finns. Saknas det nekas anropet, och då prövas bara läsdelen.
+    const recorded = await clientA.rpc("record_evidence", {
+      p_kind: "customerProblemConfirmed",
+      p_subject_ref: marker,
+      p_source_name: marker,
+      p_source_url: null,
+      p_fetched_at: "2026-01-01",
+      p_quote: null,
+      p_step_number: null,
+      p_module: "test",
+    });
+    if (recorded.error) {
+      expect(recorded.error.message).toMatch(/aktivt projekt/i);
+      return;
+    }
+    const evidenceId = (recorded.data as { evidence_id: string }[])[0].evidence_id;
+
+    const { data: row } = await clientA.from("evidence").select("points, entered_by").eq("id", evidenceId).single();
+    expect(Number(row!.points), "evidence: poängen kom inte ur sorten").toBe(1.5);
+    expect(row!.entered_by).toBe("founder");
+
+    const { data: selected } = await clientB.from("evidence").select("id").eq("id", evidenceId);
+    expect(selected ?? [], "evidence: B kunde läsa A:s bevis").toHaveLength(0);
+    const { data: updated } = await clientB.from("evidence").update({ points: 99 }).eq("id", evidenceId).select("id");
+    expect(updated ?? [], "evidence: B kunde ändra A:s bevis").toHaveLength(0);
+    const retractedByB = await clientB.rpc("retract_evidence", { p_evidence_id: evidenceId, p_reason: "kapad" });
+    expect(retractedByB.error, "evidence: B kunde återkalla A:s bevis").not.toBeNull();
+
+    // Städa: A återkallar sitt testbevis (bevis raderas aldrig av en klient).
+    await clientA.rpc("retract_evidence", { p_evidence_id: evidenceId, p_reason: marker });
+  });
+
+  it("score_snapshots: ingen klient kan skriva historiken, inte ens sin egen", async () => {
+    const { error } = await clientA
+      .from("score_snapshots")
+      .insert({ user_id: userIdA, project_id: projectIdA, total: 99, phase: "grow" });
+    expect(error, "score_snapshots: A kunde skriva en egen snapshot").not.toBeNull();
+    const { data: selected } = await clientB.from("score_snapshots").select("id").eq("user_id", userIdA);
+    expect(selected ?? [], "score_snapshots: B kunde läsa A:s historik").toHaveLength(0);
+  });
 
   it("trace_events: RLS-isolering", async () =>
     expectRowIsolation(

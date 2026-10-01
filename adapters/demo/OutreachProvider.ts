@@ -1,6 +1,17 @@
 import type { Locale } from "@/i18n/context";
 import type { Källa } from "@/core/domain";
-import type { OutreachProvider, CampaignRow, OutreachStatus } from "@/ports/OutreachProvider";
+import type {
+  AssumptionVerdict,
+  CampaignRow,
+  OutreachProvider,
+  OutreachStatus,
+  ResponseCard,
+  ValidationAssumption,
+} from "@/ports/OutreachProvider";
+
+// Typerna ligger i porten så att skärmarna kan använda dem utan att
+// importera demoadaptern. Exporteras vidare för befintliga anropare.
+export type { AssumptionVerdict, ResponseCard, ResponseVerdict, ValidationAssumption } from "@/ports/OutreachProvider";
 import { saraCompanies } from "./RegistryProvider";
 import { useDemoStore } from "./demoStore";
 import { getBeatAt } from "./sara";
@@ -149,18 +160,6 @@ export const outreachOpenRateSource: Record<Locale, Källa> = {
   en: { namn: "The outreach, step 05", hämtad: "2026-01-16" },
 };
 
-export type ResponseVerdict = "confirms" | "partial";
-
-export type ResponseCard = {
-  companyName: string;
-  county: string;
-  employees: number;
-  dateIso: string;
-  quote: string;
-  verdict: ResponseVerdict;
-  priceTestedKr: number;
-};
-
 /** Ett kort per namngiven svarare (uppgift 3, del 3) — bolag, län, anställda,
  * datum, citat och en dom. Inget namn eller roll: ingen namngiven
  * kontaktperson finns i demodatan, bara bolagsnamn och citat (se
@@ -189,16 +188,6 @@ export async function getResponseCards(locale: Locale): Promise<ResponseCard[]> 
       };
     });
 }
-
-export type AssumptionVerdict = "confirmed" | "contradicted";
-
-export type ValidationAssumption = {
-  id: string;
-  text: string;
-  verdict: AssumptionVerdict;
-  basis: string;
-  source: Källa;
-};
 
 /** "Antagandena som prövades" (uppgift 3, del 2) — tre antaganden, var och
  * en med en motivering som är en ordagrann mening ur `sara.ts`s steg

@@ -138,14 +138,34 @@ describe("calculateScore — poängen är aldrig 0 (7.4)", () => {
 });
 
 describe("calculateScore — ingen poäng utan källa (7.4)", () => {
-  it("kastar om en upplåst del helt saknar bevis", () => {
-    expect(() =>
-      calculateScore({
-        phase: "discover",
-        parts: allParts("discover", { fit: [] }),
-        calculatedAtIso: "2026-01-01",
-      }),
-    ).toThrow(/ingen poäng utan källa/i);
+  // Ersätter det tidigare testet "kastar om en upplåst del helt saknar
+  // bevis". Beslut B4 (docs/bevislagring.md 3.3): en upplåst del utan bevis
+  // ger 0 poäng och visas som en lucka, aldrig ett kastat fel. Regeln "ingen
+  // poäng utan källa" gäller fortfarande: delen får ingen poäng och ingen
+  // ScorePart, eftersom en sådan kräver en källa.
+  it("en upplåst del utan bevis ger 0 poäng och visas som en lucka, kastar aldrig", () => {
+    const snapshot = calculateScore({
+      phase: "discover",
+      parts: allParts("discover", { fit: [], market: [item(4)] }),
+      calculatedAtIso: "2026-01-01",
+    });
+    expect(snapshot.parts.some((part) => part.name === "fit")).toBe(false);
+    expect(snapshot.emptyParts).toEqual([{ name: "fit", weight: 10 }]);
+    expect(snapshot.lockedParts.some((part) => part.name === "fit")).toBe(false);
+    expect(snapshot.total).toBe(4);
+  });
+
+  it("alla upplåsta delar tomma ger minsta poängen 1, inte ett fel", () => {
+    const snapshot = calculateScore({
+      phase: "tryAfterCalls",
+      parts: ALL_PART_IDS.map((partId) => ({ partId, label: partId, items: [] })),
+      calculatedAtIso: "2026-01-01",
+    });
+    expect(snapshot.total).toBe(1);
+    expect(snapshot.parts).toHaveLength(0);
+    expect(snapshot.emptyParts?.map((part) => part.name)).toEqual(
+      ALL_PART_IDS.filter((id) => PHASE_UNLOCKED_PARTS.tryAfterCalls.includes(id)),
+    );
   });
 
   it("simuleringar ger alltid 0 poäng, oavsett rått värde", () => {

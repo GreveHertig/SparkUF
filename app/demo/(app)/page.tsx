@@ -1,37 +1,58 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { SourceTag } from "@/components/ui/SourceTag";
-import { useI18n } from "@/i18n/context";
-import { formatDate } from "@/i18n/format";
+import { useI18n, type Locale } from "@/i18n/context";
 import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { demoEvidenceRepository } from "@/adapters/demo/EvidenceRepository";
-import { demoPulseProvider } from "@/adapters/demo/PulseProvider";
+import { demoPulseProvider, getSignalSteps } from "@/adapters/demo/PulseProvider";
 import { useDemoStore } from "@/adapters/demo/demoStore";
-import type { NextStep, PulseSignal, ScoreSnapshot, SinceLastTime } from "@/core/domain";
-import type { JourneyStepView } from "@/ports/JourneyRepository";
-import { fill } from "@/i18n/fill";
-import { JourneyStepper, ScoreDelta, ScoreFigure } from "../_components/DemoBlocks";
-import { FONDA_DEMO_PATHS, journeyStepPath } from "../_lib/paths";
+import { engineFor } from "@/adapters/demo/journeyEngine";
+import { exampleSource } from "@/adapters/demo/exampleSource";
+import type { Källa, NextStep, SinceLastTime } from "@/core/domain";
+import { AppHome, type AppHomeData } from "@/screens/AppHome";
+import { DEMO_PATHS } from "../_lib/paths";
+import { textHasFigure } from "../_lib/figures";
 
-type HomeData = {
-  todayIso: string;
-  nextStep: NextStep;
-  sinceLastTime: SinceLastTime;
-  score: ScoreSnapshot;
-  pulseSignals: PulseSignal[];
-  steps: JourneyStepView[];
-};
+/** Steget i scenariots egna källnamn ("Utskicket, steg 05"). */
+const STEP_IN_SOURCE = /\b(?:steg|step)\s+(\d+)/i;
 
-/** Hem: nästa steg, poängen, resan, vad som hänt och dagens signal. */
-export default function FondaDemoHomePage() {
-  const { t, locale } = useI18n();
-  const copy = t.site;
+function originStep(source: Källa, fallback: number): number {
+  const match = source.namn.match(STEP_IN_SOURCE);
+  return match ? Number(match[1]) : fallback;
+}
+
+/**
+ * "Sedan sist" är påhittat: källorna i scenariot ("Utskicket, steg 05") bar
+ * registrets tagg, och antalet mottagare bar källan "Inget utskick ännu" även
+ * efter utskicket. Varje siffra får i stället en exempelkälla för steget där
+ * den kommer ifrån. Mottagarna kommer ur samma utskick som öppningsgraden.
+ * Utan steg i källan (inget utskick än) gäller det aktuella steget.
+ */
+function exampleSinceLastTime(since: SinceLastTime, locale: Locale, currentStep: number): SinceLastTime {
+  const outreachStep = originStep(since.openRateSource, currentStep);
+  return {
+    ...since,
+    emailSentSource: exampleSource(locale, { step: outreachStep }),
+    openRateSource: exampleSource(locale, { step: outreachStep }),
+    responsesSource: exampleSource(locale, { step: originStep(since.responsesSource, currentStep) }),
+  };
+}
+
+/** Rubriken, förklaringen och "Redan klart" ("5 betalande byråer"). */
+function nextStepHasFigure(nextStep: NextStep): boolean {
+  return textHasFigure(`${nextStep.title} ${nextStep.why} ${nextStep.doneItems.join(" ")}`);
+}
+
+/** Hem: tunn hämtare (PR 3, docs/plan-en-design.md) — all markup ligger i
+ * den delade screens/AppHome.tsx. Signalen, "sedan sist" och siffrorna i
+ * handlingskortet är påhittade och visas med exempelkällor (PR 11, som
+ * demots Pulsen-sida), aldrig med en myndighets namn. */
+export default function DemoHomePage() {
+  const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);
   const next = useDemoStore((state) => state.next);
-  const [data, setData] = useState<HomeData | null>(null);
+  const [data, setData] = useState<AppHomeData | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,15 +61,29 @@ export default function FondaDemoHomePage() {
       demoEvidenceRepository.getScoreSnapshot(locale),
       demoPulseProvider.getSignals(locale),
       demoJourneyRepository.getSteps(locale),
-    ]).then(([journey, score, pulseSignals, steps]) => {
+    ]).then(([journey, score, pulseSignals, journeySteps]) => {
       if (cancelled) return;
+      const currentStep = engineFor(entry).getBeatAt(beatIndex).stepNumber;
+      const signalSteps = getSignalSteps();
       setData({
         todayIso: journey.todayIso,
-        nextStep: journey.nextStep,
-        sinceLastTime: journey.sinceLastTime,
         score,
-        pulseSignals,
-        steps,
+        homeSummary: {
+          nextStep: journey.nextStep,
+          sinceLastTime: exampleSinceLastTime(journey.sinceLastTime, locale, currentStep),
+        },
+        // Den påhittade relativa tiden ("4 dagar sedan") stämde inte med
+        // källans datum (docs/buggar-2026-09.md punkt 11) och visas inte.
+        pulseSignals: pulseSignals.map((signal, index) => ({
+          ...signal,
+          timestamp: "",
+          source: exampleSource(locale, { step: signalSteps[index] ?? 1 }),
+        })),
+        journeySteps,
+        sourceDataTypes: { pulse: "example", sinceLastTime: "example" },
+        nextStepSource: nextStepHasFigure(journey.nextStep)
+          ? { source: exampleSource(locale, { step: currentStep }), dataType: "example" }
+          : undefined,
       });
     });
     return () => {
@@ -58,130 +93,13 @@ export default function FondaDemoHomePage() {
 
   if (!data) return null;
 
-  const { nextStep, sinceLastTime, score } = data;
-  const signal = data.pulseSignals[0];
-
   return (
-    <div className="fdd-page">
-      <header className="fdd-head">
-        <p className="fdd-head__date">
-          {t.homePage.todayLabel} {formatDate(data.todayIso, locale)}
-        </p>
-        <h1 className="fd-h2">
-          {t.homePage.heroHeadingBefore} <em className="fd-em">{t.homePage.heroHeadingEmphasis}</em>{" "}
-          {t.homePage.heroHeadingAfter}
-        </h1>
-      </header>
-
-      <div className="fdd-hero fdd-hero--even">
-        <section aria-labelledby="fdd-next-title" className="fd-panel fdd-next" data-tour-id="hem-act">
-          <p className="fd-nextstep__eyebrow">{nextStep.eyebrow}</p>
-          <h2 id="fdd-next-title" className="fdd-next__title">
-            {nextStep.title}
-          </h2>
-          <p className="fd-nextstep__why">{nextStep.why}</p>
-          {nextStep.doneItems.length > 0 && (
-            <div className="fd-nextstep__done">
-              <p>{t.common.doneItemsLabel}</p>
-              <ul className="fd-checks fd-checks--small">
-                {nextStep.doneItems.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <div className="fd-nextstep__foot">
-            <button
-              type="button"
-              onClick={next}
-              aria-describedby="fdd-next-hint"
-              className="fd-btn fd-btn--primary"
-            >
-              {nextStep.actionLabel}
-            </button>
-            <span id="fdd-next-hint" className="fd-sr-only">
-              {copy.demo.nextAction}
-            </span>
-            <span className="fd-nextstep__points">
-              {fill(copy.cofounder.pointsTemplate, { points: nextStep.maxPoints })}
-              <span className="fdd-muted"> · {nextStep.estimatedTime}</span>
-            </span>
-          </div>
-        </section>
-
-        <section aria-labelledby="fdd-score-title" className="fd-panel fdd-scorecard" data-tour-id="hem-score">
-          <h2 id="fdd-score-title" className="fdd-label">
-            {t.site.proof.scoreLabel}
-          </h2>
-          <ScoreFigure snapshot={score} />
-          <ScoreDelta snapshot={score} />
-          <Link href={FONDA_DEMO_PATHS.score} className="fd-btn fd-btn--secondary fdd-scorecard__link">
-            {copy.demo.scoreLink}
-          </Link>
-        </section>
-      </div>
-
-      <section aria-labelledby="fdd-journey-title" className="fdd-block">
-        <h2 id="fdd-journey-title" className="fdd-block__title">
-          {copy.demo.journeyTitle}
-        </h2>
-        <div className="fd-journey">
-          <JourneyStepper steps={data.steps} stepHref={journeyStepPath} />
-        </div>
-      </section>
-
-      <div className="fdd-two">
-        <section aria-labelledby="fdd-since-title" className="fdd-block">
-          <h2 id="fdd-since-title" className="fdd-block__title">
-            {t.homePage.sinceLastTimeTitle}
-          </h2>
-          <dl className="fdd-facts">
-            <div>
-              <dt>{t.homePage.emailSentLabel}</dt>
-              <dd>
-                {sinceLastTime.recipientCount} <span>{t.homePage.recipientsUnit}</span>
-              </dd>
-              <SourceTag source={sinceLastTime.emailSentSource} dataType="register" />
-            </div>
-            <div>
-              <dt>{t.homePage.openRateLabel}</dt>
-              <dd>{sinceLastTime.openRate} %</dd>
-              <SourceTag source={sinceLastTime.openRateSource} dataType="register" />
-            </div>
-            <div>
-              <dt>{t.homePage.responsesReceivedLabel}</dt>
-              <dd>
-                {sinceLastTime.responsesReceived} <span>{t.homePage.responsesUnit}</span>
-              </dd>
-              <SourceTag source={sinceLastTime.responsesSource} dataType="customer" />
-            </div>
-          </dl>
-          <p className="fdd-muted fdd-facts__foot">
-            {t.homePage.reminderSentLabel} {formatDate(sinceLastTime.reminderSentDateIso, locale)}
-          </p>
-        </section>
-
-        <section aria-labelledby="fdd-pulse-title" className="fdd-block" data-tour-id="hem-pulse">
-          <h2 id="fdd-pulse-title" className="fdd-block__title">
-            {t.homePage.todaysPulseTitle}
-          </h2>
-          {signal ? (
-            <article className="fd-panel fdd-signal">
-              <p className="fdd-signal__meta">
-                <span className="fdd-signal__category">{signal.category}</span>
-                <span className="fdd-muted">{signal.timestamp}</span>
-              </p>
-              <p className="fdd-signal__headline">{signal.headline}</p>
-              <p className="fd-nextstep__why">
-                {t.common.pulseWhyItMattersPrefix} {signal.whyItMatters}
-              </p>
-              <SourceTag source={signal.source} />
-            </article>
-          ) : (
-            <p className="fdd-muted">{copy.demo.noPulse}</p>
-          )}
-        </section>
-      </div>
-    </div>
+    <AppHome
+      data={data}
+      dataKind="example"
+      onNextStep={next}
+      journeyBasePath={DEMO_PATHS.journey}
+      scoreHref={DEMO_PATHS.score}
+    />
   );
 }

@@ -8,7 +8,8 @@ import { fill } from "@/i18n/fill";
 import { demoMarketingProvider } from "@/adapters/demo/MarketingProvider";
 import { getCurrentStepNumber, useDemoStore } from "@/adapters/demo/demoStore";
 import type { ContentDraft, MarketingMessage, MarketingPlan } from "@/ports/MarketingProvider";
-import { ExampleLabel, Locked, PageHead, Pill } from "../../_components/DemoBlocks";
+import { ExampleLabel } from "@/screens/blocks/DataBlocks";
+import { Locked, PageHead, Pill } from "@/screens/blocks/PageBlocks";
 
 /** Steget där modulen används (docs/moduler/marknadsforing.md). */
 const USED_IN_STEP = 11;
@@ -33,7 +34,7 @@ function MessageRow({ message, label }: { message: MarketingMessage; label?: str
  * utkast per aktivitet och uppföljningen vecka för vecka. Används i steg 11
  * och låses upp där. Utkasten publiceras aldrig av Spark.
  */
-export default function FondaDemoMarketingPage() {
+export default function DemoMarketingPage() {
   const { t, locale } = useI18n();
   const copy = t.marketingPage;
   const beatIndex = useDemoStore((state) => state.beatIndex);
@@ -101,7 +102,7 @@ export default function FondaDemoMarketingPage() {
   return (
     <div className="fdd-page">
       <PageHead context={copy.context} title={copy.title} lede={copy.subtitle} />
-      <ExampleLabel />
+      <ExampleLabel dataKind="example" />
 
       <section className="fdd-block" aria-labelledby="fdd-mkt-message">
         <h2 id="fdd-mkt-message" className="fdd-block__title">

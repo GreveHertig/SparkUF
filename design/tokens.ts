@@ -51,6 +51,14 @@ export const dataTypeColors = {
   register: { fg: slate[700], bg: slate[100] },
   simulation: { fg: "#7558a3", bg: "#ece5f5" },
   customer: { fg: "#38717f", bg: "#dfeef2" },
+  // Påhittad exempeldata i demot (PR 11): vit med streckad kant, som
+  // fiktionsmärket (`.fd-pill--fiction`), och alltid etiketten "Exempel".
+  example: { fg: slate[700], bg: "#ffffff" },
+  // Nyhets- eller mediekälla, t.ex. Pulsens artiklar (blå, etiketten "Media"),
+  // och användarens egen uppgift (bär, etiketten "Din uppgift"). Se
+  // docs/beslut.md 2026-10-01 för hela uppsättningen.
+  media: { fg: "#2b5a8a", bg: "#e3ecf6" },
+  user: { fg: "#8a4a6b", bg: "#f5e6ee" },
 } as const;
 
 export const spacing = {

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
-import FondaPrivacyPage from "./page";
+import PrivacyPage from "./page";
 
 afterEach(() => cleanup());
 beforeEach(() => window.localStorage.removeItem("spark:locale"));
@@ -12,7 +12,7 @@ describe("/integritet", () => {
   it("säger vem som ansvarar, vad som sparas, varför, var, hur länge och hur man blir borttagen", () => {
     render(
       <LocaleProvider>
-        <FondaPrivacyPage />
+        <PrivacyPage />
       </LocaleProvider>,
     );
     const copy = sv.site.privacy;

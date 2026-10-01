@@ -2,32 +2,31 @@
 
 import { useLayoutEffect, type ReactNode } from "react";
 import "@/design/site.css";
-import { FondaDemoBar } from "./_components/FondaDemoBar";
-import { FondaTour } from "./_components/FondaTour";
-import { retainFondaDemo, useFondaDemoReady } from "./_lib/fondaDemoIsolation";
+import { hydrateDemoStore, useDemoStoreHydrated } from "@/adapters/demo/demoStore";
+import { DemoBar } from "./_components/DemoBar";
+import { DemoTour } from "./_components/DemoTour";
 
 /**
- * Rot för demot: växlar demo-lagret till demots egen nyckel
- * (se _lib/fondaDemoIsolation.ts) och bär demoraden och rundturen, precis
- * som det riktiga demots layouter gör.
+ * Rot för demot: läser in demots sparade läge (adapters/demo/demoStore.ts)
+ * och bär demoraden och rundturen.
  *
- * Innehållet renderas först när växlingen är gjord. Då kan ingen sida hämta
- * data ur det riktiga demots läge, och server och klient renderar samma
- * tomma skal vid hydreringen.
+ * Innehållet renderas först när läget är inläst. Då renderar server och
+ * klient samma tomma skal vid hydreringen, och ingen sida hämtar data ur
+ * utgångsläget innan det sparade läget är på plats.
  */
-export default function FondaDemoLayout({ children }: { children: ReactNode }) {
-  const ready = useFondaDemoReady();
+export default function DemoLayout({ children }: { children: ReactNode }) {
+  const ready = useDemoStoreHydrated();
 
-  useLayoutEffect(() => retainFondaDemo(), []);
+  useLayoutEffect(() => hydrateDemoStore(), []);
 
   if (!ready) return null;
 
   return (
     <div className="fd">
-      <div className="fdd">
+      <div className="fdd fdd--with-bar">
         {children}
-        <FondaDemoBar />
-        <FondaTour />
+        <DemoBar />
+        <DemoTour />
       </div>
     </div>
   );

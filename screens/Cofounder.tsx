@@ -1,87 +1,121 @@
 "use client";
 
-import { ChatMessage } from "@/components/spark/ChatMessage";
-import { PromptBox } from "@/components/spark/PromptBox";
-import { ToolRunCard } from "@/components/spark/ToolRunCard";
-import { TimeSkip } from "@/components/spark/TimeSkip";
-import { Card } from "@/components/ui/Card";
-import { EditorialHeading } from "@/components/ui/EditorialHeading";
+import { ComingSoon } from "@/components/ui/ComingSoon";
+import { ConceptBadge } from "@/components/ui/ConceptBadge";
+import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n } from "@/i18n/context";
-import type { TranscriptItem } from "@/adapters/demo/cofounderScript";
+import type { TranscriptItem } from "@/ports/CofounderAgent";
+import { mentionsConcept } from "@/core/concepts";
+import { ChatLine, TimeSkipLine, ToolRun, type ChatSource } from "./blocks/ChatBlocks";
+import { PageHead } from "./blocks/PageBlocks";
 
+/** Det aktuella momentet i samtalet: etiketten ("03 · Marknaden") och inslagen. */
 export type CofounderMoment = {
-  id: string;
-  momentLabel: string;
+  label: string;
   items: TranscriptItem[];
+  /** Källan för siffrorna i varje inslag, i samma ordning som `items`. Porten
+   * bär ingen; demot sätter en exempelkälla på inslag med siffror (PR 11). */
+  itemSources?: (ChatSource | null)[];
 };
 
-/** En kort, redan känd fakta eller ett redan taget beslut (Spårets
- * "-efter"-sammanfattningar) — visas som en rad, aldrig som chattbubblor. */
+/** En kort, redan känd fakta eller ett redan taget beslut — en rad, aldrig chattbubblor. */
 export type CofounderContextItem = {
   id: string;
   text: string;
-};
-
-export type CofounderData = {
-  /** Sedan tidigare (avsnitt 10): kort, redan känt — inte scrollbar historik. */
-  context: CofounderContextItem[];
-  /** Bara det aktuella momentet — `null` om inget skript finns för det
-   * (ska i praktiken aldrig hända för en nådd beat). */
-  moment: CofounderMoment | null;
+  /** Källan för radens siffror, när den har några (PR 11). */
+  source?: ChatSource;
 };
 
 /**
- * Chattytan (avsnitt 6, 8, 10, artefaktens `vyMedgrundaren`): huvudspalten
- * visar det aktuella momentet, inte hela den tidigare chatthistoriken —
- * "Sedan tidigare" fyller sidospaltens plats i stället för att rullas upp
- * ovanför chatten (samma platsroll som Hjärnan har i originalet, utan att
- * duplicera Minnets data). Skärmen vet inte att dialogen är förskriven —
- * den bara renderar det moment och den kontext den fått in.
+ * Platshållare per sektion (docs/plan-en-design.md): `null` ger "Kommer snart"
+ * i just den sektionen. En tom `context` är ett ärligt tomläge och döljer
+ * spalten, som i demot.
+ */
+export type CofounderData = {
+  moment: CofounderMoment | null;
+  context: CofounderContextItem[] | null;
+};
+
+/**
+ * Medgrundaren (PR 10): det aktuella momentet i samtalet, och det som redan
+ * är känt i en egen spalt. Skärmen vet inte att demots samtal är förskrivet —
+ * den visar det moment och den kontext den fått in.
  */
 export function Cofounder({ data }: { data: CofounderData }) {
-  const { locale, t } = useI18n();
+  const { t, locale } = useI18n();
+  const copy = t.cofounderPage;
+  const { moment, context } = data;
+  const showContext = context === null || context.length > 0;
 
   return (
-    // Artefaktens vyMedgrundaren har en statisk pagehead ("Medgrundaren" +
-    // en generell beskrivning) — det aktuella momentets etikett hör hemma
-    // på chattkortets egen rubrik (nedan), inte på sidans h1.
-    <div className="mx-auto flex max-w-[1080px] flex-col gap-[18px]">
-      <div>
-        <EditorialHeading as="h1">{t.cofounderPage.title}</EditorialHeading>
-        <p className="mt-2 text-sm text-slate-600">{t.cofounderPage.subtitle}</p>
-      </div>
+    <div className="fdd-page">
+      <PageHead title={copy.title} lede={copy.subtitle} />
 
-      <div className={data.context.length > 0 ? "grid grid-cols-1 gap-[18px] lg:grid-cols-[2fr_316px]" : undefined}>
-        <Card title={data.moment ? data.moment.momentLabel : t.cofounderPage.title}>
-          {!data.moment && <p className="text-sm text-slate-600">{t.cofounderPage.emptyStateBody}</p>}
-
-          {data.moment && (
-            <div data-tour-id="cofounder-moment" className="flex flex-col gap-2">
-              {data.moment.items.map((item, index) =>
+      <div className={showContext ? "fdd-hero" : undefined}>
+        <section className="fd-panel fdd-cofounder" aria-labelledby="fdd-moment-title">
+          <h2 id="fdd-moment-title" className="fdd-label">
+            {moment ? moment.label : copy.title}
+          </h2>
+          {!moment ? (
+            <ComingSoon />
+          ) : moment.items.length === 0 ? (
+            <p className="fdd-muted">{copy.emptyStateBody}</p>
+          ) : (
+            <div className="fdd-conversation" data-tour-id="cofounder-moment">
+              {moment.items.map((item, index) =>
                 item.kind === "message" ? (
-                  <ChatMessage key={index} role={item.role} text={item.text[locale]} />
+                  <ChatLine key={index} role={item.role} text={item.text[locale]} source={moment.itemSources?.[index] ?? undefined} />
                 ) : item.kind === "tool" ? (
-                  <ToolRunCard key={index} label={item.label[locale]} steps={item.steps[locale]} />
+                  <ToolRun
+                    key={index}
+                    label={item.label[locale]}
+                    steps={item.steps[locale]}
+                    source={moment.itemSources?.[index] ?? undefined}
+                  />
                 ) : (
-                  <TimeSkip key={index} label={item.label[locale]} />
+                  <TimeSkipLine key={index} label={item.label[locale]} />
                 ),
               )}
             </div>
           )}
+          <div className="fdd-prompt">
+            <textarea
+              disabled
+              rows={1}
+              placeholder={copy.promptPlaceholder}
+              aria-label={copy.promptPlaceholder}
+              className="fdd-prompt__input"
+            />
+            <button type="button" disabled className="fd-btn fd-btn--primary fd-btn--sm">
+              {copy.promptSendLabel}
+            </button>
+          </div>
+        </section>
 
-          <PromptBox className="mt-4" />
-        </Card>
-
-        {data.context.length > 0 && (
-          <Card title={t.cofounderPage.contextTitle}>
-            <ul className="flex flex-col gap-2">
-              {data.context.map((item) => (
-                <li key={item.id} className="text-sm leading-snug text-slate-600">
-                  {item.text}
-                </li>
-              ))}
-            </ul>
-          </Card>
+        {showContext && (
+          <aside className="fdd-context" aria-labelledby="fdd-context-title">
+            <h2 id="fdd-context-title" className="fdd-block__title">
+              {copy.contextTitle}
+            </h2>
+            {context === null ? (
+              <ComingSoon />
+            ) : (
+              <ol className="fdd-context__list">
+                {context.map((item) => (
+                  <li key={item.id}>
+                    {item.text}
+                    {mentionsConcept(item.text) && <ConceptBadge className="fdd-context__concept" />}
+                    {item.source && (
+                      <>
+                        {" "}
+                        <SourceTag source={item.source.source} dataType={item.source.dataType} />
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </aside>
         )}
       </div>
     </div>

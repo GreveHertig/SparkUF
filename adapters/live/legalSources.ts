@@ -11,66 +11,141 @@ import type { Bolagsform, Källa } from "@/core/domain";
  * modellens svar. Se adapters/live/legalSchema.ts och
  * adapters/live/LegalAdvisor.ts för hur det verkställs i kod.
  *
- * VERIFIERINGSSTATUS (2026-09-17, av Claude Code i den här sessionen):
- * - Hämtade och bekräftade innehållsmässigt via WebFetch samma dag:
- *   Skatteverket, IMY, EUR-Lex (GDPR-förordningen), Konsumentverket,
- *   Riksdagen.
- * - KUNDE INTE hämtas i den här sessionen (nätverksfel/blockering från
- *   verktyget, inget som tyder på att adresserna är fel — det är Sveriges
- *   officiella, mångåriga myndighetsadresser): Bolagsverket, verksamt.se,
- *   Bokföringsnämnden (BFN). Kontrollera manuellt innan lansering.
- * - INTE juridiskt sakgranskat: vilka ämnen som faktiskt gäller per
- *   bolagsform, exakta avgifter, deadlines och lagrum. Se
- *   docs/moduler/juridisk-koll.md, "TODO (jag verifierar detta)". Därför har
- *   `LegalTopic` medvetet inga `kostnadKr`/`deadline`/`myndighet` ännu — lägg
- *   bara till dem med en verifierad källa för just den siffran.
+ * VERIFIERINGSSTATUS (se verifieringsloggen i docs/moduler/juridisk-koll.md):
+ * - KONTROLLERADE AV EN MÄNNISKA i webbläsaren 2026-09-30: alla källor från
+ *   Bolagsverket, verksamt.se och Bokföringsnämnden (BFN). Två ämnen stämde
+ *   bara delvis och har fått nya texter: `aktiekapital` (bankintyg eller
+ *   revisorsyttrande beror på om aktierna betalas med pengar eller egendom,
+ *   det är inget fritt val) och `bolagsavtal` (rekommenderas, inget formellt
+ *   krav).
+ * - KONTROLLERADE AV EN MÄNNISKA i webbläsaren 2026-10-01: alla källor från
+ *   Skatteverket, IMY, EUR-Lex (svensk version av GDPR-förordningen) och
+ *   Konsumentverket. Fyra ämnen stämde bara delvis och har fått nya texter:
+ *   `f_skatt` (FA-skatt bara för enskild näringsverksamhet), `moms`
+ *   (gränsen 120 000 kr), `gdpr_register` (undantaget under 250 anställda
+ *   har egna undantag) och `konsument_angerratt` (gäller konsumenter som
+ *   köper av företag).
+ * - Alla kontrollerade källor pekar på de undersidor där uppgiften står, inte
+ *   på startsidorna.
+ * - INTE KONTROLLERAD: Riksdagen (startsida, maskinellt hämtad 2026-09-17).
+ *   Inget ämne använder den. Om den ska finnas kvar är inte beslutat.
+ * - INGENTING ÄR JURISTGRANSKAT: vilka ämnen som gäller per bolagsform,
+ *   avgifter, deadlines och lagrum. Därför har `LegalTopic` medvetet inga
+ *   `kostnadKr`/`deadline`/`myndighet` — lägg bara till dem med en verifierad
+ *   källa för just den siffran.
  */
 
 export type KällId =
-  | "bolagsverket"
-  | "skatteverket"
-  | "verksamt"
-  | "imy"
+  | "bolagsverket_foretagsnamn"
+  | "bolagsverket_starta_ab"
+  | "bolagsverket_bolagsordning"
+  | "bolagsverket_styrelse"
+  | "bolagsverket_revisor"
+  | "bolagsverket_arsredovisning_ab"
+  | "bolagsverket_arsredovisning_ek_forening"
+  | "bolagsverket_starta_ek_forening"
+  | "skatteverket_f_skatt"
+  | "skatteverket_moms"
+  | "skatteverket_arbetsgivare"
+  | "verksamt_handelsbolag"
+  | "imy_rattslig_grund"
+  | "imy_register"
   | "eurlex_gdpr"
-  | "konsumentverket"
-  | "bfn"
+  | "konsumentverket_marknadsforing"
+  | "konsumentverket_angerratt"
+  | "bfn_bokforing"
   | "riksdagen";
 
 export const KURERADE_KÄLLOR: Record<KällId, Källa> = {
-  bolagsverket: {
-    namn: "Bolagsverket",
-    hämtad: "2026-09-17",
-    url: "https://bolagsverket.se",
+  bolagsverket_foretagsnamn: {
+    namn: "Bolagsverket — företagsnamn",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/foretagsnamn.1153.html",
   },
-  skatteverket: {
-    namn: "Skatteverket",
-    hämtad: "2026-09-17",
-    url: "https://www.skatteverket.se",
+  bolagsverket_starta_ab: {
+    namn: "Bolagsverket — starta aktiebolag",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/aktiebolag/startaaktiebolag.479.html",
   },
-  verksamt: {
-    namn: "verksamt.se (Bolagsverket, Skatteverket och Tillväxtverket)",
-    hämtad: "2026-09-17",
-    url: "https://www.verksamt.se",
+  bolagsverket_bolagsordning: {
+    namn: "Bolagsverket — bolagsordning för aktiebolag",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/aktiebolag/startaaktiebolag/bolagsordningforaktiebolag.483.html",
   },
-  imy: {
-    namn: "Integritetsskyddsmyndigheten (IMY)",
-    hämtad: "2026-09-17",
-    url: "https://www.imy.se",
+  bolagsverket_styrelse: {
+    namn: "Bolagsverket — styrelse och verkställande direktör i aktiebolag",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/aktiebolag/startaaktiebolag/styrelseochverkstallandedirektoriaktiebolag.505.html",
+  },
+  bolagsverket_revisor: {
+    namn: "Bolagsverket — revisor i aktiebolag",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/aktiebolag/startaaktiebolag/revisoriaktiebolag.521.html",
+  },
+  bolagsverket_arsredovisning_ab: {
+    namn: "Bolagsverket — årsredovisningsguiden för aktiebolag",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/foretag/aktiebolag/arsredovisningforaktiebolag/arsredovisningsguidenforaktiebolag.5550.html",
+  },
+  bolagsverket_arsredovisning_ek_forening: {
+    namn: "Bolagsverket — årsredovisningsguiden för ekonomisk förening",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/forening/ekonomiskforening/arsredovisningforekonomiskforening/arsredovisningsguidenforekonomiskforening.5538.html",
+  },
+  bolagsverket_starta_ek_forening: {
+    namn: "Bolagsverket — starta ekonomisk förening",
+    hämtad: "2026-09-30",
+    url: "https://bolagsverket.se/forening/ekonomiskforening/startaekonomiskforening.1335.html",
+  },
+  skatteverket_f_skatt: {
+    namn: "Skatteverket — F-skatt och FA-skatt",
+    hämtad: "2026-10-01",
+    url: "https://www.skatteverket.se/foretag/drivaforetag/startaochregistrera/fochfaskatt.4.58d555751259e4d661680006355.html",
+  },
+  skatteverket_moms: {
+    namn: "Skatteverket — registrera ditt företag för moms",
+    hämtad: "2026-10-01",
+    url: "https://www.skatteverket.se/foretag/moms/momsregistrering/registreradittforetagformoms.4.deeebd105a602bfe38000256.html",
+  },
+  skatteverket_arbetsgivare: {
+    namn: "Skatteverket — ditt ansvar som arbetsgivare",
+    hämtad: "2026-10-01",
+    url: "https://www.skatteverket.se/foretag/arbetsgivare/arbetsgivarregistrering/dittansvarsomarbetsgivare.4.361dc8c15312eff6fd16ec2.html",
+  },
+  verksamt_handelsbolag: {
+    namn: "verksamt.se (Bolagsverket, Skatteverket och Tillväxtverket) — handelsbolag",
+    hämtad: "2026-09-30",
+    url: "https://verksamt.se/starta-foretag/valj-foretagsform/handelsbolag",
+  },
+  imy_rattslig_grund: {
+    namn: "Integritetsskyddsmyndigheten (IMY) — rättslig grund",
+    hämtad: "2026-10-01",
+    url: "https://www.imy.se/verksamhet/dataskydd/det-har-galler-enligt-gdpr/rattslig-grund/",
+  },
+  imy_register: {
+    namn: "Integritetsskyddsmyndigheten (IMY) — föra register över behandling",
+    hämtad: "2026-10-01",
+    url: "https://www.imy.se/verksamhet/dataskydd/det-har-galler-enligt-gdpr/fora-register-over-behandling/",
   },
   eurlex_gdpr: {
-    namn: "EUR-Lex — förordning (EU) 2016/679 (GDPR)",
-    hämtad: "2026-09-17",
-    url: "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    namn: "EUR-Lex — förordning (EU) 2016/679 (GDPR), svensk version",
+    hämtad: "2026-10-01",
+    url: "https://eur-lex.europa.eu/legal-content/SV/TXT/?uri=CELEX:32016R0679",
   },
-  konsumentverket: {
-    namn: "Konsumentverket",
-    hämtad: "2026-09-17",
-    url: "https://www.konsumentverket.se",
+  konsumentverket_marknadsforing: {
+    namn: "Konsumentverket — marknadsföringslagen",
+    hämtad: "2026-10-01",
+    url: "https://www.konsumentverket.se/lagar/marknadsforingslagen-konsument/",
   },
-  bfn: {
-    namn: "Bokföringsnämnden (BFN)",
-    hämtad: "2026-09-17",
-    url: "https://www.bfn.se",
+  konsumentverket_angerratt: {
+    namn: "Konsumentverket — ångerrätt",
+    hämtad: "2026-10-01",
+    url: "https://www.konsumentverket.se/konsumentratt-process/angerratt/",
+  },
+  bfn_bokforing: {
+    namn: "Bokföringsnämnden (BFN) — allmänna bokföringsfrågor",
+    hämtad: "2026-09-30",
+    url: "https://www.bfn.se/fragor-och-svar/bokforing/allmanna-bokforingsfragor/",
   },
   riksdagen: {
     namn: "Sveriges riksdag (svensk författningssamling)",
@@ -93,11 +168,15 @@ export type LegalTopicId =
   | "bokforing"
   | "arbetsgivare"
   | "aktiekapital"
-  | "bolagsordning_styrelse"
-  | "arsredovisning"
+  | "bolagsordning"
+  | "styrelse"
+  | "revisor"
+  | "arsredovisning_ab"
+  | "arsredovisning_ek_forening"
   | "bolagsavtal"
   | "stadgar_medlemmar"
-  | "gdpr_personuppgifter"
+  | "gdpr_rattslig_grund"
+  | "gdpr_register"
   | "gdpr_forordningen"
   | "marknadsforing_epost"
   | "konsument_angerratt";
@@ -114,69 +193,93 @@ export type LegalTopic = {
 export const LEGAL_TOPICS: readonly LegalTopic[] = [
   {
     id: "registrering",
-    källId: "bolagsverket",
+    källId: "bolagsverket_foretagsnamn",
     gällerFör: ALLA_BOLAGSFORMER,
     hint: "Registrera företaget och skydda företagsnamnet hos Bolagsverket.",
   },
   {
     id: "f_skatt",
-    källId: "skatteverket",
+    källId: "skatteverket_f_skatt",
     gällerFör: ALLA_BOLAGSFORMER,
-    hint: "Ansöka om F-skatt (eller FA-skatt) hos Skatteverket.",
+    hint: "Ansöka om F-skatt hos Skatteverket, via e-tjänsten på verksamt.se eller med blankett SKV 4620. FA-skatt finns bara för enskild näringsverksamhet; aktiebolag och handelsbolag kan aldrig ha FA-skatt.",
   },
   {
     id: "moms",
-    källId: "skatteverket",
+    källId: "skatteverket_moms",
     gällerFör: ALLA_BOLAGSFORMER,
-    hint: "Momsregistrering och löpande momsredovisning hos Skatteverket.",
+    hint: "Momsregistrering hos Skatteverket krävs vid momspliktig försäljning över 120 000 kr per år. Vid högst 120 000 kr är företaget i de flesta fall undantaget men kan registrera sig frivilligt. Vissa verksamheter är momsfria.",
   },
   {
     id: "bokforing",
-    källId: "bfn",
+    källId: "bfn_bokforing",
     gällerFör: ALLA_BOLAGSFORMER,
-    hint: "Bokföringsskyldighet enligt bokföringslagen, löpande bokföring och arkivering.",
+    hint: "Bokföringsskyldighet enligt bokföringslagen, löpande bokföring och arkivering i sju år.",
   },
   {
     id: "arbetsgivare",
-    källId: "skatteverket",
+    källId: "skatteverket_arbetsgivare",
     gällerFör: ALLA_BOLAGSFORMER,
     hint: "Registrera sig som arbetsgivare hos Skatteverket vid första anställningen.",
   },
   {
     id: "aktiekapital",
-    källId: "bolagsverket",
+    källId: "bolagsverket_starta_ab",
     gällerFör: ["aktiebolag"],
-    hint: "Aktiekapital och bankintyg (eller revisorsintyg) vid bildande av aktiebolag.",
+    hint: "Aktiekapital, minst 25 000 kr för privat aktiebolag. Betalas aktierna med pengar krävs bankintyg; betalas de med egendom (apport) krävs ett yttrande från revisor.",
   },
   {
-    id: "bolagsordning_styrelse",
-    källId: "bolagsverket",
+    id: "bolagsordning",
+    källId: "bolagsverket_bolagsordning",
     gällerFör: ["aktiebolag"],
-    hint: "Bolagsordning, styrelse och eventuellt revisorskrav för aktiebolag.",
+    hint: "Bolagsordning för aktiebolag.",
   },
   {
-    id: "arsredovisning",
-    källId: "bolagsverket",
-    gällerFör: ["aktiebolag", "ekonomisk_forening"],
-    hint: "Årsredovisning som ska skickas in till Bolagsverket varje räkenskapsår.",
+    id: "styrelse",
+    källId: "bolagsverket_styrelse",
+    gällerFör: ["aktiebolag"],
+    hint: "Styrelse och eventuell verkställande direktör i aktiebolag.",
+  },
+  {
+    id: "revisor",
+    källId: "bolagsverket_revisor",
+    gällerFör: ["aktiebolag"],
+    hint: "Eventuellt revisorskrav för aktiebolag.",
+  },
+  {
+    id: "arsredovisning_ab",
+    källId: "bolagsverket_arsredovisning_ab",
+    gällerFör: ["aktiebolag"],
+    hint: "Årsredovisning som aktiebolaget ska skicka in till Bolagsverket varje räkenskapsår.",
+  },
+  {
+    id: "arsredovisning_ek_forening",
+    källId: "bolagsverket_arsredovisning_ek_forening",
+    gällerFör: ["ekonomisk_forening"],
+    hint: "Årsredovisning som den ekonomiska föreningen ska skicka in till Bolagsverket varje räkenskapsår.",
   },
   {
     id: "bolagsavtal",
-    källId: "verksamt",
+    källId: "verksamt_handelsbolag",
     gällerFör: ["handelsbolag"],
-    hint: "Bolagsavtal mellan bolagsmän och solidariskt ansvar i handelsbolag.",
+    hint: "Bolagsmännen i ett handelsbolag har solidariskt ansvar för bolagets skulder. Ett skriftligt bolagsavtal rekommenderas men är inget formellt krav.",
   },
   {
     id: "stadgar_medlemmar",
-    källId: "bolagsverket",
+    källId: "bolagsverket_starta_ek_forening",
     gällerFör: ["ekonomisk_forening"],
-    hint: "Stadgar och minsta antal medlemmar för en ekonomisk förening.",
+    hint: "Stadgar och minst tre medlemmar för en ekonomisk förening.",
   },
   {
-    id: "gdpr_personuppgifter",
-    källId: "imy",
+    id: "gdpr_rattslig_grund",
+    källId: "imy_rattslig_grund",
     gällerFör: ALLA_BOLAGSFORMER,
-    hint: "Laglig grund för personuppgiftsbehandling och register över behandlingar (GDPR i praktiken).",
+    hint: "Rättslig grund för behandling av personuppgifter enligt GDPR.",
+  },
+  {
+    id: "gdpr_register",
+    källId: "imy_register",
+    gällerFör: ALLA_BOLAGSFORMER,
+    hint: "Register över behandlingar av personuppgifter. Huvudregeln är undantag för företag med färre än 250 anställda, men registret krävs ändå om behandlingen inte är tillfällig, innebär en risk eller gäller känsliga uppgifter.",
   },
   {
     id: "gdpr_forordningen",
@@ -186,15 +289,15 @@ export const LEGAL_TOPICS: readonly LegalTopic[] = [
   },
   {
     id: "marknadsforing_epost",
-    källId: "konsumentverket",
+    källId: "konsumentverket_marknadsforing",
     gällerFör: ALLA_BOLAGSFORMER,
     hint: "Marknadsföringslagens krav vid e-postutskick och annan marknadsföring.",
   },
   {
     id: "konsument_angerratt",
-    källId: "konsumentverket",
+    källId: "konsumentverket_angerratt",
     gällerFör: ALLA_BOLAGSFORMER,
-    hint: "Ångerrätt och andra konsumentskyddsregler vid distansavtal.",
+    hint: "14 dagars ångerrätt vid distansköp gäller när en konsument köper av ett företag, inte vid alla köp. Det finns undantag.",
   },
 ];
 

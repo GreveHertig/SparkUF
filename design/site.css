@@ -393,6 +393,7 @@
 
 .fd-proof__ideahead {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -721,6 +722,9 @@
 /* ---------- Resan ---------- */
 
 .fd-journey {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   border: 1px solid var(--fd-line);
   border-radius: var(--r-lg);
   background: var(--sunk);
@@ -853,6 +857,7 @@
 
 .fd-split {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(2.5rem, 6vw, 5rem);
   align-items: center;
 }
@@ -943,6 +948,7 @@
 .fd-register__head,
 .fd-nextstep__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
@@ -1475,6 +1481,12 @@
 
 .fdd {
   min-height: 100dvh;
+}
+
+/* Plats åt demoradens `position: fixed`-bar (.fdd-bar) — bara satt av ytor
+ * som faktiskt har en demorad (app/demo/layout.tsx). /app har ingen, och ska
+ * inte ärva ett tomt utrymme i botten på varje sida (PR 2, skalet). */
+.fdd--with-bar {
   padding-bottom: 9rem;
 }
 
@@ -1515,6 +1527,23 @@
   .fdd-top__step {
     display: block;
   }
+}
+
+/* Poängen i sidhuvudet (PR 4): samma typsnitt och storlek som steget, men
+ * synlig på alla bredder — sidhuvudet visar poängen alltid. */
+.fdd-top__score {
+  font-size: 0.875rem;
+  color: var(--fd-quiet);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.fdd-top__score:hover {
+  text-decoration: underline;
+}
+
+.fdd-top__scorevalue {
+  font-variant-numeric: tabular-nums;
 }
 
 .fdd-avatar {
@@ -2025,7 +2054,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .fdd-tab:hover {
+  .fdd-tab:hover:not(.fdd-tab--disabled) {
     color: var(--ink-900);
     background: var(--slate-100);
   }
@@ -2035,6 +2064,13 @@
   background: white;
   color: var(--ink-900);
   box-shadow: inset 0 0 0 1px var(--fd-line);
+}
+
+/* Flik utan sida än (t.ex. /app innan undersidan är byggd, PR 2) — samma
+ * plats i raden, dämpad, inte klickbar. */
+.fdd-tab--disabled {
+  color: var(--slate-400);
+  cursor: default;
 }
 
 .fdd-main--narrow {
@@ -2632,7 +2668,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .fdd-stepper__link:hover .fd-stepper__num {
+  a.fdd-stepper__link:hover .fd-stepper__num {
     box-shadow: 0 0 0 4px var(--accent-100);
   }
 }
@@ -3376,7 +3412,7 @@
 }
 
 /* Rundturen. Rutan (hålet i mörkläggningen) och kortet flyttas av
-   FondaTour med transform, opacity och clip-path; inga CSS-övergångar här,
+   DemoTour med transform, opacity och clip-path; inga CSS-övergångar här,
    så att en ny position aldrig krockar med en pågående animation. */
 .fdd-tour {
   position: fixed;
@@ -3399,7 +3435,7 @@
   clip-path: path(evenodd, "M-10 -10H100000V100000H-10Z");
 }
 
-/* Bredden sätts av FondaTour (layoutStop kan välja ett smalare kort bredvid målet). */
+/* Bredden sätts av DemoTour (layoutStop kan välja ett smalare kort bredvid målet). */
 .fdd-tour__card {
   position: absolute;
   top: 0;
@@ -3578,6 +3614,74 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
+
+/* Juridik i /app (PR 5): valet av bolagsform är länkar i samma segmenterade
+   kontroll som Minnets flikar, och får radbryta på smala skärmar. */
+.fdd-segmented--wrap {
+  flex-wrap: wrap;
+}
+
+a.fdd-segmented__item {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* Juridik (PR 5): varje källa bär sin märkning "Overifierad" bredvid källan
+   och datumet. Streckad som exempeletiketten, så att den läses som en
+   reservation och inte som en status. */
+.fdd-sourceline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.fdd-unverified {
+  display: inline-flex;
+  padding: 0.125rem var(--space-2);
+  border: 1px dashed var(--slate-300);
+  border-radius: 999px;
+  color: var(--fd-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* Branschväljaren i /app/marknad (PR 8): ett GET-formulär, valet i adressen. */
+.fdd-sni {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 28rem;
+}
+
+.fdd-sni__label {
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.fdd-sni__row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.fdd-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--slate-300);
+  border-radius: var(--r-md);
+  background: white;
+  color: var(--ink-900);
+  font: inherit;
+  caret-color: var(--accent-600);
+}
+
+.fdd-input:focus {
+  outline: none;
+  border-color: var(--accent-600);
+  box-shadow: 0 0 0 3px var(--accent-100);
 }
 
 /* Marknadsföring: aktiviteterna i 30-dagarsplanen är knappar med lång text,

@@ -57,15 +57,19 @@ export function deriveCurrentStepNumber(completedStepNumbers: readonly number[])
   return Math.min(Math.max(highestCompleted + 1, 1), 12);
 }
 
-/** Vilken av calculateScores fem faser (core/score.ts, 7.3) ett givet
- * stegnummer motsvarar — EvidenceRepository behöver den för att räkna
- * poängen i rätt fas. Gränserna speglar UNLOCK_STEP i core/score.ts exakt
- * (fit/market unlockas steg 1/3, competition steg 3, problem/
- * willingnessToPay steg 5, product/feasibility steg 8/9, traction steg 11). */
-export function scorePhaseForStep(stepNumber: number): PhaseId {
-  if (stepNumber <= 2) return "discover";
-  if (stepNumber <= 4) return "tryBeforeCalls";
-  if (stepNumber <= 6) return "tryAfterCalls";
-  if (stepNumber <= 10) return "launch";
+/** Vilken av calculateScores fem faser (core/score.ts, 7.3) grundaren är i,
+ * räknat ur det högsta AVKLARADE steget. Beslut 2026-10-01 (docs/beslut.md,
+ * fel 4 i docs/bevislagring.md): "Låses upp efter steg 05" betyder efter att
+ * steg 05 är klart, inte medan det pågår. Samma gränser som demots
+ * kalibrerade moment (adapters/demo/sara.ts byter fas i "efter"-momentet för
+ * steg 03, 05, 07 och 11) och som fasnamnet "tryAfterCalls" (efter samtalen
+ * i steg 05). Tidigare räknades fasen ur aktuellt steg, vilket låste upp
+ * varje del ett steg för tidigt. */
+export function scorePhaseForCompletedSteps(completedStepNumbers: readonly number[]): PhaseId {
+  const highestCompleted = completedStepNumbers.reduce((max, n) => Math.max(max, n), 0);
+  if (highestCompleted < 3) return "discover";
+  if (highestCompleted < 5) return "tryBeforeCalls";
+  if (highestCompleted < 7) return "tryAfterCalls";
+  if (highestCompleted < 11) return "launch";
   return "grow";
 }

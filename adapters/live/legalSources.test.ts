@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { KURERADE_KÄLLOR, LEGAL_TOPICS, LEGAL_TOPIC_IDS } from "@/adapters/live/legalSources";
+import {
+  KURERADE_KÄLLOR,
+  LEGAL_TOPICS,
+  LEGAL_TOPIC_IDS,
+  getLegalTopicsFor,
+  type KällId,
+} from "@/adapters/live/legalSources";
 
 const BOLAGSFORMER = ["enskild_firma", "aktiebolag", "handelsbolag", "ekonomisk_forening"] as const;
 
@@ -41,5 +47,64 @@ describe("legalSources — kuraterad data", () => {
       const matchande = LEGAL_TOPICS.filter((topic) => topic.gällerFör.includes(bolagsform));
       expect(matchande.length).toBeGreaterThan(0);
     }
+  });
+
+  it("varje källa pekar på rätt myndighets domän", () => {
+    const domänFör = (id: KällId): string => {
+      if (id.startsWith("bolagsverket")) return "bolagsverket.se";
+      if (id.startsWith("verksamt")) return "verksamt.se";
+      if (id.startsWith("bfn")) return "www.bfn.se";
+      if (id.startsWith("skatteverket")) return "www.skatteverket.se";
+      if (id.startsWith("imy")) return "www.imy.se";
+      if (id.startsWith("eurlex")) return "eur-lex.europa.eu";
+      if (id.startsWith("konsumentverket")) return "www.konsumentverket.se";
+      if (id === "riksdagen") return "www.riksdagen.se";
+      throw new Error(`Okänd källa: ${id}`);
+    };
+    for (const [id, källa] of Object.entries(KURERADE_KÄLLOR) as [KällId, (typeof KURERADE_KÄLLOR)[KällId]][]) {
+      expect(new URL(källa.url!).hostname, id).toBe(domänFör(id));
+    }
+  });
+
+  it("alla källor utom den okontrollerade riksdagen pekar på en undersida, inte startsidan", () => {
+    const kontrollerade = Object.entries(KURERADE_KÄLLOR).filter(([id]) => id !== "riksdagen");
+    expect(kontrollerade.length).toBeGreaterThan(0);
+    for (const [id, källa] of kontrollerade) {
+      expect(new URL(källa.url!).pathname.length, id).toBeGreaterThan(1);
+    }
+  });
+
+  it("varje ämne pekar på en källa som en människa kontrollerat (hämtad 2026-09-30 eller senare)", () => {
+    for (const topic of LEGAL_TOPICS) {
+      expect(KURERADE_KÄLLOR[topic.källId].hämtad >= "2026-09-30", topic.id).toBe(true);
+    }
+  });
+
+  it("GDPR-förordningen pekar på den svenska versionen hos EUR-Lex", () => {
+    expect(KURERADE_KÄLLOR.eurlex_gdpr.url).toContain("/legal-content/SV/");
+  });
+
+  it("rättslig grund och register för GDPR är två ämnen med var sin IMY-sida", () => {
+    const ämnen = LEGAL_TOPICS.filter((topic) => ["gdpr_rattslig_grund", "gdpr_register"].includes(topic.id));
+    expect(ämnen).toHaveLength(2);
+    const urls = ämnen.map((topic) => KURERADE_KÄLLOR[topic.källId].url!);
+    expect(new Set(urls).size).toBe(2);
+    for (const url of urls) expect(new URL(url).hostname).toBe("www.imy.se");
+  });
+
+  it("aktiebolag och ekonomisk förening får var sin årsredovisningskälla", () => {
+    const ab = getLegalTopicsFor("aktiebolag").map((topic) => topic.id);
+    const ek = getLegalTopicsFor("ekonomisk_forening").map((topic) => topic.id);
+    expect(ab).toContain("arsredovisning_ab");
+    expect(ab).not.toContain("arsredovisning_ek_forening");
+    expect(ek).toContain("arsredovisning_ek_forening");
+    expect(ek).not.toContain("arsredovisning_ab");
+  });
+
+  it("aktiebolag har bolagsordning, styrelse och revisor som tre ämnen med var sin källa", () => {
+    const ämnen = LEGAL_TOPICS.filter((topic) => ["bolagsordning", "styrelse", "revisor"].includes(topic.id));
+    expect(ämnen).toHaveLength(3);
+    expect(new Set(ämnen.map((topic) => KURERADE_KÄLLOR[topic.källId].url)).size).toBe(3);
+    for (const topic of ämnen) expect(topic.gällerFör).toEqual(["aktiebolag"]);
   });
 });
