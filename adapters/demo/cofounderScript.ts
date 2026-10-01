@@ -140,13 +140,13 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
     tool(
       "Bygger kundprofilen",
       "Building the customer profile",
-      ["Filtrerar på storlek och omsättning", "Namnger de 40 snabbast växande", "Fördjupar konkurrentbilden"],
-      ["Filtering by size and revenue", "Naming the 40 fastest-growing", "Deepening the competitor picture"],
+      ["Filtrerar på storlek och omsättning", "Namnger de 20 snabbast växande", "Fördjupar konkurrentbilden"],
+      ["Filtering by size and revenue", "Naming the 20 fastest-growing", "Deepening the competitor picture"],
     ),
     msg(
       "cofounder",
-      "Här är listan: 40 byråer som växer snabbast och matchar profilen.",
-      "Here's the list: 40 firms that are growing fastest and match the profile.",
+      "Här är listan: 20 byråer som växer snabbast och matchar profilen.",
+      "Here's the list: 20 firms that are growing fastest and match the profile.",
     ),
     msg("founder", "Kan du skriva ett mejl till dem?", "Can you write them an email?"),
     msg(
@@ -165,14 +165,14 @@ export const cofounderScript: Record<string, TranscriptItem[]> = {
 
   // --- Steg 05a · Samtalen (utskicket) --------------------------------------
   "05a-utskicket-fore": [
-    msg("cofounder", "Dags att skicka till de 40 byråerna. Redo?", "Time to send to the 40 firms. Ready?"),
+    msg("cofounder", "Dags att skicka till de 20 byråerna. Redo?", "Time to send to the 20 firms. Ready?"),
   ],
   "05a-utskicket-korning": [
     tool(
       "Skickar från din Gmail",
       "Sending from your Gmail",
-      ["Skriver svenskt B2B-mejl", "Skickar till 40 byråer", "Följer öppningar"],
-      ["Writing the Swedish B2B email", "Sending to 40 firms", "Tracking opens"],
+      ["Skriver svenskt B2B-mejl", "Skickar till 20 byråer", "Följer öppningar"],
+      ["Writing the Swedish B2B email", "Sending to 20 firms", "Tracking opens"],
     ),
     msg("cofounder", "Mejlet är ute. Om två dagar vet vi hur många som öppnat.", "The email is out. In two days we'll know how many opened it."),
     skip("2 dagar senare", "2 days later"),

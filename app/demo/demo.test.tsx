@@ -19,6 +19,7 @@ import DemoMarketPage from "./(app)/marknad/page";
 import DemoLegalPage from "./(app)/juridik/page";
 import DemoMemoryPage from "./(app)/minnet/page";
 import DemoValidationPage from "./(app)/validering/page";
+import { saraCompanies } from "@/adapters/demo/RegistryProvider";
 import DemoPulsePage from "./(app)/pulsen/page";
 import DemoJourneyPage from "./(app)/resan/page";
 import DemoJourneyStepPage from "./(app)/resan/[steg]/page";
@@ -483,7 +484,9 @@ describe("/demo", () => {
       pathname = DEMO_PATHS.home;
       const { container } = await renderInApp(<DemoHomePage />);
       const facts = container.querySelector(".fdd-facts")!;
-      expect(facts).toHaveTextContent("40");
+      // Mottagarna är lika många som kontaktlistan Validering och Marknad räknar ur.
+      expect(facts).toHaveTextContent(String(saraCompanies.length));
+      expect(saraCompanies.length).toBe(20);
       for (const tag of facts.querySelectorAll("button")) expect(tag).toHaveTextContent("Påhittad data, steg 05");
     });
 
