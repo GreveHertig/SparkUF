@@ -20,6 +20,8 @@ const toneClasses: Record<DataType, string> = {
   simulation: "bg-data-simulation-bg text-data-simulation",
   customer: "bg-data-customer-bg text-data-customer",
   example: "border-dashed border-slate-400! bg-white text-slate-700",
+  media: "bg-data-media-bg text-data-media",
+  user: "bg-data-user-bg text-data-user",
 };
 
 /**
@@ -28,7 +30,9 @@ const toneClasses: Record<DataType, string> = {
  * utöver den egna färgen — aldrig bara en färgskillnad. Påhittad exempeldata
  * i demot (`"example"`, PR 11) bär på samma sätt etiketten "Exempel" och
  * fiktionsmärkets streckade kant, så att den aldrig ser ut som en
- * myndighetskälla.
+ * myndighetskälla. Nyhetskällor (`"media"`) och användarens egen uppgift
+ * (`"user"`) bär också en etikett och en egen ton. Bara `"register"` är grå
+ * och utan etikett. Hela uppsättningen: docs/beslut.md, 2026-10-01.
  */
 export function SourceTag({
   source,
@@ -37,6 +41,13 @@ export function SourceTag({
   className,
 }: SourceTagProps) {
   const { locale, t } = useI18n();
+  const labels: Partial<Record<DataType, string>> = {
+    simulation: t.common.simulationLabel,
+    example: t.common.exampleSourceLabel,
+    media: t.common.mediaSourceLabel,
+    user: t.common.userSourceLabel,
+  };
+  const label = labels[dataType];
 
   return (
     <Popover.Root>
@@ -52,15 +63,9 @@ export function SourceTag({
           )}
           style={{ transitionDuration: "var(--motion-fast)", transitionTimingFunction: "var(--ease-standard)" }}
         >
-          {dataType === "simulation" && (
+          {label && (
             <>
-              <span className="font-semibold uppercase">{t.common.simulationLabel}</span>
-              <span aria-hidden="true">·</span>
-            </>
-          )}
-          {dataType === "example" && (
-            <>
-              <span className="font-semibold uppercase">{t.common.exampleSourceLabel}</span>
+              <span className="font-semibold uppercase">{label}</span>
               <span aria-hidden="true">·</span>
             </>
           )}

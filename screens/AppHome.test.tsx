@@ -126,4 +126,54 @@ describe("AppHome (PR 3, Hem)", () => {
     );
     expect(screen.getByText("18 % tillväxt")).toBeVisible();
   });
+
+  describe("källtaggarnas datatyp (valfria fält, docs/beslut.md 2026-10-01)", () => {
+    const signal = {
+      category: "Nyheter",
+      headline: "Ny regel för digitala kvitton",
+      whyItMatters: "Påverkar dina kunder.",
+      timestamp: "30 september",
+      source: { namn: "breakit.se", hämtad: "2026-09-30" },
+    };
+    const tagIn = (selector: string) => document.querySelector(`${selector} button`)!;
+
+    it("utan fälten ser taggarna ut som förut: registrets och kundens", () => {
+      renderHome(baseData({ pulseSignals: [signal] }), { dataKind: "live" });
+      expect(tagIn(".fdd-signal").className).toMatch(/bg-data-register-bg/);
+      const facts = [...document.querySelectorAll(".fdd-facts button")].map((b) => b.className);
+      expect(facts[0]).toMatch(/bg-data-register-bg/);
+      expect(facts[2]).toMatch(/bg-data-customer-bg/);
+      expect(document.querySelector(".fdd-next button[aria-label]")).toBeNull();
+      expect(document.querySelector(".fdd-signal__meta .fdd-muted")).toHaveTextContent("30 september");
+    });
+
+    it("en nyhetskälla visas som media, aldrig med registrets tagg", () => {
+      renderHome(baseData({ pulseSignals: [signal], sourceDataTypes: { pulse: "media" } }), { dataKind: "live" });
+      const tag = tagIn(".fdd-signal");
+      expect(tag).toHaveTextContent(`${sv.common.mediaSourceLabel}·breakit.se`);
+      expect(tag.className).toMatch(/bg-data-media-bg/);
+      expect(tag.className).not.toMatch(/register/);
+    });
+
+    it("exempeldata: signalen, Sedan sist och handlingskortet bär exempeletiketten, och en tom tid visas inte", () => {
+      const exempel = { namn: "Påhittad data, steg 05", hämtad: "2026-01-19" };
+      renderHome(
+        baseData({
+          pulseSignals: [{ ...signal, timestamp: "", source: exempel }],
+          homeSummary: {
+            nextStep,
+            sinceLastTime: { ...sinceLastTime, emailSentSource: exempel, openRateSource: exempel, responsesSource: exempel },
+          },
+          sourceDataTypes: { pulse: "example", sinceLastTime: "example" },
+          nextStepSource: { source: exempel, dataType: "example" },
+        }),
+      );
+      const tags = [...document.querySelectorAll("main button[aria-label], .fdd-page button[aria-label]")].filter(
+        (b) => b.getAttribute("aria-label") === sv.common.sourceTag.openDetails,
+      );
+      expect(tags).toHaveLength(5);
+      for (const tag of tags) expect(tag).toHaveTextContent(`${sv.common.exampleSourceLabel}·Påhittad data, steg 05`);
+      expect(document.querySelector(".fdd-signal__meta .fdd-muted")).toBeNull();
+    });
+  });
 });

@@ -13,15 +13,22 @@ import type { Bolagsform, Källa } from "@/core/domain";
  *
  * VERIFIERINGSSTATUS (se verifieringsloggen i docs/moduler/juridisk-koll.md):
  * - KONTROLLERADE AV EN MÄNNISKA i webbläsaren 2026-09-30: alla källor från
- *   Bolagsverket, verksamt.se och Bokföringsnämnden (BFN). De pekar på de
- *   undersidor där uppgiften står, inte på startsidorna. Två ämnen stämde
+ *   Bolagsverket, verksamt.se och Bokföringsnämnden (BFN). Två ämnen stämde
  *   bara delvis och har fått nya texter: `aktiekapital` (bankintyg eller
  *   revisorsyttrande beror på om aktierna betalas med pengar eller egendom,
  *   det är inget fritt val) och `bolagsavtal` (rekommenderas, inget formellt
  *   krav).
- * - BARA MASKINELLT HÄMTADE (av Claude Code via WebFetch 2026-09-17, inte
- *   kontrollerade av en människa, fortfarande startsidor): Skatteverket, IMY,
- *   EUR-Lex (GDPR-förordningen), Konsumentverket, Riksdagen.
+ * - KONTROLLERADE AV EN MÄNNISKA i webbläsaren 2026-10-01: alla källor från
+ *   Skatteverket, IMY, EUR-Lex (svensk version av GDPR-förordningen) och
+ *   Konsumentverket. Fyra ämnen stämde bara delvis och har fått nya texter:
+ *   `f_skatt` (FA-skatt bara för enskild näringsverksamhet), `moms`
+ *   (gränsen 120 000 kr), `gdpr_register` (undantaget under 250 anställda
+ *   har egna undantag) och `konsument_angerratt` (gäller konsumenter som
+ *   köper av företag).
+ * - Alla kontrollerade källor pekar på de undersidor där uppgiften står, inte
+ *   på startsidorna.
+ * - INTE KONTROLLERAD: Riksdagen (startsida, maskinellt hämtad 2026-09-17).
+ *   Inget ämne använder den. Om den ska finnas kvar är inte beslutat.
  * - INGENTING ÄR JURISTGRANSKAT: vilka ämnen som gäller per bolagsform,
  *   avgifter, deadlines och lagrum. Därför har `LegalTopic` medvetet inga
  *   `kostnadKr`/`deadline`/`myndighet` — lägg bara till dem med en verifierad
@@ -37,11 +44,15 @@ export type KällId =
   | "bolagsverket_arsredovisning_ab"
   | "bolagsverket_arsredovisning_ek_forening"
   | "bolagsverket_starta_ek_forening"
-  | "skatteverket"
+  | "skatteverket_f_skatt"
+  | "skatteverket_moms"
+  | "skatteverket_arbetsgivare"
   | "verksamt_handelsbolag"
-  | "imy"
+  | "imy_rattslig_grund"
+  | "imy_register"
   | "eurlex_gdpr"
-  | "konsumentverket"
+  | "konsumentverket_marknadsforing"
+  | "konsumentverket_angerratt"
   | "bfn_bokforing"
   | "riksdagen";
 
@@ -86,30 +97,50 @@ export const KURERADE_KÄLLOR: Record<KällId, Källa> = {
     hämtad: "2026-09-30",
     url: "https://bolagsverket.se/forening/ekonomiskforening/startaekonomiskforening.1335.html",
   },
-  skatteverket: {
-    namn: "Skatteverket",
-    hämtad: "2026-09-17",
-    url: "https://www.skatteverket.se",
+  skatteverket_f_skatt: {
+    namn: "Skatteverket — F-skatt och FA-skatt",
+    hämtad: "2026-10-01",
+    url: "https://www.skatteverket.se/foretag/drivaforetag/startaochregistrera/fochfaskatt.4.58d555751259e4d661680006355.html",
+  },
+  skatteverket_moms: {
+    namn: "Skatteverket — registrera ditt företag för moms",
+    hämtad: "2026-10-01",
+    url: "https://www.skatteverket.se/foretag/moms/momsregistrering/registreradittforetagformoms.4.deeebd105a602bfe38000256.html",
+  },
+  skatteverket_arbetsgivare: {
+    namn: "Skatteverket — ditt ansvar som arbetsgivare",
+    hämtad: "2026-10-01",
+    url: "https://www.skatteverket.se/foretag/arbetsgivare/arbetsgivarregistrering/dittansvarsomarbetsgivare.4.361dc8c15312eff6fd16ec2.html",
   },
   verksamt_handelsbolag: {
     namn: "verksamt.se (Bolagsverket, Skatteverket och Tillväxtverket) — handelsbolag",
     hämtad: "2026-09-30",
     url: "https://verksamt.se/starta-foretag/valj-foretagsform/handelsbolag",
   },
-  imy: {
-    namn: "Integritetsskyddsmyndigheten (IMY)",
-    hämtad: "2026-09-17",
-    url: "https://www.imy.se",
+  imy_rattslig_grund: {
+    namn: "Integritetsskyddsmyndigheten (IMY) — rättslig grund",
+    hämtad: "2026-10-01",
+    url: "https://www.imy.se/verksamhet/dataskydd/det-har-galler-enligt-gdpr/rattslig-grund/",
+  },
+  imy_register: {
+    namn: "Integritetsskyddsmyndigheten (IMY) — föra register över behandling",
+    hämtad: "2026-10-01",
+    url: "https://www.imy.se/verksamhet/dataskydd/det-har-galler-enligt-gdpr/fora-register-over-behandling/",
   },
   eurlex_gdpr: {
-    namn: "EUR-Lex — förordning (EU) 2016/679 (GDPR)",
-    hämtad: "2026-09-17",
-    url: "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    namn: "EUR-Lex — förordning (EU) 2016/679 (GDPR), svensk version",
+    hämtad: "2026-10-01",
+    url: "https://eur-lex.europa.eu/legal-content/SV/TXT/?uri=CELEX:32016R0679",
   },
-  konsumentverket: {
-    namn: "Konsumentverket",
-    hämtad: "2026-09-17",
-    url: "https://www.konsumentverket.se",
+  konsumentverket_marknadsforing: {
+    namn: "Konsumentverket — marknadsföringslagen",
+    hämtad: "2026-10-01",
+    url: "https://www.konsumentverket.se/lagar/marknadsforingslagen-konsument/",
+  },
+  konsumentverket_angerratt: {
+    namn: "Konsumentverket — ångerrätt",
+    hämtad: "2026-10-01",
+    url: "https://www.konsumentverket.se/konsumentratt-process/angerratt/",
   },
   bfn_bokforing: {
     namn: "Bokföringsnämnden (BFN) — allmänna bokföringsfrågor",
@@ -144,7 +175,8 @@ export type LegalTopicId =
   | "arsredovisning_ek_forening"
   | "bolagsavtal"
   | "stadgar_medlemmar"
-  | "gdpr_personuppgifter"
+  | "gdpr_rattslig_grund"
+  | "gdpr_register"
   | "gdpr_forordningen"
   | "marknadsforing_epost"
   | "konsument_angerratt";
@@ -167,15 +199,15 @@ export const LEGAL_TOPICS: readonly LegalTopic[] = [
   },
   {
     id: "f_skatt",
-    källId: "skatteverket",
+    källId: "skatteverket_f_skatt",
     gällerFör: ALLA_BOLAGSFORMER,
-    hint: "Ansöka om F-skatt (eller FA-skatt) hos Skatteverket.",
+    hint: "Ansöka om F-skatt hos Skatteverket, via e-tjänsten på verksamt.se eller med blankett SKV 4620. FA-skatt finns bara för enskild näringsverksamhet; aktiebolag och handelsbolag kan aldrig ha FA-skatt.",
   },
   {
     id: "moms",
-    källId: "skatteverket",
+    källId: "skatteverket_moms",
     gällerFör: ALLA_BOLAGSFORMER,
-    hint: "Momsregistrering och löpande momsredovisning hos Skatteverket.",
+    hint: "Momsregistrering hos Skatteverket krävs vid momspliktig försäljning över 120 000 kr per år. Vid högst 120 000 kr är företaget i de flesta fall undantaget men kan registrera sig frivilligt. Vissa verksamheter är momsfria.",
   },
   {
     id: "bokforing",
@@ -185,7 +217,7 @@ export const LEGAL_TOPICS: readonly LegalTopic[] = [
   },
   {
     id: "arbetsgivare",
-    källId: "skatteverket",
+    källId: "skatteverket_arbetsgivare",
     gällerFör: ALLA_BOLAGSFORMER,
     hint: "Registrera sig som arbetsgivare hos Skatteverket vid första anställningen.",
   },
@@ -238,10 +270,16 @@ export const LEGAL_TOPICS: readonly LegalTopic[] = [
     hint: "Stadgar och minst tre medlemmar för en ekonomisk förening.",
   },
   {
-    id: "gdpr_personuppgifter",
-    källId: "imy",
+    id: "gdpr_rattslig_grund",
+    källId: "imy_rattslig_grund",
     gällerFör: ALLA_BOLAGSFORMER,
-    hint: "Laglig grund för personuppgiftsbehandling och register över behandlingar (GDPR i praktiken).",
+    hint: "Rättslig grund för behandling av personuppgifter enligt GDPR.",
+  },
+  {
+    id: "gdpr_register",
+    källId: "imy_register",
+    gällerFör: ALLA_BOLAGSFORMER,
+    hint: "Register över behandlingar av personuppgifter. Huvudregeln är undantag för företag med färre än 250 anställda, men registret krävs ändå om behandlingen inte är tillfällig, innebär en risk eller gäller känsliga uppgifter.",
   },
   {
     id: "gdpr_forordningen",
@@ -251,15 +289,15 @@ export const LEGAL_TOPICS: readonly LegalTopic[] = [
   },
   {
     id: "marknadsforing_epost",
-    källId: "konsumentverket",
+    källId: "konsumentverket_marknadsforing",
     gällerFör: ALLA_BOLAGSFORMER,
     hint: "Marknadsföringslagens krav vid e-postutskick och annan marknadsföring.",
   },
   {
     id: "konsument_angerratt",
-    källId: "konsumentverket",
+    källId: "konsumentverket_angerratt",
     gällerFör: ALLA_BOLAGSFORMER,
-    hint: "Ångerrätt och andra konsumentskyddsregler vid distansavtal.",
+    hint: "14 dagars ångerrätt vid distansköp gäller när en konsument köper av ett företag, inte vid alla köp. Det finns undantag.",
   },
 ];
 

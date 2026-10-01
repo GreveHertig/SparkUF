@@ -8,12 +8,11 @@ import {
   getValidationAssumptions,
   outreachDateRange,
   outreachOpenRate,
-  outreachOpenRateSource,
-  outreachSource,
 } from "@/adapters/demo/OutreachProvider";
 import { demoSimulationProvider, simulationQuestions } from "@/adapters/demo/SimulationProvider";
 import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { getCurrentStepNumber, useDemoStore } from "@/adapters/demo/demoStore";
+import { exampleSource } from "@/adapters/demo/exampleSource";
 import { Validation, type ValidationData, type ValidationLock } from "@/screens/Validation";
 
 /**
@@ -50,11 +49,13 @@ export default function DemoValidationPage() {
         data: {
           // Demodatan bär inga räkenskapsår: omsättningen visas som en lucka.
           rows: rows.map((row) => ({ ...row, revenueFiscalYear: null })),
-          outreachSource: rows.length > 0 ? outreachSource[locale] : null,
+          // Utskicket och svaren är påhittade: exempelkällan för steg 05, aldrig
+          // "Sparks utskick (Gmail)" eller "Kundsamtal".
+          outreachSource: rows.length > 0 ? exampleSource(locale, { step: 5 }) : null,
           dateRange: showOutreach ? outreachDateRange : null,
           openRate: showOutreach ? outreachOpenRate : null,
-          openRateSource: showOutreach ? outreachOpenRateSource[locale] : null,
-          assumptions,
+          openRateSource: showOutreach ? exampleSource(locale, { step: 5 }) : null,
+          assumptions: assumptions.map((assumption) => ({ ...assumption, source: exampleSource(locale, { step: 6 }) })),
           responses,
           // Demot visar domen bara när den finns; före steg 06 och utan dom döljs sektionen.
           verdict:

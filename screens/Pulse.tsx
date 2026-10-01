@@ -13,9 +13,10 @@ import { PageHead } from "./blocks/PageBlocks";
  * visar då "Kommer snart", och rubriken blir sidans namn. En tom lista är ett
  * ärligt tomläge ("Ingen signal än"), inte en lucka.
  *
- * `sourceDataType` (valfri) sätter källtaggarnas datatyp. Demot skickar
- * `"example"` tillsammans med exempelkällor, så att påhittade signaler bär
- * etiketten "Exempel" (PR 11). `/app` skickar ingen.
+ * `sourceDataType` sätter källtaggarnas datatyp (docs/beslut.md, 2026-10-01):
+ * demot skickar `"example"` (påhittade signaler, etiketten "Exempel"), `/app`
+ * skickar `"media"` (artiklar, etiketten "Media"). Utelämnad blir taggen
+ * `SourceTag`s standard, `"register"`, som bara får användas för register.
  */
 export type PulseData = {
   signals: PulseSignal[] | null;

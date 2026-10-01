@@ -35,6 +35,11 @@ export type Dictionary = {
      * (datatypen "example", PR 11). Samma princip som "Simulering": aldrig
      * bara en färgskillnad. */
     exampleSourceLabel: string;
+    /** Etikett först i en källtagg för en nyhets- eller mediekälla (datatypen
+     * "media"), så att den aldrig kan tas för en registerkälla. */
+    mediaSourceLabel: string;
+    /** Etikett först i en källtagg för användarens egen uppgift ("user"). */
+    userSourceLabel: string;
     /** SimulationCard (uppdrag 2.2, 8): populationens storlek ska alltid synas. */
     simulationPopulationLabel: string;
     upToPointsBefore: string;
@@ -360,6 +365,10 @@ export type Dictionary = {
     title: string;
     subtitle: string;
     kpiTitle: string;
+    /** Demot (exempeldata): sidans underrubrik och nyckeltalens rubrik utan
+     * att påstå att de påhittade siffrorna kommer ur registret. */
+    subtitleExample: string;
+    kpiTitleExample: string;
     competitorsTitle: string;
     simulationTitle: string;
     companyCountLabel: string;
@@ -993,7 +1002,7 @@ export type Dictionary = {
       /** Namnet på en exempelkälla i demot (PR 11): påhittad data, och var i
        * scenariot den kommer ifrån. Visas med datatypen "example". */
       exampleSourceTemplate: string;
-      exampleOrigins: { step: string; ideaScreening: string; suggestions: string };
+      exampleOrigins: { step: string; ideaScreening: string; suggestions: string; score: string };
       navLabel: string;
       backToLanding: string;
       stepOf: string;
