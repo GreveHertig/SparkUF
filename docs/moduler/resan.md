@@ -20,7 +20,8 @@ getStepDetail(stepNumber: number, locale: Locale): Promise<JourneyStepDetail | n
 ```
 
 - `JourneySummary`: `{ todayIso, nextStep: NextStep, sinceLastTime:
-  SinceLastTime }`.
+  SinceLastTime | null }`. `null` när det inte finns något utskick att visa
+  (plattformen tills Utskick och svar är byggd).
 - `JourneyStepView`: `{ stepNumber, journeyPhase, title, oneLiner,
   maxPoints, status: "done" | "current" | "locked" }`.
 - `JourneyStepDetail`: `JourneyStepView & { why, doneItems, highlights,
@@ -97,7 +98,28 @@ Medgrundaren är då text som redan validerats av den modulen (`docs/moduler/med
 
 ## Status
 
-påbörjad (Session P1, branch `plattform-p1-adaptrar`, byggd efter Evidens
+**Onboarding live, PR 2 (2026-10-01):** alla tre metoderna är byggda i
+liveadaptern. `getHomeSummary` ger handlingskortet för det aktuella steget:
+titel ur i18n, `why`/`doneItems`/`actionLabel` ur `journey_steps` när raden
+finns (annars stegets ingress och "Öppna steg NN"), `maxPoints` ur
+`JOURNEY_STEP_META`. `estimatedTime` är `""` (ingen källa, skärmen döljer
+den) och `sinceLastTime` är `null` tills Utskick och svar finns.
+
+- **Steg 1 är klart när onboardingen är klar** (`profiles.onboarding_completed_at`,
+  beslut 2026-09-30): `deriveCurrentStepNumber(completed, onboardingDone)`.
+  Statusen läses av `lib/server/onboardingStatus.ts`.
+- **Steg 2 per ingång:** ingång B ser "Genomlys din idé"
+  (`journeySteps.step2Idea`), ingång A "Möjligheter".
+- **Känt glapp, rättas i `plattform/steg1-klart`:** databasens
+  `complete_journey_step` (20261001150000) kräver fyra `profileFitAnswer`-bevis
+  för steg 1 och en `journey_steps`-rad för steg 1 innan steg 2 kan bli klart.
+  Onboardingen skriver bara till `profiles`, så steg 2 kan i dag visas som
+  aktuellt men aldrig markeras klart. Rättningen är en ny migrering som
+  räknar steg 1 som klart när `onboarding_completed_at` är satt, med
+  `core/journeyRequirements.ts` i synk. Onboardingen skapar aldrig
+  `profileFitAnswer`-bevis: det vore påhittade bevis (Datalöftet).
+
+Tidigare: påbörjad (Session P1, branch `plattform-p1-adaptrar`, byggd efter Evidens
 och poäng i samma session) — `getSteps`/`getStepDetail` är klara och
 testade mot Supabase. `getHomeSummary` är MEDVETET kvar som
 `NotImplementedError`: `JourneySummary.sinceLastTime` är obligatorisk och

@@ -51,9 +51,12 @@ export function deriveStepStatus(stepNumber: number, currentStepNumber: number):
 }
 
 /** Högsta avklarade steg + 1, klämt till 1–12. En ny användare (ingen
- * avklarad) står på steg 1. */
-export function deriveCurrentStepNumber(completedStepNumbers: readonly number[]): number {
-  const highestCompleted = completedStepNumbers.reduce((max, n) => Math.max(max, n), 0);
+ * avklarad) står på steg 1. Steg 1 ("Om dig") räknas också som klart när
+ * onboardingen är klar (`profiles.onboarding_completed_at`, beslut
+ * 2026-09-30): ingång A har inget projekt att hänga en journey_steps-rad på. */
+export function deriveCurrentStepNumber(completedStepNumbers: readonly number[], onboardingDone: boolean): number {
+  const completed = onboardingDone ? [...completedStepNumbers, 1] : completedStepNumbers;
+  const highestCompleted = completed.reduce((max, n) => Math.max(max, n), 0);
   return Math.min(Math.max(highestCompleted + 1, 1), 12);
 }
 

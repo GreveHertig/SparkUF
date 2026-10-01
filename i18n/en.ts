@@ -206,6 +206,8 @@ export const en = {
       grow: "Grow",
     },
     stepLabel: "Step",
+    nextStepEyebrowTemplate: "STEP {step} · {title}",
+    openStepTemplate: "Open step {step}",
     backToJourney: "Back to the journey",
     whatHappened: "What's been done",
     whatsNext: "What's left",
@@ -618,6 +620,10 @@ export const en = {
     step12: {
       title: "Capital",
       oneLiner: "Almi, Vinnova, Tillväxtverket, regional funds, bank loans and bootstrapping.",
+    },
+    step2Idea: {
+      title: "Screen your idea",
+      oneLiner: "The idea broken into assumptions to test, and a sharper version if needed.",
     },
   },
   tour: {

@@ -5,7 +5,9 @@ import type { Simulation } from "@/ports/SimulationProvider";
 export type JourneySummary = {
   todayIso: string;
   nextStep: NextStep;
-  sinceLastTime: SinceLastTime;
+  /** `null` när det inte finns något utskick att visa. Plattformen har null
+   * tills Utskick och svar är byggd (docs/moduler/resan.md). */
+  sinceLastTime: SinceLastTime | null;
 };
 
 export type JourneyStepStatus = "done" | "current" | "locked";

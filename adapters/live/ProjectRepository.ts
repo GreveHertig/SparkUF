@@ -1,5 +1,6 @@
 import type { ProjectRepository, Project } from "@/ports/ProjectRepository";
-import { NotImplementedError } from "@/core/errors";
+import { NotImplementedError, ProjectExistsError } from "@/core/errors";
+import { isValidProjectInput } from "@/core/onboarding";
 import { requireSupabaseUser } from "@/lib/server/session";
 
 const DOC = "docs/moduler/projekt-och-ide.md";
@@ -24,16 +25,30 @@ export const liveProjectRepository: ProjectRepository = {
     return { id: data.id as string, name: data.name as string, oneLiner: data.one_liner as string };
   },
 
-  // Porten fick metoden i PR 1 av onboardingen (docs/status.md), live byggs
-  // i PR 2 när migreringen 20260930120000_onboarding.sql är körd.
-  async createProject() {
-    throw new NotImplementedError("Projekt och idé", DOC);
+  // Grundarens egen idé blir aktivt projekt (ingång B, /start/ide). Det unika
+  // indexet projects_ett_aktivt_per_user avgör om det redan finns ett aktivt
+  // projekt, i samma insert, så två samtidiga anrop kan inte båda lyckas.
+  async createProject(input: { name: string; oneLiner: string }): Promise<Project> {
+    if (!isValidProjectInput(input)) {
+      throw new Error("Projekt och idé: namnet eller ingressen är tom eller för lång.");
+    }
+    const { supabase, userId } = await requireSupabaseUser();
+    const { data, error } = await supabase
+      .from("projects")
+      .insert({ user_id: userId, name: input.name.trim(), one_liner: input.oneLiner.trim(), is_active: true })
+      .select("id, name, one_liner")
+      .single();
+    if (error) {
+      if (error.code === "23505") throw new ProjectExistsError();
+      throw new Error(`Projekt och idé: kunde inte skapa projektet (${error.message}).`);
+    }
+    return { id: data.id as string, name: data.name as string, oneLiner: data.one_liner as string };
   },
 
-  // Idégenomlysningen är i praktiken Medgrundaren/Gemini-analys, inte bara
-  // lagring, och porten saknar fortfarande en skrivmetod för att spara vad
-  // grundaren väljer (flaggat sedan Session P2/5, docs/moduler/projekt-och-ide.md)
-  // — medvetet kvar som stub. Se ports/stubStatus.test.ts's PARTIELLA_STUBBAR.
+  // Idégenomlysningen är i praktiken Medgrundaren/Gemini-analys mot
+  // registret och väntar på Registret mot SCB AFR (vecka 2,
+  // docs/moduler/projekt-och-ide.md). Ytan visar luckan, aldrig påhittad data.
+  // Se ports/stubStatus.test.ts's PARTIELLA_STUBBAR.
   async getIdeaScreening() {
     throw new NotImplementedError("Projekt och idé", DOC);
   },

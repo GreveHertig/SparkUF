@@ -206,6 +206,8 @@ export const sv = {
       grow: "Växa",
     },
     stepLabel: "Steg",
+    nextStepEyebrowTemplate: "STEG {step} · {title}",
+    openStepTemplate: "Öppna steg {step}",
     backToJourney: "Tillbaka till Resan",
     whatHappened: "Vad som gjorts",
     whatsNext: "Vad som återstår",
@@ -620,6 +622,10 @@ export const sv = {
     step12: {
       title: "Kapital",
       oneLiner: "Almi, Vinnova, Tillväxtverket, regionala medel, banklån och bootstrapping.",
+    },
+    step2Idea: {
+      title: "Genomlys din idé",
+      oneLiner: "Idén bruten ner i antaganden som prövas, och en skarpare version om det behövs.",
     },
   },
   tour: {

@@ -1,14 +1,20 @@
-import type { JourneyRepository, JourneyStepDetail, JourneyStepView } from "@/ports/JourneyRepository";
+import type {
+  JourneyRepository,
+  JourneyStepDetail,
+  JourneyStepView,
+  JourneySummary,
+} from "@/ports/JourneyRepository";
 import type { Locale } from "@/i18n/context";
+import type { OnboardingEntry } from "@/core/domain";
 import { deriveCurrentStepNumber, deriveStepStatus, JOURNEY_STEP_META } from "@/core/journey";
-import { NotImplementedError } from "@/core/errors";
 import { requireSupabaseUser } from "@/lib/server/session";
 import { getActiveProjectId } from "@/lib/server/activeProject";
+import { readOnboardingStatus } from "@/lib/server/onboardingStatus";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fill } from "@/i18n/fill";
 import { sv } from "@/i18n/sv";
 import { en } from "@/i18n/en";
 
-const DOC = "docs/moduler/resan.md";
 const dictionaries = { sv, en };
 
 const STEP_TEXT_KEYS = [
@@ -26,8 +32,17 @@ const STEP_TEXT_KEYS = [
   "step12",
 ] as const;
 
-function journeyStepText(stepNumber: number, locale: Locale): { title: string; oneLiner: string } {
-  return dictionaries[locale].journeySteps[STEP_TEXT_KEYS[stepNumber - 1]];
+/** Steg 2 heter olika per ingång (beslut 2026-09-30): ingång B genomlyser
+ * sin egen idé, ingång A letar möjligheter. Innan onboardingen är klar finns
+ * ingen ingång, och då gäller Möjligheter. */
+function journeyStepText(
+  stepNumber: number,
+  locale: Locale,
+  entry: OnboardingEntry | null,
+): { title: string; oneLiner: string } {
+  const steps = dictionaries[locale].journeySteps;
+  if (stepNumber === 2 && entry === "hasIdea") return steps.step2Idea;
+  return steps[STEP_TEXT_KEYS[stepNumber - 1]];
 }
 
 async function getCompletedStepNumbers(
@@ -70,19 +85,28 @@ async function getJourneyStepRow(
   return data as JourneyStepRow | null;
 }
 
-async function currentStepNumberFor(supabase: SupabaseClient, userId: string, projectId: string | null) {
-  if (!projectId) return 1;
-  return deriveCurrentStepNumber(await getCompletedStepNumbers(supabase, userId, projectId));
+/** Allt som avgör var användaren står: aktivt projekt, onboardingen och
+ * aktuellt steg. Steg 1 är klart enligt profilen, resten enligt journey_steps. */
+async function readProgress(supabase: SupabaseClient, userId: string) {
+  const [projectId, onboarding] = await Promise.all([
+    getActiveProjectId(supabase, userId),
+    readOnboardingStatus(supabase, userId),
+  ]);
+  const completed = projectId ? await getCompletedStepNumbers(supabase, userId, projectId) : [];
+  return {
+    projectId,
+    entry: onboarding.entry,
+    currentStepNumber: deriveCurrentStepNumber(completed, onboarding.completed),
+  };
 }
 
 export const liveJourneyRepository: JourneyRepository = {
   async getSteps(locale: Locale): Promise<JourneyStepView[]> {
     const { supabase, userId } = await requireSupabaseUser();
-    const projectId = await getActiveProjectId(supabase, userId);
-    const currentStepNumber = await currentStepNumberFor(supabase, userId, projectId);
+    const { entry, currentStepNumber } = await readProgress(supabase, userId);
 
     return JOURNEY_STEP_META.map((meta) => {
-      const text = journeyStepText(meta.stepNumber, locale);
+      const text = journeyStepText(meta.stepNumber, locale, entry);
       return {
         stepNumber: meta.stepNumber,
         journeyPhase: meta.journeyPhase,
@@ -99,9 +123,8 @@ export const liveJourneyRepository: JourneyRepository = {
     if (!meta) return null;
 
     const { supabase, userId } = await requireSupabaseUser();
-    const projectId = await getActiveProjectId(supabase, userId);
-    const currentStepNumber = await currentStepNumberFor(supabase, userId, projectId);
-    const text = journeyStepText(stepNumber, locale);
+    const { projectId, entry, currentStepNumber } = await readProgress(supabase, userId);
+    const text = journeyStepText(stepNumber, locale, entry);
 
     const base: JourneyStepDetail = {
       stepNumber: meta.stepNumber,
@@ -139,13 +162,32 @@ export const liveJourneyRepository: JourneyRepository = {
     };
   },
 
-  // JourneySummary.sinceLastTime är obligatorisk och kräver riktiga
-  // utskicksdata (Utskick och svar-modulen, inte byggd i P1 — och "opened"
-  // som mätvärde är en olöst GDPR-fråga, flaggad i
-  // docs/moduler/utskick-och-svar.md, som den här sessionen INTE ska
-  // föregripa genom att gissa en tolkning). Medvetet kvar som stub tills
-  // den modulen finns. Se ports/stubStatus.test.ts's PARTIELLA_STUBBAR.
-  async getHomeSummary() {
-    throw new NotImplementedError("Resan", DOC);
+  // Handlingskortet på Hem: det aktuella steget, med stegets egen text ur
+  // journey_steps när den finns och annars stegets ingress ur i18n.
+  // Tidsåtgång finns ingen källa för, så den är tom och döljs av skärmen.
+  // "Sedan sist" kräver Utskick och svar (inte byggd, och "opened" är en
+  // olöst GDPR-fråga i docs/moduler/utskick-och-svar.md) och är null tills dess.
+  async getHomeSummary(locale: Locale): Promise<JourneySummary> {
+    const { supabase, userId } = await requireSupabaseUser();
+    const { projectId, entry, currentStepNumber } = await readProgress(supabase, userId);
+    const meta = JOURNEY_STEP_META[currentStepNumber - 1];
+    const text = journeyStepText(currentStepNumber, locale, entry);
+    const row = projectId ? await getJourneyStepRow(supabase, userId, projectId, currentStepNumber) : null;
+    const copy = dictionaries[locale].journeyPage;
+    const step = String(currentStepNumber).padStart(2, "0");
+
+    return {
+      todayIso: new Date().toISOString().slice(0, 10),
+      nextStep: {
+        eyebrow: fill(copy.nextStepEyebrowTemplate, { step, title: text.title.toLocaleUpperCase(locale) }),
+        title: text.title,
+        why: row?.why || text.oneLiner,
+        maxPoints: meta.maxPoints,
+        estimatedTime: "",
+        doneItems: row?.done_items ?? [],
+        actionLabel: row?.action_label || fill(copy.openStepTemplate, { step }),
+      },
+      sinceLastTime: null,
+    };
   },
 };

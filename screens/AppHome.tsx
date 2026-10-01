@@ -29,7 +29,10 @@ import { ScoreDelta, ScoreFigure } from "./blocks/ScoreFigure";
 export type AppHomeData = {
   todayIso: string;
   score: ScoreSnapshot | null;
-  homeSummary: { nextStep: NextStep; sinceLastTime: SinceLastTime } | null;
+  /** `sinceLastTime` är null när det inte finns något utskick (plattformen
+   * tills Utskick och svar är byggd): rutan visar då "Kommer snart" medan
+   * handlingskortet visas som vanligt. */
+  homeSummary: { nextStep: NextStep; sinceLastTime: SinceLastTime | null } | null;
   /** [] när ingen pulssignal finns — ett ärligt tomt läge, aldrig påhittat. */
   pulseSignals: PulseSignal[];
   journeySteps: JourneyStepView[];
@@ -83,6 +86,7 @@ export function AppHome({
   const copy = t.site;
 
   const signal = data.pulseSignals[0];
+  const sinceLastTime = data.homeSummary?.sinceLastTime ?? null;
 
   return (
     <div className="fdd-page">
@@ -134,7 +138,9 @@ export function AppHome({
                 )}
                 <span className="fd-nextstep__points">
                   {fill(copy.cofounder.pointsTemplate, { points: data.homeSummary.nextStep.maxPoints })}
-                  <span className="fdd-muted"> · {data.homeSummary.nextStep.estimatedTime}</span>
+                  {data.homeSummary.nextStep.estimatedTime && (
+                    <span className="fdd-muted"> · {data.homeSummary.nextStep.estimatedTime}</span>
+                  )}
                 </span>
               </div>
             </>
@@ -175,40 +181,40 @@ export function AppHome({
           <h2 id="fdd-since-title" className="fdd-block__title">
             {t.homePage.sinceLastTimeTitle}
           </h2>
-          {data.homeSummary ? (
+          {sinceLastTime ? (
             <>
               <dl className="fdd-facts">
                 <div>
                   <dt>{t.homePage.emailSentLabel}</dt>
                   <dd>
-                    {data.homeSummary.sinceLastTime.recipientCount} <span>{t.homePage.recipientsUnit}</span>
+                    {sinceLastTime.recipientCount} <span>{t.homePage.recipientsUnit}</span>
                   </dd>
                   <SourceTag
-                    source={data.homeSummary.sinceLastTime.emailSentSource}
+                    source={sinceLastTime.emailSentSource}
                     dataType={data.sourceDataTypes?.sinceLastTime ?? "register"}
                   />
                 </div>
                 <div>
                   <dt>{t.homePage.openRateLabel}</dt>
-                  <dd>{data.homeSummary.sinceLastTime.openRate} %</dd>
+                  <dd>{sinceLastTime.openRate} %</dd>
                   <SourceTag
-                    source={data.homeSummary.sinceLastTime.openRateSource}
+                    source={sinceLastTime.openRateSource}
                     dataType={data.sourceDataTypes?.sinceLastTime ?? "register"}
                   />
                 </div>
                 <div>
                   <dt>{t.homePage.responsesReceivedLabel}</dt>
                   <dd>
-                    {data.homeSummary.sinceLastTime.responsesReceived} <span>{t.homePage.responsesUnit}</span>
+                    {sinceLastTime.responsesReceived} <span>{t.homePage.responsesUnit}</span>
                   </dd>
                   <SourceTag
-                    source={data.homeSummary.sinceLastTime.responsesSource}
+                    source={sinceLastTime.responsesSource}
                     dataType={data.sourceDataTypes?.sinceLastTime ?? "customer"}
                   />
                 </div>
               </dl>
               <p className="fdd-muted fdd-facts__foot">
-                {t.homePage.reminderSentLabel} {formatDate(data.homeSummary.sinceLastTime.reminderSentDateIso, locale)}
+                {t.homePage.reminderSentLabel} {formatDate(sinceLastTime.reminderSentDateIso, locale)}
               </p>
             </>
           ) : (
