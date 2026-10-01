@@ -44,11 +44,19 @@ export default async function LiveMarketPage({
       ? { unlocksAfterStep: UNLOCKS_AFTER_STEP }
       : null;
 
+  const registry: MarketRegistry = locked ? "notChosen" : await loadRegistry(sni);
+  const overview = typeof registry === "object" ? registry.overview : null;
+
   const data: MarketData = {
     industryLabel: null,
-    registry: locked ? "notChosen" : await loadRegistry(sni),
+    registry,
     outreach: null,
     simulation: null,
+    // Konkurrenternas namn och beskrivningar kommer ur samma registeranrop som
+    // nyckeltalen, så de bär samma källa (källgenomgången 2026-10-01). Bara
+    // när registret faktiskt svarat: en stängd grind ger ingen källa och
+    // inga konkurrenter.
+    ...(overview && { competitorsSource: { source: overview.source, dataType: "register" as const } }),
   };
 
   return (

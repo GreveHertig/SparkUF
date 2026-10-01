@@ -127,6 +127,9 @@ describe("/app/marknad", () => {
     expect(median).toHaveTextContent(sv.common.fiscalYearMissing);
     expect(median).not.toHaveTextContent(/Mkr/);
     expect(screen.getByText("Riktig Konkurrent AB")).toBeInTheDocument();
+    // Källgenomgången: konkurrenten bär registrets källa, som nyckeltalen.
+    const competitor = screen.getByText("Riktig Konkurrent AB").closest("li")!;
+    expect(competitor).toHaveTextContent("Bolagsverket och SCB");
     // Utskicket och simuleringen har ingen livekälla: Kommer snart, aldrig demodata.
     expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(2);
     expect(screen.queryByText(sv.site.demo.exampleLabel)).not.toBeInTheDocument();
