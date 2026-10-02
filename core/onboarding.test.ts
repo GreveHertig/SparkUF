@@ -28,6 +28,18 @@ describe("core/onboarding", () => {
     }
   });
 
+  it.each([
+    ["sv", sv],
+    ["en", en],
+  ] as const)("avslutningsrepliken (%s) slutar med det steg som Hem visar efter att svaren sparats", (_, dict) => {
+    // Efter onboardingen visar Hem i /app Resans aktuella steg, steg 2
+    // (getHomeSummary i adapters/live/JourneyRepository.ts): Möjligheter för
+    // ingång A och Genomlys din idé för B. Repliken får inte lova något annat.
+    const { profileQuestions } = dict.onboarding;
+    expect(profileQuestions.noIdea.closingMessage).toMatch(new RegExp(` ${dict.journeySteps.step2.title}\\.$`));
+    expect(profileQuestions.hasIdea.closingMessage).toMatch(new RegExp(` ${dict.journeySteps.step2Idea.title}\\.$`));
+  });
+
   it("isProfileQuestionFor avvisar frågor som ingången inte ställer och okända id:n", () => {
     expect(isProfileQuestionFor("noIdea", "risk")).toBe(true);
     expect(isProfileQuestionFor("hasIdea", "risk")).toBe(false);

@@ -784,7 +784,9 @@ export const en = {
       submittingCta: "Saving …",
       invalidTemplate: "Fill in both fields. The name can be at most {nameMax} characters and the description at most {oneLinerMax}.",
     },
-    // Proposal, reviewed by Theo (onboarding PR 1).
+    // Proposal, reviewed by Theo (onboarding PR 1). closingMessage sits in the
+    // form before the button and ends with the step Home shows afterwards
+    // (tested in core/onboarding.test.ts).
     profileQuestions: {
       noIdea: {
         role: "Before we start, I need to know who you are. What do you do today?",
@@ -793,13 +795,13 @@ export const en = {
         money: "How much money can you put in yourself, if any?",
         risk: "How much are you prepared to risk, in time and money, if it doesn't go as planned?",
         closingMessage:
-          "Thanks. This is the profile the rest of the journey builds on. The next step is finding opportunities that fit you.",
+          "When you save, your answers become the profile the rest of the journey builds on. The next step in the journey is Opportunities.",
       },
       hasIdea: {
         role: "You already have an idea, so let's focus on fit. What do you do today, and what have you done that relates to the idea?",
         time: "How many hours a week can you put into the idea?",
         money: "How much money can you put in yourself, if any?",
-        closingMessage: "Thanks. The next step is the idea review: we break the idea down into assumptions and test them.",
+        closingMessage: "When you save, your answers become your profile, next to the idea you described. The next step in the journey is Screen your idea.",
       },
     },
   },

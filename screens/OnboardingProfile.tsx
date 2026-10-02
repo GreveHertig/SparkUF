@@ -49,7 +49,11 @@ export function OnboardingProfile({ data, continueHref, onContinue, answerAction
       </header>
 
       {data.script && answerAction ? (
-        <ProfileAnswerForm questions={data.script.questions} action={answerAction} />
+        <ProfileAnswerForm
+          questions={data.script.questions}
+          closingMessage={data.script.closingMessage}
+          action={answerAction}
+        />
       ) : data.script ? (
         <Conversation script={data.script} continueHref={continueHref} onContinue={onContinue} />
       ) : (

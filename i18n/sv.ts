@@ -784,7 +784,9 @@ export const sv = {
       submittingCta: "Sparar …",
       invalidTemplate: "Fyll i båda fälten. Namnet får vara högst {nameMax} tecken och beskrivningen högst {oneLinerMax}.",
     },
-    // Förslag, granskas av Theo (PR 1 av onboardingen).
+    // Förslag, granskas av Theo (PR 1 av onboardingen). closingMessage står i
+    // formuläret före knappen och slutar med steget som Hem visar efteråt
+    // (testat i core/onboarding.test.ts).
     profileQuestions: {
       noIdea: {
         role: "Innan vi börjar behöver jag veta vem du är. Vad gör du i dag?",
@@ -793,13 +795,13 @@ export const sv = {
         money: "Hur mycket pengar kan du lägga in själv, om något?",
         risk: "Hur mycket är du beredd att riskera, i tid och pengar, om det inte går som du tänkt?",
         closingMessage:
-          "Tack. Det här är profilen resten av resan utgår från. Nästa steg är att hitta möjligheter som passar dig.",
+          "När du sparar blir svaren profilen som resten av resan utgår från. Nästa steg i resan är Möjligheter.",
       },
       hasIdea: {
         role: "Du har redan en idé, så vi fokuserar på passform. Vad gör du i dag, och vad har du gjort som hör ihop med idén?",
         time: "Hur många timmar i veckan kan du lägga på idén?",
         money: "Hur mycket pengar kan du lägga in själv, om något?",
-        closingMessage: "Tack. Nästa steg är idégenomlysningen: vi bryter ner idén i antaganden och prövar dem.",
+        closingMessage: "När du sparar blir svaren din profil, bredvid idén du beskrev. Nästa steg i resan är Genomlys din idé.",
       },
     },
   },
