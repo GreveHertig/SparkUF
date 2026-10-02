@@ -11,6 +11,11 @@
 // håller de två i synk och kör samma fall mot båda.
 //
 // Regler:
+// - Steg 1 ("Om dig") är klart när onboardingen är klar
+//   (profiles.onboarding_completed_at) och bara då, även för steg 2:s krav på
+//   föregående steg. Ingång A har inget projekt att hänga en rad på, och
+//   onboardingen skapar aldrig passformsbevis (Datalöftet). Beslut 2026-10-01,
+//   supabase/migrations/20261002150000_steg1_onboarding.sql.
 // - Föregående steg måste vara klart.
 // - Ett steg utan rader här kan inte markeras klart alls.
 // - Kraven är grupper. Varje grupp måste vara uppfylld, och en grupp är
@@ -23,10 +28,9 @@
 //   äldre än sortens livslängd (beslut B9). Ett självrapporterat bevis över
 //   taket (B6) finns ändå, så det uppfyller kravet.
 import type { EvidenceKind } from "@/core/evidenceKinds";
-import { FIT_QUESTION_IDS, fitSubjectRef, type FitQuestionId } from "@/core/fitQuestions";
 
 export type RequirementGroup =
-  | `fit_${FitQuestionId}`
+  | "onboardingCompleted"
   | "activeProject"
   | "marketCount"
   | "competitorSet"
@@ -42,14 +46,10 @@ export type RequirementGroup =
 
 export type StepRequirement =
   | { group: RequirementGroup; evidenceKind: EvidenceKind; subjectRef: string | null }
-  | { group: RequirementGroup; condition: "activeProject" };
+  | { group: RequirementGroup; condition: "activeProject" | "onboardingCompleted" };
 
 export const STEP_REQUIREMENTS: Readonly<Partial<Record<number, readonly StepRequirement[]>>> = {
-  1: FIT_QUESTION_IDS.map((id) => ({
-    group: `fit_${id}` as const,
-    evidenceKind: "profileFitAnswer" as const,
-    subjectRef: fitSubjectRef(id),
-  })),
+  1: [{ group: "onboardingCompleted", condition: "onboardingCompleted" }],
   2: [{ group: "activeProject", condition: "activeProject" }],
   3: [{ group: "marketCount", evidenceKind: "registerMarketCount", subjectRef: null }],
   4: [{ group: "competitorSet", evidenceKind: "registerCompetitorSet", subjectRef: null }],
@@ -106,6 +106,8 @@ export type StepCompletionInput = {
   completedStepNumbers: readonly number[];
   countedEvidence: readonly CountedEvidenceRef[];
   hasActiveProject: boolean;
+  /** profiles.onboarding_completed_at är satt. */
+  onboardingCompleted: boolean;
 };
 
 function matches(requirement: StepRequirement, evidence: CountedEvidenceRef): boolean {
@@ -130,7 +132,11 @@ function groupProgress(
   const hit = input.countedEvidence.filter((evidence) => rows.some((requirement) => matches(requirement, evidence)));
   const count = hit.length;
   const subjects = new Set(hit.map((evidence) => evidence.subjectRef)).size;
-  const condition = rows.some((requirement) => "condition" in requirement) && input.hasActiveProject;
+  const condition = rows.some(
+    (requirement) =>
+      "condition" in requirement &&
+      (requirement.condition === "activeProject" ? input.hasActiveProject : input.onboardingCompleted),
+  );
   return {
     group,
     ...threshold,
@@ -144,8 +150,10 @@ function groupProgress(
  * regler som public.complete_journey_step. */
 export function stepCompletion(input: StepCompletionInput): StepCompletion {
   const completed = new Set(input.completedStepNumbers);
-  if (completed.has(input.stepNumber)) return { status: "done" };
-  if (input.stepNumber > 1 && !completed.has(input.stepNumber - 1)) return { status: "previousNotDone" };
+  // Steg 1 avgörs bara av onboardingen. En gammal rad för steg 1 räknas inte.
+  const isDone = (step: number) => (step === 1 ? input.onboardingCompleted : completed.has(step));
+  if (isDone(input.stepNumber)) return { status: "done" };
+  if (input.stepNumber > 1 && !isDone(input.stepNumber - 1)) return { status: "previousNotDone" };
 
   const requirements = STEP_REQUIREMENTS[input.stepNumber];
   if (!requirements || requirements.length === 0) return { status: "noRequirementYet" };

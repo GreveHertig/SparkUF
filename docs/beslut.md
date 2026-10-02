@@ -257,7 +257,7 @@ mot Postgres håller de två i synk och kör samma fall mot båda.
 
 | Steg | Krav |
 |---|---|
-| 01 Om dig | Svar på alla fyra passformsfrågor (`profileFitAnswer` med `fit:skills`, `fit:network`, `fit:time`, `fit:money`) |
+| 01 Om dig | Klar onboarding (`profiles.onboarding_completed_at`). Ändrat 2026-10-02 (`20261002150000_steg1_onboarding.sql`), förut fyra `profileFitAnswer`-bevis. Onboardingen skapar inga sådana bevis (Datalöftet). |
 | 02 Möjligheter | Ett aktivt projekt |
 | 03 Marknaden | `registerMarketCount` (systembevis ur registret) |
 | 04 Kunden | `registerCompetitorSet` (systembevis ur registret) |

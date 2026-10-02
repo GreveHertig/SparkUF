@@ -17,6 +17,8 @@ const A = "00000000-0000-0000-0000-0000000000a1";
 const B = "00000000-0000-0000-0000-0000000000b1";
 const C = "00000000-0000-0000-0000-0000000000c1";
 const D = "00000000-0000-0000-0000-0000000000d1";
+/** Utan projekt, som ingång A under onboardingen. */
+const E = "00000000-0000-0000-0000-0000000000e1";
 const TODAY = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm" }).format(new Date());
 
 let db: PGlite;
@@ -35,6 +37,14 @@ function recordFit(userId: string, subjectRef: string) {
     "select * from public.record_evidence('profileFitAnswer', $1, 'spark:profile', null, $2, 'Ett svar', 1::smallint, 'Profil')",
     [subjectRef, TODAY],
   );
+}
+
+/** Onboardingen klar för ingång B, via den enda vägen
+ * (public.complete_onboarding, se onboardingWrite.pg.test.ts). */
+function completeOnboarding(userId: string) {
+  return queryAs(db, userId, "select public.complete_onboarding('hasIdea', $1::jsonb)", [
+    JSON.stringify({ role: "Säljare", time: "5 timmar", money: "Inget" }),
+  ]);
 }
 
 /** Ett systembevis, skrivet som servern gör det (service role). */
@@ -87,6 +97,11 @@ async function coreSays(userId: string, step: number) {
     "select step_number from public.journey_steps where user_id = $1 and completed_at is not null",
     [userId],
   );
+  const profile = await db.query<{ onboarded: boolean }>(
+    "select onboarding_completed_at is not null as onboarded from public.profiles where user_id = $1",
+    [userId],
+  );
+  const project = await db.query("select 1 from public.projects where user_id = $1 and is_active", [userId]);
   const countedEvidence: CountedEvidenceRef[] = evidence.rows
     .filter((row) => isEvidenceKind(row.kind) && row.retracted_at === null && !isStale(row.kind, row.fetched_at, TODAY))
     .map((row) => ({ kind: row.kind as CountedEvidenceRef["kind"], subjectRef: row.subject_ref }));
@@ -94,7 +109,8 @@ async function coreSays(userId: string, step: number) {
     stepNumber: step,
     completedStepNumbers: steps.rows.map((row) => row.step_number),
     countedEvidence,
-    hasActiveProject: true,
+    hasActiveProject: project.rows.length > 0,
+    onboardingCompleted: profile.rows[0]?.onboarded === true,
   });
 }
 
@@ -119,6 +135,7 @@ beforeAll(async () => {
     );
     projects[user] = rows[0].id;
   }
+  await db.query("insert into auth.users (id) values ($1)", [E]);
 }, 60_000);
 
 afterAll(async () => {
@@ -167,12 +184,31 @@ describe("journey_steps: ett direkt anrop kan inte markera ett steg som klart", 
 });
 
 describe("complete_journey_step: kraven", () => {
-  it("steg 01 kräver alla fyra passformsfrågor", async () => {
-    expect((await completeAndCompare(A, 1)).error).toMatch(/krav/);
-    for (const id of FIT_QUESTION_IDS.slice(0, 3)) await recordFit(A, fitSubjectRef(id));
-    expect((await completeAndCompare(A, 1)).error).toMatch(/fit_money/);
-    await recordFit(A, fitSubjectRef("money"));
-    expect((await completeAndCompare(A, 1)).error).toBeNull();
+  it("steg 01 kräver klar onboarding: fyra passformssvar räcker inte, och steg 02 väntar", async () => {
+    for (const id of FIT_QUESTION_IDS) await recordFit(A, fitSubjectRef(id));
+    expect((await completeAndCompare(A, 1)).error).toMatch(/onboardingCompleted/);
+    expect((await completeAndCompare(A, 2)).error).toMatch(/Föregående/);
+
+    expect((await completeOnboarding(A)).error).toBeNull();
+    const one = await completeAndCompare(A, 1);
+    expect(one.error).toBeNull();
+    const { rows } = await db.query<{ at: string }>("select onboarding_completed_at::text as at from public.profiles where user_id = $1", [A]);
+    expect(new Date(one.rows![0].completed_at).toISOString()).toBe(new Date(rows[0].at).toISOString());
+    // Steg 1 får ingen rad i journey_steps.
+    expect((await db.query("select 1 from public.journey_steps where user_id = $1", [A])).rows).toHaveLength(0);
+  });
+
+  it("steg 01 kräver inget projekt (ingång A), men steg 02 gör det", async () => {
+    expect((await completeAndCompare(E, 1)).error).toMatch(/onboardingCompleted/);
+    expect((await completeOnboarding(E)).error).toBeNull();
+    expect((await completeAndCompare(E, 1)).error).toBeNull();
+    expect((await complete(E, 2)).error).toMatch(/Inget aktivt projekt/);
+  });
+
+  it("en gammal rad för steg 01 räknas inte: steg 02 kräver klar onboarding (beslut 2026-10-02)", async () => {
+    await markDoneDirectly(C, [1]);
+    expect((await completeAndCompare(C, 1)).error).toMatch(/onboardingCompleted/);
+    expect((await completeAndCompare(C, 2)).error).toMatch(/Föregående/);
   });
 
   it("ett redan klart steg ger samma datum igen och ändras inte", async () => {
@@ -274,23 +310,16 @@ describe("complete_journey_step: kraven", () => {
   });
 
   it("ett återkallat bevis uppfyller inget krav", async () => {
-    for (const id of FIT_QUESTION_IDS) await recordFit(B, fitSubjectRef(id));
-    const { rows } = await db.query<{ id: string }>(
-      "select id from public.evidence where user_id = $1 and subject_ref = 'fit:time'",
-      [B],
-    );
-    await queryAs(db, B, "select public.retract_evidence($1, 'Fel svar')", [rows[0].id]);
-    expect((await completeAndCompare(B, 1)).error).toMatch(/fit_time/);
+    await markDoneDirectly(B, [2]);
+    await insertSystemEvidence(B, "registerMarketCount", TODAY);
+    await db.query("update public.evidence set retracted_at = now(), retracted_reason = 'Fel' where user_id = $1", [B]);
+    expect((await completeAndCompare(B, 3)).error).toMatch(/marketCount/);
   });
 
-  it("passformssvar med andra frågor än de fyra räknas inte mot steg 01", async () => {
-    for (const ref of ["fit:a", "fit:b", "fit:c", "fit:d"]) await recordFit(C, ref);
-    expect((await completeAndCompare(C, 1)).error).toMatch(/fit_/);
-  });
-
-  it("A:s bevis uppfyller inte B:s krav", async () => {
-    // A har alla fyra svaren, B saknar fit:time efter återkallelsen ovan.
-    expect((await complete(B, 1)).error).toMatch(/fit_time/);
+  it("A:s onboarding uppfyller inte B:s steg 01 och 02", async () => {
+    expect((await completeAndCompare(B, 1)).error).toMatch(/onboardingCompleted/);
+    await db.query("delete from public.journey_steps where user_id = $1 and step_number = 2", [B]);
+    expect((await completeAndCompare(B, 2)).error).toMatch(/Föregående/);
   });
 });
 

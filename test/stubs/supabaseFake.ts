@@ -221,7 +221,10 @@ export function makeSupabaseFake(
       try {
         return { data: handler(args, store), error: null };
       } catch (error) {
-        return { data: null, error: { message: error instanceof Error ? error.message : String(error) } };
+        const message = error instanceof Error ? error.message : String(error);
+        const code = (error as { code?: unknown }).code;
+        // En handläggare kan sätta felkoden (errcode i raise exception).
+        return { data: null, error: typeof code === "string" ? { message, code } : { message } };
       }
     },
     /** Bara för tester: läs en tabell direkt. */

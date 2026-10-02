@@ -321,10 +321,7 @@ export const en = {
     scoreAfter: "The step is done. Your score is now {total}.",
     trace: "Step {step} marked as done",
     requirements: {
-      fit_skills: "An answer about your skills (Memory, Profile)",
-      fit_network: "An answer about your network (Memory, Profile)",
-      fit_time: "An answer about your time (Memory, Profile)",
-      fit_money: "An answer about your money (Memory, Profile)",
+      onboardingCompleted: "Your answers in the profile conversation (About you)",
       activeProject: "An active project",
       marketCount: "Number of companies from the register",
       competitorSet: "Competitors from the register",

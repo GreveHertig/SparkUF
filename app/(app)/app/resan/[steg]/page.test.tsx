@@ -53,7 +53,7 @@ afterEach(() => {
 });
 
 beforeEach(() => {
-  getStepCompletionMock.mockResolvedValue({ stepNumber: 1, status: "missing", missing: ["fit_skills"], progress: [] });
+  getStepCompletionMock.mockResolvedValue({ stepNumber: 1, status: "missing", missing: ["onboardingCompleted"], progress: [] });
 });
 
 async function renderStep(steg: string) {
@@ -143,7 +143,7 @@ describe("/app/resan/[steg] (PR 9)", () => {
     getStepDetailMock.mockResolvedValue(detail());
     await renderStep("1");
     expect(screen.getByText(sv.stepCompletion.missingTitle)).toBeInTheDocument();
-    expect(screen.getByText(sv.stepCompletion.requirements.fit_skills)).toBeInTheDocument();
+    expect(screen.getByText(sv.stepCompletion.requirements.onboardingCompleted)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: sv.stepCompletion.cta })).not.toBeInTheDocument();
   });
 

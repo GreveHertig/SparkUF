@@ -321,10 +321,7 @@ export const sv = {
     scoreAfter: "Steget är klart. Poängen är nu {total}.",
     trace: "Steg {step} markerat som klart",
     requirements: {
-      fit_skills: "Ett svar om din kompetens (Minnet, Profilen)",
-      fit_network: "Ett svar om ditt nätverk (Minnet, Profilen)",
-      fit_time: "Ett svar om din tid (Minnet, Profilen)",
-      fit_money: "Ett svar om dina pengar (Minnet, Profilen)",
+      onboardingCompleted: "Svaren i profilsamtalet (Om dig)",
       activeProject: "Ett aktivt projekt",
       marketCount: "Antal bolag ur registret",
       competitorSet: "Konkurrenter ur registret",
