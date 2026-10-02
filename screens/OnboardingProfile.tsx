@@ -6,6 +6,7 @@ import { ComingSoon } from "@/components/ui/ComingSoon";
 import { useI18n } from "@/i18n/context";
 import type { OnboardingScript } from "@/ports/ProfileRepository";
 import { ChatLine } from "./blocks/ChatBlocks";
+import { ProfileAnswerForm, type OnboardingFormAction } from "./blocks/OnboardingForms";
 
 // Frågan står ensam en stund, svaret kommer, och samtalet går vidare av sig
 // självt (avsnitt 9.1): ingen ska behöva klicka på pratbubblorna.
@@ -25,6 +26,9 @@ export type OnboardingProfileProps = {
   continueHref: string;
   /** Bara demot behöver en sidoeffekt (markera onboardingen klar). */
   onContinue?: () => void;
+  /** Bara plattformen: grundaren skriver egna svar, och actionen sparar dem.
+   * Utan den visas demots samtal med färdiga svar, som förut. */
+  answerAction?: OnboardingFormAction;
 };
 
 /**
@@ -33,7 +37,7 @@ export type OnboardingProfileProps = {
  * `/start/profil`. Ett byte av ingång (annat samtal) monteras om via `key`
  * av anroparen, så skärmen behöver inte nollställa sig själv.
  */
-export function OnboardingProfile({ data, continueHref, onContinue }: OnboardingProfileProps) {
+export function OnboardingProfile({ data, continueHref, onContinue, answerAction }: OnboardingProfileProps) {
   const { t } = useI18n();
   const copy = t.onboarding.profile;
 
@@ -41,10 +45,12 @@ export function OnboardingProfile({ data, continueHref, onContinue }: Onboarding
     <div className="fdd-page fdd-onboarding">
       <header className="fdd-head">
         <h1 className="fd-h2">{copy.title}</h1>
-        <p className="fd-lede">{copy.subtitle}</p>
+        <p className="fd-lede">{answerAction ? copy.formSubtitle : copy.subtitle}</p>
       </header>
 
-      {data.script ? (
+      {data.script && answerAction ? (
+        <ProfileAnswerForm questions={data.script.questions} action={answerAction} />
+      ) : data.script ? (
         <Conversation script={data.script} continueHref={continueHref} onContinue={onContinue} />
       ) : (
         <div className="fdd-onboarding__grid">

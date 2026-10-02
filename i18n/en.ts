@@ -540,6 +540,10 @@ export const en = {
       subtitle: "Click the answer to move on — it builds the profile Spark works from.",
       buildingTitle: "Your profile so far",
       continueCta: "Continue",
+      formSubtitle: "Answer in your own words. Your answers build the profile Spark starts from.",
+      submitCta: "Save and continue",
+      submittingCta: "Saving …",
+      invalidTemplate: "Answer every question, with at most {max} characters per answer.",
     },
     idea: {
       title: "The idea, screened",
@@ -552,6 +556,12 @@ export const en = {
       sharperTitle: "A sharper version",
       sharperWhyLabel: "Why",
       continueCta: "Continue to the profile chat",
+      formSubtitle: "Give the idea a name and describe it in one sentence. It becomes your project in Spark.",
+      nameLabel: "What is the idea called?",
+      oneLinerLabel: "Describe the idea in one sentence",
+      submitCta: "Save the idea",
+      submittingCta: "Saving …",
+      invalidTemplate: "Fill in both fields. The name can be at most {nameMax} characters and the description at most {oneLinerMax}.",
     },
     // Proposal, reviewed by Theo (onboarding PR 1).
     profileQuestions: {

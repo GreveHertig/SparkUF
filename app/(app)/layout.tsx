@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 // Demots stil är appens stil (docs/plan-en-design.md, DESIGN.md). Skopad
 // under .fd/.fdd — se PR 2 (skalet) för wrappern nedan, som demots egen
 // layout (app/demo/layout.tsx) redan gör åt /demo.
@@ -32,6 +33,13 @@ export default async function LiveAppShellLayout({ children }: { children: React
   // Bindande sessionskontroll (docs/arkitektur.md) — proxy.ts har redan
   // omdirigerat de flesta obehöriga tidigare, men den här är den som gäller.
   await requireUser();
+
+  // Spärren mellan /start och /app (onboarding live, PR 3): en grundare som
+  // inte är klar med onboardingen har inget att se här än. /start skickar
+  // tillbaka hit när den är klar, så de två spärrarna kan inte ge en loop.
+  // Utan session har requireUser redan skickat till /logga-in.
+  const { completed } = await liveProfileRepository.getOnboardingStatus();
+  if (!completed) redirect("/start");
 
   const profile = await liveProfileRepository.getProfile().catch((error) => {
     if (isPlaceholderError(error)) return FALLBACK_PROFILE;
