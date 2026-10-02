@@ -399,3 +399,39 @@ till Gemini, eftersom den har källa och datum, på samma sätt som 25 000 kr
 för aktiekapital. EUR-Lex pekar på den svenska versionen. Riksdagen är inte
 kontrollerad och inget ämne använder den. Om den ska finnas kvar väntar på
 Theos beslut. Ingenting är juristgranskat.
+
+## 2026-10-02
+
+**Pulsens risksignaler: två Tavily-anrop per grundare och dag, klassning utan modell, ingen migration.**
+Beslut av Bruno, efter Hampus Hedelius tips om yttre omständigheter
+(Rotary-pitchen 2026-10-02). Detaljer i `docs/moduler/webbresearch-och-pulsen.md`, "Risksignaler".
+- **Kostnad:** varje hämtning gör en nyhetssökning och en risksökning. Taket
+  går från ett till två anrop per grundare och dag. Ett tema per dag i tur
+  och ordning, i stället för sex sökningar per dag, håller kostnaden fast.
+  Att dela sökningar per bransch skulle sänka den ytterligare men kräver en
+  ny tabell. Det tas när Erik godkänt en migration.
+- **Ingen modell, ingen allvarlighetsgrad.** Riskområdet läses ur ord i
+  artikeln. En gradering ("hög risk") skulle vara en gissning utan källa, och
+  datalöftet gäller. Förslagen är allmänna i18n-texter per område, inga
+  påståenden om den enskilda nyheten.
+- **Ingen migration.** Riskområdet sparas i den befintliga kolumnen
+  `pulse_signals.category` som `risk:<område>`.
+
+**Pulsens möjligheter och spelböcker.** Beslut av Bruno (2026-10-02), efter
+teamets önskan att Pulsen ska visa hur en risk påverkar företaget och hur
+man löser den.
+- **Möjligheter** (stöd och bidrag, offentlig upphandling) delar motor och
+  rotation med riskerna. Två Tavily-anrop per grundare och dag som förut.
+- **Spelböckerna är förskrivna i18n-texter, inte genererade.** Allmänna råd
+  per område, utan siffror och utan påståenden om den enskilda nyheten. De
+  märks "ännu inte granskad av en rådgivare" tills en kunnig person (förslag:
+  Hampus Hedelius) har läst dem. Att räkna påverkan med grundarens egna
+  siffror väntar på att Resan sparar kalkylen; en AI-bedömning per nyhet är
+  ett eget teambeslut.
+
+**Pulsens omdöme och bevakningar (gren `modul/pulsen-bevakningar`, väntar på Eriks godkännande).**
+Förslag av Bruno (2026-10-02). Två nya tabeller, `pulse_feedback` och
+`pulse_watches`, med RLS prövad i PGlite. Porten får fyra valfria metoder,
+så att demoadaptern (demot är fryst) inte behöver ändras. Adaptern tål att
+tabellerna saknas, så koden kan mergas före migreringen. "Relevant" sparas
+men används inte än; den är underlag för en senare rangordning.

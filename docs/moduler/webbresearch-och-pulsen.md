@@ -172,6 +172,107 @@ egen rad till `done` får hen själv ingen signal den dagen, inget mer.
   samma fejk, och opt-in `adapters/live/PulseProvider.live.test.ts` mot
   riktiga Tavily.
 
+## Risksignaler (Pulsen, 2026-10-02)
+
+Hampus Hedelius tips efter Rotary-pitchen: grundaren ska få veta om yttre
+omständigheter som kan påverka företaget. Pulsen visar därför **risker att
+bevaka** bredvid vanliga branschnyheter.
+
+- **Två sökningar per hämtning.** Dagscachen är oförändrad (en hämtning per
+  grundare och svensk dag). Varje hämtning gör nu nyhetssökningen som förut
+  och en **risksökning**: dagens tema plus projektets nyckelord. Taket är
+  alltså två Tavily-anrop per grundare och dag.
+- **Sex teman i tur och ordning** (`riskThemeFor`, räknat ur dagscachens
+  datum): kostnader och råvaror, räntor och finansiering, regler och krav,
+  konkurrens, efterfrågan och konjunktur, leveranser. Alla sex täcks på sex
+  dagar utan fler anrop per dag.
+- **Klassning utan modell** (`classifyRisk`): ord i rubrik och text jämförs
+  med ordbörjan per område (`RISK_TERMS`). Rubriken väger tre gånger mer än
+  brödtexten. Listorna är medvetet snäva. En vanlig nyhet som själv handlar
+  om en risk (t.ex. "Räntan höjs …") blir en risk. En träff från
+  risksökningen som inte själv nämner ett riskord sparas inte.
+- **Lagring utan migration.** Riskområdet sparas i `pulse_signals.category`
+  som `risk:<område>`. Äldre rader ("Branschnyhet") och okända värden läses
+  som vanliga nyheter (vitlista i `riskAreaOf`).
+- **Visning.** `getSignals` ger högst 3 risker och fyller på med nyheter
+  till högst 5 (porten säger 3–5), nyast först. Risker trängs alltså inte
+  undan av en dag med många nyheter. Varje risk har `risk: { area, actions }`
+  (`core/domain.ts`). Kategori, "varför" och förslag byggs från i18n
+  (`pulsePage.riskAreas`) per språk.
+- **Förslagen är allmänna** ("Se vilka kostnader i din kalkyl som
+  påverkas"), inga påståenden om nyheten och inga siffror. Sidan säger det
+  i ingressen. Ingen allvarlighetsgrad sätts: den skulle vara gissad.
+- **Fel.** Ett nätverksfel i risksökningen stoppar inte dagens nyheter (status
+  `done`/`empty` efter nyheterna). Ett konfigurationsfel syns och ger
+  `error`, som i nyhetssökningen.
+- **Skärmen** (`screens/Pulse.tsx`): utan risker ser sidan ut som förut (en
+  lista, demot oförändrat). Med risker visas "Risker att bevaka" först, med
+  område, förklaring, "Vad du kan göra" och källan som `media`, sedan
+  "Nyheter i din bransch".
+
+## Möjligheter och spelböcker (Pulsen, 2026-10-02)
+
+- **Möjligheter** är en tredje sort bredvid nyheter och risker: **stöd och
+  bidrag** (`funding`) och **offentlig upphandling** (`procurement`). Samma
+  motor: ordbörjan per område (`OPPORTUNITY_TERMS`), samma vikt på rubriken,
+  sparas som `opportunity:<område>` i `category`. `classify` väljer risk,
+  möjlighet eller ingenting; vid lika poäng vinner risken.
+- **Rotationen** har nu åtta teman (sex risker, två möjligheter, `themeFor`).
+  Fortfarande två Tavily-anrop per grundare och dag.
+- **Urvalet:** högst 3 risker, högst 2 möjligheter, resten nyheter, högst 5
+  totalt. `PulseSignal.opportunity` (valfri) bär område och förslag.
+- **Spelböcker** (`pulsePage.riskAreas.<område>.playbook` och
+  `opportunityAreas.<område>.playbook`, sv och en): under varje risk "Så
+  påverkar det dig" (frågor att pröva mot det egna företaget) och "Så löser
+  du det" (numrerade steg); under varje möjlighet "Passar det dig?" och "Så
+  tar du vara på det". Utfällbara, stängda från början. Märkta "Allmän
+  vägledning, ännu inte granskad av en rådgivare". Innehållet är allmänna
+  råd utan siffror och utan påståenden om den enskilda nyheten. **Ska
+  granskas** (förslag: Hampus Hedelius) innan märkningen tas bort.
+- **Skärmen:** "Risker att bevaka", "Möjligheter", "Nyheter i din bransch".
+  Utan risker och möjligheter ser sidan ut som förut.
+
+Nästa steg (inte byggt): dela sökningar mellan grundare i samma bransch
+(kräver en tabell, alltså en migration som Erik godkänner), och koppla en
+risk till grundarens egna antaganden i kalkylen (kräver data från Resan).
+
+## Omdöme och bevakningar (Pulsen, 2026-10-02, gren `modul/pulsen-bevakningar`)
+
+Gör Pulsen bättre för varje grundare över tid: grundaren säger vad som
+träffar, och lägger till det Pulsen ska leta efter.
+
+- **Migrering** `supabase/migrations/20261002120000_pulse_feedback_watches.sql`
+  (**kräver Eriks godkännande och körning**):
+  - `pulse_feedback` (user_id, signal_id, verdict `relevant`/`not_relevant`).
+    RLS: bara egna rader, och insert/update bara för en signal som är
+    grundarens egen (`exists` mot `pulse_signals`). Försvinner med signalen.
+  - `pulse_watches` (id, user_id, project_id, kind `competitor`/`keyword`,
+    term 2–60 tecken utan styrtecken). Unik per projekt oavsett stora och små
+    bokstäver. RLS: select, insert och delete på egna rader, ingen update.
+  - Prövad i en riktig Postgres: `supabase/migrations/pulseFeedbackWatches.pg.test.ts` (13 fall).
+- **Porten:** fyra **valfria** metoder (`setFeedback`, `getWatches`,
+  `addWatch`, `removeWatch`). Bara liveadaptern har dem; demot visar
+  varken knappar eller bevakningar.
+- **Liveadaptern:**
+  - "Inte relevant" döljer signalen vid läsning. "Relevant" sparas men
+    ändrar inget än (underlag för senare rangordning).
+  - Bevakningarna läggs till sökorden i båda sökningarna och i
+    relevansfiltret. En träff som nämner en bevakad konkurrent och inget
+    annat riskord blir en konkurrensrisk. Med bevakningar söker Pulsen även
+    när projektets egna ord inte räcker.
+  - Högst 10 bevakningar per projekt (`MAX_WATCHES`). Ordet rensas
+    (`cleanWatchTerm`). Samma ord två gånger ignoreras.
+  - **Tål att tabellerna saknas** (PostgREST `PGRST205`, Postgres `42P01`):
+    signalerna visas som vanligt, inget döljs, och `getWatches`/`addWatch`/
+    `setFeedback` ger `NotImplementedError`. Grenen kan alltså mergas före
+    migreringen utan att något går sönder.
+- **`/app/pulsen`:** Server Actions i `app/(app)/app/pulsen/actions.ts`
+  (indata kontrolleras där och i adaptern, användaren tas ur sessionen).
+  Routen visar knappar och bevakningar bara när `getWatches` svarar.
+- **Skärmen:** "Är det här relevant för dig?" med två knappar under varje
+  signal ("Inte relevant" döljer kortet direkt), och "Dina bevakningar" med
+  lista, borttagning och ett formulär. Ändringar gäller från nästa hämtning.
+
 ## Acceptanskriterier
 
 - `search(query)` returnerar en lista där varje resultat har `title`, `url`
@@ -195,7 +296,8 @@ visas för användaren.
 ## Status
 
 - **Pulsen: live** (2026-09-25, gren `modul/pulsen`). Se "Hur liveadaptern
-  fungerar i dag (Pulsen)" ovan. Används av `/app` (Hem).
+  fungerar i dag (Pulsen)" ovan. Används av `/app` (Hem) och `/app/pulsen`.
+  Risksignaler sedan 2026-10-02, se "Risksignaler".
 - **Webbresearch: stub.** `adapters/live/ResearchProvider.ts` kastar
   `NotImplementedError`, med hänvisning hit. Den behöver en
   cachningsstrategi innan den anropar Tavily på riktigt.

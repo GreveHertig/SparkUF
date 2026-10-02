@@ -3836,6 +3836,64 @@ Kontrollerat utan fynd i `/app`: Poäng (typen kommer ur databasen), Juridik (ku
 - **Hem väntar på Tavily** (Pulsen: liveadaptern, Kända problem): inte ändrat, Theodors skärm. Förslag: Hem-rutten hämtar Pulsen i en egen async komponent inom `<Suspense>`, och `AppHome` tar emot "Dagens signal" som en färdig slot (`ReactNode`) i stället för `pulseSignals`. Resten av Hem visas direkt, och signalen kommer när Tavily svarat. Kräver en prop i `AppHome`, alltså `screens/`.
 - Verifierat: `pnpm typecheck`, `pnpm lint`, `pnpm test` (866 gröna, 36 skippade), `pnpm build`. Ändrade filer: `app/(app)/app/marknad/page.tsx` och dess test samt `adapters/live/rls.live.test.ts`. Ingen av dem används av demot.
 
+## Pulsen: risksignaler (2026-10-02, Bruno, direkt på `design/en-design`)
+Hampus Hedelius tips efter Rotary-pitchen: yttre omständigheter som kan påverka företaget. Beslut i `docs/beslut.md` (2026-10-02), beskrivning i `docs/moduler/webbresearch-och-pulsen.md`, "Risksignaler".
+
+### Klart
+- **Liveadaptern** (`adapters/live/PulseProvider.ts`) gör en risksökning per hämtning med dagens tema (sex teman i tur och ordning) och projektets nyckelord. Varje träff klassas utan modell till ett av sex riskområden eller som nyhet. Högst 3 risker och högst 5 signaler totalt. Riskområdet sparas som `risk:<område>` i `category`, utan migration.
+- **`core/domain.ts`:** `PulseSignal.risk` (valfri) och `PULSE_RISK_AREAS`. Porten (`ports/`) är oförändrad.
+- **`screens/Pulse.tsx`:** "Risker att bevaka" först, med en orange "Risk"-markering, området, "Varför det spelar roll", "Vad du kan göra" och källan. Sedan "Nyheter i din bransch". Utan risker ser sidan ut som förut.
+- **i18n** (sv och en): `pulsePage.risksTitle`, `risksIntro`, `newsTitle`, `riskLabel`, `actionsTitle` och `riskAreas` (namn, "varför" och tre förslag per område).
+- **`design/site.css`:** en ny klass, `.fdd-risk-actions`, sist i filen. Inget befintligt ändrat.
+- **Tester:** adaptern (risksökningen, klassning, spara och läsa, högst 3 risker, äldre rader, båda språken, fel i risksökningen; dagscachens tester räknar nu hämtningar i stället för anrop), klassningen och temarotationen, skärmen (med och utan risker). Kontraktstestet oförändrat och grönt.
+- **Demot oförändrat:** 28 skärmbilder (`/demo` och `/demo/pulsen`, sju lägen, 1440 och 390 px) identiska med före (AE 0). Riskvyn kontrollerad med en tillfällig förhandsvisningssida (inte committad) i 1440 och 390 px.
+- Verifierat: `pnpm typecheck`, `pnpm lint`, `pnpm test` (963 gröna, 36 skippade), `pnpm build`. Säkerhet granskad manuellt: bara nyckelord och fasta ord i sökfrågorna, webbtext visas som text, riskområdet ur databasen kontrolleras mot en vitlista, inga nya nycklar.
+
+### Inte verifierat
+- **Mot riktiga Tavily och inloggat.** Tavily-nyckeln finns nu i Vercel (Erik, 2026-10-02). Kontrollera efter nästa deploy att `/app/pulsen` visar risker för ett konto med aktivt projekt, och att klassningen träffar rätt på riktiga rubriker. Ordlistorna (`RISK_TERMS`) kan behöva justeras efter det.
+
+### Kända problem och nästa steg
+- **Kostnaden fördubblas** per grundare och dag (två anrop i stället för ett). Delad sökning per bransch sänker den men kräver en migration (Erik).
+- **Klassningen är ordbaserad.** Den kan missa en risk som är formulerad på ett annat sätt och kan ibland ta en nyhet för en risk. Listorna är snäva för att undvika falsklarm.
+- **Hem** (`screens/AppHome.tsx`, Theodors) visar dagens signal utan riskmarkering. Den kan vara en risk, och kategorin säger då "Risk · …".
+- **Koppla risken till grundarens antaganden** ("din kalkyl räknar med X") kräver data från Resan. Inte byggt.
+
+## Pulsen: möjligheter och spelböcker (2026-10-02, Bruno, direkt på `design/en-design`)
+
+### Klart
+- **Möjligheter:** stöd och bidrag samt offentlig upphandling, som en tredje sort bredvid nyheter och risker (`adapters/live/PulseProvider.ts`, `classify`, `OPPORTUNITY_TERMS`). Rotationen har åtta teman, fortfarande två Tavily-anrop per grundare och dag. Högst 3 risker, 2 möjligheter och 5 signaler totalt. Sparas som `opportunity:<område>` i `category`, utan migration. Okända kategorier läses som nyheter (vitlista, testat).
+- **Spelböcker** under varje risk och möjlighet (`screens/Pulse.tsx`, i18n sv och en): "Så påverkar det dig" och "Så löser du det" (för möjligheter "Passar det dig?" och "Så tar du vara på det"). Utfällbara och märkta "Allmän vägledning, ännu inte granskad av en rådgivare".
+- **`core/domain.ts`:** `PulseSignal.opportunity` (valfri) och `PULSE_OPPORTUNITY_AREAS`. Porten är oförändrad.
+- **`design/site.css`:** `.fdd-playbook` sist i filen. Inget befintligt ändrat.
+- **Tester:** möjligheternas klassning, risk vinner vid lika poäng, spara och läsa, högst 2 möjligheter, vitlistan, båda språken, rotationen över åtta dagar, skärmen (grön markering, spelboken stängd från början med innehåll och märkning, ingen spelbok på en vanlig nyhet).
+- **Demot oförändrat:** 28 av 28 skärmbilder identiska med före (AE 0). Den nya vyn kontrollerad med en tillfällig förhandsvisningssida (inte committad) i 1440 och 390 px, med spelboken utfälld.
+- Verifierat: `pnpm typecheck`, `pnpm lint`, `pnpm test` (972 gröna, 36 skippade), `pnpm build`.
+
+### Återstår
+- **Spelböckerna ska granskas** av en kunnig person (förslag: Hampus Hedelius) innan märkningen "ännu inte granskad" tas bort.
+- **Inte provat mot riktiga Tavily.** Ordlistorna för möjligheter (`OPPORTUNITY_TERMS`) kan behöva justeras efter riktiga rubriker.
+- **Inte byggt, och varför:** uträkning av påverkan med grundarens egna siffror (Resan sparar inte kalkylen än), knapp till Medgrundaren (Medgrundaren finns inte i `/app` än), veckomejl (ingen mejltjänst), AI-bedömning per nyhet (teambeslut). Relevansknappar och egna bevakningar kräver nya tabeller och förbereds separat för Eriks granskning.
+
+## Pulsen: omdöme och bevakningar (2026-10-02, Bruno, gren `modul/pulsen-bevakningar`, PR mot `design/en-design`)
+**Väntar på Erik:** migreringen `20261002120000_pulse_feedback_watches.sql` ska godkännas och köras. Koden tål att den saknas, så PR:en kan mergas före. Då syns bara inga knappar och inga bevakningar.
+
+### Klart
+- **Omdöme:** "Relevant" eller "Inte relevant" under varje signal i `/app/pulsen`. "Inte relevant" döljer signalen, nu och framöver.
+- **Egna bevakningar:** konkurrenter och nyckelord, högst 10 per projekt. De ingår i sökningen och i relevansfiltret. En bevakad konkurrent som nämns blir en konkurrensrisk.
+- **Migrering** med RLS: bara egna rader, och omdöme bara om egna signaler. Prövad i en riktig Postgres (PGlite, 13 fall).
+- **Porten:** fyra valfria metoder. Demoadaptern och demot är orörda.
+- **Server Actions** (`app/(app)/app/pulsen/actions.ts`) med indatakontroll. Okända fel loggas bara med namn, aldrig databasens svar.
+- **Tester:** adaptern (omdöme, bevakningar, gränser, tabellerna saknas), migreringen (PGlite), Server Actions, routen (med och utan tabellerna, äkta fel kastas) och skärmen (knappar, dölj, fel, formulär, borttagning, taket).
+- **Demot oförändrat:** 28 av 28 skärmbilder identiska (AE 0). Nya vyn kontrollerad med en tillfällig förhandsvisningssida (inte committad) i 1440 och 390 px.
+- Verifierat: `pnpm typecheck`, `pnpm lint`, `pnpm test` (1016 gröna, 36 skippade), `pnpm build`.
+
+### Inte verifierat
+- **Mot riktig Supabase:** migreringen är inte körd. `adapters/live/rls.live.test.ts` har inga fall för de nya tabellerna än; lägg till dem när migreringen körts (de skulle annars falla mot en databas utan tabellerna).
+- **e2e:** `/app/pulsen` finns redan i `e2e/app.spec.ts`. Kör `pnpm test:e2e` efter migreringen.
+
+### Nästa steg
+- Använd "Relevant" för att rangordna (t.ex. källor eller ord som ofta får "Relevant" först).
+- Låt grundaren ångra "Inte relevant".
 ## Onboarding live, PR 2: liveadaptrarna (klar 2026-10-01, gren `plattform/onboarding-live-2`, PR mot `prototyp`)
 Andra PR:en av tre (plan i "Onboarding live, PR 1" ovan). Migreringen `20260930120000_onboarding.sql` är körd i SparkUF2 av Erik. Inga routefiler är ändrade, det är PR 3.
 
