@@ -3746,3 +3746,65 @@ a.fdd-segmented__item {
 .fdd-playbook__note {
   font-size: 0.8125rem;
 }
+
+/* Pulsens omdöme under en signal (bara i /app). */
+.fdd-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+}
+
+/* Frågan på egen rad, knapparna bredvid varandra under. */
+.fdd-feedback > span:first-child {
+  flex-basis: 100%;
+}
+
+/* Pulsens egna bevakningar (bara i /app). */
+.fdd-watches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.fdd-watch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+  border: 1px solid var(--fd-line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.9375rem;
+}
+
+.fdd-watch__kind {
+  font-size: 0.75rem;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--fd-quiet);
+}
+
+.fdd-watch__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--slate-600);
+  cursor: pointer;
+}
+
+.fdd-watch__remove:hover,
+.fdd-watch__remove:focus-visible {
+  background: var(--slate-100);
+  color: var(--ink-900);
+}
+
+.fdd-watch__select {
+  flex: 0 0 auto;
+}

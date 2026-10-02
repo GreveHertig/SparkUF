@@ -471,6 +471,30 @@ export type Dictionary = {
       /** Ärlig märkning: allmän vägledning, inte granskad av en rådgivare. */
       note: string;
     };
+    /** Omdömet under en signal i /app (pulse_feedback). */
+    feedback: {
+      question: string;
+      relevant: string;
+      notRelevant: string;
+      thanks: string;
+      hidden: string;
+      failed: string;
+    };
+    /** Egna bevakningar i /app (pulse_watches). `{max}` = taket, `{term}` = ordet. */
+    watches: {
+      title: string;
+      intro: string;
+      kindLabel: string;
+      kindCompetitor: string;
+      kindKeyword: string;
+      termLabel: string;
+      termPlaceholder: string;
+      add: string;
+      remove: string;
+      empty: string;
+      limit: string;
+      errors: { too_short: string; too_many: string; no_project: string; failed: string };
+    };
   };
   memoryPage: {
     title: string;

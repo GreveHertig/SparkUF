@@ -166,6 +166,19 @@ export class OutreachSendDisabledError extends NotImplementedError {
  * matchar det här (t.ex. ett nätverksfel mot Supabase) ska kastas vidare,
  * aldrig tystas till "Kommer snart".
  */
+/**
+ * Kastas av Pulsens liveadapter när en bevakning inte kan sparas av ett skäl
+ * grundaren kan rätta: ordet är för kort, taket är nått, eller det finns inget
+ * aktivt projekt att bevaka för. Server Action-lagret översätter `reason` till
+ * en text i i18n. Ärver INTE NotImplementedError: det är ett indatafel.
+ */
+export class PulseWatchError extends Error {
+  constructor(readonly reason: "too_short" | "too_many" | "no_project") {
+    super(`Pulsen: bevakningen kunde inte sparas (${reason}).`);
+    this.name = "PulseWatchError";
+  }
+}
+
 export function isPlaceholderError(error: unknown): boolean {
   return (
     error instanceof NotImplementedError ||
