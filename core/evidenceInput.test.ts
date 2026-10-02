@@ -161,3 +161,23 @@ describe("toPartEvidence — regel 5: tak för självrapporterade bevis (beslut 
     expect(items[6]).toMatchObject({ contradicts: true, points: 0 });
   });
 });
+
+describe("toPartEvidence — regel 5: en sort utan poäng skickas inte till calculateScore", () => {
+  it("ett beslutat pris fyller inte Betalningsvilja och märks noPoints", () => {
+    const decided = row("priceDecided", { enteredBy: "founder" });
+    const result = toPartEvidence([decided], TODAY, LABELS);
+    expect(part(result, "willingnessToPay").items).toHaveLength(0);
+    expect(result.status[decided.id]).toBe("noPoints");
+  });
+
+  it("delen förblir en lucka i calculateScore, inte 0 (beslut B4)", () => {
+    const result = toPartEvidence([row("priceDecided", { enteredBy: "founder" })], TODAY, LABELS);
+    const snapshot = calculateScore({ phase: "tryAfterCalls", parts: result.parts, calculatedAtIso: `${TODAY}T00:00:00Z` });
+    expect((snapshot.emptyParts ?? []).map((empty) => empty.name)).toContain("willingnessToPay");
+  });
+
+  it("ett föråldrat beslutat pris märks stale, inte noPoints", () => {
+    const old = row("priceDecided", { enteredBy: "founder", source: { namn: "Du", hämtad: "2025-01-01" } });
+    expect(toPartEvidence([old], TODAY, LABELS).status[old.id]).toBe("stale");
+  });
+});

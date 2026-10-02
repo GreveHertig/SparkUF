@@ -606,7 +606,7 @@ SQL:en prövas mot en riktig Postgres i CI med PGlite (`supabase/migrations/evid
 ### 11.5 Avvikelser från avsnitt 1–10
 
 - `RecordEvidenceInput` har inte `responseId` och `companyId`. Grundarens väg har inga sådana, och kolumnerna finns för systemvägen.
-- Ingen server action är byggd. Inget flöde i UI:t anropar skrivvägen än (byggordning punkt 5, Passform från profilen, är nästa). En action utan anropare vore en öppen ingång i onödan.
+- Ingen server action byggdes på grenen `plattform/bevislagring`. Den första, Passform från profilen, kom på `plattform/poangen-ror-sig` (se 11.7).
 - `previousTotal`-regeln i 3.4 är utökad: har totalen ändrats sedan den senaste snapshotten blir orsaken antingen "för gamla" (om totalen sjönk och något bevis är för gammalt) eller "räknad om".
 
 ### 11.6 De fyra felen i avsnitt 0
@@ -615,4 +615,44 @@ SQL:en prövas mot en riktig Postgres i CI med PGlite (`supabase/migrations/evid
 2. **`calculateScore` kastade:** se B4.
 3. **`previousTotal`:** varje snapshot bär sin egen förändring. Läsningen visar `senaste.total − senaste.delta` när totalen fortfarande stämmer (`previousFromLatest` i `adapters/live/evidenceScore.ts`). Testat hela vägen genom två skrivningar och en läsning.
 4. **Fasen mot upplåsningstexten:** "efter steg N" gäller. Fasen räknas ur högsta *avklarade* steg (`scorePhaseForCompletedSteps` i `core/journey.ts`). Beslutet står i `docs/beslut.md`.
-   - **Kvar:** `UNLOCK_STEP` i `core/score.ts` säger "efter steg 08" för Produkt och "efter steg 09" för Genomförbarhet, men fasen Lansera låser upp båda efter steg 07, både i demot och nu i live. Det rättas inte här, eftersom `core/score.ts` bara fick ändras för B4.
+   - **Rättat på `plattform/poangen-ror-sig`:** `UNLOCK_STEP` i `core/score.ts` sade "efter steg 08" för Produkt och "efter steg 09" för Genomförbarhet, men fasen Lansera låser upp båda efter steg 07. Nu står 07 för båda. Beslut i `docs/beslut.md`.
+
+### 11.7 Skrivvägen i bruk och stegmarkeringen (grenen `plattform/poangen-ror-sig`, 2026-10-01)
+
+**Passform från profilen (byggordning punkt 5).**
+- **Var:** Under Profilen i `/app/minnet` finns fyra frågor: kompetens, nätverk, tid och pengar (`core/fitQuestions.ts`).
+- **Hur ett svar sparas:** Server action `saveFitAnswer` i `app/(app)/app/minnet/actions.ts` anropar `liveEvidenceRecorder.recordEvidence` med
+  - sorten `profileFitAnswer`
+  - `subjectRef` = `fit:<fråga>`
+  - källan `spark:profile` och dagens datum
+  - svaret i `quote`.
+- **Poängen efteråt:** Den räknas om på servern, och skalets poäng uppdateras via `revalidatePath("/app", "layout")` utan omladdning. Formuläret visar den nya poängen som en länk till Poäng-sidan.
+- **Märkning:** Ett profilsvar är inte självrapporterat i B6:s mening, så det räknas fullt. Det märks "Ditt eget svar" och visas med källa och datum.
+- **Ändra ett svar:** Det går inte än. Ett svar med samma fråga och samma datum blir `duplicate`.
+
+**Stegmarkeringen.**
+- **Var kravet sitter:** `public.complete_journey_step` med kraven i `journey_step_requirements`. Kraven speglas i `core/journeyRequirements.ts`, och tabellen och beslutet står i `docs/beslut.md`.
+- **Skrivvägen:** `journey_steps` är stängd för skrivning från klienter.
+- **Port och adapter:** `ports/JourneyProgress.ts`. Liveadaptern räknar om poängen efter ett avklarat steg och skriver en snapshot med orsaken `unlocked` om totalen ändrats (via `settleScore` i `adapters/live/EvidenceRecorder.ts`, den enda filen som får skriva snapshots).
+- **UI:** Steget i `/app/resan/[steg]` visar vad som saknas, eller knappen "Markera som klart".
+
+**Taket följer med.** Fasen räknas ur högsta avklarade steg, så taket höjs när steg 03 blir klart (`adapters/live/JourneyProgress.test.ts` prövar 16 → 20). I live stannar fasen ändå i Upptäck så länge Registret är grindat, eftersom steg 03 kräver registerdata.
+
+### 11.8 Krav för steg 06, 07 och 12 (grenen `plattform/stegkrav`, 2026-10-01)
+
+Theodors beslut på de tre öppna punkterna står i `docs/beslut.md` 2026-10-01. Migrationen är `supabase/migrations/20261001180000_journey_steps_06_07_12.sql`.
+
+- **Steg 06:** minst fem kundsvar som räknas i Problem och Betalningsvilja tillsammans, från minst tre olika bolag (`subject_ref`).
+  - Det kräver en tröskel per kravgrupp: tabellen `journey_step_group_thresholds` och `GROUP_THRESHOLDS` i `core/journeyRequirements.ts`.
+  - En grupp räknas som helhet. Varje bevis som matchar någon av gruppens rader räknas en gång, och antalet olika `subject_ref` jämförs med `min_subjects`. Utan tröskel räcker ett bevis, som förut.
+  - Ersättningsregeln i `record_evidence` (7.2b) gör att grundaren har högst två egna besked per bolag (ett om problemet, ett om priset). Fem svar kräver alltså minst tre bolag redan där. Tröskeln om tre bolag gäller ändå, även för svar som Spark tagit emot.
+- **Steg 07:** ett beslutat pris, ny sort `priceDecided` (Betalningsvilja). Ett godtaget pris är inte ett krav. En kund som godtar priset är fortfarande `customerPriceAccepted` och höjer Betalningsvilja.
+- **Steg 12:** en inskickad ansökan till en finansiär, ny sort `fundingApplied` (Genomförbarhet).
+- **De två nya sorterna ger ingen poäng** (`base_points` 0, villkoret ändrat till `>= 0`):
+  - Ett pris grundaren själv satt bevisar inte att någon betalar det, och en ansökan är inte beviljade pengar.
+  - Båda är `either`, så att de märks "Angivet av dig" när grundaren lägger in dem.
+  - `core/evidenceInput.ts` skickar dem inte till `calculateScore` och märker dem `noPoints`. Därför fyller de aldrig en tom del, som annars skulle visas som 0 i stället för som en lucka (B4).
+- **Livslängd:** `priceDecided` 365 dagar, eftersom ett pris blir gammalt. `fundingApplied` föråldras aldrig.
+- **UI:** `/app/resan/06` visar kravet i text. Antalet svar och bolag hittills räknas (`progress` i `StepCompletionView`) men visas inte. Det vore en uträknad sammanfattning, och de enskilda kundsvaren visas inte med källa någonstans i live. Poäng-sidan visar en källa per del. Antalet kan visas när en lista över svaren finns (CLAUDE.md, undantaget för uträknade sammanfattningar).
+- **Inte byggt:** något formulär för att ange ett beslutat pris, en ansökan eller kundsvar. Kraven går att uppfylla så fort skrivvägen anropas.
+

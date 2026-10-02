@@ -5,9 +5,10 @@ import { livePulseProvider } from "@/adapters/live/PulseProvider";
 import { isPlaceholderError } from "@/core/errors";
 
 /**
- * Resans `getHomeSummary` är en permanent stub (docs/moduler/resan.md,
- * NotImplementedError). Evidens kan vara klar men ändå sakna bevis för ett
- * nytt konto (EmptyStateError). Pulsen och Resans `getSteps` är byggda och
+ * Resans `getHomeSummary` ger handlingskortet, och `sinceLastTime` är null
+ * tills Utskick och svar är byggd (docs/moduler/resan.md); AppHome visar då
+ * "Kommer snart" i den rutan. Evidens kan vara klar men ändå sakna bevis för
+ * ett nytt konto (EmptyStateError). Pulsen och Resans `getSteps` är byggda och
  * kastar inga platshållarfel (getSteps ger alltid en full lista, getSignals
  * en ärlig tom lista) — deras anrop fångas alltså inte här, ett äkta fel
  * ska fortsätta kasta. `score`/`homeSummary` hämtas och fångas var för sig
@@ -37,7 +38,9 @@ export default async function LiveAppHomePage() {
   ]);
 
   // Pulsens källa är en artikel (domän och hämtdatum), inte ett register:
-  // datatypen "media" (docs/beslut.md, 2026-10-01). "Sedan sist" är en stubbe.
+  // datatypen "media" (docs/beslut.md, 2026-10-01). "Sedan sist" är null
+  // tills Utskick och svar finns; sätt då `sinceLastTime: "user"` eller
+  // "customer" här (källgenomgången, fynd 5 i docs/status.md).
   const data: AppHomeData = {
     todayIso,
     score,

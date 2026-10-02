@@ -160,6 +160,31 @@ export class OutreachSendDisabledError extends NotImplementedError {
 }
 
 /**
+ * Kastas av liveProjectRepository.createProject när grundaren redan har ett
+ * aktivt projekt (unika indexet projects_ett_aktivt_per_user, felkod 23505).
+ * Ett befintligt projekt skrivs aldrig över (docs/moduler/projekt-och-ide.md).
+ * Inte ett platshållarfel: den som anropar avgör vad som händer.
+ */
+export class ProjectExistsError extends Error {
+  constructor() {
+    super("Projekt och idé: det finns redan ett aktivt projekt.");
+    this.name = "ProjectExistsError";
+  }
+}
+
+/**
+ * Kastas av liveProfileRepository.completeOnboarding när onboardingen redan
+ * är klar. Ingen omgörning i v1 (beslut 2026-09-30, docs/status.md), så svaren
+ * skrivs aldrig över. Inte ett platshållarfel.
+ */
+export class OnboardingAlreadyCompletedError extends Error {
+  constructor() {
+    super("Profil: onboardingen är redan klar.");
+    this.name = "OnboardingAlreadyCompletedError";
+  }
+}
+
+/**
  * Route-filer fångar "det finns inget att visa än"-felen i samma
  * catch och visar `<ComingSoon />` för båda (uppdrag 14.4) — den ena för att
  * modulen inte är byggd, den andra för att kontot är nytt. Ett fel som INTE

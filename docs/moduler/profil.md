@@ -16,7 +16,22 @@ identiteten, inte bakgrund/resurser (de hör till Minnet).
 ```ts
 getProfile(): Promise<Profile>
 getOnboardingScript(entry: OnboardingEntry, locale: Locale): Promise<OnboardingScript>
+getOnboardingStatus(): Promise<OnboardingStatus>          // { entry, completed }
+completeOnboarding(input: { entry; answers: OnboardingAnswer[] }): Promise<void>
 ```
+
+**Onboarding live (2026-09-30, PR 1 av 3):** `getOnboardingStatus` och
+`completeOnboarding` är tillagda. `OnboardingQuestion.suggestedAnswer` är
+`string | null`: demot har färdiga svar, plattformen `null` (fritext).
+Profilsamtalet i v1 är fasta frågor ur i18n (`onboarding.profileQuestions`),
+ingen Gemini. Ingång A får fem frågor, B tre, en per fält
+(`core/onboarding.ts`: `role`, `bio`, `time`, `money`, `risk`). Svaren skrivs
+till profilradens befintliga kolumner (`role`, `bio`, `time_available`,
+`money_available`, `risk_appetite`), som Minnets Profilen-flik redan läser.
+`completeOnboarding` sätter också `onboarding_entry` och
+`onboarding_completed_at` i samma `update`. Steg 1 ("Om dig") räknas som klart
+när `onboarding_completed_at` är satt (docs/moduler/resan.md). En framtida
+Gemini-version fyller samma fält, så porten behöver inte ändras.
 
 `Profile` (`core/domain.ts`): `{ name: string; initials: string }`.
 
@@ -63,8 +78,8 @@ frågor/svar (samma innehåll, olika datastruktur, som Saras del av
   halvfärdig profil.
 - Klarar kontraktstestet i `ports/ProfileRepository.contract.test.ts` mot
   BÅDA adaptrarna nu (Supabase mockad bort i CI, `test/stubs/supabaseFake.ts`)
-  — kontraktstestet prövar fortfarande bara `getProfile`, `getOnboardingScript`
-  är inte kontraktstestad (se `docs/status.md` Session 5 och Session P1).
+  — kontraktstestet prövar `getProfile`, `getOnboardingScript`,
+  `getOnboardingStatus` och `completeOnboarding` per ingång.
 
 ## Säkerhet
 
@@ -75,7 +90,29 @@ här modulen).
 
 ## Status
 
-påbörjad (Session P1, branch `plattform-p1-adaptrar`) — `getProfile` är
+**Onboarding live, PR 2 (2026-10-01): klar.** Alla fyra metoderna är byggda
+i liveadaptern och kontraktstestade mot båda adaptrarna. Migreringen
+`20260930120000_onboarding.sql` är körd i SparkUF2.
+
+- `getOnboardingScript`: fasta frågor ur i18n (`onboarding.profileQuestions`),
+  `suggestedAnswer: null`. Ingen databas, ingen Gemini.
+- `getOnboardingStatus`: `onboarding_entry`/`onboarding_completed_at` på
+  profilraden (`lib/server/onboardingStatus.ts`, delad med Resan). `entry`
+  är `null` tills onboardingen är klar.
+- `completeOnboarding`: en enda `update` av profilraden med svaren
+  (trimmade), ingången och klar-tiden. Svaren ska vara exakt ingångens
+  frågor, en gång var, 1–1000 tecken. Uppdateringen gäller bara en rad där
+  `onboarding_completed_at is null`, så ett andra anrop kastar
+  `OnboardingAlreadyCompletedError` och skriver inte över något (ingen
+  omgörning i v1).
+- RLS prövat mot riktig databas (`adapters/live/rls.live.test.ts`): B kan
+  inte sätta A:s onboarding-kolumner, och databasen avvisar ett svar över
+  1000 tecken och en okänd ingång.
+
+PR 1 (2026-09-30): porten, demoadaptern och migreringen
+`20260930120000_onboarding.sql` (inte körd) är klara. Demoadaptern läser och skriver status via `demoStore`, aldrig från en serverrutt.
+
+Tidigare: påbörjad (Session P1, branch `plattform-p1-adaptrar`) — `getProfile` är
 klar och testad mot Supabase. `getOnboardingScript` är MEDVETET kvar som
 `NotImplementedError`: designbeslutet ovan (Gemini-samtal eller fritext)
 är fortfarande olöst, och den här sessionen löser det inte i förbifarten

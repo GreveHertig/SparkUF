@@ -45,6 +45,7 @@ export const demoEvidenceRecorder: EvidenceRecorder = {
         partId,
         kind: null,
         kindLabel: part.label,
+        subjectRef: null,
         source: item.source,
         enteredBy: "system",
         selfReported: false,

@@ -69,6 +69,12 @@ export const demoProjectRepository: ProjectRepository = {
       oneLiner: "Automatisk insamling av kvittounderlag åt redovisningsbyråer.",
     };
   },
+  // Demot har inget minnestillstånd för projekt: grundarens idé visas aldrig
+  // i demot (Kvittojakten och Jonas genomlysning är fiktiva och fasta). Svaret
+  // speglar indata så att kontraktet håller, utan att något sparas.
+  async createProject({ name, oneLiner }) {
+    return { id: "demo-projekt", name, oneLiner };
+  },
   async getIdeaScreening(locale) {
     return jonasScreening[locale];
   },

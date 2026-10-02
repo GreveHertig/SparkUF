@@ -70,15 +70,20 @@ export const PHASE_UNLOCKED_PARTS: Record<PhaseId, ScorePartId[]> = {
 };
 
 /** Steget som låser upp respektive del — bara siffror (9.3-tidslinjen), inte
- * användartext, så det hårdkodas här i stället för i18n. */
-const UNLOCK_STEP: Record<ScorePartId, number> = {
+ * användartext, så det hårdkodas här i stället för i18n. Måste stämma med
+ * fasgränserna i scorePhaseForCompletedSteps (core/journey.ts): delen är
+ * upplåst exakt när steget är klart (core/score.test.ts prövar det).
+ * Produkt och Genomförbarhet låses upp tillsammans i Lansera (uppdrag 7.3),
+ * alltså efter steg 07. Tidigare stod 08 och 09 här. Beslut 2026-10-01,
+ * docs/beslut.md. */
+export const UNLOCK_STEP: Record<ScorePartId, number> = {
   fit: 1,
   market: 3,
   competition: 3,
   problem: 5,
   willingnessToPay: 5,
-  product: 8,
-  feasibility: 9,
+  product: 7,
+  feasibility: 7,
   traction: 11,
 };
 

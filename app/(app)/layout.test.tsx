@@ -7,14 +7,20 @@ import { sv } from "@/i18n/sv";
 import { EmptyStateError, NotImplementedError } from "@/core/errors";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/app" }));
+const redirectMock = vi.hoisted(() =>
+  vi.fn((url: string) => {
+    throw new Error(`REDIRECT ${url}`);
+  }),
+);
+vi.mock("next/navigation", () => ({ usePathname: () => "/app", redirect: redirectMock }));
 
 const requireUserMock = vi.hoisted(() => vi.fn().mockResolvedValue({ id: "u1", email: "sara@example.com" }));
 vi.mock("@/lib/server/session", () => ({ requireUser: requireUserMock }));
 
 const getProfileMock = vi.hoisted(() => vi.fn());
+const getOnboardingStatusMock = vi.hoisted(() => vi.fn());
 vi.mock("@/adapters/live/ProfileRepository", () => ({
-  liveProfileRepository: { getProfile: getProfileMock },
+  liveProfileRepository: { getProfile: getProfileMock, getOnboardingStatus: getOnboardingStatusMock },
 }));
 
 const getStepsMock = vi.hoisted(() => vi.fn());
@@ -30,6 +36,7 @@ vi.mock("@/adapters/live/EvidenceRepository", () => ({
 const EVIDENCE_DOC = "docs/moduler/evidens-och-poang.md";
 
 beforeEach(() => {
+  getOnboardingStatusMock.mockResolvedValue({ entry: "noIdea", completed: true });
   getScoreSnapshotMock.mockRejectedValue(new EmptyStateError("Evidens och poäng", EVIDENCE_DOC));
 });
 
@@ -129,5 +136,24 @@ describe("/app-skalet (PR 2)", () => {
     getStepsMock.mockResolvedValue([]);
 
     await expect(renderLayout()).rejects.toThrow("Databasen svarar inte");
+  });
+});
+
+describe("/app-skalet: spärren mot /start (onboarding live, PR 3)", () => {
+  it("en ny användare utan klar onboarding skickas till /start", async () => {
+    getOnboardingStatusMock.mockResolvedValue({ entry: null, completed: false });
+    await expect(renderLayout()).rejects.toThrow("REDIRECT /start");
+    expect(getProfileMock).not.toHaveBeenCalled();
+  });
+
+  it("utan session nås aldrig onboardingstatusen (ingen loop)", async () => {
+    requireUserMock.mockRejectedValueOnce(new Error("REDIRECT /logga-in"));
+    await expect(renderLayout()).rejects.toThrow("REDIRECT /logga-in");
+    expect(getOnboardingStatusMock).not.toHaveBeenCalled();
+  });
+
+  it("ett riktigt fel i onboardingstatusen kastas vidare", async () => {
+    getOnboardingStatusMock.mockRejectedValue(new Error("databasen svarar inte"));
+    await expect(renderLayout()).rejects.toThrow("databasen svarar inte");
   });
 });

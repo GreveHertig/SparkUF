@@ -28,17 +28,25 @@ describe("deriveStepStatus", () => {
 
 describe("deriveCurrentStepNumber", () => {
   it("ger steg 1 för en ny användare utan avklarade steg", () => {
-    expect(deriveCurrentStepNumber([])).toBe(1);
+    expect(deriveCurrentStepNumber([], false)).toBe(1);
   });
 
   it("ger högsta avklarade steg + 1", () => {
-    expect(deriveCurrentStepNumber([1, 2, 3])).toBe(4);
-    expect(deriveCurrentStepNumber([5, 2])).toBe(6);
+    expect(deriveCurrentStepNumber([1, 2, 3], false)).toBe(4);
+    expect(deriveCurrentStepNumber([5, 2], false)).toBe(6);
   });
 
   it("klämmer till 12 efter det sista steget", () => {
-    expect(deriveCurrentStepNumber([12])).toBe(12);
-    expect(deriveCurrentStepNumber([11, 12])).toBe(12);
+    expect(deriveCurrentStepNumber([12], false)).toBe(12);
+    expect(deriveCurrentStepNumber([11, 12], true)).toBe(12);
+  });
+
+  it("räknar steg 1 som klart när onboardingen är klar, även utan journey_steps-rader", () => {
+    expect(deriveCurrentStepNumber([], true)).toBe(2);
+  });
+
+  it("onboardingen flyttar aldrig tillbaka ett längre framsteg", () => {
+    expect(deriveCurrentStepNumber([1, 2, 3], true)).toBe(4);
   });
 });
 

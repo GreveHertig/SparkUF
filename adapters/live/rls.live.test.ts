@@ -13,11 +13,14 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  * Kräver två redan existerande testkonton i SAMMA Supabase-projekt som
  * migreringarna är körda mot (`supabase link` + `supabase db push`, se
  * docs/status.md "Session P1" — inte körbart i den här sandboxen, ingen
- * Docker). Skippas i CI. Kör manuellt:
+ * Docker). Konto A ska inte ha något aktivt projekt: onboardingtesterna
+ * skapar och raderar ett själva. Skippas i CI. Kör manuellt:
  *   NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=... \
  *   SUPABASE_TEST_USER_A_EMAIL=... SUPABASE_TEST_USER_A_PASSWORD=... \
  *   SUPABASE_TEST_USER_B_EMAIL=... SUPABASE_TEST_USER_B_PASSWORD=... \
  *   pnpm test adapters/live/rls.live.test.ts
+ * eller, med värdena i .env.local (vitest läser inte filen själv):
+ *   set -a; . ./.env.local; set +a; pnpm test adapters/live/rls.live.test.ts
  *
  * Använder @supabase/supabase-js's createClient direkt (inte
  * lib/server/supabase.ts) — den filen kräver next/headers, som inte finns
@@ -133,12 +136,34 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
     expect(deleted ?? []).toHaveLength(0);
   });
 
-  it("journey_steps: RLS-isolering", async () =>
-    expectRowIsolation(
-      "journey_steps",
-      { user_id: userIdA, project_id: projectIdA, step_number: 1 },
-      { why: "kapad" },
-    ));
+  // journey_steps är stängd för skrivning sedan
+  // 20261001150000_journey_step_completion.sql: ett steg markeras klart bara
+  // via complete_journey_step, som prövar stegets krav. Annars kunde A
+  // markera steg 11 som klart själv och låsa upp hela poängen. Samma regler
+  // prövas i CI mot Postgres i supabase/migrations/journeyStepCompletion.pg.test.ts.
+  it("journey_steps: A kan inte markera ett steg som klart direkt, varken med insert, update eller funktionen utan krav", async () => {
+    const insert = await clientA
+      .from("journey_steps")
+      .insert({ user_id: userIdA, project_id: projectIdA, step_number: 11, completed_at: new Date().toISOString() });
+    expect(insert.error, "journey_steps: A kunde skriva ett avklarat steg direkt").not.toBeNull();
+
+    const { data: updated } = await clientA
+      .from("journey_steps")
+      .update({ completed_at: new Date().toISOString() })
+      .eq("user_id", userIdA)
+      .select("id");
+    expect(updated ?? [], "journey_steps: A kunde markera ett steg som klart med update").toHaveLength(0);
+
+    // Steg 12 kräver steg 11, och steg 06 har inget krav alls. Båda nekas
+    // oavsett vad kontots aktiva projekt innehåller.
+    const skipped = await clientA.rpc("complete_journey_step", { p_step_number: 12 });
+    expect(skipped.error, "journey_steps: A kunde hoppa till steg 12").not.toBeNull();
+
+    const { error: impersonationError } = await clientB
+      .from("journey_steps")
+      .insert({ user_id: userIdA, project_id: projectIdA, step_number: 1, completed_at: new Date().toISOString() });
+    expect(impersonationError, "journey_steps: B kunde skriva ett steg på A:s projekt").not.toBeNull();
+  });
 
   // evidence och score_snapshots är stängda för skrivning sedan
   // 20261001120000_evidence_write_path.sql (docs/bevislagring.md 2.3): ingen
@@ -346,6 +371,110 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
 
     const { data: deleted } = await clientB.from("brain_notes").delete().eq("user_id", userIdA).select("user_id");
     expect(deleted ?? []).toHaveLength(0);
+  });
+
+  // Onboardingen live, PR 2 (docs/status.md). Kräver migreringen
+  // 20260930120000_onboarding.sql. Felkoderna kommer från Postgres via
+  // PostgREST: 42501 (RLS), 23505 (unikt index), 23514 (check-villkor).
+  describe("onboardingen", () => {
+    it("profiles: B kan inte sätta A:s onboarding-kolumner", async () => {
+      const before = await clientA
+        .from("profiles")
+        .select("onboarding_entry, onboarding_completed_at")
+        .eq("user_id", userIdA)
+        .single();
+      expect(before.error, "profiles: A kunde inte läsa sin egen onboardingstatus").toBeNull();
+
+      const { data: updated, error } = await clientB
+        .from("profiles")
+        .update({ onboarding_entry: "hasIdea", onboarding_completed_at: new Date().toISOString(), role: "kapad" })
+        .eq("user_id", userIdA)
+        .select("user_id");
+      expect(error).toBeNull();
+      expect(updated ?? [], "profiles: B kunde ändra A:s onboarding").toHaveLength(0);
+
+      const after = await clientA
+        .from("profiles")
+        .select("onboarding_entry, onboarding_completed_at")
+        .eq("user_id", userIdA)
+        .single();
+      expect(after.data, "profiles: A:s onboardingstatus ändrades av B").toEqual(before.data);
+    });
+
+    it("projects: B kan inte skapa ett projekt med user_id = A", async () => {
+      const { data, error } = await clientB
+        .from("projects")
+        .insert({ user_id: userIdA, name: marker, one_liner: marker, is_active: false })
+        .select("id");
+      expect(error, "projects: B kunde skapa ett projekt i A:s namn").not.toBeNull();
+      expect(error?.code).toBe("42501");
+      expect(data).toBeNull();
+    });
+
+    it("projects: A kan inte ha två aktiva projekt (projects_ett_aktivt_per_user)", async () => {
+      const created: string[] = [];
+      try {
+        // Kontot ska inte ha något aktivt projekt (se filhuvudet), men har det
+        // ett räcker det som det första.
+        const { data: existing } = await clientA
+          .from("projects")
+          .select("id")
+          .eq("user_id", userIdA)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (!existing) {
+          const first = await clientA
+            .from("projects")
+            .insert({ user_id: userIdA, name: `${marker}-aktiv-1`, one_liner: marker, is_active: true })
+            .select("id")
+            .single();
+          expect(first.error, "projects: A kunde inte skapa sitt första aktiva projekt").toBeNull();
+          created.push(first.data!.id as string);
+        }
+
+        const second = await clientA
+          .from("projects")
+          .insert({ user_id: userIdA, name: `${marker}-aktiv-2`, one_liner: marker, is_active: true })
+          .select("id")
+          .single();
+        if (second.data) created.push(second.data.id as string);
+        expect(second.error, "projects: A fick två aktiva projekt").not.toBeNull();
+        expect(second.error?.code).toBe("23505");
+      } finally {
+        for (const id of created) await clientA.from("projects").delete().eq("id", id);
+      }
+    });
+
+    it("projects: databasen avvisar för långt eller tomt namn och för lång ingress", async () => {
+      const cases = [
+        { name: marker, one_liner: "a".repeat(281) },
+        { name: "a".repeat(81), one_liner: marker },
+        { name: "   ", one_liner: marker },
+      ];
+      for (const fields of cases) {
+        const { data, error } = await clientA
+          .from("projects")
+          .insert({ user_id: userIdA, ...fields, is_active: false })
+          .select("id");
+        if (data?.[0]) await clientA.from("projects").delete().eq("id", data[0].id);
+        expect(error, `projects: databasen tog emot ${JSON.stringify(fields).slice(0, 60)}…`).not.toBeNull();
+        expect(error?.code).toBe("23514");
+      }
+    });
+
+    it("profiles: databasen avvisar ett för långt svar och en okänd ingång på A:s egen rad", async () => {
+      const tooLong = await clientA.from("profiles").update({ role: "a".repeat(1001) }).eq("user_id", userIdA).select("user_id");
+      expect(tooLong.error, "profiles: databasen tog emot ett svar på 1001 tecken").not.toBeNull();
+      expect(tooLong.error?.code).toBe("23514");
+
+      const unknownEntry = await clientA
+        .from("profiles")
+        .update({ onboarding_entry: "okänd" })
+        .eq("user_id", userIdA)
+        .select("user_id");
+      expect(unknownEntry.error, "profiles: databasen tog emot en okänd ingång").not.toBeNull();
+      expect(unknownEntry.error?.code).toBe("23514");
+    });
   });
 
   it("companies: läsbar för alla inloggade, men ingen klient kan skriva (delad registerdata, ingen user_id)", async () => {

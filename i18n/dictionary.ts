@@ -1,6 +1,8 @@
 /** Typad form för översättningarna. sv.ts och en.ts måste båda uppfylla den
  * här — saknas en nyckel i endera filen larmar TypeScript. */
 import type { EvidenceKind } from "@/core/evidenceKinds";
+import type { FitQuestionId } from "@/core/fitQuestions";
+import type { RequirementGroup } from "@/core/journeyRequirements";
 
 export type Dictionary = {
   /** Sidtitel och förhandsvisning när länken delas (app/layout.tsx). */
@@ -230,6 +232,10 @@ export type Dictionary = {
       grow: string;
     };
     stepLabel: string;
+    /** Handlingskortet på Hem i /app (liveadapterns getHomeSummary): "STEG 02 · MÖJLIGHETER". */
+    nextStepEyebrowTemplate: string;
+    /** Knappen när steget saknar en egen action_label: "Öppna steg 02". */
+    openStepTemplate: string;
     backToJourney: string;
     whatHappened: string;
     whatsNext: string;
@@ -299,6 +305,8 @@ export type Dictionary = {
       stale: string;
       /** Beslut B6: över taket för självrapporterade bevis i delen. */
       capped: string;
+      /** En sort utan poäng, som bara uppfyller ett krav i resan. */
+      noPoints: string;
       retracted: string;
     };
     /** Orsaken till en poängförändring. {kind} är sortens namn. */
@@ -308,6 +316,8 @@ export type Dictionary = {
       retracted: string;
       stale: string;
       recalculated: string;
+      /** Ett steg i resan är klart, och poängen räknades i den nya fasen. */
+      unlocked: string;
     };
     /** Sparks egna källor, lagrade som nyckel och inte som text (7.12). */
     internalSources: {
@@ -318,6 +328,42 @@ export type Dictionary = {
       recorded: string;
       retracted: string;
     };
+  };
+  /** Passform från profilen (/app/minnet, docs/bevislagring.md 5.1). */
+  fitPanel: {
+    title: string;
+    lede: string;
+    /** Frågorna, en per FitQuestionId (core/fitQuestions.ts). */
+    questions: Record<FitQuestionId, string>;
+    answerLabel: string;
+    save: string;
+    saving: string;
+    failed: string;
+    /** Märkningen på ett eget svar (5.4). Inte "självrapporterat" i B6:s
+     * mening: grundaren är själv källan, så svaret räknas fullt. */
+    ownAnswer: string;
+    /** {total} är den nya poängen, {delta} förändringen med tecken. */
+    scoreAfter: string;
+    /** Svaret sparades men poängen ändrades inte (delen full eller fasens tak nått). */
+    scoreUnchanged: string;
+  };
+  /** Markera ett steg i resan som klart (beslut 2026-10-01, docs/beslut.md). */
+  stepCompletion: {
+    title: string;
+    cta: string;
+    completing: string;
+    done: string;
+    completable: string;
+    previousNotDone: string;
+    noRequirementYet: string;
+    missingTitle: string;
+    failed: string;
+    /** {total} är den nya poängen. */
+    scoreAfter: string;
+    /** {step} är stegnumret med två siffror. */
+    trace: string;
+    /** Ett krav per grupp i core/journeyRequirements.ts. */
+    requirements: Record<RequirementGroup, string>;
   };
   marketPage: {
     title: string;
@@ -600,6 +646,12 @@ export type Dictionary = {
       subtitle: string;
       buildingTitle: string;
       continueCta: string;
+      /** Plattformens svarsformulär (/start/profil). Demot visar färdiga svar. */
+      formSubtitle: string;
+      submitCta: string;
+      submittingCta: string;
+      /** `{max}` = PROFILE_ANSWER_MAX_LENGTH (core/onboarding.ts). */
+      invalidTemplate: string;
     };
     idea: {
       title: string;
@@ -612,6 +664,21 @@ export type Dictionary = {
       sharperTitle: string;
       sharperWhyLabel: string;
       continueCta: string;
+      /** Plattformens idéformulär (/start/ide), innan projektet finns. */
+      formSubtitle: string;
+      nameLabel: string;
+      oneLinerLabel: string;
+      submitCta: string;
+      submittingCta: string;
+      /** `{nameMax}`/`{oneLinerMax}` = gränserna i core/onboarding.ts. */
+      invalidTemplate: string;
+    };
+    /** Plattformens fasta profilfrågor (docs/moduler/profil.md), en per fält i
+     * core/onboarding.ts's PROFILE_QUESTIONS_BY_ENTRY. Demot har egna frågor
+     * i adapters/demo/ProfileRepository.ts. */
+    profileQuestions: {
+      noIdea: { role: string; bio: string; time: string; money: string; risk: string; closingMessage: string };
+      hasIdea: { role: string; time: string; money: string; closingMessage: string };
     };
   };
   /** De 12 officiella stegens titel/ingress (uppdrag 1.5) — produktkonstanter,
@@ -632,6 +699,9 @@ export type Dictionary = {
     step10: { title: string; oneLiner: string };
     step11: { title: string; oneLiner: string };
     step12: { title: string; oneLiner: string };
+    /** Steg 2 för ingång B ("Jag har redan en idé", beslut 2026-09-30):
+     * idégenomlysningen i stället för Möjligheter. */
+    step2Idea: { title: string; oneLiner: string };
   };
   /** Den guidade rundturen (avsnitt 9.2) — bara gränssnittstexten (knappar,
    * stoppräknare). Själva de 20 stoppens titel/text ligger i

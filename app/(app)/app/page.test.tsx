@@ -80,6 +80,31 @@ describe("/app Hem (PR 3)", () => {
     expect(screen.getByRole("link", { name: /Om dig/ })).toHaveAttribute("href", "/app/resan/1");
   });
 
+  it("med Resans riktiga handlingskort och utan 'sedan sist' visas kortet, och Kommer snart bara i 'sedan sist'-rutan", async () => {
+    getHomeSummaryMock.mockResolvedValue({
+      todayIso: "2026-10-01",
+      nextStep: {
+        eyebrow: "STEG 02 · MÖJLIGHETER",
+        title: "Möjligheter",
+        why: "Idéer grundade i profilen.",
+        maxPoints: 12,
+        estimatedTime: "",
+        doneItems: [],
+        actionLabel: "Öppna steg 02",
+      },
+      sinceLastTime: null,
+    });
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getStepsMock.mockResolvedValue(steps);
+    getSignalsMock.mockResolvedValue(signals);
+
+    await renderPage();
+
+    expect(screen.getByRole("heading", { level: 2, name: "Möjligheter" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Öppna steg 02" })).toBeInTheDocument();
+    expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(1);
+  });
+
   it("visar Kommer snart bara i poängrutan när kontot saknar bevis", async () => {
     getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
     getScoreSnapshotMock.mockRejectedValue(new EmptyStateError("Evidens och poäng", "docs/moduler/evidens-och-poang.md"));

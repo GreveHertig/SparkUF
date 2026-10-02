@@ -2,10 +2,13 @@
 // utan nätverk eller en riktig databas — samma skäl som
 // `vi.mock("@/lib/server/gemini", ...)` i ports/LegalAdvisor.contract.test.ts.
 // Håller BARA den delmängd av PostgREST-kedjan adaptrarna faktiskt
-// använder: `from().select().eq().order().limit().maybeSingle()/.single()`,
-// `insert`, `upsert` (matchar bara mot `onConflict`-kolumnen, ingen riktig
-// unik-nyckel-uppslagning) och `rpc` (bara mot handläggare som testet själv
-// skickar in, se `FakeRpcHandlers`). Ingen join, inget filter utöver `eq`.
+// använder: `from().select().eq().is().order().limit().maybeSingle()/.single()`,
+// `insert`, `update` (på raderna som filtren träffar), `upsert` (matchar mot
+// `onConflict`-kolumnerna, en eller flera kommaseparerade) och `rpc` (bara mot
+// handläggare som testet själv skickar in, se `FakeRpcHandlers`). Unika index
+// prövas bara vid `insert` och bara om testet deklarerar dem
+// (`FakeOptions.unique`), med PostgREST:s felkod 23505. Ingen join, inga
+// check-villkor, inga filter utöver `eq` och `is`.
 //
 // RISK, uttalad: en fejk kan glida semantiskt från riktig PostgREST. Håll
 // adapterfrågorna medvetet enkla (en tabell, `eq`/`order`, inga joins) och
@@ -14,21 +17,38 @@
 
 export type FakeRow = Record<string, unknown>;
 export type FakeTables = Record<string, FakeRow[]>;
+type FakeError = { message: string; code?: string };
+type FakeResult = { data: unknown; error: FakeError | null };
+
+/** Ett unikt index, valfritt partiellt (`where`), som
+ * `projects_ett_aktivt_per_user` (user_id where is_active). */
+export type FakeUniqueIndex = { name: string; columns: string[]; where?: (row: FakeRow) => boolean };
+
+export type FakeOptions = {
+  unique?: Record<string, FakeUniqueIndex[]>;
+  /** Tabeller där en insert utan `id` får ett genererat, som en
+   * `default gen_random_uuid()`-kolumn. */
+  generatedIds?: string[];
+};
 
 type OrderSpec = { column: string; ascending: boolean };
 
-class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message: string } | null }> {
+class FakeQueryBuilder implements PromiseLike<FakeResult> {
   private readonly table: FakeRow[];
+  private readonly uniqueIndexes: FakeUniqueIndex[];
+  private readonly generateIds: boolean;
   private readonly filters: Array<(row: FakeRow) => boolean> = [];
   private readonly orderSpecs: OrderSpec[] = [];
   private limitN: number | undefined;
-  private mode: "select" | "insert" | "upsert" = "select";
+  private mode: "select" | "insert" | "update" | "upsert" = "select";
   private payload: FakeRow | FakeRow[] | undefined;
   private upsertKey: string | undefined;
   private singleMode: "maybe" | "one" | null = null;
 
-  constructor(store: FakeTables, tableName: string) {
+  constructor(store: FakeTables, tableName: string, options: FakeOptions, private readonly ids: () => string) {
     this.table = store[tableName] ?? (store[tableName] = []);
+    this.uniqueIndexes = options.unique?.[tableName] ?? [];
+    this.generateIds = options.generatedIds?.includes(tableName) ?? false;
   }
 
   select(): this {
@@ -37,6 +57,13 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
 
   eq(column: string, value: unknown): this {
     this.filters.push((row) => row[column] === value);
+    return this;
+  }
+
+  /** `is(kolumn, null)`. En saknad kolumn räknas som null, som en nullbar
+   * kolumn utan värde. */
+  is(column: string, value: null | boolean): this {
+    this.filters.push((row) => (row[column] ?? null) === value);
     return this;
   }
 
@@ -66,6 +93,12 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
     return this;
   }
 
+  update(payload: FakeRow): this {
+    this.mode = "update";
+    this.payload = payload;
+    return this;
+  }
+
   upsert(payload: FakeRow | FakeRow[], options?: { onConflict?: string }): this {
     this.mode = "upsert";
     this.payload = payload;
@@ -73,27 +106,69 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
     return this;
   }
 
-  then<TResult1 = { data: unknown; error: { message: string } | null }, TResult2 = never>(
-    onfulfilled?:
-      | ((value: { data: unknown; error: { message: string } | null }) => TResult1 | PromiseLike<TResult1>)
-      | null,
+  then<TResult1 = FakeResult, TResult2 = never>(
+    onfulfilled?: ((value: FakeResult) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ): PromiseLike<TResult1 | TResult2> {
     return Promise.resolve(this.execute()).then(onfulfilled, onrejected);
   }
 
-  private execute(): { data: unknown; error: { message: string } | null } {
+  private violatedIndex(row: FakeRow): FakeUniqueIndex | undefined {
+    return this.uniqueIndexes.find(
+      (index) =>
+        (!index.where || index.where(row)) &&
+        this.table.some(
+          (existing) =>
+            (!index.where || index.where(existing)) && index.columns.every((column) => existing[column] === row[column]),
+        ),
+    );
+  }
+
+  /** `.single()`/`.maybeSingle()` gäller också det en mutation returnerar. */
+  private shape(rows: FakeRow[]): FakeResult {
+    if (this.singleMode === "maybe") return { data: rows[0] ?? null, error: null };
+    if (this.singleMode === "one") {
+      return rows.length === 1
+        ? { data: rows[0], error: null }
+        : { data: null, error: { message: "fake: förväntade exakt en rad" } };
+    }
+    return { data: rows, error: null };
+  }
+
+  private execute(): FakeResult {
     if (this.mode === "insert") {
-      const rows = Array.isArray(this.payload) ? this.payload : [this.payload as FakeRow];
+      const rows = (Array.isArray(this.payload) ? this.payload : [this.payload as FakeRow]).map((row) =>
+        this.generateIds && row.id === undefined ? { id: this.ids(), ...row } : row,
+      );
+      for (const row of rows) {
+        const index = this.violatedIndex(row);
+        if (index) {
+          return {
+            data: null,
+            error: { code: "23505", message: `duplicate key value violates unique constraint "${index.name}"` },
+          };
+        }
+      }
       this.table.push(...rows);
-      return { data: rows, error: null };
+      return this.shape(rows);
+    }
+
+    if (this.mode === "update") {
+      const updated: FakeRow[] = [];
+      this.table.forEach((row, index) => {
+        if (!this.filters.every((filter) => filter(row))) return;
+        this.table[index] = { ...row, ...(this.payload as FakeRow) };
+        updated.push(this.table[index]);
+      });
+      return this.shape(updated);
     }
 
     if (this.mode === "upsert") {
       const rows = Array.isArray(this.payload) ? this.payload : [this.payload as FakeRow];
-      const key = this.upsertKey;
+      const keys = this.upsertKey?.split(",").map((key) => key.trim()) ?? [];
       for (const row of rows) {
-        const existingIndex = key ? this.table.findIndex((r) => r[key] === row[key]) : -1;
+        const existingIndex =
+          keys.length > 0 ? this.table.findIndex((r) => keys.every((key) => r[key] === row[key])) : -1;
         if (existingIndex >= 0) {
           this.table[existingIndex] = { ...this.table[existingIndex], ...row };
         } else {
@@ -117,16 +192,7 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
       });
     }
     if (this.limitN !== undefined) rows = rows.slice(0, this.limitN);
-
-    if (this.singleMode === "maybe") {
-      return { data: rows[0] ?? null, error: null };
-    }
-    if (this.singleMode === "one") {
-      return rows.length === 1
-        ? { data: rows[0], error: null }
-        : { data: null, error: { message: "fake: förväntade exakt en rad" } };
-    }
-    return { data: rows, error: null };
+    return this.shape(rows);
   }
 }
 
@@ -137,11 +203,17 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
  * supabase/migrations/*.pg.test.ts. */
 export type FakeRpcHandlers = Record<string, (args: Record<string, unknown>, store: FakeTables) => unknown>;
 
-export function makeSupabaseFake(initial: FakeTables = {}, rpcHandlers: FakeRpcHandlers = {}) {
+export function makeSupabaseFake(
+  initial: FakeTables = {},
+  rpcHandlers: FakeRpcHandlers = {},
+  options: FakeOptions = {},
+) {
   const store: FakeTables = structuredClone(initial);
+  let nextId = 0;
+  const ids = () => `fake-id-${++nextId}`;
   return {
     from(tableName: string) {
-      return new FakeQueryBuilder(store, tableName);
+      return new FakeQueryBuilder(store, tableName, options, ids);
     },
     async rpc(name: string, args: Record<string, unknown> = {}) {
       const handler = rpcHandlers[name];

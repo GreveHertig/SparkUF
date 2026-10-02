@@ -96,6 +96,22 @@ describe("AppHome (PR 3, Hem)", () => {
     expect(screen.queryByText(nextStep.title)).not.toBeInTheDocument();
   });
 
+  it("visar handlingskortet men Kommer snart i 'sedan sist'-rutan när sinceLastTime är null (plattformen)", () => {
+    renderHome(baseData({ homeSummary: { nextStep, sinceLastTime: null } }), { dataKind: "live" });
+    expect(screen.getByRole("heading", { level: 2, name: nextStep.title })).toBeInTheDocument();
+    expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(1);
+    expect(screen.queryByText(sv.homePage.emailSentLabel)).not.toBeInTheDocument();
+  });
+
+  it("döljer tidsåtgången när den är tom, i stället för ett ensamt ' · '", () => {
+    const { container } = renderHome(baseData({ homeSummary: { nextStep: { ...nextStep, estimatedTime: "" }, sinceLastTime } }));
+    expect(container.querySelector(".fd-nextstep__points")?.textContent).not.toContain("·");
+
+    cleanup();
+    const { container: withTime } = renderHome(baseData());
+    expect(withTime.querySelector(".fd-nextstep__points")).toHaveTextContent(`· ${nextStep.estimatedTime}`);
+  });
+
   it("visar Kommer snart i poängrutan när score saknas", () => {
     renderHome(baseData({ score: null }));
     expect(screen.getByText(sv.comingSoon.title)).toBeInTheDocument();

@@ -22,7 +22,9 @@ export type EvidenceKind =
   | "formalRegistrationDone"
   | "legalItemDone"
   | "payingCustomer"
-  | "activeUser";
+  | "activeUser"
+  | "priceDecided"
+  | "fundingApplied";
 
 /** Vem som får lägga in en sort.
  * - "founder": grundaren är själv källan (profilen, ett eget beslut). Räknas fullt.
@@ -31,13 +33,24 @@ export type EvidenceKind =
  *   men grundaren får också ange det. Då är det självrapporterat (beslut B6). */
 export type EvidenceEnteredBy = "founder" | "system" | "either";
 
-export type EvidenceSubjectKind = "company" | "response" | "registryQuery" | "profileField" | "url" | "legalItem";
+export type EvidenceSubjectKind =
+  | "company"
+  | "response"
+  | "registryQuery"
+  | "profileField"
+  | "url"
+  | "legalItem"
+  | "price"
+  | "funding";
 
 export type EvidenceKindSpec = {
   partId: ScorePartId;
   /** Aldrig "simulation" (7.6): typen tillåter det inte ens. */
   dataType: "register" | "customer";
-  /** Rått värde in i calculateScore för ett bevis som räknas fullt. */
+  /** Rått värde in i calculateScore för ett bevis som räknas fullt.
+   * 0 = sorten ger aldrig poäng och skickas inte till calculateScore. Den
+   * finns bara för att uppfylla ett krav i resan (beslut 2026-10-01 om steg
+   * 07 och 12, docs/beslut.md). */
   basePoints: number;
   contradicts: boolean;
   /** Antal dagar från faktumets datum (fetched_at) som beviset räknas.
@@ -64,9 +77,23 @@ export const EVIDENCE_KINDS: Record<EvidenceKind, EvidenceKindSpec> = {
   legalItemDone: { partId: "feasibility", dataType: "register", basePoints: 1, contradicts: false, freshForDays: 365, subjectKind: "legalItem", enteredBy: "founder" },
   payingCustomer: { partId: "traction", dataType: "customer", basePoints: 4, contradicts: false, freshForDays: 90, subjectKind: "company", enteredBy: "either" },
   activeUser: { partId: "traction", dataType: "customer", basePoints: 1, contradicts: false, freshForDays: 30, subjectKind: "url", enteredBy: "either" },
+  // Krav för steg 07 och 12, utan poäng (beslut 2026-10-01). Ett pris
+  // grundaren själv satt bevisar inte att någon betalar det, och en inskickad
+  // ansökan är inte beviljade pengar. Båda är "either" så att de märks
+  // "Angivet av dig" när grundaren lägger in dem.
+  // priceDecided: subject_ref "price", priset och spannet i quote.
+  priceDecided: { partId: "willingnessToPay", dataType: "customer", basePoints: 0, contradicts: false, freshForDays: 365, subjectKind: "price", enteredBy: "either" },
+  // fundingApplied: subject_ref är finansiären och diarie- eller ärendenumret,
+  // källan är programmets URL.
+  fundingApplied: { partId: "feasibility", dataType: "register", basePoints: 0, contradicts: false, freshForDays: null, subjectKind: "funding", enteredBy: "either" },
 };
 
 export const ALL_EVIDENCE_KINDS = Object.keys(EVIDENCE_KINDS) as EvidenceKind[];
+
+/** Ger sorten poäng? En sort utan poäng uppfyller bara krav i resan. */
+export function givesPoints(kind: EvidenceKind): boolean {
+  return EVIDENCE_KINDS[kind].basePoints > 0;
+}
 
 export function isEvidenceKind(value: unknown): value is EvidenceKind {
   return typeof value === "string" && Object.hasOwn(EVIDENCE_KINDS, value);

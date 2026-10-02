@@ -3334,6 +3334,50 @@ Tionde steget i `docs/plan-en-design.md`. `origin/prototyp` fanns redan i grenen
 - `swagger.json` saknar `servers`. Bas-URL:en är härledd och bekräftad med anrop, inte angiven i kontraktet.
 - Gränsen 5 anrop/s är Sekundärt: den står i SCB:s dokumentation enligt Erik, inte i swagger.json, och inga rate limit-headers syntes.
 
+## Onboarding live, PR 1: kontrakt och migrering (gren `plattform/onboarding-live`, PR mot `prototyp`)
+Vecka 1 i lanseringsplanen: inloggning, profil och projekt live. Plan i tre PR:er, godkänd av Erik 2026-09-30. PR 1 lägger portar, demoadaptrar, kontraktstester, frågorna och migreringen. Ingenting ändras för en användare än.
+
+### Klart
+- **Portar.** `ProfileRepository`: `getOnboardingStatus()` → `{ entry, completed }` och `completeOnboarding({ entry, answers })`. `OnboardingQuestion.suggestedAnswer` är `string | null` (demo: färdigt svar, plattform: fritext). `ProjectRepository`: `createProject({ name, oneLiner })`.
+- **`core/onboarding.ts`:** frågornas id:n (`role`, `bio`, `time`, `money`, `risk`), vilka varje ingång ställer (A fem, B tre) och längdgränserna (svar ≤ 1000, projektnamn ≤ 80, ingress ≤ 280).
+- **i18n:** `onboarding.profileQuestions` på sv och en. **Formuleringarna är förslag som Theo godkänner i granskningen.**
+- **Demoadaptrar:** onboardingstatusen går via `demoStore`. Den får bara användas av demot och tester, aldrig från en serverrutt (kommentar i adaptern). Demot sparar inga svar. `createProject` speglar indata och sparar inget.
+- **Liveadaptrar:** de nya metoderna kastar `NotImplementedError` och står tillfälligt i `PARTIELLA_STUBBAR`. De byggs i PR 2.
+- **Kontraktstester:** `getOnboardingScript` och `completeOnboarding` per ingång, samt `createProject`. De körs mot demo och hoppas över mot live tills PR 2.
+- **Migrering `20260930120000_onboarding.sql` (skriven, INTE körd):**
+  - `profiles.onboarding_entry` och `onboarding_completed_at`;
+  - check-villkor på längd och giltig ingång;
+  - villkor på `projects.name` och `one_liner`;
+  - trigger `set_updated_at` på `profiles`, `projects` och `journey_steps`.
+
+  Inga nya tabeller eller policyer, eftersom RLS redan ger insert och update på egna rader. Hela filen körs i en transaktion. Vakten `supabase/migrations/onboarding.test.ts` låser att gränserna är desamma som i `core/onboarding.ts`.
+- **Två skärmar fick en vakt för `suggestedAnswer === null`:** `screens/OnboardingProfile.tsx` och `app/demo/start/profil/page.tsx`. Bara typer, ingen markup och ingen stil. Fritextfältet bygger Theo.
+- Kontroll: `typecheck`, `lint` (0 fel, 3 gamla varningar i `design-referens/`), `test` (636 gröna, 40 skippade), `build`.
+
+### Innan migreringen körs (Erik)
+Kör kontrollfrågan i filhuvudet i SQL Editor. Den ska ge 0 rader. Den visar profiler med ett svarsfält över 1000 tecken och projekt vars namn eller ingress är tomma eller för långa (kvarlämnade `rls-test-…`-projekt klarar gränserna). Rensa eller korta de rader den visar. Kör sedan filen. Den körs i en transaktion, så ett fällt villkor lämnar ingenting halvt.
+
+### Återstår
+- **PR 2:**
+  - liveadaptrarna (`getOnboardingScript`, `getOnboardingStatus`, `completeOnboarding`, `createProject`, `getHomeSummary`);
+  - `deriveCurrentStepNumber` med `onboardingDone`;
+  - `sinceLastTime: SinceLastTime | null` (görs efter Theos PR 3, som skriver om samma rader);
+  - `update()` i `test/stubs/supabaseFake.ts`;
+  - RLS-testet;
+  - Pulsens tomläge utan projekt och att ett konfigurationsfel i Pulsen stannar i Pulsens ruta.
+  - Kräver att migreringen är körd.
+- **PR 3:**
+  - `app/start/actions.ts` (zod);
+  - routefilerna under `/start`;
+  - spärren i `app/(app)/layout.tsx`, med tester för ny användare → `/start`, färdig användare på `/start` → `/app` och ingen loop utan session.
+  - Mergas efter Theos PR 3 och tillsammans med hans skärmar.
+
+### Beslut (Erik 2026-09-30)
+- Steg 1 markeras klart på `profiles`, inte i `journey_steps`, eftersom ingång A inte har något projekt.
+- Ingång B:s nästa steg är steg 2 "Genomlys din idé".
+- A får fem frågor, B tre.
+- `/start` skickar vidare till `/app` efter avslutad onboarding. Ingen omgörning i v1.
+- Fel i en modul stannar i modulens ruta på Hem. Ingen demodata som fallback i `/app`.
 ## PR 11: Onboarding, städning, flikarna och exempelkällorna (2026-09-30, direkt på `design/en-design`)
 Elfte och sista steget i `docs/plan-en-design.md`. `origin/prototyp` fanns redan i grenen. Fyra kodcommits och docs: onboardingen (`744bcf9`), städningen (`a92e613`), flikarna (`6d8674b`) och exempelkällorna (`36c838c`, egen commit så att den kan granskas och backas för sig). **Migrationen är klar**, utom Pulsen (steg 6, Bruno).
 
@@ -3495,8 +3539,8 @@ Byggd enligt `docs/bevislagring.md`. Besluten, med motiv, står i specens avsnit
 5. **`SUPABASE_SERVICE_ROLE_KEY` måste finnas i Vercel,** annars kan snapshots inte skrivas.
 
 ### Kända problem
-- **`UNLOCK_STEP` i `core/score.ts`** säger "efter steg 08" för Produkt och "efter steg 09" för Genomförbarhet. Båda låses upp efter steg 07. Rördes inte, eftersom `core/score.ts` bara fick ändras för B4.
-- **`journey_steps` går fortfarande att skriva direkt av användaren** (befintliga policyer). Den som markerar steg som klara via REST låser upp fler delar. Inte nytt, men det betyder att fasen går att påverka. Hör hemma i Resans skrivväg.
+- ~~`UNLOCK_STEP` i `core/score.ts`~~ rättat på `plattform/poangen-ror-sig`.
+- ~~`journey_steps` går att skriva direkt~~ stängt på `plattform/poangen-ror-sig`.
 - **Samma bolag kan anges under många olika namn.** Varje nytt `subject_ref` är ett nytt bevis. Taket i B6 begränsar effekten till halva delen.
 - **`rls.live.test.ts`:s bevistest** använder kontots aktiva projekt (testprojektet är inaktivt). Saknas ett aktivt projekt prövas bara att direkt insert nekas.
 
@@ -3510,6 +3554,98 @@ Byggd enligt `docs/bevislagring.md`. Besluten, med motiv, står i specens avsnit
 - **Specen (6.3a)** föreslog att skicka det senaste föråldrade beviset med 0 poäng så att delen inte blir tom. Med B4 behövs det inte. En tom del visas som en lucka, vilket är ärligare än en gammal källa.
 - **`docs/moduler/evidens-och-poang.md`** sade att en upplåst del utan bevis "kastar ett tydligt fel". Uppdaterad.
 - **`.env.example`** sade att service role bara används av registercachen. Uppdaterad.
+
+## Poängen rör sig (grenen `plattform/poangen-ror-sig`, från `plattform/bevislagring`, 2026-10-01)
+
+Skrivvägen i bruk, stegmarkeringen och motsägelsen i `UNLOCK_STEP`. Detaljer i `docs/bevislagring.md` 11.7, besluten i `docs/beslut.md` 2026-10-01.
+
+### Klart
+- **Passform från profilen:** fyra frågor under Profilen i `/app/minnet`.
+  - Varje svar sparas som `profileFitAnswer` via server action `saveFitAnswer` → `liveEvidenceRecorder.recordEvidence`.
+  - Källan är `spark:profile`, datumet är dagens, och svaret sparas i `quote`.
+  - Poängen räknas om på servern. Sidhuvudet uppdateras via `revalidatePath`, och formuläret visar den nya poängen som en länk till Poäng-sidan.
+  - Märkningen är "Ditt eget svar". Profilsvar är inte självrapporterade enligt B6, eftersom grundaren själv är källan.
+- **Stegmarkeringen:**
+  - Migrationen `20261001150000_journey_step_completion.sql` (med rollback-block, rör inte `profiles` eller `projects`):
+    - tabellen `journey_step_requirements`
+    - funktionen `complete_journey_step` (security definer)
+    - skrivpolicyerna på `journey_steps` borttagna.
+  - Kraven per steg finns i `core/journeyRequirements.ts` och i SQL, synktestade mot varandra.
+  - Porten `ports/JourneyProgress.ts` med demo- och liveadapter. Server action `completeJourneyStep`. `/app/resan/[steg]` visar vad som saknas, eller knappen "Markera som klart".
+- **Taket följer med:** efter ett avklarat steg räknas poängen om i den nya fasen, och en snapshot skrivs med orsaken `unlocked`. Testat från 16 till 20 när steg 03 blir klart.
+- **`UNLOCK_STEP`:** Produkt och Genomförbarhet står nu på 07. Ett test binder upplåsningstexten till fasen.
+- **Tester:**
+  - `journeyStepCompletion.pg.test.ts` (Postgres): direkt insert, update och delete på `journey_steps` nekas, och det går inte att hoppa över steg. Testet prövar också krav per steg, föråldrade och återkallade bevis, andra `subject_ref` än de fyra frågorna, och att SQL och core ger samma svar i varje fall.
+  - `core/journeyRequirements.test.ts`, `adapters/live/JourneyProgress.test.ts`, `ports/JourneyProgress.contract.test.ts`, `screens/blocks/FitPanel.test.tsx` och tester för sidorna och actions.
+  - `rls.live.test.ts`: testet för `journey_steps` prövar nu att ett direkt anrop nekas.
+- **Verifierat:**
+  - `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (988 gröna), `pnpm build` och `pnpm test:e2e` (44 gröna).
+  - `/security-review`: inga fynd över tröskeln. Tre iakttagelser står under kända problem.
+
+### Kända problem
+- **Live fastnar efter steg 02 tills Registret öppnas. Det är licensgrinden som blockerar, inte koden.** Steg 03 kräver `registerMarketCount`, ett systembevis ur registret, och Registret är grindat tills licensen är verifierad (`docs/moduler/registret.md`). Fasen stannar därför i Upptäck (tak 18). Eftersom Marknad i Upptäck också kräver registerdata är **högsta möjliga poäng i live i dag 10** (Passform full).
+- **Steg 06, 07 och 12 har inget krav och kan inte markeras klara.** Förslagen står som öppna punkter i `docs/beslut.md` och väntar på Theodor. De är inte byggda. Även när Registret öppnas stannar resan efter steg 05 (tak 66) tills steg 06 har ett krav.
+- **Kör båda migreringarna i Supabase** (`20261001120000` och `20261001150000`) före nästa driftsättning. e2e kördes mot ett Supabase utan dem. Testkontot har inget aktivt projekt, så de nya frågorna nåddes inte.
+- **Steg som skrevs direkt före migreringen ligger kvar som klara.** Kontrollera `journey_steps` i live en gång efter rader som inte uppfyller kraven.
+- **Ett avklarat steg står kvar om beviset bakom det återkallas eller blir för gammalt.** Fasen och taket ligger då kvar. Poängen sjunker ändå, eftersom delen töms (B4).
+- **Ett passformssvar går inte att ändra samma dag.** Samma fråga och samma datum ger `duplicate`. Återkallelse finns i porten men inte i UI:t.
+- **Profilsvaren är fritext utan kontroll.** Fyra svar ger full Passform (10) oavsett innehåll. Det ligger i sakens natur: grundaren är källan.
+- Härdning, inte sårbarhet: `revoke` gäller insert, update och delete men inte truncate på `journey_steps` och `journey_step_requirements`. PostgREST kan inte köra truncate.
+
+### Beslut nästa session behöver känna till
+- **Ändras kraven för ett steg** krävs en ny migrering som uppdaterar `journey_step_requirements`, annars failar synktestet.
+- **Snapshots skrivs fortfarande bara via `adapters/live/EvidenceRecorder.ts`** (`settleScore`, exporterad). Resans adapter anropar den.
+- **`EvidenceView` har fått `subjectRef`**, som är null i demot.
+
+### Docs mot kod
+- **CLAUDE.md:** listan över uträknade sammanfattningar har fått de två nya poängsiffrorna (`FitPanel` och `StepCompletionPanel`).
+- **`docs/moduler/resan.md` och `docs/moduler/evidens-och-poang.md`:** uppdaterade med skrivvägen.
+
+
+## Krav för steg 06, 07 och 12 (grenen `plattform/stegkrav`, från `plattform/poangen-ror-sig`, 2026-10-01)
+
+Theodors beslut på de tre öppna punkterna, se `docs/beslut.md` 2026-10-01 och `docs/bevislagring.md` 11.8.
+
+### Klart
+- **Alla tolv steg har nu ett krav.** Migrationen `20261001180000_journey_steps_06_07_12.sql` (med rollback-block, rör inte `profiles` eller `projects`):
+  - **Steg 06:** minst fem kundsvar (problem eller pris, bekräftar eller avvisar) från minst tre bolag. Det kräver en ny tabell, `journey_step_group_thresholds` (RLS, bara läsning, i `WRITE_CLOSED_TABLES`). `complete_journey_step` räknar nu varje grupp som helhet.
+  - **Steg 07:** ett beslutat pris, ny sort `priceDecided`. Inte ett godtaget pris.
+  - **Steg 12:** en inskickad ansökan till en finansiär, ny sort `fundingApplied`.
+- **De två nya sorterna ger ingen poäng.**
+  - `base_points` får vara 0.
+  - `core/evidenceInput.ts` skickar dem inte till `calculateScore` och märker dem med den nya statusen `noPoints`. Därför fyller de aldrig en tom del (B4).
+  - Båda är `either`, så de märks "Angivet av dig" när grundaren lägger in dem.
+- **Core och port:**
+  - `GROUP_THRESHOLDS` och `stepCompletion` ger `progress` (antal svar och bolag) för grupper med tröskel.
+  - `StepCompletionView` har fått `progress`.
+- **Tester:**
+  - Postgres:
+    - steg 06: grundarens egna svar, fem svar från två bolag, föråldrade och återkallade svar
+    - steg 07: ett godtaget pris räcker inte, och priset ger 0 poäng
+    - steg 12
+    - synktest för trösklarna
+  - Core: trösklar, framsteg, att varje steg har ett krav och sorter utan poäng.
+  - Sidtest för steg 06.
+- **Verifierat:** `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (1009 gröna) och `pnpm build`. e2e kördes inte: inget i flödet som e2e täcker är ändrat.
+- **Säkerhetsgranskning:** inga fynd. Granskningsagenten stoppades av en kvotgräns, så diffen granskades direkt i sessionen:
+  - `complete_journey_step` är kvar som security definer med `search_path = ''`, och alla namn är kvalificerade.
+  - Användare och projekt kommer fortfarande ur `auth.uid()`. Bevisen filtreras på det aktiva projektet.
+  - En grupp utan bevis räknas som 0 och släpps aldrig igenom: `coalesce` på villkor och tröskel.
+  - `execute` är fortfarande indraget från `public`.
+  - Den nya tabellen har RLS, är bara läsbar och har skrivrätten indragen.
+  - Att grundaren kan självrapportera sig förbi steg 06–07 och höja taket är Theodors beslut, inte ett hål. Poängen i delarna begränsas ändå av B6.
+
+### Kända problem
+- **Inget formulär finns för att ange ett beslutat pris, en ansökan eller kundsvar.** Kraven går att uppfylla så fort något anropar skrivvägen. Live stannar ändå efter steg 02 tills Registret öppnas (se ovan).
+- **Antalet svar och bolag för steg 06 visas inte.** Det räknas (`progress`), men det vore en uträknad sammanfattning vars delar inte visas med källa någonstans i live. Poäng-sidan visar en källa per del, inte varje svar. Kan visas när en lista över kundsvaren finns, och läggs då till i undantagslistan i CLAUDE.md.
+- **`priceDecided` och kundsvar delar del (Betalningsvilja).** Ersättningsregeln i `record_evidence` gäller per del och `subject_ref`. Ett kundsvar med `subject_ref` = `price` skulle därför ersätta det beslutade priset. Konventionen är att `price` bara används för `priceDecided`. Ingen spärr finns.
+- **Ett nytt pris samma dag ger `duplicate`**, på samma sätt som ett passformssvar.
+- **Kör migreringen i Supabase** (`20261001180000`) efter de två tidigare (`20261001120000`, `20261001150000`).
+
+### Beslut nästa session behöver känna till
+- **En tröskel för en kravgrupp** ändras i `journey_step_group_thresholds` via en ny migrering, och i `GROUP_THRESHOLDS`. Synktestet failar annars.
+- **En sort med `basePoints` 0** uppfyller bara krav och påverkar aldrig poängen. Testet i `core/evidenceKinds.test.ts` listar vilka sorter som får sakna poäng.
+- **Status `noRequirementYet` finns kvar** i typen, men inget steg har den i dag.
 ## Pulsen inloggad, källtyperna och Hems källor (2026-10-01, direkt på `design/en-design`)
 `origin/prototyp` fanns redan i grenen. Tre commits: källtyperna, Hems källor (egen commit, så att den kan granskas och backas för sig) och docs.
 
@@ -3758,3 +3894,106 @@ Hampus Hedelius tips efter Rotary-pitchen: yttre omständigheter som kan påverk
 ### Nästa steg
 - Använd "Relevant" för att rangordna (t.ex. källor eller ord som ofta får "Relevant" först).
 - Låt grundaren ångra "Inte relevant".
+## Onboarding live, PR 2: liveadaptrarna (klar 2026-10-01, gren `plattform/onboarding-live-2`, PR mot `prototyp`)
+Andra PR:en av tre (plan i "Onboarding live, PR 1" ovan). Migreringen `20260930120000_onboarding.sql` är körd i SparkUF2 av Erik. Inga routefiler är ändrade, det är PR 3.
+
+### Klart
+- **Profil** (`adapters/live/ProfileRepository.ts`):
+  - `getOnboardingScript`: frågorna ur i18n per ingång, `suggestedAnswer: null`.
+  - `getOnboardingStatus`: läser profilraden via nya `lib/server/onboardingStatus.ts` (delad med Resan). `entry` är `null` tills onboardingen är klar.
+  - `completeOnboarding`: en enda `update` med svaren (trimmade, till `role`, `bio`, `time_available`, `money_available`, `risk_appetite`), `onboarding_entry` och `onboarding_completed_at`. Svaren ska vara exakt ingångens frågor, en gång var, 1–1000 tecken. Uppdateringen gäller bara en rad där `onboarding_completed_at is null`: ett andra anrop kastar `OnboardingAlreadyCompletedError` (ny i `core/errors.ts`) och skriver inte över något.
+- **Projekt och idé:** `createProject` trimmar, prövar gränserna och gör en `insert` med `is_active: true`. Felkod 23505 från `projects_ett_aktivt_per_user` ger `ProjectExistsError` (ny).
+- **Resan:**
+  - `getHomeSummary` är byggd: handlingskortet för det aktuella steget, `estimatedTime: ""` och `sinceLastTime: null`.
+  - `deriveCurrentStepNumber(completed, onboardingDone)`: steg 1 är klart när onboardingen är klar.
+  - Steg 2 heter "Genomlys din idé" för ingång B (`journeySteps.step2Idea`, sv/en) och "Möjligheter" för A.
+- **`sinceLastTime: SinceLastTime | null`** i porten och i `AppHomeData`. #36 var redan mergad, så Theo behöver inte rebasa något.
+  - `AppHome` visar "Kommer snart" i rutan "Sedan sist" när värdet är `null`, och döljer " · tid" när tiden är tom.
+  - Demots Hem fick bara en typvakt och fungerar som förut.
+- **`core/onboarding.ts`:** `isValidProfileAnswer`, `isValidProjectInput` och `isOnboardingEntry`. Längden räknas i tecken som Postgres `char_length`, inte i UTF-16-enheter.
+- **i18n:** `journeySteps.step2Idea`, `journeyPage.nextStepEyebrowTemplate` och `journeyPage.openStepTemplate` (sv/en).
+- **`test/stubs/supabaseFake.ts`:**
+  - `update()` och `is()`;
+  - `onConflict` med flera kolumner;
+  - deklarerade unika index (även partiella) som ger 23505 vid `insert`;
+  - genererade id:n;
+  - `.single()` även efter en mutation.
+
+  Eget test i `supabaseFake.test.ts`.
+- **Tester:**
+  - Adaptertester för alla fem metoderna.
+  - Kontraktstesterna för Profil, Projekt och Resan körs nu mot live och hoppas inte över.
+  - Fem rader är borttagna ur `PARTIELLA_STUBBAR`. Bara `getIdeaScreening` står kvar.
+  - Skärm- och ruttester för `sinceLastTime: null`.
+- **RLS-testet** (`adapters/live/rls.live.test.ts`, nya `describe("onboardingen")`):
+  - B kan inte sätta A:s onboarding-kolumner.
+  - B kan inte skapa ett projekt med `user_id = A` (42501).
+  - A kan inte ha två aktiva projekt (23505).
+  - Databasen avvisar för långt eller tomt namn, för lång ingress, ett svar på 1001 tecken och en okänd ingång (23514).
+  - **Kört mot SparkUF2 2026-10-01: 17 av 17 gröna.**
+- Moduldokumenten `profil.md`, `projekt-och-ide.md` och `resan.md` är uppdaterade.
+- Kontroll: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (1094 gröna, 40 skippade) och `pnpm build`.
+
+### Kända problem
+- **Steg 2 kan inte markeras klart i databasen.** `complete_journey_step` (Theos `20261001150000`) kräver fyra `profileFitAnswer`-bevis för steg 1 och en `journey_steps`-rad för steg 1 innan steg 2 kan bli klart. Onboardingen skriver bara till `profiles`. Appen visar alltså steg 2 som aktuellt, men det går inte att klara. **Rättas i `plattform/steg1-klart`, direkt efter PR 2:** en ny migrering som räknar steg 1 som klart när `profiles.onboarding_completed_at` är satt. Kravet ändras i `journey_step_requirements` och `complete_journey_step`, och `core/journeyRequirements.ts` hålls i synk. **Onboardingen skapar aldrig `profileFitAnswer`-bevis:** det vore påhittade bevis (Datalöftet).
+- **`/start/profil` visar nu riktiga frågor men har inget svarsfält.** Rutten anropade redan `getOnboardingScript`, som var en stubbe och visade "Kommer snart". Nu visas frågorna, men inget sparas. Rättas i PR 3 (Theos fritextfält och server actions), som kommer direkt efter.
+- **Fynd 5 i källgenomgången** ("Sedan sist" får registrets tagg som standard) syns inte, eftersom `sinceLastTime` är `null`. När Utskick och svar byggs ska Hem-rutten sätta `sourceDataTypes.sinceLastTime` (`"user"` eller `"customer"`). Kommentaren står i `app/(app)/app/page.tsx`.
+- **SparkUF2 saknade fyra migreringar** fram till 2026-10-01: `20260930120000`, `20261001120000`, `20261001150000` och `20261001180000`. RLS-testet visade att `journey_steps` och `score_snapshots` gick att skriva direkt. Erik körde dem samma dag och testkonto A städades. Lärdom: kör RLS-testet efter varje migrering.
+
+### Beslut (Erik 2026-10-01)
+- Steg 1 räknas klart när `onboarding_completed_at` är satt. Det rättas i en egen migrering och PR (`plattform/steg1-klart`), inte i PR 2.
+- `estimatedTime` är `""` i `/app`, och `AppHome` döljer den.
+- Ett andra `completeOnboarding` ger `OnboardingAlreadyCompletedError`.
+- `sinceLastTime` är `null` tills Utskick och svar finns.
+- `/start/profil` rörs först i PR 3.
+
+### Återstår
+- **`plattform/steg1-klart`:** migreringen ovan, med pg-test och `core/journeyRequirements.ts`.
+  - **Krav från säkerhetsgranskningen (Erik 2026-10-01):** klienten får inte kunna skriva `onboarding_completed_at` eller `onboarding_entry` direkt, varken med kolumnrättigheter eller med en trigger. De ska bara kunna sättas av onboardingflödet. Annars kan vem som helst låsa upp steg 1 och 2 med ett eget PostgREST-anrop när flaggan blir en grind i `complete_journey_step`.
+  - I dag skriver `completeOnboarding` kolumnerna med användarens egen `update`. Om rättigheterna stängs måste skrivningen därför flyttas till en databasfunktion, till exempel `complete_onboarding(p_entry, p_answers)` med `security definer`. Den prövar ingången och svaren och skriver svaren, ingången och klar-tiden i en enda transaktion. Liveadaptern anropar sedan funktionen, och felet för en redan klar onboarding behålls.
+  - Ett RLS-test i `adapters/live/rls.live.test.ts` ska visa att A inte kan sätta sina egna två kolumner med `update`, men kan klara onboardingen via funktionen.
+- **PR 3:**
+  - `app/start/actions.ts` (zod);
+  - routefilerna under `/start`;
+  - spärren i `app/(app)/layout.tsx`;
+  - att Pulsen inte kraschar `/app` vid konfigurationsfel;
+  - tomt läge för användare utan projekt.
+
+## Onboarding live, PR 3 och Hem utan stubbe (2026-10-02, grenarna `plattform/onboarding-live-3` och `fix/hem-utan-stubbe`, PR:er mot `prototyp`)
+Tredje PR:en av tre i onboardingen (plan i "Onboarding live, PR 1"). Theos fritextfält fanns inte på någon gren, så formulären byggdes här med Eriks godkännande (2026-10-02). Ändringarna i `screens/` är små, valfria och listade i PR-beskrivningen.
+
+### Klart
+- **`/start` skapar projektet och slutför onboardingen:**
+  - `app/start/actions.ts` (zod, gränserna ur `core/onboarding.ts`):
+    - `createProjectAction` sparar idén som aktivt projekt (`is_active: true` i adaptern). `ProjectExistsError` går vidare med det befintliga projektet och skriver inte över.
+    - `completeOnboardingAction` sparar svaren och skickar till `/app`. `OnboardingAlreadyCompletedError` går också till `/app`.
+    - Ogiltig indata ger ett felmeddelande i formuläret. Riktiga fel kastas.
+  - **Ingången härleds på servern** (`app/start/_lib/entry.ts`): ett aktivt projekt betyder ingång B (tre frågor), annars A (fem). Klienten kan inte välja frågor. Funktionen ligger utanför `actions.ts` med flit, eftersom allt som exporteras därifrån blir en anropbar Server Action.
+  - `/start/ide`: utan projekt visas idéformuläret, med projekt genomlysningen (fortfarande "Kommer snart").
+  - `/start/profil`: ett fritextfält per fråga.
+- **Spärren:**
+  - `app/(app)/layout.tsx` skickar en ofärdig onboarding till `/start`.
+  - `app/start/layout.tsx` skickar en färdig onboarding till `/app`.
+  - Utan session gäller `requireUser` först, så spärrarna kan inte ge en loop.
+- **`screens/`:**
+  - Nya `screens/blocks/OnboardingForms.tsx` (`ProfileAnswerForm`, `IdeaForm`).
+  - Valfria `answerAction` på `OnboardingProfile` och `ideaAction` på `OnboardingIdea`. Utan dem fungerar demot exakt som förut.
+  - Ingen ny CSS: `fdd-textarea`, `fdd-input` och `fd-btn`.
+- **i18n:** formulärtexterna i `onboarding.profile` och `onboarding.idea` (sv/en).
+- **Tester:**
+  - `app/start/actions.test.ts` (9).
+  - `start.test.tsx`: spärren, idéformuläret, den härledda ingången och fritextfälten.
+  - `layout.test.tsx`: ny användare → `/start`, ingen loop utan session, riktigt fel kastas.
+- `/security-review`: inga fynd.
+- Kontroll: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (1111 gröna, 40 skippade) och `pnpm build`.
+
+### Kända problem
+- **Inte provat i webbläsaren mot SparkUF2.** Ett riktigt konto som går igenom flödet skriver en profil och ett projekt som inte går att göra om. Erik provar med ett nytt testkonto.
+- **Ingång A får inget projekt i onboardingen.** Det är enligt planen: projektet kommer i steg 2 (Möjligheter). Pulsen visar ett tomt läge tills dess.
+- **Steg 2 kan fortfarande inte markeras klart** tills `plattform/steg1-klart` är gjord (se PR 2, Kända problem).
+- **Klienten kan sätta `onboarding_completed_at` direkt** med ett eget PostgREST-anrop och därmed hoppa över spärren för sitt eget konto. Detta fanns före PR 3 och rättas i `plattform/steg1-klart` (kravet från säkerhetsgranskningen 2026-10-01).
+- Profilsamtalets avslutningsrepliker (`profileQuestions.*.closingMessage`) visas inte i formuläret. B:s replik säger att genomlysningen kommer härnäst, men på plattformen kommer den före.
+
+### Återstår
+- `plattform/steg1-klart`.
+- Idégenomlysningen (`getIdeaScreening`), som väntar på Registret.

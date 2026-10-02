@@ -34,13 +34,14 @@ export type EvidenceRow = {
   source_url: string | null;
   fetched_at: string;
   quote: string | null;
+  subject_ref: string;
   entered_by: "founder" | "system";
   created_at: string;
   retracted_at: string | null;
 };
 
 const EVIDENCE_COLUMNS =
-  "id, kind, part_id, points, contradicts, data_type, source_name, source_url, fetched_at, quote, entered_by, created_at, retracted_at";
+  "id, kind, part_id, points, contradicts, data_type, source_name, source_url, fetched_at, quote, subject_ref, entered_by, created_at, retracted_at";
 
 export async function readEvidenceRows(
   supabase: SupabaseClient,
@@ -136,7 +137,7 @@ export function stockholmToday(now: Date = new Date()): string {
 export function translateDeltaReason(key: string, locale: Locale): string {
   const copy = dictionaries[locale].evidence;
   const [reason, kind] = key.split(":");
-  if (reason === "stale" || reason === "recalculated") return copy.deltaReason[reason];
+  if (reason === "stale" || reason === "recalculated" || reason === "unlocked") return copy.deltaReason[reason];
   if ((reason === "recorded" || reason === "replaced" || reason === "retracted") && isEvidenceKind(kind)) {
     return fill(copy.deltaReason[reason], { kind: copy.kinds[kind] });
   }
