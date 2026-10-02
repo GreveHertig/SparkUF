@@ -587,6 +587,12 @@ export type Dictionary = {
       subtitle: string;
       buildingTitle: string;
       continueCta: string;
+      /** Plattformens svarsformulär (/start/profil). Demot visar färdiga svar. */
+      formSubtitle: string;
+      submitCta: string;
+      submittingCta: string;
+      /** `{max}` = PROFILE_ANSWER_MAX_LENGTH (core/onboarding.ts). */
+      invalidTemplate: string;
     };
     idea: {
       title: string;
@@ -599,6 +605,14 @@ export type Dictionary = {
       sharperTitle: string;
       sharperWhyLabel: string;
       continueCta: string;
+      /** Plattformens idéformulär (/start/ide), innan projektet finns. */
+      formSubtitle: string;
+      nameLabel: string;
+      oneLinerLabel: string;
+      submitCta: string;
+      submittingCta: string;
+      /** `{nameMax}`/`{oneLinerMax}` = gränserna i core/onboarding.ts. */
+      invalidTemplate: string;
     };
     /** Plattformens fasta profilfrågor (docs/moduler/profil.md), en per fält i
      * core/onboarding.ts's PROFILE_QUESTIONS_BY_ENTRY. Demot har egna frågor

@@ -7,6 +7,7 @@ import { useI18n } from "@/i18n/context";
 import type { IdeaScreening } from "@/ports/ProjectRepository";
 import { ChatLine } from "./blocks/ChatBlocks";
 import { Pill } from "./blocks/PageBlocks";
+import { IdeaForm, type OnboardingFormAction } from "./blocks/OnboardingForms";
 
 /**
  * `null` betyder platshållarfel (Projektets liveadapter är inte byggd): varje
@@ -19,6 +20,10 @@ export type OnboardingIdeaProps = {
   data: OnboardingIdeaData;
   /** Vart "Fortsätt" länkar: det kortare profilsamtalet (avsnitt 2.1). */
   continueHref: string;
+  /** Bara plattformen, och bara innan projektet finns: grundaren beskriver
+   * idén, och actionen sparar den som aktivt projekt. Utan den visas
+   * genomlysningen, som förut. */
+  ideaAction?: OnboardingFormAction;
 };
 
 /**
@@ -26,10 +31,22 @@ export type OnboardingIdeaProps = {
  * svaga och en skarpare idé. Flyttad från demots `/demo/start/ide` i PR 11
  * (docs/plan-en-design.md) och delad av `/demo/start/ide` och `/start/ide`.
  */
-export function OnboardingIdea({ data, continueHref }: OnboardingIdeaProps) {
+export function OnboardingIdea({ data, continueHref, ideaAction }: OnboardingIdeaProps) {
   const { t } = useI18n();
   const copy = t.onboarding.idea;
   const { screening } = data;
+
+  if (ideaAction) {
+    return (
+      <div className="fdd-page fdd-onboarding">
+        <header className="fdd-head">
+          <h1 className="fd-h2">{copy.founderIntroLabel}</h1>
+          <p className="fd-lede">{copy.formSubtitle}</p>
+        </header>
+        <IdeaForm action={ideaAction} />
+      </div>
+    );
+  }
 
   return (
     <div className="fdd-page fdd-onboarding">

@@ -540,6 +540,10 @@ export const sv = {
       subtitle: "Klicka på svaret för att gå vidare — det bygger profilen Spark utgår från.",
       buildingTitle: "Din profil så här långt",
       continueCta: "Fortsätt",
+      formSubtitle: "Svara med egna ord. Svaren bygger profilen Spark utgår från.",
+      submitCta: "Spara och gå vidare",
+      submittingCta: "Sparar …",
+      invalidTemplate: "Svara på varje fråga, med högst {max} tecken per svar.",
     },
     idea: {
       title: "Idén, granskad",
@@ -552,6 +556,12 @@ export const sv = {
       sharperTitle: "En skarpare version",
       sharperWhyLabel: "Varför",
       continueCta: "Fortsätt till profilsamtalet",
+      formSubtitle: "Ge idén ett namn och beskriv den med en mening. Den blir ditt projekt i Spark.",
+      nameLabel: "Vad heter idén?",
+      oneLinerLabel: "Beskriv idén med en mening",
+      submitCta: "Spara idén",
+      submittingCta: "Sparar …",
+      invalidTemplate: "Fyll i båda fälten. Namnet får vara högst {nameMax} tecken och beskrivningen högst {oneLinerMax}.",
     },
     // Förslag, granskas av Theo (PR 1 av onboardingen).
     profileQuestions: {
