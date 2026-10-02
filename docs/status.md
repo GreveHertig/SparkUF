@@ -4093,6 +4093,9 @@ Bakgrundsjobb (session 2). Bara `e2e/`, `playwright.config.ts` och den här file
 - Testerna kontrollerar struktur och översatta rubriker: fyra faser, tolv steg, rubriker ur i18n. Personans data (namn, siffror) kontrolleras inte, så att en ändrad demodata inte fäller testerna.
 - `pnpm dev` används som reserv när Supabase-variablerna saknas, i stället för platshållare i konfigurationen. Då skapas aldrig ett bygge med falska värden som någon senare kan starta av misstag.
 
+### Beslut (Theo 2026-10-02)
+- Reserven till `pnpm dev` i `playwright.config.ts` behålls. `pnpm test:e2e` får inte kräva `.env.local`, eftersom Bruno och Oskar inte har några nycklar. Demotesterna ska gå att köra utan nycklar. Testerna av `/app` hoppas över tills ett testkonto finns.
+
 ### Återstår
 - Fler demoytor i e2e (Poäng, Marknad, demoraden med "Hoppa till steg" och "Nästa").
 - Om CI sätts upp (Eriks beslut) kan `pnpm test:e2e` köras där utan hemligheter. Demotesterna kräver inga.
