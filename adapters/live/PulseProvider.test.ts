@@ -13,6 +13,7 @@ import {
   classifyOpportunity,
   cleanWatchTerm,
   classifyRisk,
+  customerTerms,
   extractKeywords,
   favoriteInsight,
   learnPreferences,
@@ -45,10 +46,15 @@ function hit(n: number, extra: Partial<{ title: string; url: string; content: st
 }
 
 let tables: PulseFakeTables;
-function setup(extra: PulseFakeTables = {}, failOn: string[] = [], missingTables: string[] = []) {
+function setup(
+  extra: PulseFakeTables = {},
+  failOn: string[] = [],
+  missingTables: string[] = [],
+  missingColumns: string[] = [],
+) {
   tables = { projects: [project], pulse_fetches: [], pulse_signals: [], ...extra };
   requireSupabaseUser.mockResolvedValue({
-    supabase: makePulseSupabaseFake(tables, { today: TODAY, failOn, missingTables }),
+    supabase: makePulseSupabaseFake(tables, { today: TODAY, failOn, missingTables, missingColumns }),
     userId: USER,
   });
 }
@@ -732,5 +738,55 @@ describe("inlärning ur Relevant", () => {
       "pulse_feedback",
     ]);
     expect(await pulse.getSignals("sv")).toHaveLength(1);
+  });
+});
+
+describe("kunden i sökningen", () => {
+  const withGuess = (guess: string | null) => ({ profiles: [{ user_id: USER, customer_guess: guess }] });
+
+  it("customerTerms tar ord ur gissningen, utan nyhetsord, siffror och ord som redan söks", () => {
+    expect(customerTerms("Styrelser i bostadsrättsföreningar med 20 lägenheter")).toEqual([
+      "styrelser",
+      "bostadsrättsföreningar",
+      "lägenheter",
+    ]);
+    expect(customerTerms("Små redovisningsbyråer i Sverige", ["redovisningsbyråer"])).toEqual([]);
+    expect(customerTerms("Kaféer, bagerier, restauranger och hotell")).toHaveLength(3);
+    expect(customerTerms(null)).toEqual([]);
+    expect(customerTerms("   ")).toEqual([]);
+  });
+
+  it("gissningens ord läggs till sökningen och relevansfiltret", async () => {
+    setup(withGuess("Styrelser i bostadsrättsföreningar"));
+    searchReturns([hit(1, { title: "Bostadsrättsföreningar höjer avgifterna", content: "" })], []);
+    const signals = await pulse.getSignals("sv");
+    const [news, theme] = queries();
+    expect(news).toBe("svenska näringslivsnyheter kvittojakten kvittohantering redovisningsbyråer styrelser bostadsrättsföreningar");
+    expect(theme).toContain("bostadsrättsföreningar");
+    // Nämner bara kunden, inte idén: släpps ändå igenom.
+    expect(signals.map((signal) => signal.headline)).toEqual(["Bostadsrättsföreningar höjer avgifterna"]);
+  });
+
+  it("utan gissning söker Pulsen som förut", async () => {
+    setup(withGuess(null));
+    await pulse.getSignals("sv");
+    expect(queries()[0]).toBe("svenska näringslivsnyheter kvittojakten kvittohantering redovisningsbyråer");
+  });
+
+  it("gissningen räcker för att söka när projektets egna ord inte gör det", async () => {
+    setup({ ...withGuess("Padelhallar"), projects: [{ ...project, name: "X", one_liner: "app" }] });
+    searchReturns([hit(1, { title: "Padelhallar går bra", content: "" })], []);
+    expect((await pulse.getSignals("sv")).map((s) => s.headline)).toEqual(["Padelhallar går bra"]);
+  });
+
+  it("utan kolumnen (migreringen inte körd) söker Pulsen som förut", async () => {
+    setup(withGuess("Styrelser"), [], [], ["profiles.customer_guess"]);
+    expect(await pulse.getSignals("sv")).toHaveLength(3);
+    expect(queries()[0]).not.toContain("styrelser");
+  });
+
+  it("ett annat fel när profilen läses syns", async () => {
+    setup(withGuess("Styrelser"), ["profiles:select"]);
+    await expect(pulse.getSignals("sv")).rejects.toThrow("kunde inte läsa profilen");
   });
 });

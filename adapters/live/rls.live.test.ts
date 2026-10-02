@@ -330,6 +330,84 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
     expect(stillThere?.status, "pulse_fetches: A:s rad ändrades av B").toBe("done");
   });
 
+  // Pulsens omdöme och bevakningar (supabase/migrations/20261002120000_pulse_feedback_watches.sql).
+  // pulse_watches har id och ingen update-policy: B:s update ska ge noll rader.
+  it("pulse_watches: RLS-isolering", async () =>
+    expectRowIsolation(
+      "pulse_watches",
+      { user_id: userIdA, project_id: projectIdA, kind: "keyword", term: marker },
+      { term: "kapad" },
+    ));
+
+  it("pulse_watches: B kan inte lägga en bevakning på A:s projekt, inte ens i eget namn", async () => {
+    const { data: me } = await clientB.auth.getUser();
+    const { error } = await clientB
+      .from("pulse_watches")
+      .insert({ user_id: me.user!.id, project_id: projectIdA, kind: "keyword", term: marker });
+    // Främmande nyckeln (project_id, user_id) mot projects stoppar det.
+    expect(error, "pulse_watches: B kunde lägga en bevakning på A:s projekt").not.toBeNull();
+  });
+
+  // pulse_feedback: nyckeln är (user_id, signal_id), ingen id-kolumn, så
+  // expectRowIsolation passar inte. Omdömet försvinner med signalen (cascade).
+  it("pulse_feedback: B kan inte läsa, ändra, radera eller skapa omdömen om A:s signaler", async () => {
+    const { data: signal, error: signalError } = await clientA
+      .from("pulse_signals")
+      .insert({
+        user_id: userIdA,
+        project_id: projectIdA,
+        category: "test",
+        headline: marker,
+        why_it_matters: marker,
+        source_name: marker,
+        fetched_at: "2026-01-01",
+      })
+      .select("id")
+      .single();
+    expect(signalError, "pulse_feedback: A kunde inte skapa en testsignal").toBeNull();
+    const signalId = signal!.id as string;
+    const row = { user_id: userIdA, signal_id: signalId, verdict: "relevant" };
+
+    try {
+      const { error: ownError } = await clientA.from("pulse_feedback").upsert(row, { onConflict: "user_id,signal_id" });
+      expect(ownError, "pulse_feedback: A kunde inte spara sitt eget omdöme").toBeNull();
+
+      const { data: selected } = await clientB.from("pulse_feedback").select("signal_id").eq("signal_id", signalId);
+      expect(selected ?? [], "pulse_feedback: B kunde läsa A:s omdöme").toHaveLength(0);
+
+      const { data: updated } = await clientB
+        .from("pulse_feedback")
+        .update({ verdict: "not_relevant" })
+        .eq("signal_id", signalId)
+        .select("signal_id");
+      expect(updated ?? [], "pulse_feedback: B kunde ändra A:s omdöme").toHaveLength(0);
+
+      const { data: deleted } = await clientB.from("pulse_feedback").delete().eq("signal_id", signalId).select("signal_id");
+      expect(deleted ?? [], "pulse_feedback: B kunde radera A:s omdöme").toHaveLength(0);
+
+      const { error: impersonationError } = await clientB
+        .from("pulse_feedback")
+        .insert({ ...row, verdict: "not_relevant" });
+      expect(impersonationError, "pulse_feedback: B kunde skapa ett omdöme i A:s namn").not.toBeNull();
+
+      // I eget namn om A:s signal: insert-policyn kräver att signalen är grundarens egen.
+      const { data: me } = await clientB.auth.getUser();
+      const { error: foreignSignalError } = await clientB
+        .from("pulse_feedback")
+        .insert({ user_id: me.user!.id, signal_id: signalId, verdict: "not_relevant" });
+      expect(foreignSignalError, "pulse_feedback: B kunde ge omdöme om A:s signal").not.toBeNull();
+
+      const { data: stillThere } = await clientA
+        .from("pulse_feedback")
+        .select("verdict")
+        .eq("signal_id", signalId)
+        .single();
+      expect(stillThere?.verdict, "pulse_feedback: A:s omdöme ändrades av B").toBe("relevant");
+    } finally {
+      await clientA.from("pulse_signals").delete().eq("id", signalId);
+    }
+  });
+
   it("outreach_messages + responses: RLS-isolering", async () => {
     const { data: message, error: messageError } = await clientA
       .from("outreach_messages")

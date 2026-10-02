@@ -301,6 +301,24 @@ och de gillade signalernas kategori och rubrik.
 - **Tål att tabellen saknas:** utan `pulse_feedback` lärs ingenting och
   sidan fungerar som förut.
 
+## Kunden i sökningen (Pulsen, 2026-10-02, gren `modul/pulsen-kund`)
+
+Profilsamtalets "Vem tror du skulle köpa? En gissning räcker." (ingång B,
+`profiles.customer_guess`, migreringen `20261002190000`) blir sökord. Då
+kommer nyheter om dem som ska köpa, inte bara om produkten.
+
+- **Orden:** högst tre ur gissningen (`customerTerms`), efter projektets egna
+  ord. Bara bokstäver och siffror, inga vanliga nyhetsord, inga siffror och
+  inga ord som redan söks. Grundarens text är data, aldrig instruktion.
+- **Var:** båda sökningarna (nyheter och dagens tema) och relevansfiltret.
+  En nyhet som bara nämner kunden släpps alltså igenom.
+- **Räcker ensam:** gissningen gör att Pulsen söker även när projektets
+  namn och ingress saknar användbara ord.
+- **Tål att kolumnen saknas** (`42703`/`PGRST204`, migreringen inte körd):
+  Pulsen söker som förut. Andra fel när profilen läses syns.
+- **Ingen migrering.** Läses ur `profiles`, som grundaren redan får läsa
+  (RLS: select egen).
+
 ## Acceptanskriterier
 
 - `search(query)` returnerar en lista där varje resultat har `title`, `url`

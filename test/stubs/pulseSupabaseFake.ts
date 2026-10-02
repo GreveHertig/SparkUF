@@ -27,6 +27,8 @@ export type PulseFakeOptions = {
   failOn?: string[];
   /** Tabeller som inte finns, som när en migrering inte är körd. */
   missingTables?: string[];
+  /** Kolumner som inte finns, "tabell.kolumn", som när en migrering inte är körd. Postgres svarar 42703. */
+  missingColumns?: string[];
 };
 
 class PulseQuery implements PromiseLike<Result> {
@@ -49,8 +51,11 @@ class PulseQuery implements PromiseLike<Result> {
     return this.tables[this.tableName] ?? (this.tables[this.tableName] = []);
   }
 
-  select(): this {
+  private selected = "";
+
+  select(columns = ""): this {
     if (this.mode !== "select") this.returning = true;
+    this.selected = columns;
     return this;
   }
 
@@ -144,6 +149,13 @@ class PulseQuery implements PromiseLike<Result> {
         data: null,
         error: { code: "PGRST205", message: `Could not find the table 'public.${this.tableName}' in the schema cache` },
       };
+    }
+    const missingColumn = this.options.missingColumns?.find((name) => {
+      const [table, column] = name.split(".");
+      return table === this.tableName && this.selected.split(",").some((part) => part.trim() === column);
+    });
+    if (missingColumn) {
+      return { data: null, error: { code: "42703", message: `column ${missingColumn} does not exist` } };
     }
     if (this.options.failOn?.includes(`${this.tableName}:${this.mode}`)) {
       return { data: null, error: { message: `fejkat fel i ${this.tableName}:${this.mode}` } };

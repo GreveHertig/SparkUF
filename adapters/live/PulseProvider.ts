@@ -71,6 +71,12 @@ const OPPORTUNITY_CATEGORY_PREFIX = "opportunity:";
  * ett enstaka tillfälligt ord ("miljoner", "satsar") inte styr sökningen.
  */
 const MAX_LIKED_SIGNALS = 20;
+/**
+ * Kundgissningen (profiles.customer_guess, profilsamtalets "Vem tror du
+ * skulle köpa?"): högst så många ord ur den läggs till sökningen
+ * (moduldokumentet, "Kunden i sökningen").
+ */
+const MAX_CUSTOMER_TERMS = 3;
 const MAX_LEARNED_TERMS = 3;
 const MIN_TERM_LIKES = 2;
 /** Vanliga nyhetsord som inte säger något om vad grundaren bryr sig om. Bara för inlärningen. */
@@ -188,6 +194,38 @@ export function extractKeywords(text: string): string[] {
     if (keywords.length === MAX_KEYWORDS) break;
   }
   return keywords;
+}
+
+/**
+ * Sökord ur grundarens gissning om kunden. Bara bokstäver och siffror
+ * (extractKeywords), aldrig vanliga nyhetsord, och inga ord som redan söks.
+ * Grundarens text är data, aldrig instruktion.
+ */
+export function customerTerms(guess: string | null, known: string[] = []): string[] {
+  if (!guess) return [];
+  const knownStems = known.map((word) => stem(word.toLocaleLowerCase("sv-SE")));
+  return extractKeywords(guess)
+    .filter((word) => !NEWS_STOPWORDS.has(word) && !/^\p{N}+$/u.test(word) && !knownStems.includes(stem(word)))
+    .slice(0, MAX_CUSTOMER_TERMS);
+}
+
+/** PostgREST och Postgres svar när en kolumn saknas, t.ex. när en migrering inte är körd. */
+function isMissingColumn(error: { code?: string }): boolean {
+  return error.code === "42703" || error.code === "PGRST204";
+}
+
+/**
+ * Grundarens gissning om kunden ur profilen, eller null. Saknas kolumnen
+ * (migreringen 20261002190000 inte körd) söker Pulsen som förut.
+ */
+async function readCustomerGuess(supabase: SupabaseClient, userId: string): Promise<string | null> {
+  const { data, error } = await supabase.from("profiles").select("customer_guess").eq("user_id", userId).maybeSingle();
+  if (error) {
+    if (isMissingColumn(error)) return null;
+    throw new Error(`Pulsen: kunde inte läsa profilen (${error.message}).`);
+  }
+  const guess = (data as { customer_guess?: unknown } | null)?.customer_guess;
+  return typeof guess === "string" ? guess : null;
 }
 
 /** Steg 1 i flödet: `insert ... on conflict do nothing returning`. Databasen sätter fetch_date. */
@@ -579,11 +617,17 @@ async function refreshIfNeeded(
   project: Project,
   liked: LikedSignal[],
 ): Promise<void> {
-  const keywords = extractKeywords(`${project.name} ${project.oneLiner}`);
+  const projectWords = extractKeywords(`${project.name} ${project.oneLiner}`);
   // Saknas tabellen (migreringen inte körd) blir det inga bevakningar.
   const watches = (await readWatches(supabase, userId, project.id)) ?? [];
+  // Kunden efter idén: nyheter om dem som ska köpa, inte bara om produkten.
+  const customer = customerTerms(await readCustomerGuess(supabase, userId), [
+    ...projectWords,
+    ...watches.map((watch) => watch.term),
+  ]);
+  const keywords = [...projectWords, ...customer];
   const preferences = learnPreferences(liked, [...keywords, ...watches.map((watch) => watch.term)]);
-  // Utan nyckelord, bevakningar och inlärda ord går det inte att filtrera på bransch: sök inte alls.
+  // Utan nyckelord, kundord, bevakningar och inlärda ord går det inte att filtrera på bransch: sök inte alls.
   if (keywords.length === 0 && watches.length === 0 && preferences.terms.length === 0) return;
 
   let claim = await claimToday(supabase, userId);
