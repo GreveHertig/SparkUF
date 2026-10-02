@@ -87,6 +87,9 @@ export type SinceLastTime = {
 /** Riskområdena i Pulsen (Hampus Hedelius tips 2026-10-02: yttre omständigheter). */
 export const PULSE_RISK_AREAS = ["costs", "finance", "regulation", "competition", "demand", "supply"] as const;
 export type PulseRiskArea = (typeof PULSE_RISK_AREAS)[number];
+/** Möjligheterna i Pulsen: stöd och bidrag, och offentliga upphandlingar. */
+export const PULSE_OPPORTUNITY_AREAS = ["funding", "procurement"] as const;
+export type PulseOpportunityArea = (typeof PULSE_OPPORTUNITY_AREAS)[number];
 
 export type PulseSignal = {
   category: string;
@@ -100,4 +103,6 @@ export type PulseSignal = {
    * `actions` är allmänna förslag ur i18n, inga påståenden om nyheten.
    */
   risk?: { area: PulseRiskArea; actions: string[] };
+  /** Satt när signalen är en möjlighet (stöd, bidrag, upphandling). Aldrig samtidigt som `risk`. */
+  opportunity?: { area: PulseOpportunityArea; actions: string[] };
 };

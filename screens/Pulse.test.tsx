@@ -110,4 +110,49 @@ describe("Pulse (steg 6)", () => {
     const newsCard = [...container.querySelectorAll(".fdd-signal")].find((card) => card.textContent?.includes(signals[0].headline))!;
     expect(newsCard).not.toHaveTextContent(sv.pulsePage.actionsTitle);
   });
+
+  it("möjligheter får egen rubrik, grön markering, förslag och spelbok", () => {
+    const opportunity: PulseSignal = {
+      category: `Möjlighet · ${sv.pulsePage.opportunityAreas.funding.name}`,
+      headline: "Almi lanserar startstöd",
+      whyItMatters: "Kan passa dig.",
+      timestamp: "",
+      source: { namn: "almi.se", hämtad: "2026-10-02" },
+      opportunity: { area: "funding", actions: ["Läs villkoren."] },
+    };
+    const { container } = renderPulse({ signals: [opportunity, signals[0]], sourceDataType: "media" });
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    expect(headings).toEqual([sv.pulsePage.opportunitiesTitle, sv.pulsePage.newsTitle]);
+    const card = [...container.querySelectorAll(".fdd-signal")].find((c) => c.textContent?.includes("Almi lanserar"))!;
+    expect(card.querySelector(".fdd-pill--green")).toHaveTextContent(sv.pulsePage.opportunityLabel);
+    expect(card).toHaveTextContent(sv.pulsePage.opportunityAreas.funding.name);
+    expect(card).toHaveTextContent("Läs villkoren.");
+    // Spelboken för en möjlighet: "Passar det dig?" och "Så tar du vara på det".
+    expect(card).toHaveTextContent(sv.pulsePage.playbook.opportunityImpactTitle);
+    expect(card).toHaveTextContent(sv.pulsePage.opportunityAreas.funding.playbook.solve[0]);
+  });
+
+  it("spelboken under en risk är stängd från början och visar påverkan, lösning och märkningen", () => {
+    const risk: PulseSignal = {
+      category: "Risk",
+      headline: "Räntan höjs",
+      whyItMatters: "x",
+      timestamp: "",
+      source: { namn: "di.se", hämtad: "2026-10-02" },
+      risk: { area: "finance", actions: ["Kolla lånen."] },
+    };
+    const { container } = renderPulse({ signals: [risk] });
+    const details = container.querySelector("details.fdd-playbook")!;
+    expect(details).not.toHaveAttribute("open");
+    expect(details.querySelector("summary")).toHaveTextContent(sv.pulsePage.playbook.toggle);
+    expect(details).toHaveTextContent(sv.pulsePage.playbook.riskImpactTitle);
+    expect(details).toHaveTextContent(sv.pulsePage.playbook.riskSolveTitle);
+    for (const item of sv.pulsePage.riskAreas.finance.playbook.solve) expect(details).toHaveTextContent(item);
+    expect(details).toHaveTextContent(sv.pulsePage.playbook.note);
+  });
+
+  it("en vanlig nyhet har ingen spelbok", () => {
+    const { container } = renderPulse({ signals });
+    expect(container.querySelector("details")).toBeNull();
+  });
 });

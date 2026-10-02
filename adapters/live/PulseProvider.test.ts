@@ -9,14 +9,16 @@ vi.mock("@/lib/server/tavily", () => ({ search: (...a: unknown[]) => search(...a
 
 import {
   livePulseProvider as pulse,
+  classify,
+  classifyOpportunity,
   classifyRisk,
   extractKeywords,
   pickRelevant,
-  pickRisks,
-  riskThemeFor,
+  pickThemed,
+  themeFor,
   stem,
 } from "./PulseProvider";
-import { PULSE_RISK_AREAS } from "@/core/domain";
+import { PULSE_OPPORTUNITY_AREAS, PULSE_RISK_AREAS } from "@/core/domain";
 import { sv } from "@/i18n/sv";
 import { en } from "@/i18n/en";
 
@@ -271,7 +273,7 @@ describe("risksignaler", () => {
     const riskQuery = queries().find((query) => !query.startsWith("svenska näringslivsnyheter"))!;
     expect(riskQuery).toContain("kvittojakten kvittohantering redovisningsbyråer");
     // 2026-09-25 ger ett bestämt tema; temats fasta ord står först.
-    expect(riskQuery.startsWith(riskQueryFor(riskThemeFor(TODAY)))).toBe(true);
+    expect(riskQuery.startsWith(themeQueryStart(themeFor(TODAY)))).toBe(true);
   });
 
   it("en risk sparas med sitt område och visas med område, förklaring och förslag", async () => {
@@ -379,27 +381,112 @@ describe("riskklassningen", () => {
     expect(classifyRisk({ title: "Intressant intervju med en grundare", content: "" })).toBeNull();
   });
 
-  it("pickRisks kräver rubrik och ett riskord", () => {
-    const picked = pickRisks([riskHit(1, "Inflationen biter"), riskHit(2, "  "), riskHit(3, "Sol i helgen")]);
-    expect(picked.map(({ area }) => area)).toEqual(["costs"]);
+  it("pickThemed kräver rubrik och ett risk- eller möjlighetsord", () => {
+    const picked = pickThemed([
+      riskHit(1, "Inflationen biter"),
+      riskHit(2, "  "),
+      riskHit(3, "Sol i helgen"),
+      riskHit(4, "Ny upphandling av redovisningstjänster"),
+    ]);
+    expect(picked.map(({ insight }) => insight)).toEqual([
+      { kind: "risk", area: "costs" },
+      { kind: "opportunity", area: "procurement" },
+    ]);
   });
 
-  it("dagens tema roterar genom alla sex områden på sex dagar", () => {
-    const days = ["2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30"];
-    expect(new Set(days.map(riskThemeFor)).size).toBe(PULSE_RISK_AREAS.length);
-    expect(riskThemeFor("2026-10-01")).toBe(riskThemeFor("2026-09-25"));
+  it("dagens tema roterar genom alla åtta teman på åtta dagar", () => {
+    const days = Array.from({ length: 8 }, (_, i) => `2026-09-${String(20 + i).padStart(2, "0")}`);
+    const themes = days.map((day) => JSON.stringify(themeFor(day)));
+    expect(new Set(themes).size).toBe(PULSE_RISK_AREAS.length + PULSE_OPPORTUNITY_AREAS.length);
+    expect(themeFor("2026-09-28")).toEqual(themeFor("2026-09-20"));
   });
 });
 
-/** Risksökningens fasta ord för ett tema, som de står först i frågan. */
-function riskQueryFor(area: (typeof PULSE_RISK_AREAS)[number]): string {
+describe("möjligheter", () => {
+  it("klassas till rätt område", () => {
+    expect(classifyOpportunity({ title: "Vinnova öppnar ny utlysning för småföretag", content: "" })).toBe("funding");
+    expect(classifyOpportunity({ title: "Kommunen upphandlar redovisningstjänster", content: "" })).toBe("procurement");
+    expect(classifyOpportunity({ title: "Redovisningsbyråer växer", content: "" })).toBeNull();
+  });
+
+  it("vid lika poäng vinner risken", () => {
+    expect(classify({ title: "Bidrag och inflation", content: "" })).toEqual({ kind: "risk", area: "costs" });
+  });
+
+  it("en möjlighet sparas och visas med område, förklaring och förslag", async () => {
+    searchReturns([hit(1)], [riskHit(5, "Almi lanserar nytt startstöd", "Bidrag till nya företag")]);
+    const signals = await pulse.getSignals("sv");
+    const opportunity = signals.find((signal) => signal.opportunity)!;
+    expect(opportunity.opportunity!.area).toBe("funding");
+    expect(opportunity.risk).toBeUndefined();
+    expect(opportunity.category).toBe(`${sv.pulsePage.opportunityLabel} · ${sv.pulsePage.opportunityAreas.funding.name}`);
+    expect(opportunity.whyItMatters).toContain("Kvittojakten");
+    expect(opportunity.opportunity!.actions).toEqual(sv.pulsePage.opportunityAreas.funding.actions);
+    expect(tables.pulse_signals.find((row) => row.source_url === "https://www.ekonomi.se/r-5")!.category).toBe(
+      "opportunity:funding",
+    );
+  });
+
+  it("högst 2 möjligheter, risker först, totalt högst 5", async () => {
+    searchReturns(
+      [1, 2, 3, 4, 5].map((n) => hit(n)),
+      [
+        riskHit(5, "Konkurrent lanserar tjänst"),
+        riskHit(6, "Konkurrent köper upp byrå", "uppköp"),
+        riskHit(7, "Ny upphandling av redovisning"),
+        riskHit(8, "Kommunen upphandlar bokföring"),
+        riskHit(9, "Region upphandlar ekonomitjänster"),
+      ],
+    );
+    const signals = await pulse.getSignals("sv");
+    expect(signals).toHaveLength(5);
+    expect(signals.filter((signal) => signal.risk)).toHaveLength(2);
+    expect(signals.filter((signal) => signal.opportunity)).toHaveLength(2);
+    expect(signals.filter((signal) => !signal.risk && !signal.opportunity)).toHaveLength(1);
+  });
+
+  it("en okänd kategori i databasen läses som nyhet (vitlistan)", async () => {
+    setup({
+      pulse_fetches: [{ user_id: USER, fetch_date: TODAY, status: "done", claimed_at: ago(HOUR), fetched_at: ago(HOUR) }],
+      pulse_signals: ["risk:påhittat", "opportunity:<script>", "opportunity:funding"].map((category, n) => ({
+        user_id: USER,
+        project_id: "p1",
+        category,
+        headline: `Rad ${n}`,
+        why_it_matters: "x",
+        signal_at: ago(HOUR * (n + 1)),
+        source_name: "nyheter.se",
+        source_url: `https://www.nyheter.se/rad-${n}`,
+        fetched_at: TODAY,
+      })),
+    });
+    const signals = await pulse.getSignals("sv");
+    expect(signals.map((signal) => [signal.headline, signal.risk?.area ?? signal.opportunity?.area ?? null])).toEqual([
+      ["Rad 0", null],
+      ["Rad 1", null],
+      ["Rad 2", "funding"],
+    ]);
+  });
+
+  it("följer språket", async () => {
+    searchReturns([], [riskHit(5, "New public tender: upphandling of accounting")]);
+    const [signal] = await pulse.getSignals("en");
+    expect(signal.category).toBe(`${en.pulsePage.opportunityLabel} · ${en.pulsePage.opportunityAreas.procurement.name}`);
+    expect(signal.opportunity!.actions).toEqual(en.pulsePage.opportunityAreas.procurement.actions);
+  });
+});
+
+/** Temasökningens fasta ord, som de står först i frågan. */
+function themeQueryStart(theme: { kind: string; area: string }): string {
   const prefixes: Record<string, string> = {
-    costs: "stigande priser",
-    finance: "räntan Riksbanken",
-    regulation: "nya regler",
-    competition: "konkurrent lanserar",
-    demand: "konjunktur efterfrågan",
-    supply: "leveransproblem brist",
+    "risk:costs": "stigande priser",
+    "risk:finance": "räntan Riksbanken",
+    "risk:regulation": "nya regler",
+    "risk:competition": "konkurrent lanserar",
+    "risk:demand": "konjunktur efterfrågan",
+    "risk:supply": "leveransproblem brist",
+    "opportunity:funding": "bidrag företagsstöd",
+    "opportunity:procurement": "offentlig upphandling",
   };
-  return prefixes[area];
+  return prefixes[`${theme.kind}:${theme.area}`];
 }

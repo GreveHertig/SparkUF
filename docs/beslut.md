@@ -331,3 +331,15 @@ Beslut av Bruno, efter Hampus Hedelius tips om yttre omständigheter
   påståenden om den enskilda nyheten.
 - **Ingen migration.** Riskområdet sparas i den befintliga kolumnen
   `pulse_signals.category` som `risk:<område>`.
+
+**Pulsens möjligheter och spelböcker.** Beslut av Bruno (2026-10-02), efter
+teamets önskan att Pulsen ska visa hur en risk påverkar företaget och hur
+man löser den.
+- **Möjligheter** (stöd och bidrag, offentlig upphandling) delar motor och
+  rotation med riskerna. Två Tavily-anrop per grundare och dag som förut.
+- **Spelböckerna är förskrivna i18n-texter, inte genererade.** Allmänna råd
+  per område, utan siffror och utan påståenden om den enskilda nyheten. De
+  märks "ännu inte granskad av en rådgivare" tills en kunnig person (förslag:
+  Hampus Hedelius) har läst dem. Att räkna påverkan med grundarens egna
+  siffror väntar på att Resan sparar kalkylen; en AI-bedömning per nyhet är
+  ett eget teambeslut.

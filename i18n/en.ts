@@ -402,6 +402,20 @@ export const en = {
           "Work out what happens to your margin if the cost rises.",
           "Ask your supplier about a fixed price or a longer contract.",
         ],
+        playbook: {
+          impact: [
+            "How large a share of your costs goes to what is getting more expensive? The bigger the share, the harder it hits.",
+            "Can you raise your price without losing customers, or are your customers price-sensitive?",
+            "Do you have fixed-price contracts, or do your purchase prices follow the market directly?",
+          ],
+          solve: [
+            "Rerun your calculation with the higher price and see how much your margin drops.",
+            "Ask one or two other suppliers for a quote, so you know what the alternative costs.",
+            "Negotiate a fixed price or a longer contract while the price is still lower.",
+            "Add a price adjustment clause to new customer contracts, so your price can follow your costs.",
+            "See whether you can use less or switch to something cheaper without lowering quality.",
+          ],
+        },
       },
       finance: {
         name: "Interest rates and financing",
@@ -411,6 +425,19 @@ export const en = {
           "Consider whether your customers will become more price-sensitive.",
           "Build in a margin if you plan to borrow or raise capital.",
         ],
+        playbook: {
+          impact: [
+            "Do you have loans, credit or leasing with a variable rate?",
+            "Are you planning to borrow or raise capital in the coming year?",
+            "Do you buy or sell in a currency other than Swedish kronor?",
+          ],
+          solve: [
+            "Work out what your interest costs become if the rate rises another percentage point.",
+            "Compare variable and fixed rates with your bank before taking new loans.",
+            "Build a buffer that covers a few months of fixed costs.",
+            "If you trade in foreign currency: invoice in kronor where possible, or talk to your bank about currency risk.",
+          ],
+        },
       },
       regulation: {
         name: "Rules and requirements",
@@ -420,6 +447,19 @@ export const en = {
           "Check Legal for what applies to your company form.",
           "Ask a lawyer or accountant if you are unsure.",
         ],
+        playbook: {
+          impact: [
+            "Does the rule apply to your industry, your company form or the kind of customers you have?",
+            "When does it take effect, and do you have time to adapt before then?",
+            "Does it require a permit, a registration or a new routine on your side?",
+          ],
+          solve: [
+            "Read what the rule actually says at the authority responsible for it, not just in the article.",
+            "Make a list of what has to change on your side, and when.",
+            "Check Legal for what applies to your company form.",
+            "If you are unsure: ask a lawyer, accountant or trade association before the rule takes effect.",
+          ],
+        },
       },
       competition: {
         name: "Competition",
@@ -429,6 +469,19 @@ export const en = {
           "Think about what makes you hard to replace.",
           "Ask your customers whether they have noticed anything new.",
         ],
+        playbook: {
+          impact: [
+            "Does the competitor sell to the same customers as you?",
+            "Is their offer cheaper, better or just different?",
+            "What would make your customers switch to them?",
+          ],
+          solve: [
+            "Try the competitor's service yourself if you can, and write down the differences.",
+            "Talk to two or three of your customers about what they value most about you.",
+            "Make what sets you apart clear in how you sell and describe your offer.",
+            "Don't compete on price alone: service, niche and relationships are harder to copy.",
+          ],
+        },
       },
       demand: {
         name: "Demand and the economy",
@@ -438,6 +491,19 @@ export const en = {
           "Have a plan for if sales come in slower than you expected.",
           "Check how long your money lasts without new revenue.",
         ],
+        playbook: {
+          impact: [
+            "Do you sell something customers can put off when the economy is weak?",
+            "How much of your sales come from just a few customers?",
+            "How long does your money last if sales come in slower?",
+          ],
+          solve: [
+            "Work out how many months you can manage with lower sales than planned.",
+            "Keep fixed costs down until sales are stable.",
+            "Spread the risk across more customers, so losing one doesn't hit too hard.",
+            "Follow your own sales figures every week, so you spot a downturn early.",
+          ],
+        },
       },
       supply: {
         name: "Supply",
@@ -447,7 +513,77 @@ export const en = {
           "Plan with a margin in delivery times.",
           "Ask your supplier how they are affected.",
         ],
+        playbook: {
+          impact: [
+            "Do you depend on a single supplier for something important?",
+            "How long can you manage if a delivery is delayed?",
+            "Do you buy from abroad, where tariffs or freight can change?",
+          ],
+          solve: [
+            "Find at least one alternative supplier for what matters most, before you need it.",
+            "Plan with longer delivery times and a little more stock where you can.",
+            "Ask your supplier how they are affected and what their plan is.",
+            "Promise customers delivery times with a margin.",
+          ],
+        },
       },
+    },
+    opportunitiesTitle: "Opportunities",
+    opportunitiesIntro: "Support, grants and public tenders that could suit your business. Each signal is a news item with a source.",
+    opportunityLabel: "Opportunity",
+    opportunityAreas: {
+      funding: {
+        name: "Support and grants",
+        whyItMatters: "There may be support or funding that suits {project}.",
+        actions: [
+          "Read who the support is for and when applications close.",
+          "Check whether your business meets the requirements.",
+          "Ask Almi or your municipality's business office if you are unsure.",
+        ],
+        playbook: {
+          impact: [
+            "Does the support apply to your industry, your stage and your company form?",
+            "Does it require the company to be registered already?",
+            "Do you have to contribute money or time yourself?",
+          ],
+          solve: [
+            "Read the terms from whoever awards the support, not just the article.",
+            "Put the application deadline in your calendar.",
+            "Prepare a short description of the idea, the customer and what the money will be used for.",
+            "Ask someone who has applied before to read your application.",
+          ],
+        },
+      },
+      procurement: {
+        name: "Public procurement",
+        whyItMatters: "A public tender could give {project} a new customer.",
+        actions: [
+          "Read what is being procured and the deadline for bids.",
+          "Check whether your business meets the requirements.",
+          "Consider whether you could bid together with someone else.",
+        ],
+        playbook: {
+          impact: [
+            "Do you sell what is being procured, or something close to it?",
+            "Do you meet requirements such as revenue, references or insurance?",
+            "Do you have time to submit a bid before the deadline?",
+          ],
+          solve: [
+            "Read the whole tender document, especially the requirements and how bids are assessed.",
+            "Send your questions to the buyer within the question period.",
+            "If the requirements are too high: see whether you can be a subcontractor to someone who bids.",
+            "Keep an eye out for similar tenders.",
+          ],
+        },
+      },
+    },
+    playbook: {
+      toggle: "Playbook: how it affects you and what to do",
+      riskImpactTitle: "How it affects you",
+      riskSolveTitle: "How to handle it",
+      opportunityImpactTitle: "Does it suit you?",
+      opportunitySolveTitle: "How to make the most of it",
+      note: "General guidance, not yet reviewed by an advisor. Get an advisor's help for your specific case.",
     },
   },
   memoryPage: {

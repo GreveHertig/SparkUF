@@ -1,5 +1,11 @@
 import type { PulseProvider } from "@/ports/PulseProvider";
-import { PULSE_RISK_AREAS, type PulseRiskArea, type PulseSignal } from "@/core/domain";
+import {
+  PULSE_OPPORTUNITY_AREAS,
+  PULSE_RISK_AREAS,
+  type PulseOpportunityArea,
+  type PulseRiskArea,
+  type PulseSignal,
+} from "@/core/domain";
 import type { Locale } from "@/i18n/context";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { EmptyStateError, OutreachTransportError } from "@/core/errors";
@@ -18,12 +24,13 @@ import { en } from "@/i18n/en";
  * Dagscachen (pulse_fetches, avsnittet "Dagscachen"): högst en hämtning per
  * grundare och svensk dag. Datumet räknas alltid av databasen, aldrig här.
  *
- * Risksignaler (moduldokumentet, "Risksignaler"): varje hämtning gör två
- * sökningar, nyheter om idén och dagens risktema, så taket är två
- * Tavily-anrop per grundare och dag. Varje träff klassas på ord i rubrik och
- * text (ingen modell) till ett av sex riskområden, eller som vanlig nyhet.
- * Riskområdet sparas i `category` som "risk:<område>", så ingen migration
- * behövs. Text och förslag byggs om från i18n vid läsning.
+ * Risker och möjligheter (moduldokumentet, "Risksignaler" och "Möjligheter"):
+ * varje hämtning gör två sökningar, nyheter om idén och dagens tema, så taket
+ * är två Tavily-anrop per grundare och dag. Temat roterar mellan sex
+ * riskområden och två möjligheter. Varje träff klassas på ord i rubrik och
+ * text (ingen modell) som risk, möjlighet eller vanlig nyhet. Sorten sparas i
+ * `category` som "risk:<område>" eller "opportunity:<område>", så ingen
+ * migration behövs. Text, förslag och spelbok byggs från i18n vid läsning.
  */
 
 const DOC = "docs/moduler/webbresearch-och-pulsen.md";
@@ -43,15 +50,22 @@ const MAX_KEYWORDS = 6;
 const MIN_KEYWORD_CHARS = 4;
 /** Söksträngens fasta del. Skickas till Tavily, visas aldrig för användaren. */
 const QUERY_PREFIX = "svenska näringslivsnyheter";
-/** Högst så många risker bland de signaler som visas, resten är nyheter. */
+/** Högst så många risker och möjligheter bland de signaler som visas, resten är nyheter. */
 const MAX_RISKS = 3;
+const MAX_OPPORTUNITIES = 2;
 /** Så många rader läses för att kunna välja både risker och nyheter. */
 const READ_WINDOW = 30;
 const RISK_CATEGORY_PREFIX = "risk:";
+const OPPORTUNITY_CATEGORY_PREFIX = "opportunity:";
+
+/** En klassad signal: en risk eller en möjlighet inom ett område. */
+export type Insight =
+  | { kind: "risk"; area: PulseRiskArea }
+  | { kind: "opportunity"; area: PulseOpportunityArea };
 
 /**
- * Risksökningens fasta ord per tema. Ett tema per dag, i tur och ordning
- * (riskThemeFor), så att sex teman täcks på sex dagar med ett anrop per dag.
+ * Temasökningens fasta ord per riskområde. Ett tema per dag, i tur och
+ * ordning (themeFor), så att alla teman täcks utan fler anrop per dag.
  */
 const RISK_QUERY: Record<PulseRiskArea, string> = {
   costs: "stigande priser råvaror kostnader Sverige",
@@ -76,6 +90,24 @@ export const RISK_TERMS: Record<PulseRiskArea, string[]> = {
   demand: ["konjunktur", "lågkonjunktur", "efterfrågan", "konsumtion", "hushållen", "varsel", "konkurs", "försäljningsras"],
   supply: ["leveransproblem", "leveranstid", "komponentbrist", "materialbrist", "brist", "strejk", "tull", "leverantör"],
 };
+
+/** Temasökningens fasta ord per möjlighet. */
+const OPPORTUNITY_QUERY: Record<PulseOpportunityArea, string> = {
+  funding: "bidrag företagsstöd småföretag Almi Vinnova utlysning",
+  procurement: "offentlig upphandling anbud kommun region",
+};
+
+/** Ordbörjan som pekar på en möjlighet. Lika snäva som riskerna. */
+export const OPPORTUNITY_TERMS: Record<PulseOpportunityArea, string[]> = {
+  funding: ["bidrag", "företagsstöd", "innovationsstöd", "startstöd", "utlysning", "almi", "vinnova", "tillväxtverket", "innovationscheck"],
+  procurement: ["upphandling", "upphandlar", "anbud", "ramavtal"],
+};
+
+/** Alla teman i rotationen: de sex riskområdena, sedan de två möjligheterna. */
+const THEMES: Insight[] = [
+  ...PULSE_RISK_AREAS.map((area) => ({ kind: "risk" as const, area })),
+  ...PULSE_OPPORTUNITY_AREAS.map((area) => ({ kind: "opportunity" as const, area })),
+];
 
 /** Vanliga ord som inte säger något om branschen. Bara ord med minst MIN_KEYWORD_CHARS tecken behöver stå här. */
 const STOPWORDS = new Set([
@@ -251,40 +283,65 @@ export function pickRelevant(results: TavilySearchResult[], keywords: string[]):
  * rubriken väger tyngre än två i brödtexten. Ingen träff ger null.
  */
 export function classifyRisk(result: Pick<TavilySearchResult, "title" | "content">): PulseRiskArea | null {
+  return bestArea(result, PULSE_RISK_AREAS, RISK_TERMS)?.area ?? null;
+}
+
+/** Som classifyRisk, för möjligheterna. */
+export function classifyOpportunity(result: Pick<TavilySearchResult, "title" | "content">): PulseOpportunityArea | null {
+  return bestArea(result, PULSE_OPPORTUNITY_AREAS, OPPORTUNITY_TERMS)?.area ?? null;
+}
+
+/**
+ * Risk, möjlighet eller ingenting. Vid lika poäng vinner risken: en varning
+ * som visas i onödan är bättre än en risk som visas som möjlighet.
+ */
+export function classify(result: Pick<TavilySearchResult, "title" | "content">): Insight | null {
+  const risk = bestArea(result, PULSE_RISK_AREAS, RISK_TERMS);
+  const opportunity = bestArea(result, PULSE_OPPORTUNITY_AREAS, OPPORTUNITY_TERMS);
+  if (risk && (!opportunity || risk.score >= opportunity.score)) return { kind: "risk", area: risk.area };
+  if (opportunity) return { kind: "opportunity", area: opportunity.area };
+  return null;
+}
+
+function bestArea<A extends string>(
+  result: Pick<TavilySearchResult, "title" | "content">,
+  areas: readonly A[],
+  terms: Record<A, string[]>,
+): { area: A; score: number } | null {
   const words = (text: string) => text.toLocaleLowerCase("sv-SE").match(/[\p{L}\p{N}]+/gu) ?? [];
   const title = words(result.title);
   const body = words(result.content);
-  let best: PulseRiskArea | null = null;
-  let bestScore = 0;
-  for (const area of PULSE_RISK_AREAS) {
-    const hits = (list: string[]) => list.filter((word) => RISK_TERMS[area].some((term) => word.startsWith(term))).length;
+  let best: { area: A; score: number } | null = null;
+  for (const area of areas) {
+    const hits = (list: string[]) => list.filter((word) => terms[area].some((term) => word.startsWith(term))).length;
     const score = 3 * hits(title) + hits(body);
-    if (score > bestScore) {
-      best = area;
-      bestScore = score;
-    }
+    if (score > 0 && (!best || score > best.score)) best = { area, score };
   }
   return best;
 }
 
-/** Dagens risktema ur dagscachens datum (räknat av databasen): ett av sex, i tur och ordning. */
-export function riskThemeFor(fetchDate: string): PulseRiskArea {
+/** Dagens tema ur dagscachens datum (räknat av databasen): ett av åtta, i tur och ordning. */
+export function themeFor(fetchDate: string): Insight {
   const day = Math.floor(Date.parse(`${fetchDate}T00:00:00Z`) / (24 * 60 * 60 * 1000));
-  return PULSE_RISK_AREAS[((day % PULSE_RISK_AREAS.length) + PULSE_RISK_AREAS.length) % PULSE_RISK_AREAS.length];
+  return THEMES[((day % THEMES.length) + THEMES.length) % THEMES.length];
 }
 
-type Candidate = { result: TavilySearchResult; area: PulseRiskArea | null };
+function themeQuery(theme: Insight): string {
+  return theme.kind === "risk" ? RISK_QUERY[theme.area] : OPPORTUNITY_QUERY[theme.area];
+}
+
+type Candidate = { result: TavilySearchResult; insight: Insight | null };
 
 /**
- * Risksökningens träffar: rubrik krävs och träffen måste själv nämna ett
- * riskord. Att den kom från dagens temasökning räcker inte, och området
- * läses alltid ur texten, inte ur temat.
+ * Temasökningens träffar: rubrik krävs och träffen måste själv nämna ett
+ * risk- eller möjlighetsord. Att den kom från dagens temasökning räcker
+ * inte, och sort och område läses alltid ur texten, inte ur temat.
  */
-export function pickRisks(results: TavilySearchResult[]): Candidate[] {
+export function pickThemed(results: TavilySearchResult[]): Candidate[] {
   return results.flatMap((result) => {
     if (!cleanHeadline(result.title)) return [];
-    const area = classifyRisk(result);
-    return area ? [{ result, area }] : [];
+    const insight = classify(result);
+    return insight ? [{ result, insight }] : [];
   });
 }
 
@@ -306,12 +363,12 @@ async function runSearch(
     throw error;
   }
 
-  // Risksökningen är ett tillägg: ett nätverksfel där stoppar inte dagens
+  // Temasökningen är ett tillägg: ett nätverksfel där stoppar inte dagens
   // nyheter. Ett konfigurationsfel syns, som ovan.
   let riskResults: TavilySearchResult[] = [];
-  const theme = riskThemeFor(claim.fetch_date);
+  const theme = themeFor(claim.fetch_date);
   try {
-    riskResults = await search({ query: `${RISK_QUERY[theme]} ${keywords.join(" ")}`, maxResults: MAX_SIGNALS });
+    riskResults = await search({ query: `${themeQuery(theme)} ${keywords.join(" ")}`, maxResults: MAX_SIGNALS });
   } catch (error) {
     if (!(error instanceof OutreachTransportError)) {
       await finish(supabase, userId, claim, "error");
@@ -319,12 +376,12 @@ async function runSearch(
     }
   }
 
-  // En nyhet som själv handlar om en risk blir en risk. Samma artikel från
-  // båda sökningarna tas bara en gång.
+  // En nyhet som själv handlar om en risk eller möjlighet blir det. Samma
+  // artikel från båda sökningarna tas bara en gång.
   const seen = new Set<string>();
   const candidates = [
-    ...pickRelevant(results, keywords).map((result) => ({ result, area: classifyRisk(result) })),
-    ...pickRisks(riskResults),
+    ...pickRelevant(results, keywords).map((result) => ({ result, insight: classify(result) })),
+    ...pickThemed(riskResults),
   ].filter(({ result }) => (seen.has(result.url) ? false : (seen.add(result.url), true)));
 
   let saved: number;
@@ -373,15 +430,16 @@ async function insertSignals(
   fresh: Candidate[],
 ): Promise<void> {
   // Kolumnerna är NOT NULL, så den svenska texten sparas. Vid läsning byggs den om per språk.
-  // För en risk sparas området som "risk:<område>" i category.
+  // För en risk eller möjlighet sparas sorten som "risk:<område>" eller
+  // "opportunity:<område>" i category.
   const texts = dictionaries.sv.pulsePage;
   const { error } = await supabase.from("pulse_signals").insert(
-    fresh.map(({ result, area }) => ({
+    fresh.map(({ result, insight }) => ({
       user_id: userId,
       project_id: project.id,
-      category: area ? `${RISK_CATEGORY_PREFIX}${area}` : texts.liveCategory,
+      category: insight ? categoryOf(insight) : texts.liveCategory,
       headline: cleanHeadline(result.title),
-      why_it_matters: (area ? texts.riskAreas[area].whyItMatters : texts.liveWhyItMatters).replace(
+      why_it_matters: (insight ? insightTexts(insight, "sv").whyItMatters : texts.liveWhyItMatters).replace(
         "{project}",
         project.name,
       ),
@@ -437,19 +495,25 @@ async function readSignals(
   if (error) throw new Error(`Pulsen: kunde inte läsa signalerna (${error.message}).`);
 
   const rows = ((data as SignalRow[] | null) ?? []).filter((row) => row.headline && row.source_name && row.fetched_at);
-  // Högst MAX_RISKS risker, resten nyheter, högst MAX_SIGNALS totalt (porten:
-  // 3–5). Risker trängs alltså inte undan av en dag med många nyheter.
-  const risks = rows.filter((row) => riskAreaOf(row.category)).slice(0, MAX_RISKS);
-  const news = rows.filter((row) => !riskAreaOf(row.category)).slice(0, MAX_SIGNALS - risks.length);
-  const chosen = [...risks, ...news].sort((a, b) => Date.parse(b.signal_at) - Date.parse(a.signal_at));
+  // Högst MAX_RISKS risker och MAX_OPPORTUNITIES möjligheter, resten nyheter,
+  // högst MAX_SIGNALS totalt (porten: 3–5). Risker och möjligheter trängs
+  // alltså inte undan av en dag med många nyheter.
+  const kindOf = (row: SignalRow) => insightOf(row.category)?.kind ?? "news";
+  const risks = rows.filter((row) => kindOf(row) === "risk").slice(0, MAX_RISKS);
+  const opportunities = rows
+    .filter((row) => kindOf(row) === "opportunity")
+    .slice(0, Math.min(MAX_OPPORTUNITIES, MAX_SIGNALS - risks.length));
+  const news = rows.filter((row) => kindOf(row) === "news").slice(0, MAX_SIGNALS - risks.length - opportunities.length);
+  const chosen = [...risks, ...opportunities, ...news].sort((a, b) => Date.parse(b.signal_at) - Date.parse(a.signal_at));
 
   const texts = dictionaries[locale].pulsePage;
   // Kategori, "varför" och förslag byggs om från i18n, så att signalen följer språket.
   return chosen.map((row) => {
-    const area = riskAreaOf(row.category);
-    const areaTexts = area ? texts.riskAreas[area] : null;
+    const insight = insightOf(row.category);
+    const areaTexts = insight ? insightTexts(insight, locale) : null;
+    const label = insight?.kind === "opportunity" ? texts.opportunityLabel : texts.riskLabel;
     return {
-      category: areaTexts ? `${texts.riskLabel} · ${areaTexts.name}` : texts.liveCategory,
+      category: areaTexts ? `${label} · ${areaTexts.name}` : texts.liveCategory,
       headline: row.headline,
       whyItMatters: (areaTexts ? areaTexts.whyItMatters : texts.liveWhyItMatters).replace("{project}", project.name),
       timestamp: formatDate(stockholmDate(row.signal_at), locale),
@@ -458,16 +522,40 @@ async function readSignals(
         hämtad: row.fetched_at,
         ...(row.source_url ? { url: row.source_url } : {}),
       },
-      ...(area && areaTexts ? { risk: { area, actions: [...areaTexts.actions] } } : {}),
+      ...(insight?.kind === "risk" && areaTexts ? { risk: { area: insight.area, actions: [...areaTexts.actions] } } : {}),
+      ...(insight?.kind === "opportunity" && areaTexts
+        ? { opportunity: { area: insight.area, actions: [...areaTexts.actions] } }
+        : {}),
     };
   });
 }
 
-/** "risk:costs" ger "costs". Allt annat (äldre rader med "Branschnyhet", okända värden) är en vanlig nyhet. */
-function riskAreaOf(category: string): PulseRiskArea | null {
-  if (!category.startsWith(RISK_CATEGORY_PREFIX)) return null;
-  const area = category.slice(RISK_CATEGORY_PREFIX.length);
-  return (PULSE_RISK_AREAS as readonly string[]).includes(area) ? (area as PulseRiskArea) : null;
+function categoryOf(insight: Insight): string {
+  return `${insight.kind === "risk" ? RISK_CATEGORY_PREFIX : OPPORTUNITY_CATEGORY_PREFIX}${insight.area}`;
+}
+
+function insightTexts(insight: Insight, locale: Locale) {
+  const texts = dictionaries[locale].pulsePage;
+  return insight.kind === "risk" ? texts.riskAreas[insight.area] : texts.opportunityAreas[insight.area];
+}
+
+/**
+ * "risk:costs" och "opportunity:funding" ger sorten och området. Allt annat
+ * (äldre rader med "Branschnyhet", okända värden) är en vanlig nyhet:
+ * värdet kontrolleras mot en vitlista.
+ */
+function insightOf(category: string): Insight | null {
+  if (category.startsWith(RISK_CATEGORY_PREFIX)) {
+    const area = category.slice(RISK_CATEGORY_PREFIX.length);
+    return (PULSE_RISK_AREAS as readonly string[]).includes(area) ? { kind: "risk", area: area as PulseRiskArea } : null;
+  }
+  if (category.startsWith(OPPORTUNITY_CATEGORY_PREFIX)) {
+    const area = category.slice(OPPORTUNITY_CATEGORY_PREFIX.length);
+    return (PULSE_OPPORTUNITY_AREAS as readonly string[]).includes(area)
+      ? { kind: "opportunity", area: area as PulseOpportunityArea }
+      : null;
+  }
+  return null;
 }
 
 async function getSignals(locale: Locale): Promise<PulseSignal[]> {

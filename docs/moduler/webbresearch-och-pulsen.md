@@ -210,6 +210,28 @@ bevaka** bredvid vanliga branschnyheter.
   område, förklaring, "Vad du kan göra" och källan som `media`, sedan
   "Nyheter i din bransch".
 
+## Möjligheter och spelböcker (Pulsen, 2026-10-02)
+
+- **Möjligheter** är en tredje sort bredvid nyheter och risker: **stöd och
+  bidrag** (`funding`) och **offentlig upphandling** (`procurement`). Samma
+  motor: ordbörjan per område (`OPPORTUNITY_TERMS`), samma vikt på rubriken,
+  sparas som `opportunity:<område>` i `category`. `classify` väljer risk,
+  möjlighet eller ingenting; vid lika poäng vinner risken.
+- **Rotationen** har nu åtta teman (sex risker, två möjligheter, `themeFor`).
+  Fortfarande två Tavily-anrop per grundare och dag.
+- **Urvalet:** högst 3 risker, högst 2 möjligheter, resten nyheter, högst 5
+  totalt. `PulseSignal.opportunity` (valfri) bär område och förslag.
+- **Spelböcker** (`pulsePage.riskAreas.<område>.playbook` och
+  `opportunityAreas.<område>.playbook`, sv och en): under varje risk "Så
+  påverkar det dig" (frågor att pröva mot det egna företaget) och "Så löser
+  du det" (numrerade steg); under varje möjlighet "Passar det dig?" och "Så
+  tar du vara på det". Utfällbara, stängda från början. Märkta "Allmän
+  vägledning, ännu inte granskad av en rådgivare". Innehållet är allmänna
+  råd utan siffror och utan påståenden om den enskilda nyheten. **Ska
+  granskas** (förslag: Hampus Hedelius) innan märkningen tas bort.
+- **Skärmen:** "Risker att bevaka", "Möjligheter", "Nyheter i din bransch".
+  Utan risker och möjligheter ser sidan ut som förut.
+
 Nästa steg (inte byggt): dela sökningar mellan grundare i samma bransch
 (kräver en tabell, alltså en migration som Erik godkänner), och koppla en
 risk till grundarens egna antaganden i kalkylen (kräver data från Resan).
