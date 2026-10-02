@@ -91,7 +91,15 @@ export type PulseRiskArea = (typeof PULSE_RISK_AREAS)[number];
 export const PULSE_OPPORTUNITY_AREAS = ["funding", "procurement"] as const;
 export type PulseOpportunityArea = (typeof PULSE_OPPORTUNITY_AREAS)[number];
 
+/** Grundarens omdöme om en signal. "not_relevant" döljer den. */
+export type PulseFeedbackVerdict = "relevant" | "not_relevant";
+
+/** En egen bevakning i Pulsen: en konkurrent eller ett nyckelord. */
+export type PulseWatch = { id: string; kind: "competitor" | "keyword"; term: string };
+
 export type PulseSignal = {
+  /** Signalens id i databasen, för omdömet. Saknas i demot. */
+  id?: string;
   category: string;
   headline: string;
   whyItMatters: string;

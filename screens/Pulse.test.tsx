@@ -1,5 +1,5 @@
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
@@ -154,5 +154,92 @@ describe("Pulse (steg 6)", () => {
   it("en vanlig nyhet har ingen spelbok", () => {
     const { container } = renderPulse({ signals });
     expect(container.querySelector("details")).toBeNull();
+  });
+
+  describe("omdöme och bevakningar (bara /app)", () => {
+    const withId = signals.map((signal, n) => ({ ...signal, id: `00000000-0000-0000-0000-00000000000${n}` }));
+
+    it("utan onFeedback och watches: inga knappar och ingen del för bevakningar", () => {
+      const { container } = renderPulse({ signals: withId });
+      expect(screen.queryByRole("button", { name: sv.pulsePage.feedback.relevant })).toBeNull();
+      expect(container.querySelector(".fdd-feedback")).toBeNull();
+      expect(screen.queryByText(sv.pulsePage.watches.title)).toBeNull();
+    });
+
+    it("Inte relevant döljer kortet, Relevant tackar", async () => {
+      const onFeedback = vi.fn().mockResolvedValue(undefined);
+      render(
+        <LocaleProvider>
+          <Pulse data={{ signals: withId }} onFeedback={onFeedback} />
+        </LocaleProvider>,
+      );
+      const [notRelevant] = screen.getAllByRole("button", { name: sv.pulsePage.feedback.notRelevant });
+      await act(async () => fireEvent.click(notRelevant));
+      expect(onFeedback).toHaveBeenCalledWith(withId[0].id, "not_relevant");
+      expect(await screen.findByText(sv.pulsePage.feedback.hidden)).toBeInTheDocument();
+      const [relevant] = screen.getAllByRole("button", { name: sv.pulsePage.feedback.relevant });
+      await act(async () => fireEvent.click(relevant));
+      expect(await screen.findByText(sv.pulsePage.feedback.thanks)).toBeInTheDocument();
+    });
+
+    it("ett misslyckat omdöme säger det och låter knapparna stå kvar", async () => {
+      const onFeedback = vi.fn().mockRejectedValue(new Error("nere"));
+      render(
+        <LocaleProvider>
+          <Pulse data={{ signals: [withId[0]] }} onFeedback={onFeedback} />
+        </LocaleProvider>,
+      );
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: sv.pulsePage.feedback.relevant })));
+      expect(await screen.findByRole("alert")).toHaveTextContent(sv.pulsePage.feedback.failed);
+      expect(screen.getByRole("button", { name: sv.pulsePage.feedback.relevant })).toBeInTheDocument();
+    });
+
+    function renderWatches(items: { id: string; kind: "competitor" | "keyword"; term: string }[], onAdd = vi.fn(), onRemove = vi.fn()) {
+      render(
+        <LocaleProvider>
+          <Pulse data={{ signals: [] }} watches={{ items, max: 2, onAdd, onRemove }} />
+        </LocaleProvider>,
+      );
+      return { onAdd, onRemove };
+    }
+
+    it("visar bevakningarna, även när det inte finns några signaler", () => {
+      renderWatches([{ id: "w1", kind: "competitor", term: "ByråFlöde" }]);
+      expect(screen.getByRole("heading", { name: sv.pulsePage.watches.title })).toBeInTheDocument();
+      expect(screen.getByText("ByråFlöde")).toBeInTheDocument();
+      expect(document.querySelector(".fdd-watch")).toHaveTextContent(sv.pulsePage.watches.kindCompetitor);
+    });
+
+    it("lägger till med vald sort och tömmer fältet när det gick", async () => {
+      const { onAdd } = renderWatches([], vi.fn().mockResolvedValue({ ok: true }));
+      fireEvent.change(screen.getByLabelText(sv.pulsePage.watches.kindLabel), { target: { value: "keyword" } });
+      const input = screen.getByLabelText(sv.pulsePage.watches.termLabel);
+      fireEvent.change(input, { target: { value: "kvittoskanning" } });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: sv.pulsePage.watches.add })));
+      expect(onAdd).toHaveBeenCalledWith("keyword", "kvittoskanning");
+      await waitFor(() => expect(input).toHaveValue(""));
+    });
+
+    it("visar skälet när en bevakning inte kan sparas", async () => {
+      renderWatches([], vi.fn().mockResolvedValue({ ok: false, reason: "too_short" }));
+      fireEvent.change(screen.getByLabelText(sv.pulsePage.watches.termLabel), { target: { value: "x" } });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: sv.pulsePage.watches.add })));
+      expect(await screen.findByRole("alert")).toHaveTextContent(sv.pulsePage.watches.errors.too_short);
+    });
+
+    it("tar bort en bevakning", async () => {
+      const { onRemove } = renderWatches([{ id: "w1", kind: "keyword", term: "kvitto" }], vi.fn(), vi.fn().mockResolvedValue(undefined));
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: "Sluta bevaka kvitto" })));
+      expect(onRemove).toHaveBeenCalledWith("w1");
+    });
+
+    it("vid taket visas ingen ruta för nya, bara en förklaring", () => {
+      renderWatches([
+        { id: "w1", kind: "keyword", term: "ett" },
+        { id: "w2", kind: "keyword", term: "två" },
+      ]);
+      expect(screen.queryByRole("button", { name: sv.pulsePage.watches.add })).not.toBeInTheDocument();
+      expect(screen.getByText("Högst 2 bevakningar.")).toBeInTheDocument();
+    });
   });
 });

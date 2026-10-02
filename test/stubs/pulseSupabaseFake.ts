@@ -8,11 +8,16 @@
 // Efterliknar också det databasen gör åt adaptern i pulse_fetches:
 // defaultvärden (fetch_date = "i dag", status 'pending', claimed_at = nu) och
 // check-villkoret `(status = 'pending') = (fetched_at is null)`.
-// RISK: en fejk kan glida från riktig PostgREST. RLS prövas inte här.
+// Omdöme och bevakningar (pulse_feedback, pulse_watches): `delete`, upsert som
+// skriver över, unikheten på (project_id, lower(term)) och en tabell som
+// saknas (`missingTables`, migreringen inte körd) som PostgREST svarar på den.
+//
+// RISK: en fejk kan glida från riktig PostgREST. RLS prövas inte här (se
+// supabase/migrations/pulseFeedbackWatches.pg.test.ts för den).
 
 export type FakeRow = Record<string, unknown>;
 export type PulseFakeTables = Record<string, FakeRow[]>;
-type FakeError = { message: string } | null;
+type FakeError = { message: string; code?: string } | null;
 type Result = { data: unknown; error: FakeError };
 
 export type PulseFakeOptions = {
@@ -20,13 +25,15 @@ export type PulseFakeOptions = {
   today: string;
   /** "tabell:operation" som ska ge ett databasfel, t.ex. "pulse_signals:insert". */
   failOn?: string[];
+  /** Tabeller som inte finns, som när en migrering inte är körd. */
+  missingTables?: string[];
 };
 
 class PulseQuery implements PromiseLike<Result> {
   private readonly filters: Array<(row: FakeRow) => boolean> = [];
   private orderSpec: { column: string; ascending: boolean } | undefined;
   private limitN: number | undefined;
-  private mode: "select" | "insert" | "update" | "upsert" = "select";
+  private mode: "select" | "insert" | "update" | "upsert" | "delete" = "select";
   private payload: FakeRow | FakeRow[] = {};
   private upsertOptions: { onConflict?: string; ignoreDuplicates?: boolean } = {};
   private returning = false;
@@ -94,6 +101,11 @@ class PulseQuery implements PromiseLike<Result> {
     return this;
   }
 
+  delete(): this {
+    this.mode = "delete";
+    return this;
+  }
+
   upsert(payload: FakeRow, options?: { onConflict?: string; ignoreDuplicates?: boolean }): this {
     this.mode = "upsert";
     this.payload = payload;
@@ -127,12 +139,25 @@ class PulseQuery implements PromiseLike<Result> {
   }
 
   private execute(): Result {
+    if (this.options.missingTables?.includes(this.tableName)) {
+      return {
+        data: null,
+        error: { code: "PGRST205", message: `Could not find the table 'public.${this.tableName}' in the schema cache` },
+      };
+    }
     if (this.options.failOn?.includes(`${this.tableName}:${this.mode}`)) {
       return { data: null, error: { message: `fejkat fel i ${this.tableName}:${this.mode}` } };
     }
 
     if (this.mode === "insert") {
       const rows = (Array.isArray(this.payload) ? this.payload : [this.payload]).map((r) => this.withDefaults(r));
+      if (this.tableName === "pulse_watches") {
+        const key = (r: FakeRow) => `${r.project_id}:${String(r.term).toLowerCase()}`;
+        const taken = new Set(this.table.map(key));
+        if (rows.some((r) => taken.has(key(r)))) {
+          return { data: null, error: { code: "23505", message: "duplicate key value violates unique constraint" } };
+        }
+      }
       this.table.push(...rows);
       return { data: this.returning ? rows : null, error: null };
     }
@@ -142,14 +167,20 @@ class PulseQuery implements PromiseLike<Result> {
       const keys = (this.upsertOptions.onConflict ?? "").split(",").filter(Boolean);
       const conflict = this.table.find((existing) => keys.length > 0 && keys.every((k) => existing[k] === row[k]));
       if (conflict) {
-        if (!this.upsertOptions.ignoreDuplicates) throw new Error("fejken stöder bara ignoreDuplicates");
-        return { data: this.returning ? [] : null, error: null };
+        if (this.upsertOptions.ignoreDuplicates) return { data: this.returning ? [] : null, error: null };
+        Object.assign(conflict, this.payload as FakeRow);
+        return { data: this.returning ? [{ ...conflict }] : null, error: null };
       }
       this.table.push(row);
       return { data: this.returning ? [row] : null, error: null };
     }
 
     const matching = this.table.filter((row) => this.filters.every((f) => f(row)));
+
+    if (this.mode === "delete") {
+      for (const row of matching) this.table.splice(this.table.indexOf(row), 1);
+      return { data: this.returning ? matching.map((r) => ({ ...r })) : null, error: null };
+    }
 
     if (this.mode === "update") {
       const updated = matching.map((row) => ({ ...row, ...(this.payload as FakeRow) }));

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EmptyStateError, OutreachTransportError } from "@/core/errors";
+import { EmptyStateError, NotImplementedError, OutreachTransportError, PulseWatchError } from "@/core/errors";
 import { makePulseSupabaseFake, type PulseFakeTables } from "@/test/stubs/pulseSupabaseFake";
 
 const requireSupabaseUser = vi.fn();
@@ -11,6 +11,7 @@ import {
   livePulseProvider as pulse,
   classify,
   classifyOpportunity,
+  cleanWatchTerm,
   classifyRisk,
   extractKeywords,
   pickRelevant,
@@ -41,9 +42,12 @@ function hit(n: number, extra: Partial<{ title: string; url: string; content: st
 }
 
 let tables: PulseFakeTables;
-function setup(extra: PulseFakeTables = {}, failOn: string[] = []) {
+function setup(extra: PulseFakeTables = {}, failOn: string[] = [], missingTables: string[] = []) {
   tables = { projects: [project], pulse_fetches: [], pulse_signals: [], ...extra };
-  requireSupabaseUser.mockResolvedValue({ supabase: makePulseSupabaseFake(tables, { today: TODAY, failOn }), userId: USER });
+  requireSupabaseUser.mockResolvedValue({
+    supabase: makePulseSupabaseFake(tables, { today: TODAY, failOn, missingTables }),
+    userId: USER,
+  });
 }
 const fetchRow = () => tables.pulse_fetches[0];
 /** En hämtning = en nyhetssökning (och en risksökning när nyheterna gick bra). Dagscachen räknar hämtningar. */
@@ -490,3 +494,97 @@ function themeQueryStart(theme: { kind: string; area: string }): string {
   };
   return prefixes[`${theme.kind}:${theme.area}`];
 }
+
+describe("omdöme", () => {
+  it("varje signal har sitt id, och Inte relevant döljer den", async () => {
+    const signals = await pulse.getSignals("sv");
+    expect(signals.every((signal) => typeof signal.id === "string")).toBe(true);
+    const hidden = signals[0];
+    await pulse.setFeedback!(hidden.id!, "not_relevant");
+    const after = await pulse.getSignals("sv");
+    expect(after.map((signal) => signal.id)).not.toContain(hidden.id);
+    expect(after).toHaveLength(signals.length - 1);
+  });
+
+  it("Relevant döljer ingenting, och ett nytt omdöme skriver över det gamla", async () => {
+    const [signal] = await pulse.getSignals("sv");
+    await pulse.setFeedback!(signal.id!, "not_relevant");
+    await pulse.setFeedback!(signal.id!, "relevant");
+    expect(tables.pulse_feedback).toHaveLength(1);
+    expect((await pulse.getSignals("sv")).map((s) => s.id)).toContain(signal.id);
+  });
+
+  it("ogiltigt id eller omdöme avvisas innan databasen", async () => {
+    await expect(pulse.setFeedback!("inte-ett-id", "relevant")).rejects.toThrow("ogiltigt signal-id");
+    const [signal] = await pulse.getSignals("sv");
+    await expect(pulse.setFeedback!(signal.id!, "kanske" as never)).rejects.toThrow("ogiltigt omdöme");
+  });
+
+  it("utan tabellen (migreringen inte körd): signalerna visas som vanligt, omdömet ger NotImplementedError", async () => {
+    setup({}, [], ["pulse_feedback", "pulse_watches"]);
+    const signals = await pulse.getSignals("sv");
+    expect(signals).toHaveLength(3);
+    await expect(pulse.setFeedback!(signals[0].id!, "relevant")).rejects.toBeInstanceOf(NotImplementedError);
+  });
+});
+
+describe("bevakningar", () => {
+  it("läggs till, läses och tas bort", async () => {
+    await pulse.addWatch!("competitor", "  ByråFlöde  ");
+    await pulse.addWatch!("keyword", "kvittoskanning");
+    const watches = await pulse.getWatches!();
+    expect(watches.map((w) => [w.kind, w.term])).toEqual([
+      ["competitor", "ByråFlöde"],
+      ["keyword", "kvittoskanning"],
+    ]);
+    await pulse.removeWatch!(watches[0].id);
+    expect((await pulse.getWatches!()).map((w) => w.term)).toEqual(["kvittoskanning"]);
+  });
+
+  it("samma ord två gånger ignoreras, oavsett stora och små bokstäver", async () => {
+    await pulse.addWatch!("keyword", "Kvitto");
+    await pulse.addWatch!("keyword", "kvitto");
+    expect(await pulse.getWatches!()).toHaveLength(1);
+  });
+
+  it("för kort, för många och utan projekt ger PulseWatchError med skäl", async () => {
+    await expect(pulse.addWatch!("keyword", " x ")).rejects.toMatchObject({ reason: "too_short" });
+    for (let n = 0; n < 10; n++) await pulse.addWatch!("keyword", `ord${n}`);
+    await expect(pulse.addWatch!("keyword", "ett till")).rejects.toMatchObject({ reason: "too_many" });
+    setup({ projects: [] });
+    await expect(pulse.addWatch!("keyword", "ord")).rejects.toBeInstanceOf(PulseWatchError);
+  });
+
+  it("bevakningarna ingår i sökningen och i relevansfiltret", async () => {
+    await pulse.addWatch!("competitor", "ByråFlöde");
+    searchReturns([hit(1, { title: "ByråFlöde öppnar kontor i Malmö", content: "" })], []);
+    const signals = await pulse.getSignals("sv");
+    expect(queries()[0]).toContain("byråflöde");
+    // Nämner en bevakad konkurrent och inget annat riskord: en konkurrensrisk.
+    expect(signals[0].risk?.area).toBe("competition");
+  });
+
+  it("utan nyckelord men med bevakningar söks det ändå", async () => {
+    setup({ projects: [{ ...project, name: "X", one_liner: "app" }] });
+    expect(await pulse.getSignals("sv")).toEqual([]);
+    expect(search).not.toHaveBeenCalled();
+    // Ingen hämtning gjordes utan sökord, så bevakningen ger träffar direkt samma dag.
+    expect(tables.pulse_fetches).toHaveLength(0);
+    await pulse.addWatch!("keyword", "padelhallar");
+    searchReturns([hit(1, { title: "Padelhallar går bra", content: "" })], []);
+    expect((await pulse.getSignals("sv")).map((s) => s.headline)).toEqual(["Padelhallar går bra"]);
+    expect(queries()[0]).toBe("svenska näringslivsnyheter padelhallar");
+  });
+
+  it("utan tabellen: getWatches och addWatch ger NotImplementedError, sökningen går som vanligt", async () => {
+    setup({}, [], ["pulse_watches"]);
+    await expect(pulse.getWatches!()).rejects.toBeInstanceOf(NotImplementedError);
+    await expect(pulse.addWatch!("keyword", "ord")).rejects.toBeInstanceOf(NotImplementedError);
+    expect(await pulse.getSignals("sv")).toHaveLength(3);
+  });
+
+  it("cleanWatchTerm tar bort styrtecken, slår ihop blanksteg och kapar", () => {
+    expect(cleanWatchTerm("  Byrå\u0007   Flöde\n ")).toBe("Byrå Flöde");
+    expect(Array.from(cleanWatchTerm("x".repeat(100)))).toHaveLength(60);
+  });
+});

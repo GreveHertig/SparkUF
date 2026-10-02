@@ -343,3 +343,10 @@ man löser den.
   Hampus Hedelius) har läst dem. Att räkna påverkan med grundarens egna
   siffror väntar på att Resan sparar kalkylen; en AI-bedömning per nyhet är
   ett eget teambeslut.
+
+**Pulsens omdöme och bevakningar (gren `modul/pulsen-bevakningar`, väntar på Eriks godkännande).**
+Förslag av Bruno (2026-10-02). Två nya tabeller, `pulse_feedback` och
+`pulse_watches`, med RLS prövad i PGlite. Porten får fyra valfria metoder,
+så att demoadaptern (demot är fryst) inte behöver ändras. Adaptern tål att
+tabellerna saknas, så koden kan mergas före migreringen. "Relevant" sparas
+men används inte än; den är underlag för en senare rangordning.

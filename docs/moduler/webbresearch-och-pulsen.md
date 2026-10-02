@@ -236,6 +236,43 @@ Nästa steg (inte byggt): dela sökningar mellan grundare i samma bransch
 (kräver en tabell, alltså en migration som Erik godkänner), och koppla en
 risk till grundarens egna antaganden i kalkylen (kräver data från Resan).
 
+## Omdöme och bevakningar (Pulsen, 2026-10-02, gren `modul/pulsen-bevakningar`)
+
+Gör Pulsen bättre för varje grundare över tid: grundaren säger vad som
+träffar, och lägger till det Pulsen ska leta efter.
+
+- **Migrering** `supabase/migrations/20261002120000_pulse_feedback_watches.sql`
+  (**kräver Eriks godkännande och körning**):
+  - `pulse_feedback` (user_id, signal_id, verdict `relevant`/`not_relevant`).
+    RLS: bara egna rader, och insert/update bara för en signal som är
+    grundarens egen (`exists` mot `pulse_signals`). Försvinner med signalen.
+  - `pulse_watches` (id, user_id, project_id, kind `competitor`/`keyword`,
+    term 2–60 tecken utan styrtecken). Unik per projekt oavsett stora och små
+    bokstäver. RLS: select, insert och delete på egna rader, ingen update.
+  - Prövad i en riktig Postgres: `supabase/migrations/pulseFeedbackWatches.pg.test.ts` (13 fall).
+- **Porten:** fyra **valfria** metoder (`setFeedback`, `getWatches`,
+  `addWatch`, `removeWatch`). Bara liveadaptern har dem; demot visar
+  varken knappar eller bevakningar.
+- **Liveadaptern:**
+  - "Inte relevant" döljer signalen vid läsning. "Relevant" sparas men
+    ändrar inget än (underlag för senare rangordning).
+  - Bevakningarna läggs till sökorden i båda sökningarna och i
+    relevansfiltret. En träff som nämner en bevakad konkurrent och inget
+    annat riskord blir en konkurrensrisk. Med bevakningar söker Pulsen även
+    när projektets egna ord inte räcker.
+  - Högst 10 bevakningar per projekt (`MAX_WATCHES`). Ordet rensas
+    (`cleanWatchTerm`). Samma ord två gånger ignoreras.
+  - **Tål att tabellerna saknas** (PostgREST `PGRST205`, Postgres `42P01`):
+    signalerna visas som vanligt, inget döljs, och `getWatches`/`addWatch`/
+    `setFeedback` ger `NotImplementedError`. Grenen kan alltså mergas före
+    migreringen utan att något går sönder.
+- **`/app/pulsen`:** Server Actions i `app/(app)/app/pulsen/actions.ts`
+  (indata kontrolleras där och i adaptern, användaren tas ur sessionen).
+  Routen visar knappar och bevakningar bara när `getWatches` svarar.
+- **Skärmen:** "Är det här relevant för dig?" med två knappar under varje
+  signal ("Inte relevant" döljer kortet direkt), och "Dina bevakningar" med
+  lista, borttagning och ett formulär. Ändringar gäller från nästa hämtning.
+
 ## Acceptanskriterier
 
 - `search(query)` returnerar en lista där varje resultat har `title`, `url`
