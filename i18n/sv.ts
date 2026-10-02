@@ -789,6 +789,7 @@ export const sv = {
       noIdea: {
         role: "Innan vi börjar behöver jag veta vem du är. Vad gör du i dag?",
         bio: "Vad kan du, och vilka känner du? Berätta om erfarenheter, intressen och människor du kan nå.",
+        frustrations: "Vad stör du dig på i vardagen, skolan eller jobbet?",
         time: "Hur många timmar i veckan kan du lägga på det här?",
         money: "Hur mycket pengar kan du lägga in själv, om något?",
         risk: "Hur mycket är du beredd att riskera, i tid och pengar, om det inte går som du tänkt?",
@@ -797,6 +798,7 @@ export const sv = {
       },
       hasIdea: {
         role: "Du har redan en idé, så vi fokuserar på passform. Vad gör du i dag, och vad har du gjort som hör ihop med idén?",
+        customer: "Vem tror du skulle köpa? En gissning räcker.",
         time: "Hur många timmar i veckan kan du lägga på idén?",
         money: "Hur mycket pengar kan du lägga in själv, om något?",
         closingMessage: "Tack. Nästa steg är idégenomlysningen: vi bryter ner idén i antaganden och prövar dem.",

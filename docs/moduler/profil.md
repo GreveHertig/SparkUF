@@ -24,10 +24,15 @@ completeOnboarding(input: { entry; answers: OnboardingAnswer[] }): Promise<void>
 `completeOnboarding` är tillagda. `OnboardingQuestion.suggestedAnswer` är
 `string | null`: demot har färdiga svar, plattformen `null` (fritext).
 Profilsamtalet i v1 är fasta frågor ur i18n (`onboarding.profileQuestions`),
-ingen Gemini. Ingång A får fem frågor, B tre, en per fält
-(`core/onboarding.ts`: `role`, `bio`, `time`, `money`, `risk`). Svaren skrivs
-till profilradens befintliga kolumner (`role`, `bio`, `time_available`,
-`money_available`, `risk_appetite`), som Minnets Profilen-flik redan läser.
+ingen Gemini. Ingång A får sex frågor, B fyra, en per fält
+(`core/onboarding.ts`: `role`, `bio`, `frustrations`, `customer`, `time`,
+`money`, `risk`). `frustrations` ("Vad stör du dig på?") ställs bara i A,
+`customer` ("Vem tror du skulle köpa? En gissning räcker.") bara i B (beslut
+2026-10-02, migreringen `20261002190000_onboarding_nya_fragor.sql`). Svaren
+skrivs till profilradens kolumner (`role`, `bio`, `frustrations`,
+`customer_guess`, `time_available`, `money_available`, `risk_appetite`).
+Minnets Profilen-flik läser de fem första; `frustrations` och
+`customer_guess` sparas men visas inte där än (skärmen är Theodors).
 `completeOnboarding` sätter också `onboarding_entry` och
 `onboarding_completed_at`, via databasfunktionen `public.complete_onboarding`. Steg 1 ("Om dig") räknas som klart
 när `onboarding_completed_at` är satt (docs/moduler/resan.md). En framtida
@@ -111,7 +116,8 @@ i liveadaptern och kontraktstestade mot båda adaptrarna. Migreringen
 - **Klienten kan inte skriva onboarding-kolumnerna.** `profiles` är stängd
   för `insert` och `delete` (raden skapas av `handle_new_user()` och
   försvinner med kontot), och `update` gäller bara `name`, `initials`,
-  `role`, `bio`, `time_available`, `money_available` och `risk_appetite`.
+  `role`, `bio`, `time_available`, `money_available`, `risk_appetite`,
+  `customer_guess` och `frustrations`.
   En ny kolumn kräver ett beslut i `supabase/migrations/migrations.test.ts`
   (`PROFILES_CLIENT_WRITABLE` eller `PROFILES_CLIENT_CLOSED`).
 - RLS prövat mot riktig databas (`adapters/live/rls.live.test.ts`): varken A
