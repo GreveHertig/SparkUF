@@ -57,22 +57,22 @@ describe("liveProfileRepository.getProfile", () => {
 });
 
 describe("liveProfileRepository.getOnboardingScript", () => {
-  it("ingång A får fem frågor ur i18n i ordning, utan svarsförslag", async () => {
+  it("ingång A får sex frågor ur i18n i ordning, utan svarsförslag", async () => {
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
     const { sv } = await import("@/i18n/sv");
     const script = await liveProfileRepository.getOnboardingScript("noIdea", "sv");
-    expect(script.questions.map((q) => q.id)).toEqual(["role", "bio", "time", "money", "risk"]);
+    expect(script.questions.map((q) => q.id)).toEqual(["role", "bio", "frustrations", "time", "money", "risk"]);
     expect(script.questions[0].cofounderText).toBe(sv.onboarding.profileQuestions.noIdea.role);
     expect(script.questions.every((q) => q.suggestedAnswer === null)).toBe(true);
     expect(script.closingMessage).toBe(sv.onboarding.profileQuestions.noIdea.closingMessage);
   });
 
-  it("ingång B får tre frågor, på engelska när locale är en", async () => {
+  it("ingång B får fyra frågor, på engelska när locale är en", async () => {
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
     const { en } = await import("@/i18n/en");
     const script = await liveProfileRepository.getOnboardingScript("hasIdea", "en");
-    expect(script.questions.map((q) => q.id)).toEqual(["role", "time", "money"]);
-    expect(script.questions[1].cofounderText).toBe(en.onboarding.profileQuestions.hasIdea.time);
+    expect(script.questions.map((q) => q.id)).toEqual(["role", "customer", "time", "money"]);
+    expect(script.questions[1].cofounderText).toBe(en.onboarding.profileQuestions.hasIdea.customer);
   });
 });
 
@@ -134,6 +134,7 @@ describe("liveProfileRepository.completeOnboarding", () => {
   const answersA = [
     { questionId: "role", answer: "  Redovisningskonsult  " },
     { questionId: "bio", answer: "Tio år på byrå." },
+    { questionId: "frustrations", answer: " Kvitton som försvinner. " },
     { questionId: "time", answer: "10 timmar" },
     { questionId: "money", answer: "20 000 kr" },
     { questionId: "risk", answer: "Låg" },
@@ -150,6 +151,7 @@ describe("liveProfileRepository.completeOnboarding", () => {
     expect(row).toMatchObject({
       role: "Redovisningskonsult",
       bio: "Tio år på byrå.",
+      frustrations: "Kvitton som försvinner.",
       time_available: "10 timmar",
       money_available: "20 000 kr",
       risk_appetite: "Låg",
@@ -163,7 +165,7 @@ describe("liveProfileRepository.completeOnboarding", () => {
     });
   });
 
-  it("ingång B skriver bara sina tre fält", async () => {
+  it("ingång B skriver bara sina fyra fält", async () => {
     const supabase = freshProfiles();
     requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
@@ -172,28 +174,31 @@ describe("liveProfileRepository.completeOnboarding", () => {
       entry: "hasIdea",
       answers: [
         { questionId: "role", answer: "Säljare" },
+        { questionId: "customer", answer: "Små byråer" },
         { questionId: "time", answer: "5 timmar" },
         { questionId: "money", answer: "Inget" },
       ],
     });
 
     const row = supabase.tables.profiles.find((r) => r.user_id === USER_ID)!;
-    expect(row).toMatchObject({ role: "Säljare", onboarding_entry: "hasIdea" });
+    expect(row).toMatchObject({ role: "Säljare", customer_guess: "Små byråer", onboarding_entry: "hasIdea" });
     expect(row).not.toHaveProperty("bio");
     expect(row).not.toHaveProperty("risk_appetite");
+    expect(row).not.toHaveProperty("frustrations");
   });
 
   // Varje fall är ett komplett svar för ingång B med ett fel i.
   const time = { questionId: "time", answer: "5 timmar" };
   const money = { questionId: "money", answer: "Inget" };
   const role = { questionId: "role", answer: "Säljare" };
+  const customer = { questionId: "customer", answer: "Små byråer" };
   it.each([
-    ["en fråga ingången inte ställer", [role, time, money, { questionId: "risk", answer: "Låg" }]],
-    ["ett okänt fält", [role, time, money, { questionId: "name", answer: "Kapad" }]],
-    ["en fråga två gånger", [role, time, money, { questionId: "role", answer: "Igen" }]],
-    ["ett tomt svar", [{ questionId: "role", answer: "   " }, time, money]],
-    ["ett för långt svar", [{ questionId: "role", answer: "a".repeat(1001) }, time, money]],
-    ["saknade svar", [role, time]],
+    ["en fråga ingången inte ställer", [role, customer, time, money, { questionId: "risk", answer: "Låg" }]],
+    ["ett okänt fält", [role, customer, time, money, { questionId: "name", answer: "Kapad" }]],
+    ["en fråga två gånger", [role, customer, time, money, { questionId: "role", answer: "Igen" }]],
+    ["ett tomt svar", [{ questionId: "role", answer: "   " }, customer, time, money]],
+    ["ett för långt svar", [{ questionId: "role", answer: "a".repeat(1001) }, customer, time, money]],
+    ["saknade svar", [role, time, money]],
   ])("avvisar %s utan att skriva något", async (_, answers) => {
     const supabase = freshProfiles();
     requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
@@ -216,6 +221,7 @@ describe("liveProfileRepository.completeOnboarding", () => {
         entry: "hasIdea",
         answers: [
           { questionId: "role", answer: "Nytt" },
+          { questionId: "customer", answer: "Nytt" },
           { questionId: "time", answer: "Nytt" },
           { questionId: "money", answer: "Nytt" },
         ],

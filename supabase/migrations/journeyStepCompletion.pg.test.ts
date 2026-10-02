@@ -43,7 +43,7 @@ function recordFit(userId: string, subjectRef: string) {
  * (public.complete_onboarding, se onboardingWrite.pg.test.ts). */
 function completeOnboarding(userId: string) {
   return queryAs(db, userId, "select public.complete_onboarding('hasIdea', $1::jsonb)", [
-    JSON.stringify({ role: "Säljare", time: "5 timmar", money: "Inget" }),
+    JSON.stringify({ role: "Säljare", customer: "Byråer", time: "5 timmar", money: "Inget" }),
   ]);
 }
 

@@ -144,7 +144,17 @@ describe("supabase/migrations: RLS-täckning (14.6)", () => {
  * skrivbar för klienten, eller satt bara av servern eller en
  * security definer-funktion.
  */
-const PROFILES_CLIENT_WRITABLE = ["name", "initials", "role", "bio", "time_available", "money_available", "risk_appetite"];
+const PROFILES_CLIENT_WRITABLE = [
+  "name",
+  "initials",
+  "role",
+  "bio",
+  "time_available",
+  "money_available",
+  "risk_appetite",
+  "customer_guess",
+  "frustrations",
+];
 const PROFILES_CLIENT_CLOSED: Record<string, string> = {
   user_id: "Nyckeln. Sätts av handle_new_user() vid signup.",
   created_at: "Sätts av databasen.",
