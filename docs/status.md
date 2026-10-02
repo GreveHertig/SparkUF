@@ -4081,3 +4081,15 @@ Rättar de två kända problemen från "Onboarding live, PR 2" och "PR 3": steg 
 ### Kända problem
 - **Grundare som valt ingång A i /start har inget projekt.** Då har Pulsen inget att söka på: listan är tom och bevakningar ger "Starta ett projekt först". Det finns ingen väg till ett projekt inifrån `/app`. Upptäckt 2026-10-02, till Erik och Theodor.
 - **Tomtexten i `/app` säger "Inga signaler för det här scenariot."** Den är skriven för demot. Ändras i `screens/`, alltså Theodors beslut.
+## Arbetsflöde för parallella sessioner (Theo, 2026-10-02)
+
+### Klart
+- `docs/arbetsflode.md`: tre sessioner (huvudbygge, bakgrundsjobb i cloud session, granskare), regler, uppgiftsmall och dagsrytm.
+- Slash-kommandon i `.claude/commands/`: `/forbered-pr`, `/granska-pr`, `/session-bygg`, `/session-bakgrund`, `/session-granska` och `/klicka-igenom` (Claude verifierar ytor visuellt med Playwright).
+
+### Återstår
+- Erik beslutar om CI (GitHub Actions med typecheck/lint/test/build) och Vercel-previews per PR. Inget av det är satt upp här.
+- Kommandona är oprövade; första körningen bör ske på en liten uppgift.
+
+### Beslut
+- Inga kodändringar, bara dokument och kommandon. Ingen ny beroende.
