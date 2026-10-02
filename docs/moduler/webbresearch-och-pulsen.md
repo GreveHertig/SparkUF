@@ -254,8 +254,8 @@ träffar, och lägger till det Pulsen ska leta efter.
   `addWatch`, `removeWatch`). Bara liveadaptern har dem; demot visar
   varken knappar eller bevakningar.
 - **Liveadaptern:**
-  - "Inte relevant" döljer signalen vid läsning. "Relevant" sparas men
-    ändrar inget än (underlag för senare rangordning).
+  - "Inte relevant" döljer signalen vid läsning. "Relevant" används för
+    inlärning, se "Inlärning ur Relevant" nedan.
   - Bevakningarna läggs till sökorden i båda sökningarna och i
     relevansfiltret. En träff som nämner en bevakad konkurrent och inget
     annat riskord blir en konkurrensrisk. Med bevakningar söker Pulsen även
@@ -273,13 +273,42 @@ träffar, och lägger till det Pulsen ska leta efter.
   signal ("Inte relevant" döljer kortet direkt), och "Dina bevakningar" med
   lista, borttagning och ett formulär. Ändringar gäller från nästa hämtning.
 
+## Inlärning ur Relevant (Pulsen, 2026-10-02, gren `modul/pulsen-relevant`)
+
+"Relevant" gör att Pulsen visar och letar efter mer av samma sort. Ingen
+migrering och ingen modell: allt räknas i liveadaptern ur `pulse_feedback`
+och de gillade signalernas kategori och rubrik.
+
+- **Läsningen:** omdömena läses en gång per sidvisning (`readFeedback`),
+  och de senaste 20 gillade signalerna i projektet hämtas.
+- **Ordningen:** varje signal får poäng (`preferenceScore`): antalet
+  gillade av samma sort (`risk:<område>`, `opportunity:<område>` eller
+  vanlig nyhet), plus ett om rubriken nämner ett inlärt ord. Högst poäng
+  först, sedan nyast. Utan omdömen är alla poäng noll och ordningen exakt
+  som förut. Takten (3 risker, 2 möjligheter, 5 totalt) gäller som förut.
+- **Sökningen:** ord som står i minst två gillade rubriker läggs till
+  sökorden och relevansfiltret, högst tre (`learnPreferences`). Siffror,
+  vanliga nyhetsord ("miljoner", "satsar") och ord som redan söks räknas
+  inte. Ett enda gillande ändrar alltså ordningen men inte sökningen.
+- **Temat:** har grundaren gillat en risk eller möjlighet blir varannan
+  dag det mest gillade området dagens tema (`favoriteInsight`). De andra
+  dagarna roterar temat fortfarande genom alla åtta, så inget område tystnar.
+  Taket på två Tavily-anrop per dag är oförändrat.
+- **Säkerhet:** rubrikerna är text från okända webbplatser. Bara bokstäver
+  och siffror tas ut (`extractKeywords`), och orden blir sökord till Tavily,
+  aldrig instruktion. Bara grundarens egna omdömen och signaler i det
+  aktiva projektet läses (filter i frågan, RLS som bindande spärr).
+- **Tål att tabellen saknas:** utan `pulse_feedback` lärs ingenting och
+  sidan fungerar som förut.
+
 ## Acceptanskriterier
 
 - `search(query)` returnerar en lista där varje resultat har `title`, `url`
   och `fetchedAtIso` ifyllda; tomt resultat ger `[]`, aldrig ett kastat fel.
 - `getTodaysSignal`/`getSignals` har alltid `source.namn` och
   `source.hämtad` ifyllda — inget påstående utan källa.
-- `getSignals` returnerar 3–5 signaler (avsnitt 9.5), nyast först.
+- `getSignals` returnerar 3–5 signaler (avsnitt 9.5), nyast först, utom när
+  grundaren har gillat signaler: då det som liknar dem först ("Inlärning ur Relevant").
 - Klarar kontraktstesterna i `ports/ResearchProvider.contract.test.ts` och
   `ports/PulseProvider.contract.test.ts`.
 

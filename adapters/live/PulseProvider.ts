@@ -64,6 +64,22 @@ const MIN_WATCH_CHARS = 2;
 const MAX_WATCH_CHARS = 60;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const OPPORTUNITY_CATEGORY_PREFIX = "opportunity:";
+/**
+ * Inlärning ur "Relevant" (moduldokumentet, "Inlärning"): så många gillade
+ * signaler läses, så många ord läggs högst till sökningen, och ett ord måste
+ * stå i så många gillade rubriker för att räknas. Två rubriker krävs så att
+ * ett enstaka tillfälligt ord ("miljoner", "satsar") inte styr sökningen.
+ */
+const MAX_LIKED_SIGNALS = 20;
+const MAX_LEARNED_TERMS = 3;
+const MIN_TERM_LIKES = 2;
+/** Vanliga nyhetsord som inte säger något om vad grundaren bryr sig om. Bara för inlärningen. */
+const NEWS_STOPWORDS = new Set([
+  "miljoner", "miljarder", "kronor", "procent", "satsar", "satsning", "företag", "företaget", "företagen",
+  "sverige", "svenska", "svensk", "svenskt", "enligt", "under", "efter", "säger", "nytt", "nyheter",
+  "ökar", "minskar", "växer", "stiger", "sjunker", "första", "flera", "stora", "större", "kommer",
+  "också", "redan", "fortfarande", "jämfört", "dags", "året", "veckan", "idag",
+]);
 
 /** En klassad signal: en risk eller en möjlighet inom ett område. */
 export type Insight =
@@ -328,10 +344,82 @@ function bestArea<A extends string>(
   return best;
 }
 
-/** Dagens tema ur dagscachens datum (räknat av databasen): ett av åtta, i tur och ordning. */
-export function themeFor(fetchDate: string): Insight {
+/**
+ * Dagens tema ur dagscachens datum (räknat av databasen): ett av åtta, i tur
+ * och ordning. Har grundaren ett favoritområde (flest "Relevant") blir varannan
+ * dag favoriten, och de andra dagarna roterar fortfarande genom alla åtta, så
+ * att inget område tystnar.
+ */
+export function themeFor(fetchDate: string, favorite: Insight | null = null): Insight {
   const day = Math.floor(Date.parse(`${fetchDate}T00:00:00Z`) / (24 * 60 * 60 * 1000));
-  return THEMES[((day % THEMES.length) + THEMES.length) % THEMES.length];
+  const at = (n: number) => THEMES[((n % THEMES.length) + THEMES.length) % THEMES.length];
+  if (!favorite) return at(day);
+  return day % 2 !== 0 ? favorite : at(day / 2);
+}
+
+/** Vad grundaren har lärt Pulsen genom "Relevant". Tomt när inget är gillat. */
+export type Preferences = {
+  /** Gillade signaler per sort: "risk:<område>", "opportunity:<område>" eller "news". */
+  areaLikes: Map<string, number>;
+  /** Ord som återkommer i gillade rubriker. Skickas till Tavily som data. */
+  terms: string[];
+};
+
+/** Sortens nyckel för en rad: "risk:<område>", "opportunity:<område>" eller "news". */
+function kindKey(category: string): string {
+  const insight = insightOf(category);
+  return insight ? categoryOf(insight) : "news";
+}
+
+/**
+ * Ren inlärning ur gillade signaler (kategori och rubrik). Rubrikerna är
+ * text från okända webbplatser: bara bokstäver och siffror tas ut
+ * (extractKeywords), och de blir sökord, aldrig instruktion.
+ * `known` är ord som redan söks (projektets och bevakningarnas).
+ */
+export function learnPreferences(liked: { category: string; headline: string }[], known: string[] = []): Preferences {
+  const areaLikes = new Map<string, number>();
+  const counts = new Map<string, number>();
+  const order: string[] = [];
+  const knownStems = known.map((word) => stem(word.toLocaleLowerCase("sv-SE")));
+  for (const { category, headline } of liked) {
+    const key = kindKey(category);
+    areaLikes.set(key, (areaLikes.get(key) ?? 0) + 1);
+    const words = extractKeywords(headline).filter(
+      (word) => !NEWS_STOPWORDS.has(word) && !/^\p{N}+$/u.test(word) && !knownStems.includes(stem(word)),
+    );
+    for (const word of new Set(words.map(stem))) {
+      if (!counts.has(word)) order.push(word);
+      counts.set(word, (counts.get(word) ?? 0) + 1);
+    }
+  }
+  const terms = order
+    .filter((word) => (counts.get(word) ?? 0) >= MIN_TERM_LIKES)
+    .sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0))
+    .slice(0, MAX_LEARNED_TERMS);
+  return { areaLikes, terms };
+}
+
+/** Risken eller möjligheten med flest "Relevant", eller null. Vid lika: den med nyast gillad signal. */
+export function favoriteInsight(preferences: Preferences): Insight | null {
+  let best: { insight: Insight; likes: number } | null = null;
+  for (const [key, likes] of preferences.areaLikes) {
+    const insight = insightOf(key);
+    if (insight && (!best || likes > best.likes)) best = { insight, likes };
+  }
+  return best?.insight ?? null;
+}
+
+/**
+ * Hur mycket en signal liknar det grundaren har gillat: antalet gillade av
+ * samma sort, plus ett om rubriken nämner ett inlärt ord. Noll utan omdömen,
+ * och då är ordningen densamma som förut.
+ */
+export function preferenceScore(row: { category: string; headline: string }, preferences: Preferences): number {
+  const sameKind = preferences.areaLikes.get(kindKey(row.category)) ?? 0;
+  const headline = row.headline.toLocaleLowerCase("sv-SE");
+  const mentionsTerm = preferences.terms.some((term) => headline.includes(term)) ? 1 : 0;
+  return sameKind + mentionsTerm;
 }
 
 function themeQuery(theme: Insight): string {
@@ -367,15 +455,20 @@ async function runSearch(
   project: Project,
   keywords: string[],
   watches: PulseWatch[],
+  preferences: Preferences,
   claim: FetchRow,
 ): Promise<void> {
   // Egna bevakningar läggs till sökorden och relevansfiltret. En träff som
   // nämner en bevakad konkurrent är en konkurrensrisk om inget annat passar.
+  // Ord som lärts ur "Relevant" läggs till sist, på samma sätt.
   const watchTerms = watches.map((watch) => watch.term.toLocaleLowerCase("sv-SE"));
   const competitors = watches
     .filter((watch) => watch.kind === "competitor")
     .map((watch) => watch.term.toLocaleLowerCase("sv-SE"));
-  const terms = [...keywords, ...watchTerms.filter((term) => !keywords.includes(term))];
+  const terms: string[] = [];
+  for (const term of [...keywords, ...watchTerms, ...preferences.terms]) {
+    if (!terms.includes(term)) terms.push(term);
+  }
   const insightFor = (result: TavilySearchResult): Insight | null =>
     classify(result) ?? (mentionsAny(result, competitors) ? { kind: "risk", area: "competition" } : null);
 
@@ -393,7 +486,7 @@ async function runSearch(
   // Temasökningen är ett tillägg: ett nätverksfel där stoppar inte dagens
   // nyheter. Ett konfigurationsfel syns, som ovan.
   let riskResults: TavilySearchResult[] = [];
-  const theme = themeFor(claim.fetch_date);
+  const theme = themeFor(claim.fetch_date, favoriteInsight(preferences));
   try {
     riskResults = await search({ query: `${themeQuery(theme)} ${terms.join(" ")}`, maxResults: MAX_SIGNALS });
   } catch (error) {
@@ -484,12 +577,14 @@ async function refreshIfNeeded(
   supabase: SupabaseClient,
   userId: string,
   project: Project,
+  liked: LikedSignal[],
 ): Promise<void> {
   const keywords = extractKeywords(`${project.name} ${project.oneLiner}`);
   // Saknas tabellen (migreringen inte körd) blir det inga bevakningar.
   const watches = (await readWatches(supabase, userId, project.id)) ?? [];
-  // Utan nyckelord och bevakningar går det inte att filtrera på bransch: sök inte alls.
-  if (keywords.length === 0 && watches.length === 0) return;
+  const preferences = learnPreferences(liked, [...keywords, ...watches.map((watch) => watch.term)]);
+  // Utan nyckelord, bevakningar och inlärda ord går det inte att filtrera på bransch: sök inte alls.
+  if (keywords.length === 0 && watches.length === 0 && preferences.terms.length === 0) return;
 
   let claim = await claimToday(supabase, userId);
   if (!claim) {
@@ -497,7 +592,7 @@ async function refreshIfNeeded(
     if (!today) return;
     claim = await takeOver(supabase, userId, today);
   }
-  if (claim) await runSearch(supabase, userId, project, keywords, watches, claim);
+  if (claim) await runSearch(supabase, userId, project, keywords, watches, preferences, claim);
 }
 
 /**
@@ -513,6 +608,7 @@ async function readSignals(
   userId: string,
   project: Project,
   locale: Locale,
+  feedback: Feedback,
 ): Promise<PulseSignal[]> {
   const { data, error } = await supabase
     .from("pulse_signals")
@@ -524,10 +620,15 @@ async function readSignals(
   if (error) throw new Error(`Pulsen: kunde inte läsa signalerna (${error.message}).`);
 
   // Signaler som grundaren markerat "Inte relevant" visas inte igen.
-  const hidden = await readHiddenSignalIds(supabase, userId);
-  const rows = ((data as SignalRow[] | null) ?? []).filter(
-    (row) => row.headline && row.source_name && row.fetched_at && !hidden.has(row.id),
-  );
+  const preferences = learnPreferences(feedback.liked);
+  const score = (row: SignalRow) => preferenceScore(row, preferences);
+  // Det som liknar det grundaren gillat först, annars nyast först. Utan
+  // omdömen är alla poäng noll och ordningen densamma som förut.
+  const byPreference = (a: SignalRow, b: SignalRow) =>
+    score(b) - score(a) || Date.parse(b.signal_at) - Date.parse(a.signal_at);
+  const rows = ((data as SignalRow[] | null) ?? [])
+    .filter((row) => row.headline && row.source_name && row.fetched_at && !feedback.hidden.has(row.id))
+    .sort(byPreference);
   // Högst MAX_RISKS risker och MAX_OPPORTUNITIES möjligheter, resten nyheter,
   // högst MAX_SIGNALS totalt (porten: 3–5). Risker och möjligheter trängs
   // alltså inte undan av en dag med många nyheter.
@@ -537,7 +638,7 @@ async function readSignals(
     .filter((row) => kindOf(row) === "opportunity")
     .slice(0, Math.min(MAX_OPPORTUNITIES, MAX_SIGNALS - risks.length));
   const news = rows.filter((row) => kindOf(row) === "news").slice(0, MAX_SIGNALS - risks.length - opportunities.length);
-  const chosen = [...risks, ...opportunities, ...news].sort((a, b) => Date.parse(b.signal_at) - Date.parse(a.signal_at));
+  const chosen = [...risks, ...opportunities, ...news].sort(byPreference);
 
   const texts = dictionaries[locale].pulsePage;
   // Kategori, "varför" och förslag byggs om från i18n, så att signalen följer språket.
@@ -612,18 +713,42 @@ async function readWatches(supabase: SupabaseClient, userId: string, projectId: 
   return ((data as PulseWatch[] | null) ?? []).filter((watch) => watch.kind === "competitor" || watch.kind === "keyword");
 }
 
-/** Signaler med omdömet "not_relevant". Saknas tabellen döljs ingenting. */
-async function readHiddenSignalIds(supabase: SupabaseClient, userId: string): Promise<Set<string>> {
+type LikedSignal = { category: string; headline: string };
+/** Grundarens omdömen: dolda signaler och gillade signaler (kategori och rubrik). */
+type Feedback = { hidden: Set<string>; liked: LikedSignal[] };
+
+/**
+ * Omdömena för projektet. "Inte relevant" döljs, och de senaste
+ * MAX_LIKED_SIGNALS gillade signalerna läses för inlärningen. Saknas
+ * tabellen döljs och lärs ingenting.
+ */
+async function readFeedback(supabase: SupabaseClient, userId: string, projectId: string): Promise<Feedback> {
   const { data, error } = await supabase
     .from("pulse_feedback")
     .select("signal_id, verdict")
     .eq("user_id", userId)
-    .eq("verdict", "not_relevant");
+    // Nyast först, så att de senaste gillandena väljs när de blir många.
+    .order("created_at", { ascending: false });
   if (error) {
-    if (isMissingTable(error)) return new Set();
+    if (isMissingTable(error)) return { hidden: new Set(), liked: [] };
     throw new Error(`Pulsen: kunde inte läsa omdömena (${error.message}).`);
   }
-  return new Set(((data as { signal_id: string }[] | null) ?? []).map((row) => row.signal_id));
+  const rows = (data as { signal_id: string; verdict: string }[] | null) ?? [];
+  const hidden = new Set(rows.filter((row) => row.verdict === "not_relevant").map((row) => row.signal_id));
+  const likedIds = rows.filter((row) => row.verdict === "relevant").map((row) => row.signal_id);
+  if (likedIds.length === 0) return { hidden, liked: [] };
+
+  // Bara projektets egna signaler, nyast först. RLS släpper bara igenom grundarens egna.
+  const { data: signals, error: signalError } = await supabase
+    .from("pulse_signals")
+    .select("category, headline")
+    .eq("user_id", userId)
+    .eq("project_id", projectId)
+    .in("id", likedIds.slice(0, 100))
+    .order("signal_at", { ascending: false })
+    .limit(MAX_LIKED_SIGNALS);
+  if (signalError) throw new Error(`Pulsen: kunde inte läsa de gillade signalerna (${signalError.message}).`);
+  return { hidden, liked: (signals as LikedSignal[] | null) ?? [] };
 }
 
 /** Grundarens ord: styrtecken bort, blanksteg ihop, längden kapad. Data, aldrig instruktion. */
@@ -692,8 +817,9 @@ async function getSignals(locale: Locale): Promise<PulseSignal[]> {
   const { supabase, userId } = await requireSupabaseUser();
   const project = await getActiveProject(supabase, userId);
   if (!project) return [];
-  await refreshIfNeeded(supabase, userId, project);
-  return readSignals(supabase, userId, project, locale);
+  const feedback = await readFeedback(supabase, userId, project.id);
+  await refreshIfNeeded(supabase, userId, project, feedback.liked);
+  return readSignals(supabase, userId, project, locale, feedback);
 }
 
 export const livePulseProvider: PulseProvider = {

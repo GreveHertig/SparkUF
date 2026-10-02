@@ -640,7 +640,7 @@ export const sv = {
       question: "Är det här relevant för dig?",
       relevant: "Relevant",
       notRelevant: "Inte relevant",
-      thanks: "Tack!",
+      thanks: "Tack! Pulsen visar mer av sådant här.",
       hidden: "Dold. Den visas inte igen.",
       failed: "Det gick inte att spara. Försök igen.",
     },
