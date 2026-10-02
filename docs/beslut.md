@@ -314,3 +314,20 @@ till Gemini, eftersom den har källa och datum, på samma sätt som 25 000 kr
 för aktiekapital. EUR-Lex pekar på den svenska versionen. Riksdagen är inte
 kontrollerad och inget ämne använder den. Om den ska finnas kvar väntar på
 Theos beslut. Ingenting är juristgranskat.
+
+## 2026-10-02
+
+**Pulsens risksignaler: två Tavily-anrop per grundare och dag, klassning utan modell, ingen migration.**
+Beslut av Bruno, efter Hampus Hedelius tips om yttre omständigheter
+(Rotary-pitchen 2026-10-02). Detaljer i `docs/moduler/webbresearch-och-pulsen.md`, "Risksignaler".
+- **Kostnad:** varje hämtning gör en nyhetssökning och en risksökning. Taket
+  går från ett till två anrop per grundare och dag. Ett tema per dag i tur
+  och ordning, i stället för sex sökningar per dag, håller kostnaden fast.
+  Att dela sökningar per bransch skulle sänka den ytterligare men kräver en
+  ny tabell. Det tas när Erik godkänt en migration.
+- **Ingen modell, ingen allvarlighetsgrad.** Riskområdet läses ur ord i
+  artikeln. En gradering ("hög risk") skulle vara en gissning utan källa, och
+  datalöftet gäller. Förslagen är allmänna i18n-texter per område, inga
+  påståenden om den enskilda nyheten.
+- **Ingen migration.** Riskområdet sparas i den befintliga kolumnen
+  `pulse_signals.category` som `risk:<område>`.

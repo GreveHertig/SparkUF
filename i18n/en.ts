@@ -388,6 +388,67 @@ export const en = {
     emptyState: "No signals for this scenario.",
     liveCategory: "Industry news",
     liveWhyItMatters: "This news touches the same area as {project}. Consider how it affects your customers.",
+    risksTitle: "Risks to watch",
+    risksIntro: "Things happening around you that could affect your business. Each signal is a news item with a source. The suggestions are general, not advice for your specific case.",
+    newsTitle: "News in your industry",
+    riskLabel: "Risk",
+    actionsTitle: "What you can do",
+    riskAreas: {
+      costs: {
+        name: "Costs and raw materials",
+        whyItMatters: "Rising costs for what you buy in can squeeze the margin of {project}.",
+        actions: [
+          "See which costs in your calculation are affected.",
+          "Work out what happens to your margin if the cost rises.",
+          "Ask your supplier about a fixed price or a longer contract.",
+        ],
+      },
+      finance: {
+        name: "Interest rates and financing",
+        whyItMatters: "Interest rates and currency affect what it costs to borrow and what customers can afford for {project}.",
+        actions: [
+          "Check whether you have loans or credit with a variable rate.",
+          "Consider whether your customers will become more price-sensitive.",
+          "Build in a margin if you plan to borrow or raise capital.",
+        ],
+      },
+      regulation: {
+        name: "Rules and requirements",
+        whyItMatters: "New rules can bring {project} new requirements, new costs or new opportunities.",
+        actions: [
+          "Read what the rule covers and when it takes effect.",
+          "Check Legal for what applies to your company form.",
+          "Ask a lawyer or accountant if you are unsure.",
+        ],
+      },
+      competition: {
+        name: "Competition",
+        whyItMatters: "When competitors move, it changes what customers compare {project} with.",
+        actions: [
+          "Compare their offer and price with yours.",
+          "Think about what makes you hard to replace.",
+          "Ask your customers whether they have noticed anything new.",
+        ],
+      },
+      demand: {
+        name: "Demand and the economy",
+        whyItMatters: "The economy and demand affect how easy it is to sell {project}.",
+        actions: [
+          "Follow how your own customers respond and buy.",
+          "Have a plan for if sales come in slower than you expected.",
+          "Check how long your money lasts without new revenue.",
+        ],
+      },
+      supply: {
+        name: "Supply",
+        whyItMatters: "Problems at suppliers can delay {project} or make it more expensive.",
+        actions: [
+          "Do you have more than one supplier for what matters most?",
+          "Plan with a margin in delivery times.",
+          "Ask your supplier how they are affected.",
+        ],
+      },
+    },
   },
   memoryPage: {
     title: "Memory",

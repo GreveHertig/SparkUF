@@ -72,4 +72,42 @@ describe("Pulse (steg 6)", () => {
     expect(screen.getByText(sv.comingSoon.title)).toBeInTheDocument();
     expect(container.querySelector(".fdd-signals")).toBeNull();
   });
+
+  it("utan risker: en lista utan extra rubriker, som förut", () => {
+    renderPulse({ signals });
+    expect(screen.queryByRole("heading", { level: 2 })).not.toBeInTheDocument();
+    expect(screen.queryByText(sv.pulsePage.riskLabel)).not.toBeInTheDocument();
+  });
+
+  it("risker visas först under egen rubrik, med område, förslag och källa", () => {
+    const risk: PulseSignal = {
+      category: `Risk · ${sv.pulsePage.riskAreas.costs.name}`,
+      headline: "Elpriset stiger",
+      whyItMatters: "Kan pressa marginalen.",
+      timestamp: "",
+      source: { namn: "ekonomi.se", hämtad: "2026-10-02", url: "https://ekonomi.se/el" },
+      risk: { area: "costs", actions: ["Se över kalkylen.", "Fråga leverantören."] },
+    };
+    const { container } = renderPulse({ signals: [signals[0], risk], sourceDataType: "media" });
+
+    const [risksHeading, newsHeading] = screen.getAllByRole("heading", { level: 2 });
+    expect(risksHeading).toHaveTextContent(sv.pulsePage.risksTitle);
+    expect(newsHeading).toHaveTextContent(sv.pulsePage.newsTitle);
+
+    const riskCard = screen.getByText("Elpriset stiger").closest("li")!;
+    expect(riskCard).toHaveTextContent(sv.pulsePage.riskLabel);
+    expect(riskCard).toHaveTextContent(sv.pulsePage.riskAreas.costs.name);
+    expect(riskCard).toHaveTextContent(sv.pulsePage.actionsTitle);
+    expect(riskCard).toHaveTextContent("Se över kalkylen.");
+    expect(riskCard).toHaveTextContent("ekonomi.se");
+    expect(riskCard).toHaveTextContent(sv.common.mediaSourceLabel);
+
+    // Risken står före nyheten i sidans ordning.
+    const cards = [...container.querySelectorAll(".fdd-signal")].map((card) => card.querySelector(".fdd-signal__headline")?.textContent);
+    expect(cards).toEqual(["Elpriset stiger", signals[0].headline]);
+
+    // En nyhet har inga förslag.
+    const newsCard = [...container.querySelectorAll(".fdd-signal")].find((card) => card.textContent?.includes(signals[0].headline))!;
+    expect(newsCard).not.toHaveTextContent(sv.pulsePage.actionsTitle);
+  });
 });

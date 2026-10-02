@@ -436,6 +436,21 @@ export type Dictionary = {
     liveCategory: string;
     /** Liveadapterns fasta "varför det spelar roll"-mening, `{project}` = projektets namn. */
     liveWhyItMatters: string;
+    /** Rubriken över risksignalerna på Pulsen-sidan. */
+    risksTitle: string;
+    /** Ingressen under rubriken: vad en risksignal är. */
+    risksIntro: string;
+    /** Rubriken över de vanliga nyheterna när det också finns risker. */
+    newsTitle: string;
+    /** Etiketten före riskområdet, t.ex. "Risk". */
+    riskLabel: string;
+    /** Rubriken över förslagen, t.ex. "Vad du kan göra". */
+    actionsTitle: string;
+    /** Per riskområde: namnet, "varför" (`{project}` = projektets namn) och allmänna förslag. */
+    riskAreas: Record<
+      "costs" | "finance" | "regulation" | "competition" | "demand" | "supply",
+      { name: string; whyItMatters: string; actions: string[] }
+    >;
   };
   memoryPage: {
     title: string;

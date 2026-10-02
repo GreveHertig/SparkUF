@@ -3683,3 +3683,22 @@ a.fdd-segmented__item {
   border-color: var(--accent-600);
   box-shadow: 0 0 0 3px var(--accent-100);
 }
+
+/* Pulsens risksignaler (adapters/live/PulseProvider.ts): förslagen under en
+   risk. Bara risker har dem, så inget befintligt kort ändras. */
+.fdd-risk-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.fdd-risk-actions ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: 1.15em;
+  list-style: disc;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}

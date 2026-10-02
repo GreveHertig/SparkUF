@@ -84,10 +84,20 @@ export type SinceLastTime = {
   responsesSource: Källa;
 };
 
+/** Riskområdena i Pulsen (Hampus Hedelius tips 2026-10-02: yttre omständigheter). */
+export const PULSE_RISK_AREAS = ["costs", "finance", "regulation", "competition", "demand", "supply"] as const;
+export type PulseRiskArea = (typeof PULSE_RISK_AREAS)[number];
+
 export type PulseSignal = {
   category: string;
   headline: string;
   whyItMatters: string;
   timestamp: string;
   source: Källa;
+  /**
+   * Satt när signalen är en risk att bevaka (yttre omständigheter). Valfri:
+   * en vanlig nyhet saknar den, och demots signaler har den inte.
+   * `actions` är allmänna förslag ur i18n, inga påståenden om nyheten.
+   */
+  risk?: { area: PulseRiskArea; actions: string[] };
 };

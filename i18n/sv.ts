@@ -388,6 +388,67 @@ export const sv = {
     emptyState: "Inga signaler för det här scenariot.",
     liveCategory: "Branschnyhet",
     liveWhyItMatters: "Nyheten rör samma område som {project}. Fundera på hur den påverkar dina kunder.",
+    risksTitle: "Risker att bevaka",
+    risksIntro: "Saker som händer runt omkring dig och kan påverka ditt företag. Varje signal är en nyhet med källa. Förslagen är allmänna, inte råd för just ditt fall.",
+    newsTitle: "Nyheter i din bransch",
+    riskLabel: "Risk",
+    actionsTitle: "Vad du kan göra",
+    riskAreas: {
+      costs: {
+        name: "Kostnader och råvaror",
+        whyItMatters: "Stigande kostnader för det du köper in kan pressa marginalen i {project}.",
+        actions: [
+          "Se vilka kostnader i din kalkyl som påverkas.",
+          "Räkna på vad som händer med marginalen om kostnaden stiger.",
+          "Fråga leverantören om fast pris eller ett längre avtal.",
+        ],
+      },
+      finance: {
+        name: "Räntor och finansiering",
+        whyItMatters: "Räntor och valuta påverkar vad det kostar att låna och vad kunderna har råd med i {project}.",
+        actions: [
+          "Kolla om du har lån eller krediter med rörlig ränta.",
+          "Fundera på om dina kunder blir mer priskänsliga.",
+          "Räkna med marginal om du planerar att låna eller ta in kapital.",
+        ],
+      },
+      regulation: {
+        name: "Regler och krav",
+        whyItMatters: "Nya regler kan ge {project} nya krav, nya kostnader eller nya möjligheter.",
+        actions: [
+          "Läs vad regeln gäller och från när den börjar gälla.",
+          "Se efter i Juridik vad som rör din bolagsform.",
+          "Fråga en jurist eller revisor om du är osäker.",
+        ],
+      },
+      competition: {
+        name: "Konkurrens",
+        whyItMatters: "När konkurrenter rör sig ändras det kunderna jämför {project} med.",
+        actions: [
+          "Jämför deras erbjudande och pris med ditt.",
+          "Tänk igenom vad som gör dig svår att byta ut.",
+          "Fråga dina kunder om de har märkt något nytt.",
+        ],
+      },
+      demand: {
+        name: "Efterfrågan och konjunktur",
+        whyItMatters: "Konjunktur och efterfrågan påverkar hur lätt det är att sälja {project}.",
+        actions: [
+          "Följ hur dina egna kunder svarar och köper.",
+          "Ha en plan för om försäljningen går långsammare än du räknat med.",
+          "Se över hur länge dina pengar räcker utan nya intäkter.",
+        ],
+      },
+      supply: {
+        name: "Leveranser",
+        whyItMatters: "Problem hos leverantörer kan försena eller fördyra {project}.",
+        actions: [
+          "Har du mer än en leverantör för det viktigaste?",
+          "Planera med marginal i leveranstiderna.",
+          "Fråga leverantören hur de påverkas.",
+        ],
+      },
+    },
   },
   memoryPage: {
     title: "Minnet",
