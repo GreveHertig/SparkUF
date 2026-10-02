@@ -454,7 +454,7 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
       const done = await clientA.from("profiles").select("onboarding_entry, onboarding_completed_at").eq("user_id", userIdA).single();
       expect(done.data!.onboarding_completed_at).not.toBeNull();
 
-      const second = await clientA.rpc("complete_onboarding", { p_entry: "noIdea", p_answers: answers });
+      const second = await clientA.rpc("complete_onboarding", { p_entry: "hasIdea", p_answers: answers });
       expect(second.error?.code, "complete_onboarding: ett andra anrop togs emot").toBe("55000");
       const unchanged = await clientA.from("profiles").select("onboarding_entry, onboarding_completed_at").eq("user_id", userIdA).single();
       expect(unchanged.data).toEqual(done.data);
