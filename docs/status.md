@@ -4059,3 +4059,13 @@ Rättar de två kända problemen från "Onboarding live, PR 2" och "PR 3": steg 
 ### Återstår
 - Längdvillkor på `profiles.name` och `profiles.initials`. Det var ett lågt fynd i säkerhetsgranskningen och fanns redan före den här PR:en.
 - Idégenomlysningen (`getIdeaScreening`), som väntar på Registret.
+
+## `design/en-design` i kapp med `prototyp` (2026-10-02, direkt på `design/en-design`)
+
+### Klart
+- **Ingen konflikt att lösa.** PR #46 (`design/en-design` → `prototyp`) var redan mergad, och #41/#42 (juridiken) fanns i båda grenarna via `fb8c366`. Den lokala grenen låg bara efter. `git merge --ff-only` till `origin/prototyp` (`f688001`) blev en ren fast-forward, utan merge-commit och utan handredigerade filer. `docs/status.md` behövde ingen union-merge.
+- **`/demo` är oförändrat:** 118 skärmbilder (1440 och 390 px; Sara vid beat 0, 18 och 37, Jonas vid 12; alla demosidor plus `/demo/start`) är byte-identiska mellan `fb8c366` och `f688001`.
+- Kontroll: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (1208 gröna, 42 skippade) och `pnpm build`. `/security-review` av `fb8c366..f688001`: inga fynd med hög konfidens.
+
+### Kända problem
+- **`pnpm test:e2e`: 4 gröna och 40 röda, både före och efter** (samma tester fallerar mot `fb8c366` och `f688001`). Testkontot (`APP_TEST_USER_*`) har inte gått igenom onboardingen, så spärren i `app/(app)/layout.tsx` (#44) skickar varje `/app`-sida till `/start`. Felet kommer inte från merge:n. Rättningen är att låta testkontot gå klart genom `/start` en gång, eller att anpassa `e2e/app.spec.ts` efter spärren.
