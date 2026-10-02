@@ -4064,7 +4064,7 @@ Rättar de två kända problemen från "Onboarding live, PR 2" och "PR 3": steg 
 
 ### Klart
 - `docs/arbetsflode.md`: tre sessioner (huvudbygge, bakgrundsjobb i cloud session, granskare), regler, uppgiftsmall och dagsrytm.
-- Slash-kommandon i `.claude/commands/`: `/forbered-pr` och `/granska-pr`.
+- Slash-kommandon i `.claude/commands/`: `/forbered-pr`, `/granska-pr`, `/session-bygg`, `/session-bakgrund`, `/session-granska` och `/klicka-igenom` (Claude verifierar ytor visuellt med Playwright).
 
 ### Återstår
 - Erik beslutar om CI (GitHub Actions med typecheck/lint/test/build) och Vercel-previews per PR. Inget av det är satt upp här.

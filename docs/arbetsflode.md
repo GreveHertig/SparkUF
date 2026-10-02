@@ -42,5 +42,11 @@ Stoppa och fråga om: du behöver ändra något utanför "får röra"
 
 ## Kommandon
 
+- `/session-bygg <uppgift>`: startar session 1 (plan först, egen gren, verifierar själv).
+- `/session-bakgrund <uppgift>`: startar session 2 (utan tillsyn, slutar i PR).
+- `/session-granska`: startar session 3 (granskar öppna PR:ar).
+- `/klicka-igenom <sökväg>`: Claude tittar själv på sidan (skärmbilder, sv/en, mobil) så du slipper skicka skärmdumpar.
 - `/forbered-pr`: kontroller, status.md, PR-text.
 - `/granska-pr <nummer eller gren>`: granskning enligt teamets regler.
+
+Skriv uppgiften direkt i Code, till exempel `/session-bygg koppla onboardingen mot ProfileRepository`. Kopiera inte prompter från chatten.
