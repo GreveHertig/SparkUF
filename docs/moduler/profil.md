@@ -29,7 +29,7 @@ ingen Gemini. Ingång A får fem frågor, B tre, en per fält
 till profilradens befintliga kolumner (`role`, `bio`, `time_available`,
 `money_available`, `risk_appetite`), som Minnets Profilen-flik redan läser.
 `completeOnboarding` sätter också `onboarding_entry` och
-`onboarding_completed_at` i samma `update`. Steg 1 ("Om dig") räknas som klart
+`onboarding_completed_at`, via databasfunktionen `public.complete_onboarding`. Steg 1 ("Om dig") räknas som klart
 när `onboarding_completed_at` är satt (docs/moduler/resan.md). En framtida
 Gemini-version fyller samma fält, så porten behöver inte ändras.
 
@@ -99,15 +99,25 @@ i liveadaptern och kontraktstestade mot båda adaptrarna. Migreringen
 - `getOnboardingStatus`: `onboarding_entry`/`onboarding_completed_at` på
   profilraden (`lib/server/onboardingStatus.ts`, delad med Resan). `entry`
   är `null` tills onboardingen är klar.
-- `completeOnboarding`: en enda `update` av profilraden med svaren
-  (trimmade), ingången och klar-tiden. Svaren ska vara exakt ingångens
-  frågor, en gång var, 1–1000 tecken. Uppdateringen gäller bara en rad där
-  `onboarding_completed_at is null`, så ett andra anrop kastar
-  `OnboardingAlreadyCompletedError` och skriver inte över något (ingen
-  omgörning i v1).
-- RLS prövat mot riktig databas (`adapters/live/rls.live.test.ts`): B kan
-  inte sätta A:s onboarding-kolumner, och databasen avvisar ett svar över
-  1000 tecken och en okänd ingång.
+- `completeOnboarding`: anropar `rpc("complete_onboarding", { p_entry,
+  p_answers })` med svaren som `{frågans id: svar}`. Funktionen
+  (`security definer`, `20261002150000_steg1_onboarding.sql`) prövar
+  ingången och att svaren är exakt ingångens frågor, 1–1000 tecken efter
+  trim, och skriver svaren, ingången och klar-tiden i en uppdatering. Ett
+  andra anrop ger felkod `55000`, som adaptern gör till
+  `OnboardingAlreadyCompletedError` (ingen omgörning i v1). Frågorna i
+  SQL speglar `PROFILE_QUESTIONS_BY_ENTRY`, vaktat av
+  `supabase/migrations/onboardingWrite.pg.test.ts`.
+- **Klienten kan inte skriva onboarding-kolumnerna.** `profiles` är stängd
+  för `insert` och `delete` (raden skapas av `handle_new_user()` och
+  försvinner med kontot), och `update` gäller bara `name`, `initials`,
+  `role`, `bio`, `time_available`, `money_available` och `risk_appetite`.
+  En ny kolumn kräver ett beslut i `supabase/migrations/migrations.test.ts`
+  (`PROFILES_CLIENT_WRITABLE` eller `PROFILES_CLIENT_CLOSED`).
+- RLS prövat mot riktig databas (`adapters/live/rls.live.test.ts`): varken A
+  eller B kan sätta onboarding-kolumnerna, onboardingen går via
+  funktionen, steg 2 kan markeras klart efteråt, och databasen avvisar ett
+  svar över 1000 tecken och en okänd ingång.
 
 PR 1 (2026-09-30): porten, demoadaptern och migreringen
 `20260930120000_onboarding.sql` (inte körd) är klara. Demoadaptern läser och skriver status via `demoStore`, aldrig från en serverrutt.

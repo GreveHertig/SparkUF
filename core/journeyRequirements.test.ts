@@ -8,8 +8,22 @@ import { EVIDENCE_KINDS } from "./evidenceKinds";
 const allFit: CountedEvidenceRef[] = FIT_QUESTION_IDS.map((id) => ({ kind: "profileFitAnswer", subjectRef: fitSubjectRef(id) }));
 const steps = (n: number) => Array.from({ length: n }, (_, index) => index + 1);
 
-function check(stepNumber: number, completed: number[], evidence: CountedEvidenceRef[] = [], hasActiveProject = true) {
-  return stepCompletion({ stepNumber, completedStepNumbers: completed, countedEvidence: evidence, hasActiveProject });
+// Steg 1 i `completed` står för klar onboarding (steg 1 får ingen rad), om
+// inte `onboardingCompleted` anges.
+function check(
+  stepNumber: number,
+  completed: number[],
+  evidence: CountedEvidenceRef[] = [],
+  hasActiveProject = true,
+  onboardingCompleted = completed.includes(1),
+) {
+  return stepCompletion({
+    stepNumber,
+    completedStepNumbers: completed.filter((step) => step !== 1),
+    countedEvidence: evidence,
+    hasActiveProject,
+    onboardingCompleted,
+  });
 }
 
 describe("stepCompletion: regler", () => {
@@ -22,11 +36,34 @@ describe("stepCompletion: regler", () => {
     expect(check(11, steps(9)).status).toBe("previousNotDone");
   });
 
-  it("steg 01 kräver alla fyra passformsfrågor, och bara de fyra", () => {
-    expect(check(1, [], allFit.slice(0, 3))).toEqual({ status: "missing", missing: ["fit_money"], progress: [] });
-    expect(check(1, [], allFit).status).toBe("completable");
-    const otherRefs = allFit.map((evidence, index) => ({ ...evidence, subjectRef: `fit:other-${index}` }));
-    expect(check(1, [], otherRefs).status).toBe("missing");
+  it("steg 01 är klart när onboardingen är klar, och bara då", () => {
+    expect(check(1, [])).toEqual({ status: "missing", missing: ["onboardingCompleted"], progress: [] });
+    expect(check(1, [], [], false, true).status).toBe("done");
+  });
+
+  it("passformssvar och en gammal rad för steg 01 klarar inte steg 01 (Datalöftet)", () => {
+    expect(check(1, [], allFit).status).toBe("missing");
+    const oldRow = stepCompletion({
+      stepNumber: 1,
+      completedStepNumbers: [1],
+      countedEvidence: allFit,
+      hasActiveProject: true,
+      onboardingCompleted: false,
+    });
+    expect(oldRow.status).toBe("missing");
+  });
+
+  it("steg 02 väntar på onboardingen, inte på en rad för steg 01", () => {
+    expect(check(2, [], [], true, false).status).toBe("previousNotDone");
+    expect(check(2, [], [], true, true).status).toBe("completable");
+    const oldRow = stepCompletion({
+      stepNumber: 2,
+      completedStepNumbers: [1],
+      countedEvidence: [],
+      hasActiveProject: true,
+      onboardingCompleted: false,
+    });
+    expect(oldRow.status).toBe("previousNotDone");
   });
 
   it("steg 02 kräver ett aktivt projekt", () => {

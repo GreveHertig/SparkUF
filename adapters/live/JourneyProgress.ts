@@ -6,6 +6,7 @@ import { isEvidenceKind } from "@/core/evidenceKinds";
 import { EmptyStateError } from "@/core/errors";
 import { requireSupabaseUser } from "@/lib/server/session";
 import { getActiveProjectId } from "@/lib/server/activeProject";
+import { readOnboardingStatus } from "@/lib/server/onboardingStatus";
 import { computeScore, readCompletedStepNumbers, readEvidenceRows, stockholmToday, type EvidenceRow } from "./evidenceScore";
 import { settleScore } from "./EvidenceRecorder";
 import { liveMemoryRepository } from "./MemoryRepository";
@@ -61,7 +62,10 @@ export const liveJourneyProgress: JourneyProgress = {
   async getStepCompletion(stepNumber: number): Promise<StepCompletionView> {
     assertStepNumber(stepNumber);
     const { supabase, userId } = await requireSupabaseUser();
-    const projectId = await getActiveProjectId(supabase, userId);
+    const [projectId, onboarding] = await Promise.all([
+      getActiveProjectId(supabase, userId),
+      readOnboardingStatus(supabase, userId),
+    ]);
     const [rows, completedStepNumbers] = projectId
       ? await Promise.all([
           readEvidenceRows(supabase, userId, projectId),
@@ -74,6 +78,7 @@ export const liveJourneyProgress: JourneyProgress = {
       completedStepNumbers,
       countedEvidence: countedEvidence(rows, stockholmToday()),
       hasActiveProject: projectId !== null,
+      onboardingCompleted: onboarding.completed,
     });
     return result.status === "missing"
       ? { stepNumber, status: result.status, missing: result.missing, progress: result.progress }
@@ -87,11 +92,15 @@ export const liveJourneyProgress: JourneyProgress = {
     if (!projectId) throw new EmptyStateError(MODULE, DOC);
     const context = { supabase, userId, projectId };
 
-    const [before, completedBefore] = await Promise.all([
+    const [before, completedBefore, onboarding] = await Promise.all([
       computeScore(supabase, userId, projectId, locale),
       readCompletedStepNumbers(supabase, userId, projectId),
+      readOnboardingStatus(supabase, userId),
     ]);
-    if (completedBefore.includes(stepNumber)) {
+    // Steg 1 är klart när onboardingen är klar (core/journeyRequirements.ts)
+    // och får ingen rad i journey_steps.
+    const alreadyDone = stepNumber === 1 ? onboarding.completed : completedBefore.includes(stepNumber);
+    if (alreadyDone) {
       return { snapshot: before.snapshot, phaseBefore: before.phase, phaseAfter: before.phase };
     }
     const { error } = await supabase.rpc("complete_journey_step", { p_step_number: stepNumber });

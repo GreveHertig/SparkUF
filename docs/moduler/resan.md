@@ -110,14 +110,15 @@ den) och `sinceLastTime` är `null` tills Utskick och svar finns.
   Statusen läses av `lib/server/onboardingStatus.ts`.
 - **Steg 2 per ingång:** ingång B ser "Genomlys din idé"
   (`journeySteps.step2Idea`), ingång A "Möjligheter".
-- **Känt glapp, rättas i `plattform/steg1-klart`:** databasens
-  `complete_journey_step` (20261001150000) kräver fyra `profileFitAnswer`-bevis
-  för steg 1 och en `journey_steps`-rad för steg 1 innan steg 2 kan bli klart.
-  Onboardingen skriver bara till `profiles`, så steg 2 kan i dag visas som
-  aktuellt men aldrig markeras klart. Rättningen är en ny migrering som
-  räknar steg 1 som klart när `onboarding_completed_at` är satt, med
-  `core/journeyRequirements.ts` i synk. Onboardingen skapar aldrig
-  `profileFitAnswer`-bevis: det vore påhittade bevis (Datalöftet).
+- **Steg 1 och 2 i databasen** (`20261002150000_steg1_onboarding.sql`,
+  `plattform/steg1-klart`): `complete_journey_step(1)` ger
+  `onboarding_completed_at` om den är satt, kräver inget projekt och skriver
+  ingen rad. Steg 2 kräver klar onboarding i stället för en rad för steg 1;
+  gamla rader för steg 1 räknas inte. Kravet heter `onboardingCompleted` i
+  `journey_step_requirements` och `core/journeyRequirements.ts`
+  (`StepCompletionInput.onboardingCompleted`). Onboardingen skapar aldrig
+  `profileFitAnswer`-bevis (Datalöftet). Passformssvaren ger fortfarande
+  poäng men låser inte steg 1.
 
 Tidigare: påbörjad (Session P1, branch `plattform-p1-adaptrar`, byggd efter Evidens
 och poäng i samma session) — `getSteps`/`getStepDetail` är klara och
