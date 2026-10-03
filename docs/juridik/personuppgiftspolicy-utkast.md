@@ -3,7 +3,9 @@
 > **Utkast – inte granskat av jurist**
 >
 > Skrivet 2026-10-02 utifrån koden på `prototyp` och fakta från Erik
-> (2026-10-02). Markeringar i texten:
+> (2026-10-02). Uppdaterat 2026-10-03 med Theos beslut från 2026-10-02 om
+> lagringstider och radering (se `oppna-fragor.md`). Besluten är inte
+> juristgranskade. Markeringar i texten:
 > - **[VÄNTAR: …]** – vi väntar på ett svar eller en ändring.
 > - **[FÖRSLAG, ej beslutat]** – ett förslag som teamet måste godkänna.
 > - **[FRÅGA: …]** – oklart, måste redas ut innan texten publiceras.
@@ -120,11 +122,11 @@ Inom Spark-teamet har bara de som behöver det åtkomst:
 
 | Uppgifter | Hur länge |
 |---|---|
-| Väntelistan | Raderas senast **2026-12-30**, eller tidigare om du ber om det. **[FÖRSLAG, ej beslutat]** |
+| Väntelistan | Raderas **2026-12-30**, eller tidigare om du ber om det. |
 | IP-adress för spamskyddet | Bara i serverns minne, försvinner när servern startas om. Sparas aldrig. |
-| Konto och allt som hör till det | Så länge du har kontot. Kontot raderas efter **12 månader utan aktivitet**. **[FÖRSLAG, ej beslutat]** [FRÅGA: Vad räknas som aktivitet? Varnar vi innan, och i så fall hur långt innan?] |
-| När du raderar kontot | Allt som hör till kontot raderas samtidigt (profil, idéer, resa, bevis, anteckningar och logg). **[FÖRSLAG, ej beslutat]** om hur det går till, se avsnitt 7. |
-| Om Spark läggs ner | **All data raderas.** **[FÖRSLAG, ej beslutat]** [FRÅGA: Inom hur lång tid?] |
+| Konto och allt som hör till det | Så länge du har kontot. Kontot raderas efter **12 månader utan aktivitet**. Aktivitet betyder att du loggar in eller ändrar något i ditt projekt. Vi varnar dig via mejl två gånger innan, **30 dagar** och **7 dagar** före raderingen. |
+| När du raderar kontot | Allt som hör till kontot raderas samtidigt (profil, idéer, resa, bevis, anteckningar och logg), inom en månad. Se avsnitt 7. |
+| Om Spark läggs ner | Vi meddelar dig minst **90 dagar** innan. Under den tiden kan du **exportera all din data**. Därefter **raderas all data**. [FRÅGA: Inom hur lång tid efter nedläggningen?] |
 
 [FRÅGA: Sparar Supabase och Vercel säkerhetskopior och loggar, och hur
 länge finns uppgifterna kvar där efter radering?]
@@ -145,12 +147,11 @@ Du har rätt att:
   väntelistan. Det påverkar inte det vi gjort innan (art. 7.3).
 
 **Så gör du:** mejla **spark.ai.uf@gmail.com** från den adress du använder
-hos oss. Vi svarar och utför det inom **en månad**. **[FÖRSLAG, ej
-beslutat]** för radering av konto.
+hos oss. Vi bekräftar att vi fått mejlet **samma dag** och utför det du ber
+om inom **en månad**.
 
-[FRÅGA: Appen saknar en egen knapp för att radera kontot. I dag kan det
-bara göras för hand i Supabase. Räcker det med mejl, eller ska en knapp
-byggas före lanseringen?]
+Till lanseringen raderar du ditt konto på samma sätt, via mejl. En knapp för
+att radera kontot direkt i appen kommer i version två.
 
 ## 8. Klaga hos IMY
 
@@ -186,10 +187,10 @@ meddelar vi dig via mejl innan den börjar gälla. **[FÖRSLAG, ej beslutat]**
 | 6 | Gemini: skyddsåtgärd vid cachning utanför EU, hur länge prompter loggas, länk till villkoren | Erik |
 | 7 | Vercel: när är bytet till Frankfurt (fra1) klart, och vad gäller tills dess? | Erik |
 | 8 | Supabase: kan support eller underbiträden nå data utanför EU? | Erik |
-| 9 | Godkänn lagringstiderna: väntelistan senast 2026-12-30, radering efter 12 månader utan aktivitet, all data raderas om Spark läggs ner | Teamet (Erik, Theo, Oskar) |
-| 10 | Vad räknas som aktivitet, och varnar vi innan ett konto raderas? | Teamet |
+| 9 | Godkänn lagringstiderna: väntelistan senast 2026-12-30, radering efter 12 månader utan aktivitet, all data raderas om Spark läggs ner | **Besvarad** (Theo, 2026-10-02). Kvar: hur snabbt datan raderas efter en nedläggning. |
+| 10 | Vad räknas som aktivitet, och varnar vi innan ett konto raderas? | **Besvarad** (Theo, 2026-10-02) |
 | 11 | Hur länge finns raderade uppgifter kvar i säkerhetskopior och loggar? | Erik |
-| 12 | Godkänn radering via mejl inom en månad, eller bygg en knapp före lanseringen? | Teamet, Theo för appen |
+| 12 | Godkänn radering via mejl inom en månad, eller bygg en knapp före lanseringen? | **Besvarad** (Theo, 2026-10-02): mejl till lanseringen, knapp i version två |
 | 13 | Är poängen ett automatiserat beslut eller en profilering enligt art. 22? | Jurist |
 | 14 | Registerdata: hur beskrivs behandlingen när den öppnas (personnamn i bolagsnamn, enskilda firmor, reklamspärr)? | Erik, jurist |
 | 15 | Utskick: information till mottagarna enligt art. 14, och rättslig grund för deras mejladresser | Theo, Oskar (Juridisk koll), jurist |

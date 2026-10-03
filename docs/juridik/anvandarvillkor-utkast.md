@@ -3,6 +3,8 @@
 > **Utkast – inte granskat av jurist**
 >
 > Skrivet 2026-10-02 utifrån koden och dokumentationen på `prototyp`.
+> Uppdaterat 2026-10-03 med Theos beslut från 2026-10-02 (se
+> `oppna-fragor.md`). Besluten är inte juristgranskade.
 > Markeringar i texten:
 > - **[THEO: betalningsvillkor]** – Theo äger betalningen och skriver de
 >   delarna.
@@ -25,7 +27,19 @@ också en språkmodell (Google Gemini) för en del av texterna.
 Demot på `/demo` visar påhittade företag och personer. Det kräver inget
 konto.
 
-## 2. Vem som driver Spark
+## 2. Din idé är din
+
+**Du äger din idé och allt du skriver in i Spark.** Vi gör inga anspråk på
+den.
+
+Du ger Spark rätt att lagra och behandla innehållet så länge det behövs för
+att ge dig tjänsten. **[FÖRSLAG, ej beslutat]** [FRÅGA: Theo beslutade att
+användaren äger sin idé. Den här meningen om vad Spark får göra med
+innehållet är inte uttryckligen beslutad.]
+
+Hur vi hanterar personuppgifter står i personuppgiftspolicyn.
+
+## 3. Vem som driver Spark
 
 Spark drivs som ett **UF-företag**, Spark UF, inom Ung Företagsamhet.
 [VÄNTAR: svar från UF om vem som är avtalspart och personuppgiftsansvarig.]
@@ -33,7 +47,7 @@ Spark drivs som ett **UF-företag**, Spark UF, inom Ung Företagsamhet.
 
 Kontakt: **spark.ai.uf@gmail.com**
 
-## 3. Vägledning, inte rådgivning
+## 4. Vägledning, inte rådgivning
 
 **Spark ger vägledning, inte juridisk rådgivning. Kontrollera med jurist vid
 behov.**
@@ -50,7 +64,7 @@ finansieringsrådgivning. Du fattar själv dina beslut och ansvarar för dem.
   ingen garanti för att företaget lyckas.
 - Simuleringar är märkta "Simulering". De är uppskattningar, inte fakta.
 
-## 4. Ditt konto
+## 5. Ditt konto
 
 - Du behöver ett konto för att använda Spark utöver demot.
 - Uppgifterna du lämnar ska vara riktiga.
@@ -58,7 +72,7 @@ finansieringsrådgivning. Du fattar själv dina beslut och ansvarar för dem.
 - [FRÅGA: Åldersgräns? Får personer under 18 år skapa ett konto, och krävs
   då en vårdnadshavares godkännande?]
 
-## 5. Ditt ansvar när du använder Spark
+## 6. Ditt ansvar när du använder Spark
 
 - Använd Spark på ett lagligt sätt och bara för att utveckla ditt eget
   företag eller din egen idé.
@@ -70,74 +84,92 @@ finansieringsrådgivning. Du fattar själv dina beslut och ansvarar för dem.
   annat reglerna om marknadsföring och personuppgifter. [FRÅGA: Funktionen
   för utskick är inte öppen för användare än. Stämmer stycket när den
   öppnas? Det beror på hur sändningen byggs, se
-  `docs/moduler/utskick-och-svar.md`.]
-
-## 6. Ditt innehåll
-
-- Din idé och det du skriver in är ditt.
-- Du ger Spark rätt att lagra och behandla innehållet så länge det behövs
-  för att ge dig tjänsten. **[FÖRSLAG, ej beslutat]**
-- Hur vi hanterar personuppgifter står i personuppgiftspolicyn.
+  `docs/moduler/utskick-och-svar.md`. Theo tar frågan senare.]
 
 ## 7. Pris och betalning
 
+Aktuella priser står på prissidan, **sparkuf.se/priser**. [FRÅGA: Sidan
+ligger på `/priser` i koden, men domänen sparkuf.se finns inte i koden eller
+i docs/. Bekräfta adressen.]
+
 [THEO: betalningsvillkor]
 
-Det här behöver stå här: pris, provperiod, hur betalningen görs, hur ofta
-den dras, vad som händer när provperioden tar slut, hur man säger upp ett
-abonnemang och vad som gäller för köp av gnistor.
-
-[FRÅGA: Priserna på webbplatsen är märkta som förslag (`docs/status.md`,
-"Nya priser"). Villkoren kan inte nämna priser förrän de är beslutade.]
+Theo skriver avsnittet när gnistorna är definierade. Det behöver ta upp
+provperioden, hur betalningen görs, hur ofta den dras, vad som händer när
+provperioden tar slut, hur man säger upp ett abonnemang och vad som gäller
+för köp av gnistor.
 
 ## 8. Ångerrätt
 
-Är du konsument har du enligt Konsumentverket 14 dagars ångerrätt när du
-köper på distans från ett företag. Det finns undantag. (Källa:
-Konsumentverket, https://www.konsumentverket.se/konsumentratt-process/angerratt/,
-kontrollerad 2026-10-01.)
+Du kan ångra ett köp inom **14 dagar** och få **hela beloppet tillbaka**,
+även om du har hunnit använda gnistor.
 
-[FRÅGA: Hur ska ångerrätten hanteras i Spark?
-- Vilka användare är konsumenter, och vilka köper som företag? Ångerrätten
-  gäller bara konsumenter.
-- Vad gäller om tjänsten börjar användas under ångerfristen, både för
-  abonnemanget och för gnistor som redan förbrukats?
-- Hur ångrar man sig i praktiken, och hur betalas pengarna tillbaka?
+**Så gör du:** mejla **spark.ai.uf@gmail.com** och skriv att du vill ångra
+köpet. Vi betalar tillbaka till samma kort inom **5 arbetsdagar**.
+
+Konsumenter har enligt Konsumentverket 14 dagars ångerrätt när de köper på
+distans från ett företag. (Källa: Konsumentverket,
+https://www.konsumentverket.se/konsumentratt-process/angerratt/, kontrollerad
+2026-10-01.)
+
+[FRÅGA:
+- Gäller återbetalningen alla användare, eller bara konsumenter?
+- Räknas de 14 dagarna från köpdagen? Räknas de 5 arbetsdagarna från när vi
+  fick mejlet?
 - Vilken information måste ges före köpet?
-Jurist och Theo ska svara.]
+Jurist ska svara.]
 
 ## 9. Tillgänglighet och ändringar i tjänsten
 
-Spark är under uppbyggnad. Funktioner kan ändras, läggas till eller tas
-bort, och tjänsten kan ibland vara nere. [FRÅGA: Vad lovar vi en betalande
-användare om tjänsten är nere eller en funktion tas bort?]
+Spark är under uppbyggnad. **Vi lovar inte att tjänsten alltid är
+tillgänglig.**
+
+- **Driftstopp:** du får ingen kompensation om tjänsten är nere, men du kan
+  alltid avsluta ditt konto.
+- **Funktioner som tas bort:** vi meddelar dig minst **30 dagar** innan en
+  funktion tas bort. Du har då rätt att säga upp ditt abonnemang utan
+  kostnad.
+- Funktioner kan också ändras eller läggas till.
+
+[FRÅGA: Hur meddelar vi användarna, via mejl?]
 
 ## 10. Ansvarsbegränsning
 
 [FRÅGA: Jurist ska formulera ansvarsbegränsningen. Den får inte begränsa
-konsumenters rättigheter enligt tvingande lag. Avsnitt 3 ovan beskriver
+konsumenters rättigheter enligt tvingande lag. Avsnitt 4 ovan beskriver
 vad Spark är och inte är, men ersätter inte en riktig
 ansvarsbegränsning.]
 
 ## 11. Avsluta kontot
 
 - **Du** kan avsluta kontot när som helst genom att mejla
-  **spark.ai.uf@gmail.com** från den adress du använder hos oss. Vi raderar
-  kontot och allt som hör till det inom **en månad**. **[FÖRSLAG, ej
-  beslutat]** [FRÅGA: Hur hänger det ihop med ett betalt abonnemang? Se
-  avsnitt 7.]
-- **Vi** raderar konton efter **12 månader utan aktivitet**. **[FÖRSLAG, ej
-  beslutat]**
-- **Vi** kan stänga ett konto som bryter mot villkoren. [FRÅGA: Varnar vi
-  först? Vad händer med en betalning som redan är gjord?]
-- **Om Spark läggs ner** raderas all data. **[FÖRSLAG, ej beslutat]**
-  [FRÅGA: Hur långt i förväg meddelar vi användarna?]
+  **spark.ai.uf@gmail.com** från den adress du använder hos oss.
+  - Vi bekräftar att vi fått mejlet **samma dag**.
+  - Vi raderar kontot och allt som hör till det inom **en månad**, enligt
+    personuppgiftspolicyn.
+  - Har du ett abonnemang löper det ut vid slutet av den period du redan
+    betalat för. Du får inte tillbaka pengar för den tid som återstår.
+  - Till lanseringen sker avslutet via mejl. En knapp för att radera kontot
+    kommer i version två.
+- **Inaktiva konton:** vi raderar konton efter **12 månader utan
+  aktivitet**. Aktivitet betyder att du loggar in eller ändrar något i ditt
+  projekt. Vi varnar dig två gånger innan, **30 dagar** och **7 dagar**
+  före raderingen.
+- **Regelbrott:** vi kan stänga ett konto som bryter mot villkoren. Du får då
+  tillbaka pengar för den del av perioden du inte har använt, utom vid
+  bedrägeri eller missbruk. [FRÅGA: Varnar vi innan vi stänger kontot? Vad
+  räknas som bedrägeri eller missbruk?]
+- **Om Spark läggs ner:** vi meddelar dig minst **90 dagar** innan. Under
+  den tiden kan du **exportera all din data**. Därefter raderas all data.
+  [FRÅGA: Inom hur lång tid efter nedläggningen raderas datan? Vad händer
+  med abonnemang som löper längre än 90 dagar?]
 
 ## 12. Ändringar i villkoren
 
-Vi kan ändra villkoren. Vid en större ändring meddelar vi dig via mejl
-minst [FRÅGA: antal] dagar innan den börjar gälla. Om du inte godtar
-ändringen kan du avsluta kontot. **[FÖRSLAG, ej beslutat]**
+Vi kan ändra villkoren. Vi meddelar dig minst **30 dagar** innan en ändring
+börjar gälla. Om du inte godtar ändringen kan du säga upp ditt abonnemang
+utan kostnad innan den börjar gälla. [FRÅGA: Hur meddelar vi användarna,
+via mejl?]
 
 ## 13. Lag och tvister
 
@@ -158,19 +190,21 @@ avtalspart.]
 
 ## Öppna frågor
 
-| # | Fråga | Vem svarar |
-|---|---|---|
-| 1 | Vem är avtalspart och personuppgiftsansvarig (UF-företaget, skolan, Ung Företagsamhet eller en person)? | UF (Ung Företagsamhet), via Erik |
-| 2 | Vad händer med tjänsten och avtalen när UF-året tar slut? | Teamet, UF |
-| 3 | Åldersgräns och minderåriga användare | Jurist, UF |
-| 4 | Stämmer stycket om utskick när sändningen byggs? | Theo, Oskar (Juridisk koll) |
-| 5 | Rätten till användarens innehåll (avsnitt 6) | Teamet, jurist |
-| 6 | Pris och betalning, och om priserna är beslutade | Theo |
-| 7 | Ångerrätt: vem som är konsument, användning under ångerfristen, gnistor, återbetalning, information före köp | Jurist, Theo |
-| 8 | Vad lovar vi om tjänsten är nere eller en funktion tas bort? | Teamet, Theo |
-| 9 | Ansvarsbegränsningens formulering | Jurist |
-| 10 | Avsluta konto: godkänn mejl inom en månad, radering efter 12 månader utan aktivitet och radering om Spark läggs ner | Teamet (Erik, Theo, Oskar) |
-| 11 | Avsluta konto när man har ett betalt abonnemang | Theo |
-| 12 | Stänga konton som bryter mot villkoren: varning och betalning | Teamet, Theo |
-| 13 | Hur långt i förväg meddelar vi ändrade villkor eller nedläggning? | Teamet |
-| 14 | Domstol, nämnd och upplysningar till konsumenter vid tvist | Jurist |
+Besvarade frågor står kvar, så att numren stämmer med `oppna-fragor.md`.
+
+| # | Fråga | Vem svarar | Läge |
+|---|---|---|---|
+| 1 | Vem är avtalspart och personuppgiftsansvarig (UF-företaget, skolan, Ung Företagsamhet eller en person)? | UF-rådgivaren | Öppen |
+| 2 | Vad händer med tjänsten och avtalen när UF-året tar slut? | UF-rådgivaren, teamet | Öppen |
+| 3 | Åldersgräns och minderåriga användare | Jurist, UF-rådgivaren | Öppen |
+| 4 | Stämmer stycket om utskick när sändningen byggs? | Theo, Oskar (Juridisk koll) | Öppen, Theo tar den senare |
+| 5 | Rätten till användarens innehåll (avsnitt 2) | Teamet, jurist | Delvis: användaren äger idén (Theo, 2026-10-02). Meningen om vad Spark får göra med innehållet är öppen. |
+| 6 | Pris och betalning | Theo | Delvis: inga priser i villkoren, hänvisning till prissidan (Theo, 2026-10-02). Avsnitt 7 skrivs när gnistorna är definierade. Domänen för prissidan är obekräftad. |
+| 7 | Ångerrätt | Theo, jurist | Delvis: full återbetalning inom 14 dagar, via mejl, till samma kort inom 5 arbetsdagar (Theo, 2026-10-02). Kvar för jurist: vem det gäller, hur dagarna räknas och information före köpet. |
+| 8 | Vad lovar vi om tjänsten är nere eller en funktion tas bort? | Theo | Besvarad (Theo, 2026-10-02) |
+| 9 | Ansvarsbegränsningens formulering | Jurist | Öppen |
+| 10 | Avsluta konto: mejl, inaktiva konton och nedläggning | Teamet | Besvarad (Theo, 2026-10-02). Kvar: hur snabbt datan raderas efter en nedläggning. |
+| 11 | Avsluta konto när man har ett betalt abonnemang | Theo | Besvarad (Theo, 2026-10-02) |
+| 12 | Stänga konton som bryter mot villkoren | Teamet, Theo | Delvis: återbetalning utom vid bedrägeri eller missbruk (Theo, 2026-10-02). Kvar: varning innan och vad som räknas som missbruk. |
+| 13 | Varsel om ändrade villkor och nedläggning | Teamet | Besvarad: 30 respektive 90 dagar (Theo, 2026-10-02). Kvar: hur vi meddelar (mejl?). |
+| 14 | Domstol, nämnd och upplysningar till konsumenter vid tvist | Jurist | Öppen |

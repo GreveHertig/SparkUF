@@ -95,37 +95,37 @@ och policy:
 1. Är priserna beslutade, eller fortfarande förslag? Villkoren kan inte
    nämna priser förrän de är beslutade. [V6]
 
-   **Svar:**
+   **Svar:** Inga priser i villkoren. Villkoren hänvisar till prissidan. (Theo, 2026-10-02)
 
 2. Kan du skriva avsnittet om pris och betalning? Det behöver ta upp
    provperioden, hur betalningen dras, uppsägning och gnistor. Det står som
    [THEO: betalningsvillkor] i `docs/juridik/anvandarvillkor-utkast.md`,
    avsnitt 7. [V6]
 
-   **Svar:**
+   **Svar:** Theo skriver avsnitt 7 när gnistorna är definierade. [THEO: betalningsvillkor] står kvar tills dess. (Theo, 2026-10-02)
 
 3. Ångerrätten i praktiken: hur ångrar sig en användare och hur betalas
    pengarna tillbaka? Vad gäller för gnistor som redan har förbrukats?
    Juristen svarar på vad lagen kräver, du på hur det ska fungera. [V7]
 
-   **Svar:**
+   **Svar:** Full återbetalning inom 14 dagar, oavsett förbrukade gnistor. Användaren mejlar oss, och vi betalar tillbaka till samma kort inom 5 arbetsdagar. (Theo, 2026-10-02)
 
 4. Vad händer med ett betalt abonnemang när någon avslutar kontot, eller när
    vi stänger ett konto som brutit mot villkoren? [V11, V12]
 
-   **Svar:**
+   **Svar:** Avslutat konto: abonnemanget löper ut vid periodens slut, ingen återbetalning av återstående tid, och data raderas enligt policyn. Konto som stängs för regelbrott: återbetalning av outnyttjad period, utom vid bedrägeri eller missbruk. (Theo, 2026-10-02)
 
 ### Appen
 
 5. Ska vi bygga en knapp för att radera kontot före lanseringen, eller
    räcker det med ett mejl till spark.ai.uf@gmail.com? [P12]
 
-   **Svar:**
+   **Svar:** Radering via mejl till lanseringen. En knapp kommer i version två, och policyn ska säga att den kommer. (Theo, 2026-10-02)
 
 6. Vad lovar vi en betalande användare om tjänsten är nere eller om en
    funktion tas bort? [V8]
 
-   **Svar:**
+   **Svar:** Ingen tillgänglighetsgaranti. 30 dagars varsel innan en funktion tas bort, med rätt att säga upp utan kostnad. Vid driftstopp ingen kompensation, men man kan alltid avsluta. (Theo, 2026-10-02)
 
 ### Senare (blockerar inte publiceringen)
 
@@ -133,7 +133,7 @@ och policy:
    ansvarar för dem? Hur informeras mottagarna enligt GDPR artikel 14? Den
    frågan tar vi tillsammans, jag och du. [P15, V4]
 
-   **Svar:**
+   **Svar:** Tas senare. (Theo, 2026-10-02)
 
 ---
 
@@ -143,35 +143,35 @@ Fyra förslag att godkänna. Svara ja, nej eller med ett annat förslag:
 
 1. **Väntelistan** raderas senast 2026-12-30. [P9]
 
-   **Svar:**
+   **Svar:** Ja, väntelistan raderas 2026-12-30. (Theo, 2026-10-02)
 
 2. **Radering av konto** sker genom ett mejl till spark.ai.uf@gmail.com och
    utförs inom en månad. [P9, P12, V10]
 
-   **Svar:**
+   **Svar:** Ja, via mejl inom en månad. Vi bekräftar mottagandet samma dag. (Theo, 2026-10-02)
 
 3. **Inaktiva konton** raderas efter 12 månader utan aktivitet. Vad räknas
    som aktivitet: inloggning eller något annat? Varnar vi innan, och hur
    många dagar innan? [P9, P10, V10]
 
-   **Svar:**
+   **Svar:** Ja, efter 12 månader. Aktivitet betyder inloggning eller ändring i projektet. Varning två gånger, 30 och 7 dagar innan. (Theo, 2026-10-02)
 
 4. **All data raderas om Spark läggs ner.** Hur långt i förväg meddelar vi
    användarna, och inom vilken tid raderar vi? [P9, V10, V13]
 
-   **Svar:**
+   **Svar:** 90 dagars varsel, och användaren kan exportera all sin data innan. Exporten ska stå i löftet. (Theo, 2026-10-02)
 
 Och två korta frågor:
 
 5. Hur många dagar i förväg meddelar vi användarna om ändrade villkor?
    [V13]
 
-   **Svar:**
+   **Svar:** 30 dagars varsel, med rätt att säga upp utan kostnad. (Theo, 2026-10-02)
 
 6. Godkänner ni att användaren äger sin idé och att Spark bara får lagra och
    behandla innehållet för att ge tjänsten? [V5]
 
-   **Svar:**
+   **Svar:** Användaren äger sin idé. Det ska stå tydligt och tidigt i villkoren, inte långt ner. (Theo, 2026-10-02)
 
 ---
 
