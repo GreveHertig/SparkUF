@@ -147,8 +147,9 @@ PR 4–11 pushas direkt till grenen `design/en-design` — ingen egen PR per
 skärm. En PR öppnas från `design/en-design` mot `prototyp` ungefär en gång
 i veckan (eller när en naturlig grupp skärmar är klar), inte per skärm.
 `design/en-design` är skapad ur `design/pr3-hem` och har redan PR 2 och
-PR 3 i sig; den tar löpande in `prototyp` när nytt landar där (samma
-`.gitattributes`-fix för `docs/status.md` gäller — se filen).
+PR 3 i sig; den tar löpande in `prototyp` när nytt landar där. Statusen
+skrivs som en egen fil per session i `docs/status/` (se `docs/status.md`),
+så de grenarna krockar inte i statusen längre.
 
 Under migrationen (PR 4–11) rör bara EN person `screens/` och
 `design/site.css` åt gången, för att undvika samtidiga ändringar i samma
