@@ -164,15 +164,60 @@ function textOrThrow(response: GenerateContentResponse): string {
   return text;
 }
 
-/** Gemini godtar inte nyckeln `$schema` i responseJsonSchema, som zods
- * `z.toJSONSchema` lägger överst. Tas bort här, för alla anropare. */
-function withoutSchemaMeta(schema: unknown): unknown {
-  if (schema && typeof schema === "object" && !Array.isArray(schema) && "$schema" in schema) {
-    const rest: Record<string, unknown> = { ...(schema as Record<string, unknown>) };
-    delete rest.$schema;
-    return rest;
+/**
+ * De nyckelord som `responseJsonSchema` stöder, enligt SDK:ns dokumentation
+ * (`GenerateContentConfig.responseJsonSchema` i @google/genai 2.23): "only the
+ * following properties are supported". Äldre modeller ignorerade resten, men
+ * mot gemini-3.8-flash gav schemat 400 INVALID_ARGUMENT (2026-10-03), troligen
+ * för `minLength`/`maxLength` som zod lägger på strängfält. `$schema` saknas
+ * också i listan.
+ */
+const SUPPORTED_SCHEMA_KEYWORDS = new Set([
+  "$id",
+  "$defs",
+  "$ref",
+  "$anchor",
+  "type",
+  "format",
+  "title",
+  "description",
+  "enum",
+  "items",
+  "prefixItems",
+  "minItems",
+  "maxItems",
+  "minimum",
+  "maximum",
+  "anyOf",
+  "oneOf",
+  "properties",
+  "additionalProperties",
+  "required",
+  "propertyOrdering",
+]);
+/** Nyckelord vars värde är en mapp från namn till schema (namnen är inte nyckelord). */
+const SCHEMA_MAPS = new Set(["properties", "$defs"]);
+
+/**
+ * Schemat med bara de nyckelord Gemini stöder, på alla nivåer. Det som tas
+ * bort (t.ex. `minLength`, `maxLength`, `pattern`) gäller ändå: adaptrarna
+ * validerar svaret mot sitt zod-schema efteråt. Ändrar aldrig indata.
+ */
+export function toGeminiSchema(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(toGeminiSchema);
+  if (!schema || typeof schema !== "object") return schema;
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema as Record<string, unknown>)) {
+    if (!SUPPORTED_SCHEMA_KEYWORDS.has(key)) continue;
+    if (SCHEMA_MAPS.has(key) && value && typeof value === "object" && !Array.isArray(value)) {
+      result[key] = Object.fromEntries(Object.entries(value).map(([name, sub]) => [name, toGeminiSchema(sub)]));
+    } else if (key === "enum" || key === "required" || key === "propertyOrdering") {
+      result[key] = value;
+    } else {
+      result[key] = toGeminiSchema(value);
+    }
   }
-  return schema;
+  return result;
 }
 
 export type GenerateJsonInput = {
@@ -195,7 +240,7 @@ export async function generateJson({
   timeoutMs = 20_000,
 }: GenerateJsonInput): Promise<string> {
   const genAI = getGeminiClient();
-  const schema = withoutSchemaMeta(responseJsonSchema);
+  const schema = toGeminiSchema(responseJsonSchema);
   const response = await withRetry("generateJson", () =>
     genAI.models.generateContent({
       model: geminiModel(),

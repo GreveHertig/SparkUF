@@ -47,3 +47,14 @@ Eriks nya körning: `generateText` (Medgrundaren) har inget 400 längre, bara 50
 - Tester i `lib/server/geminiModel.test.ts`: 503 försöks om och lyckas, högst två omförsök, 429 väntar en kort retryDelay, 429 med 47 s visas direkt, 400 försöks aldrig om.
 
 Återstår: kör felsökningsskriptet och live-testerna, och rätta schemat eller anropet efter det som skriptet visar.
+
+### Tillägg 3: schemat till generateJson (2026-10-03)
+Eriks körning av felsökningsskriptet: steg "JSON-läge utan schema" gick igenom (STOP). Nästa steg (minimalt schema) fick 503 och sedan 429 med retryDelay 19 587 s, alltså är gratisnivåns dagskvot slut, och körningen avbröts. JSON-läget, `thinkingLevel` och `maxOutputTokens: 8192` fungerar alltså tillsammans. Det som skiljer från Juridisk kolls anrop är schemat (och prompten).
+
+- SDK:ns dokumentation för `responseJsonSchema` (`GenerateContentConfig` i @google/genai 2.23) säger: "only the following properties are supported": `$id`, `$defs`, `$ref`, `$anchor`, `type`, `format`, `title`, `description`, `enum`, `items`, `prefixItems`, `minItems`, `maxItems`, `minimum`, `maximum`, `anyOf`, `oneOf`, `properties`, `additionalProperties`, `required` och `propertyOrdering`. Googles sida om strukturerade svar listar samma delmängd. `minLength`, `maxLength` och `pattern` finns inte med. Juridisk kolls schema har `minLength`/`maxLength` på `rubrik` och `beskrivning` (från zod). 2.5 ignorerade dem; den troliga orsaken till 400 är att 3.8 inte gör det.
+- **Rättelse (trolig, inte bekräftad mot Gemini):** `toGeminiSchema()` i `lib/server/gemini.ts` behåller bara de stödda nyckelorden, på alla nivåer, och ersätter den tidigare rensningen av `$schema`. Fältnamn under `properties`/`$defs` rörs inte. Längdkraven gäller ändå: adaptrarna validerar svaret mot sitt zod-schema som förut.
+- `responseFormat` (Googles nyare exempel) finns inte i `GenerateContentConfig` i SDK 2.23, så `responseMimeType` + `responseJsonSchema` behålls.
+- Tester: nyckelorden tas bort på alla nivåer, fältnamn som heter som ett nyckelord är kvar, indata ändras inte, och Juridisk kolls riktiga schema skickas utan `minLength`/`maxLength`/`pattern`/`$schema`.
+- **Felsökningsskriptet** (`scratchpad/`, gitignorerat) provar nu det schema appen skickar först (`legal-schema-gemini.json`, genererat med `toGeminiSchema`), sedan minimalt schema och det gamla schemat. `PROBE_STEG=1,2` kör bara vissa steg. Är retryDelay över 60 s avbryter det direkt med ett meddelande om att kvoten är slut (exit-kod 2). Provat mot en lokal låtsasserver som svarar 429 med 19 587 s.
+
+Återstår: när kvoten är tillbaka, kör `PROBE_STEG=1,2,3` i skriptet och sedan `pnpm test:live:gemini`.
