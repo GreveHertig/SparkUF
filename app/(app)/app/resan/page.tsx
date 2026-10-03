@@ -3,7 +3,7 @@ import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
 import { livePlanRepository } from "@/adapters/live/PlanRepository";
 import { orNull } from "../_lib/orNull";
 import { optional } from "../_lib/optional";
-import { removePlanItem, togglePlanItem } from "./actions";
+import { addOwnPlanItem, editPlanItem, removePlanItem, togglePlanItem } from "./actions";
 
 /**
  * Resan i /app (PR 9, docs/plan-en-design.md). `getSteps` är byggd; ett
@@ -27,7 +27,15 @@ export default async function LiveJourneyPage() {
       profileAnswersHref="/app/minnet"
       plan={
         planItems
-          ? { items: planItems, onToggle: togglePlanItem, onRemove: removePlanItem, pulseHref: "/app/pulsen" }
+          ? {
+              items: planItems,
+              onToggle: togglePlanItem,
+              onRemove: removePlanItem,
+              onEdit: editPlanItem,
+              onAdd: addOwnPlanItem,
+              pulseHref: "/app/pulsen",
+              cofounderHref: "/app/medgrundaren",
+            }
           : null
       }
     />

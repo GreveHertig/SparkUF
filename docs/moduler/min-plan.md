@@ -2,8 +2,9 @@
 
 ## Syfte
 
-Grundarens egen att-göra-lista. I dag fylls den från spelböckerna i Pulsen
-("Lägg till stegen i min plan") och bockas av i Resan. Stegen är förskrivna
+Grundarens egen att-göra-lista. Den fylls från spelböckerna i Pulsen
+("Lägg till stegen i min plan") och med grundarens egna uppgifter, och den
+ändras och bockas av i Resan. Stegen är förskrivna
 i18n-texter (spelbokens "Så löser du det" eller "Så tar du vara på det"),
 och signalens rubrik följer med som sammanhang. Beslut i `docs/beslut.md`
 (2026-10-03).
@@ -15,6 +16,7 @@ och signalens rubrik följer med som sammanhang. Beslut i `docs/beslut.md`
 ```ts
 getItems(): Promise<PlanItem[]>            // öppna först, sedan avbockade, äldst först
 addItems(items: NewPlanItem[]): Promise<number>  // antal som faktiskt lades till
+updateText(id: string, text: string): Promise<void>  // PlanTextError("empty" | "duplicate")
 setDone(id: string, done: boolean): Promise<void>
 removeItem(id: string): Promise<void>
 ```
@@ -24,9 +26,10 @@ Gränserna ligger i `core/plan.ts`: text högst 300 tecken, sammanhang högst
 
 ## Data
 
-`public.plan_items` (migrering `supabase/migrations/20261003180000_plan_items.sql`,
-körs manuellt i SQL Editor). RLS: select, insert, update och delete bara på
-egna rader. `origin` är i dag bara `pulsen`, `origin_ref` signalens id utan
+`public.plan_items` (migreringarna `supabase/migrations/20261003180000_plan_items.sql`
+och `20261003210000_plan_items_egna.sql`, körs manuellt i SQL Editor i den
+ordningen). RLS: select, insert, update och delete bara på
+egna rader. `origin` är `pulsen` eller `own` (grundarens egen uppgift), `origin_ref` signalens id utan
 främmande nyckel (en signal som rensas ur `pulse_signals` tar inte planen
 med sig). Unikt index på användare, ursprung och text (utan skillnad på
 stora och små bokstäver), så knappen kan tryckas två gånger.
@@ -36,8 +39,13 @@ stora och små bokstäver), så knappen kan tryckas två gånger.
 - **Pulsen** (`app/(app)/app/pulsen/actions.ts`, `addPlaybookToPlan`):
   klienten skickar signalens id, sort, område och rubrik. Stegen slås upp i
   i18n på servern. Okänd sort eller okänt område sparar ingenting.
-- **Resan** (`app/(app)/app/resan/actions.ts`): bocka av, bocka tillbaka och
-  ta bort. Skärmen visar ändringen direkt och går tillbaka vid fel.
+- **Resan** (`app/(app)/app/resan/actions.ts`): bocka av, bocka tillbaka, ta
+  bort, ändra text och lägg till en egen uppgift. Uppgifterna grupperas per
+  nyhet (`groupPlanItems` i `screens/Journey.tsx`), egna för sig. Varje öppen
+  uppgift har "Hjälp mig med det här".
+- **Medgrundaren** (`/app/medgrundaren?task=<id>`): uppgiften blir en
+  förifylld fråga (`toTaskDraft` i `app/(app)/app/medgrundaren/signalDraft.ts`).
+- **Hem**: "Nästa i din plan", första öppna uppgiften.
 - **Demot** visar ingen plan. Demoadaptern finns för kontraktstestet.
 
 ## Utan tabellen
@@ -53,5 +61,6 @@ Fel loggas bara med felets namn eller databasens kod, aldrig dess text.
 
 ## Status
 
-påbörjad — byggd 2026-10-03 på `modul/pulsen-spelbok`, väntar på granskning
-och på att migreringen körs.
+påbörjad — version 1 mergad 2026-10-03 (#69). Version 2 (grupper, hjälp,
+ändra, egna uppgifter, Hem) på `modul/min-plan-v2`, väntar på granskning och
+på att `20261003210000_plan_items_egna.sql` körs.

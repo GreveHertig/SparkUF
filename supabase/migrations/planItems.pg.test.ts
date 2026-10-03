@@ -1,6 +1,7 @@
 // @vitest-environment node
 // Min plan mot en riktig Postgres (PGlite, se test/pgMigrations.ts): RLS,
-// det unika indexet och check-villkoren i 20261003180000_plan_items.sql.
+// det unika indexet och check-villkoren i 20261003180000_plan_items.sql och
+// egna uppgifter i 20261003210000_plan_items_egna.sql.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
 import { createMigratedDb, queryAs } from "@/test/pgMigrations";
@@ -71,6 +72,22 @@ describe("plan_items", () => {
       [A],
     );
     expect(origin.error).toMatch(/check/);
+  });
+
+  it("en egen uppgift (own, utan signal) går att spara och byta text på, men samma egna text två gånger nekas", async () => {
+    const OWN = "insert into public.plan_items (user_id, text, origin) values ($1, $2, 'own') returning id";
+    const own = await queryAs<{ id: string }>(db, A, OWN, [A, "Ring Riksbyggen"]);
+    expect(own.error).toBeNull();
+    expect((await queryAs(db, A, OWN, [A, "ring riksbyggen"])).error).toMatch(/duplicate key/);
+    const edit = await queryAs(db, A, "update public.plan_items set text = $1 where id = $2 returning id", [
+      "Ring HSB",
+      own.rows![0].id,
+    ]);
+    expect(edit.rows).toHaveLength(1);
+    // B kan aldrig ändra A:s egna uppgift.
+    expect(
+      (await queryAs(db, B, "update public.plan_items set text = 'x' where id = $1 returning id", [own.rows![0].id])).rows,
+    ).toEqual([]);
   });
 
   it("utan inloggning syns ingenting", async () => {

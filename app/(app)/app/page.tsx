@@ -2,7 +2,9 @@ import { AppHome, type AppHomeData } from "@/screens/AppHome";
 import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
 import { liveEvidenceRepository } from "@/adapters/live/EvidenceRepository";
 import { livePulseProvider } from "@/adapters/live/PulseProvider";
+import { livePlanRepository } from "@/adapters/live/PlanRepository";
 import { isPlaceholderError } from "@/core/errors";
+import { optional } from "./_lib/optional";
 
 const JOURNEY_BASE_PATH = "/app/resan";
 
@@ -34,10 +36,24 @@ export default async function LiveAppHomePage() {
       throw error;
     });
 
-  const [pulseSignals, journeySteps] = await Promise.all([
+  const [pulseSignals, journeySteps, planItems] = await Promise.all([
     livePulseProvider.getSignals("sv"),
     liveJourneyRepository.getSteps("sv"),
+    // Min plan kompletterar sidan: saknas tabellen, eller går den inte att
+    // läsa, visas inget kort och resten av Hem som förut.
+    optional(livePlanRepository.getItems(), "Hem: Min plan"),
   ]);
+
+  // Första öppna uppgiften (getItems ger de öppna först, äldst först).
+  const nextItem = planItems?.find((item) => !item.done);
+  const planNext = nextItem
+    ? {
+        text: nextItem.text,
+        context: nextItem.context,
+        planHref: `${JOURNEY_BASE_PATH}#min-plan`,
+        helpHref: `/app/medgrundaren?task=${encodeURIComponent(nextItem.id)}`,
+      }
+    : null;
 
   // Handlingskortet gäller Resans aktuella steg (samma som `getHomeSummary`
   // bygger på). Utan kort eller aktuellt steg ingen länk, aldrig en gissning.
@@ -66,6 +82,7 @@ export default async function LiveAppHomePage() {
       scoreHref="/app/poang"
       // Layouten släpper bara in den som är klar med onboardingen.
       profileAnswersHref="/app/minnet"
+      planNext={planNext}
     />
   );
 }

@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
@@ -25,6 +25,9 @@ vi.mock("@/adapters/live/PulseProvider", () => ({
   livePulseProvider: { getSignals: getSignalsMock },
 }));
 
+const getPlanItemsMock = vi.hoisted(() => vi.fn());
+vi.mock("@/adapters/live/PlanRepository", () => ({ livePlanRepository: { getItems: getPlanItemsMock } }));
+
 const steps: JourneyStepView[] = [
   { stepNumber: 1, journeyPhase: "discover", title: "Om dig", oneLiner: "", maxPoints: 8, status: "current" },
 ];
@@ -38,6 +41,11 @@ const snapshot: ScoreSnapshot = {
   parts: [],
   lockedParts: [],
 };
+
+beforeEach(() => {
+  // Som när plan_items inte finns: inget kort för Min plan.
+  getPlanItemsMock.mockRejectedValue(new NotImplementedError("Min plan", "docs/moduler/min-plan.md"));
+});
 
 afterEach(() => {
   cleanup();
@@ -193,5 +201,38 @@ describe("/app Hem (PR 3)", () => {
     getSignalsMock.mockResolvedValue(signals);
 
     await expect(renderPage()).rejects.toThrow("Databasen svarar inte");
+  });
+
+  it("Nästa i din plan: första öppna uppgiften med länk till Medgrundaren och planen", async () => {
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs"));
+    getSignalsMock.mockResolvedValue(signals);
+    getStepsMock.mockResolvedValue(steps);
+    getPlanItemsMock.mockResolvedValue([
+      { id: "00000000-0000-4000-8000-000000000001", text: "Läs villkoren", context: "Bidrag", origin: "pulsen", done: false, createdAtIso: "" },
+    ]);
+    await renderPage();
+    expect(screen.getByRole("heading", { name: sv.homePage.planTitle })).toBeInTheDocument();
+    expect(screen.getByText("Läs villkoren")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: sv.homePage.planHelp })).toHaveAttribute(
+      "href",
+      "/app/medgrundaren?task=00000000-0000-4000-8000-000000000001",
+    );
+    expect(screen.getByRole("link", { name: sv.homePage.planSeeAll })).toHaveAttribute("href", "/app/resan#min-plan");
+  });
+
+  it("utan öppna uppgifter, eller utan tabellen, visas inget kort", async () => {
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs"));
+    getSignalsMock.mockResolvedValue(signals);
+    getStepsMock.mockResolvedValue(steps);
+    await renderPage();
+    expect(screen.queryByRole("heading", { name: sv.homePage.planTitle })).not.toBeInTheDocument();
+    cleanup();
+    getPlanItemsMock.mockResolvedValue([
+      { id: "x", text: "Klar", context: null, origin: "own", done: true, createdAtIso: "" },
+    ]);
+    await renderPage();
+    expect(screen.queryByRole("heading", { name: sv.homePage.planTitle })).not.toBeInTheDocument();
   });
 });

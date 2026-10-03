@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PulseSignal } from "@/core/domain";
-import { isSignalId, toSignalDraft } from "./signalDraft";
+import { isSignalId, toSignalDraft, toTaskDraft } from "./signalDraft";
 
 const signal: PulseSignal = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -38,5 +38,28 @@ describe("signalDraft", () => {
     expect(draft).not.toMatch(/[‮\n]/);
     expect(Array.from(draft).length).toBeLessThan(400);
     expect(draft).toContain("okänt");
+  });
+});
+
+describe("toTaskDraft", () => {
+  const task = {
+    id: "00000000-0000-4000-8000-000000000002",
+    text: "Läs villkoren hos den som delar ut stödet",
+    context: "Bidrag till laddboxar",
+    origin: "pulsen" as const,
+    done: false,
+    createdAtIso: "",
+  };
+
+  it("frågan bär uppgiften, projektet och nyheten den kom från", () => {
+    expect(toTaskDraft(task, { id: "p", name: "Laddkollen", oneLiner: "" }, "sv")).toBe(
+      'Hjälp mig med uppgiften "Läs villkoren hos den som delar ut stödet" i min plan. Hur gör jag den konkret för Laddkollen, och vad gör jag först? Den kommer från nyheten "Bidrag till laddboxar".',
+    );
+  });
+
+  it("en egen uppgift utan sammanhang och utan projekt", () => {
+    const draft = toTaskDraft({ ...task, context: null, origin: "own" }, null, "sv");
+    expect(draft).toContain("för min idé");
+    expect(draft).not.toContain("nyheten");
   });
 });
