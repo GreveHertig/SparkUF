@@ -4,6 +4,9 @@
 -- skrivs bara av servern", en ändring av beslutet från #63).
 --
 -- Körs MANUELLT i SQL Editor direkt vid merge, som de andra migreringarna.
+-- Sist i ordningen, efter 20261004090000_pulsen_v3.sql. De två rör olika
+-- tabeller och kan köras i vilken ordning som helst. Filen hette först
+-- 20261003230000_cofounder_next_task.sql och döptes om vid mergen av prototyp.
 -- Tills den är körd kan en inloggad grundare med anon-nyckeln och sin egen
 -- session lägga in rader med role = 'cofounder' i sin egen historik
 -- (prövat mot SparkUF2 2026-10-03).

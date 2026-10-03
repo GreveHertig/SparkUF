@@ -3,7 +3,7 @@
 PR 2 av 2 för onboarding v4, enligt systemspecifikationen v4 §3.1. PR 1 är `docs/status/2026-10-03-onboarding-v4.md`. Plan godkänd av Erik 2026-10-03, med två tillägg: "Sedan tidigare" rättas i den här PR:en, och skrivrätten på `cofounder_messages` stängs. Besluten står i `docs/beslut.md` (2026-10-03, "Medgrundaren v4").
 
 ### Klart
-- **Säkerhetshål stängt, migrering `supabase/migrations/20261003230000_cofounder_next_task.sql`** (inte körd):
+- **Säkerhetshål stängt, migrering `supabase/migrations/20261004120000_cofounder_next_task.sql`** (inte körd):
   - Prövat mot SparkUF2: testkonto A kunde med anon-nyckeln och sin egen session lägga in en rad med `role = 'cofounder'`.
   - Migreringen tar bort insert-policyn och drar in `insert, update, delete` från `anon` och `authenticated`. Tabellen står nu i `WRITE_CLOSED_TABLES`.
   - `reserve_cofounder_message` är nu `security definer` med samma signatur. Rollen är alltid `founder`, `next_task` alltid `null` och användaren alltid `auth.uid()`.
@@ -69,3 +69,4 @@ PR 2 av 2 för onboarding v4, enligt systemspecifikationen v4 §3.1. PR 1 är `d
 - `SUPABASE_SERVICE_ROLE_KEY` används för Medgrundaren bara i `lib/server/cofounderReplies.ts`.
 - "Sedan tidigare" använder `answeredOn` och visar inget datum när tiden saknas.
 - Kravet på `nextTask` gäller bara liveadaptern.
+- Migreringen döptes om från `20261003230000_cofounder_next_task.sql` till `20261004120000_cofounder_next_task.sql` när prototyp mergades in (2026-10-04), så att den fortfarande är sist, efter `20261004090000_pulsen_v3.sql` från #76. De två rör olika tabeller.

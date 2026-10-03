@@ -154,7 +154,7 @@ reserveras, anropar `sendMessage` och sparar svaret och uppgiften
 (`next_task`) i `public.cofounder_messages` (`adapters/live/CofounderConversation.ts`).
 
 **Bara servern skriver Medgrundarens rader** (migrering
-`20261003230000_cofounder_next_task.sql`, beslut 2026-10-03, en ändring av
+`20261004120000_cofounder_next_task.sql`, beslut 2026-10-03, en ändring av
 beslutet från #63). Klienten har ingen insert-, update- eller delete-rätt på
 tabellen. Grundarens meddelande sparas av `reserve_cofounder_message`
 (`security definer`, rollen alltid `founder`). Medgrundarens svar sparas av
@@ -190,7 +190,7 @@ uppgift som inte är en fråga och inga utropstecken.
   "bolag med miljarder i budget".
 - Att uppgiften går att göra inom sju dagar och sker i verkligheten styrs bara
   av prompten. Koden prövar att den finns, är kort och inte är en fråga.
-- Före migreringen `20261003230000_cofounder_next_task.sql` kan en grundare
+- Före migreringen `20261004120000_cofounder_next_task.sql` kan en grundare
   med ett eget PostgREST-anrop lägga in rader i sin egen historik, även med
   rollen `cofounder`. Efter migreringen kan ingen klient skriva i tabellen.
 - Taket gäller per konto. Det finns inget tak för hela plattformens Gemini-kostnad,
@@ -213,6 +213,6 @@ Byggs inte nu. Var och en kräver ett eget beslut och troligen verktyg
 påbörjad (bara text, med konkret uppgift enligt spec v4 §3.1). Liveadaptern
 klarar kontraktstestet med mockad Gemini, och opt-in-testet mot riktiga Gemini
 gick igenom 2026-10-03. Migreringarna `20261003120000_cofounder_messages.sql`
-och `20261003230000_cofounder_next_task.sql` måste köras manuellt i SQL Editor
+och `20261004120000_cofounder_next_task.sql` måste köras manuellt i SQL Editor
 innan chatten syns på `/app`. Demoadaptern för `CofounderAgent` är oförändrad,
 och demots chatt går fortfarande via `cofounderScript.ts`.

@@ -16,7 +16,7 @@ const MAX_READ = 100;
 
 /** PostgREST och Postgres svar när tabellen, funktionen eller kolumnen
  * `next_task` saknas, t.ex. när en migrering inte är körd
- * (20261003120000_cofounder_messages.sql, 20261003230000_cofounder_next_task.sql). */
+ * (20261003120000_cofounder_messages.sql, 20261004120000_cofounder_next_task.sql). */
 function isMissing(error: { code?: string }): boolean {
   return ["PGRST205", "42P01", "PGRST202", "42883", "42703", "PGRST204"].includes(error.code ?? "");
 }
@@ -83,7 +83,7 @@ export const liveCofounderConversation: CofounderConversationRepository = {
     const reply = clean(text);
     const task = typeof nextTask === "string" ? cleanText(nextTask, COFOUNDER_TASK_MAX) : "";
     const { userId } = await requireSupabaseUser();
-    // Klienten har ingen skrivrätt på tabellen (20261003230000_cofounder_next_task.sql).
+    // Klienten har ingen skrivrätt på tabellen (20261004120000_cofounder_next_task.sql).
     // Svaret skrivs av servern med service role, och user_id kommer alltid ur
     // sessionen, aldrig ur indata.
     try {

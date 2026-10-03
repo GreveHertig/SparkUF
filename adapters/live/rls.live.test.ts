@@ -468,7 +468,7 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
   });
 
   // Medgrundarens samtal. Kräver migreringarna 20261003120000_cofounder_messages.sql
-  // och 20261003230000_cofounder_next_task.sql. Före den senare kunde A lägga in
+  // och 20261004120000_cofounder_next_task.sql. Före den senare kunde A lägga in
   // rader med role = 'cofounder' direkt (prövat 2026-10-03). Nu skriver grundaren
   // bara via reserve_cofounder_message, och Medgrundarens svar bara servern med
   // service role (lib/server/cofounderReplies.ts). Varje körning sparar ett

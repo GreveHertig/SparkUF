@@ -583,7 +583,7 @@ Erik 2026-10-03, enligt systemspecifikationen v4 §3.1. Plan och status:
   Medgrundarens mun. En security definer-funktion som `authenticated` får
   anropa hjälper inte: allt servern gör med grundarens session kan klienten
   också göra. Därför, samma mönster som `score_snapshots` (beslut 2026-10-01):
-  - Migrering `20261003230000_cofounder_next_task.sql`: insert-policyn tas
+  - Migrering `20261004120000_cofounder_next_task.sql`: insert-policyn tas
     bort och `insert, update, delete` dras in från `anon` och `authenticated`.
     Tabellen står i `WRITE_CLOSED_TABLES` (`supabase/migrations/migrations.test.ts`).
     Select-policyn för egna rader står kvar.

@@ -1,7 +1,7 @@
 // @vitest-environment node
 // Medgrundarens samtal mot en riktig Postgres (PGlite, se test/pgMigrations.ts):
 // RLS, rättigheter och check-villkor i 20261003120000_cofounder_messages.sql och
-// 20261003230000_cofounder_next_task.sql. Grundaren skriver bara via
+// 20261004120000_cofounder_next_task.sql. Grundaren skriver bara via
 // reserve_cofounder_message, Medgrundarens svar bara service role
 // (queryAs med userId null).
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
