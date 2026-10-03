@@ -43,6 +43,8 @@ const WRITE_CLOSED_TABLES: Record<string, string> = {
   journey_step_requirements: "Stegens krav. Ändras bara via migreringar. Beslut 2026-10-01, docs/beslut.md.",
   journey_step_group_thresholds:
     "Trösklar för kravgrupper (steg 06: fem svar, tre bolag). Ändras bara via migreringar. Beslut 2026-10-01, docs/beslut.md.",
+  cofounder_messages:
+    "Medgrundarens samtal. Grundaren skriver bara via public.reserve_cofounder_message, Medgrundarens svar bara servern (lib/server/cofounderReplies.ts, service role). Beslut Erik 2026-10-03, docs/beslut.md.",
 };
 
 function readAllMigrationsSql(): string {

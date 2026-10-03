@@ -1,5 +1,6 @@
 import type { Locale } from "@/i18n/context";
 import type { ProfileSummary, TraceEvent } from "@/ports/MemoryRepository";
+import type { OnboardingQuestion } from "@/ports/ProfileRepository";
 import type { Project } from "@/ports/ProjectRepository";
 import { isPlaceholderError } from "@/core/errors";
 import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
@@ -29,6 +30,12 @@ export type CofounderContext = {
   /** De senaste posterna i Spåret, äldst först. */
   trace: TraceEvent[] | null;
   project: Project | null;
+  /**
+   * Onboardingens obesvarade v4-frågor, med svarsalternativen (spec v4 §3.1
+   * och §3.2). Medgrundaren ställer nästa fråga i listan. `null` eller tom
+   * lista: inga återstående frågor, eller onboardingen är inte klar.
+   */
+  pendingQuestions?: OnboardingQuestion[] | null;
 };
 
 /** Ett platshållarfel (stubbe, tomt konto) blir `null`. Ett riktigt fel kastas. */
@@ -54,6 +61,12 @@ async function loadStep(locale: Locale): Promise<CofounderStep | null> {
   };
 }
 
+async function loadPendingQuestions(locale: Locale): Promise<OnboardingQuestion[] | null> {
+  if (!liveMemoryRepository.getPendingOnboardingQuestions) return null;
+  const questions = await orNull(liveMemoryRepository.getPendingOnboardingQuestions(locale));
+  return questions && questions.length > 0 ? questions : null;
+}
+
 async function loadProfile(): Promise<Partial<ProfileSummary> | null> {
   if (!liveMemoryRepository.getKnownProfile) return null;
   const profile = await orNull(liveMemoryRepository.getKnownProfile());
@@ -66,12 +79,13 @@ async function loadProfile(): Promise<Partial<ProfileSummary> | null> {
  * och av /app/medgrundaren ("Sedan tidigare"), så att båda ser samma sak.
  */
 export async function loadCofounderContext(locale: Locale): Promise<CofounderContext> {
-  const [step, profile, brainNotes, trace, project] = await Promise.all([
+  const [step, profile, brainNotes, trace, project, pendingQuestions] = await Promise.all([
     loadStep(locale),
     loadProfile(),
     orNull(liveMemoryRepository.getBrainNotes()),
     orNull(liveMemoryRepository.getTraceEvents(locale)),
     orNull(liveProjectRepository.getProject()),
+    loadPendingQuestions(locale),
   ]);
   return {
     step,
@@ -79,5 +93,6 @@ export async function loadCofounderContext(locale: Locale): Promise<CofounderCon
     brainNotes: brainNotes?.trim() ? brainNotes.trim() : null,
     trace: trace && trace.length > 0 ? trace.slice(-TRACE_LIMIT) : null,
     project,
+    pendingQuestions,
   };
 }

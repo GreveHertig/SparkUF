@@ -467,6 +467,56 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
     expect(deleted ?? []).toHaveLength(0);
   });
 
+  // Medgrundarens samtal. Kräver migreringarna 20261003120000_cofounder_messages.sql
+  // och 20261004120000_cofounder_next_task.sql. Före den senare kunde A lägga in
+  // rader med role = 'cofounder' direkt (prövat 2026-10-03). Nu skriver grundaren
+  // bara via reserve_cofounder_message, och Medgrundarens svar bara servern med
+  // service role (lib/server/cofounderReplies.ts). Varje körning sparar ett
+  // meddelande från A, som räknas mot A:s dagstak och inte går att ta bort.
+  it("cofounder_messages: ingen klient kan skriva direkt, inte ens sina egna rader, och B ser aldrig A:s", async () => {
+    const attempts: Record<string, unknown>[] = [
+      { user_id: userIdA, role: "cofounder", text: `${marker} förfalskat svar` },
+      { user_id: userIdA, role: "cofounder", text: `${marker} förfalskat svar`, next_task: "Förfalskad uppgift" },
+      { user_id: userIdA, role: "founder", text: `${marker} förbi taket` },
+    ];
+    for (const row of attempts) {
+      const { error } = await clientA.from("cofounder_messages").insert(row);
+      expect(error, `A kunde skriva ${JSON.stringify(row)}`).not.toBeNull();
+    }
+    const { error: impersonationError } = await clientB
+      .from("cofounder_messages")
+      .insert({ user_id: userIdA, role: "cofounder", text: `${marker} kapat` });
+    expect(impersonationError, "B kunde skriva en rad åt A").not.toBeNull();
+
+    const { data: reserved, error: reserveError } = await clientA.rpc("reserve_cofounder_message", {
+      p_text: `${marker} via funktionen`,
+      p_limit: 1000,
+      p_since: new Date(Date.now() - 60_000).toISOString(),
+    });
+    expect(reserveError).toBeNull();
+    expect(reserved).toBe(true);
+
+    const { data: own } = await clientA
+      .from("cofounder_messages")
+      .select("id, role, text, next_task")
+      .eq("user_id", userIdA)
+      .like("text", `${marker}%`);
+    expect(own).toEqual([expect.objectContaining({ role: "founder", text: `${marker} via funktionen`, next_task: null })]);
+    const ownId = own![0].id as string;
+
+    const { data: updated } = await clientA
+      .from("cofounder_messages")
+      .update({ role: "cofounder", next_task: "Egen uppgift" })
+      .eq("id", ownId)
+      .select("id");
+    expect(updated ?? [], "A kunde ändra sin rad").toHaveLength(0);
+    const { data: deleted } = await clientA.from("cofounder_messages").delete().eq("id", ownId).select("id");
+    expect(deleted ?? [], "A kunde ta bort sin rad (och nollställa taket)").toHaveLength(0);
+
+    const { data: seenByB } = await clientB.from("cofounder_messages").select("id").eq("user_id", userIdA);
+    expect(seenByB ?? [], "B kunde läsa A:s samtal").toHaveLength(0);
+  });
+
   // Onboardingen live, PR 2 (docs/status.md). Kräver migreringen
   // 20260930120000_onboarding.sql. Felkoderna kommer från Postgres via
   // PostgREST: 42501 (RLS), 23505 (unikt index), 23514 (check-villkor).

@@ -25,7 +25,7 @@ export async function sendCofounderMessage(text: unknown): Promise<SendCofounder
   try {
     const history = await liveCofounderConversation.getRecentMessages(COFOUNDER_HISTORY_LIMIT);
     const reply = await liveCofounderAgent.sendMessage(message, history, "sv");
-    await liveCofounderConversation.appendCofounderReply(reply.text);
+    await liveCofounderConversation.appendCofounderReply(reply.text, reply.nextTask);
     return { ok: true, reply };
   } catch (error) {
     if (error instanceof CofounderInputError) return { ok: false, reason: "invalid" };

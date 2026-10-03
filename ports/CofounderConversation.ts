@@ -16,9 +16,17 @@ export interface CofounderConversationRepository {
    * innan modellen anropas, så att även ett misslyckat anrop räknas.
    */
   reserveFounderMessage(text: string, cap: { limit: number; sinceIso: string }): Promise<boolean>;
-  /** Sparar Medgrundarens svar efter grundarens senaste meddelande. */
-  appendCofounderReply(text: string): Promise<void>;
+  /**
+   * Sparar Medgrundarens svar efter grundarens senaste meddelande, med den
+   * konkreta uppgiften om den finns (spec v4 §3.1, `CofounderMessage.nextTask`).
+   * `nextTask` är valfri: demon ignorerar den. Ändrad port, beslut Erik
+   * 2026-10-03 (docs/beslut.md).
+   */
+  appendCofounderReply(text: string, nextTask?: string): Promise<void>;
 }
+
+/** Längsta uppgift som sparas, i tecken. Samma gräns som i databasen. */
+export const COFOUNDER_TASK_MAX = 500;
 
 /** Längsta text som sparas per meddelande, i tecken. Samma gräns som i databasen. */
 export const COFOUNDER_MESSAGE_MAX = 4000;

@@ -1,18 +1,24 @@
 import type { CofounderMessage } from "@/ports/CofounderAgent";
-import { COFOUNDER_MESSAGE_MAX, type CofounderConversationRepository } from "@/ports/CofounderConversation";
+import {
+  COFOUNDER_MESSAGE_MAX,
+  COFOUNDER_TASK_MAX,
+  type CofounderConversationRepository,
+} from "@/ports/CofounderConversation";
 import { NotImplementedError } from "@/core/errors";
-import { cleanMultilineText } from "@/core/text";
+import { cleanMultilineText, cleanText } from "@/core/text";
 import { requireSupabaseUser } from "@/lib/server/session";
+import { CofounderReplyWriteError, writeCofounderReply } from "@/lib/server/cofounderReplies";
 
 const DOC = "docs/moduler/medgrundaren.md";
 const TABLE = "cofounder_messages";
 /** Fler än så läses aldrig i ett anrop, oavsett vad som begärs. */
 const MAX_READ = 100;
 
-/** PostgREST och Postgres svar när tabellen eller funktionen saknas, t.ex.
- * när migreringen inte är körd. */
+/** PostgREST och Postgres svar när tabellen, funktionen eller kolumnen
+ * `next_task` saknas, t.ex. när en migrering inte är körd
+ * (20261003120000_cofounder_messages.sql, 20261004120000_cofounder_next_task.sql). */
 function isMissing(error: { code?: string }): boolean {
-  return ["PGRST205", "42P01", "PGRST202", "42883"].includes(error.code ?? "");
+  return ["PGRST205", "42P01", "PGRST202", "42883", "42703", "PGRST204"].includes(error.code ?? "");
 }
 
 /** Utan tabell går samtalet inte att spara och kostnadstaket inte att räkna,
@@ -28,7 +34,12 @@ function clean(text: string): string {
   return cleaned;
 }
 
-type MessageRow = { role: string; text: string };
+type MessageRow = { role: string; text: string; next_task?: string | null };
+
+function toMessage(row: CofounderMessage & { next_task?: string | null }): CofounderMessage {
+  const nextTask = row.role === "cofounder" && row.next_task?.trim() ? row.next_task.trim() : undefined;
+  return nextTask ? { role: row.role, text: row.text, nextTask } : { role: row.role, text: row.text };
+}
 
 export const liveCofounderConversation: CofounderConversationRepository = {
   async getRecentMessages(limit: number): Promise<CofounderMessage[]> {
@@ -37,15 +48,15 @@ export const liveCofounderConversation: CofounderConversationRepository = {
     const { supabase, userId } = await requireSupabaseUser();
     const { data, error } = await supabase
       .from(TABLE)
-      .select("role, text, seq")
+      .select("role, text, next_task, seq")
       .eq("user_id", userId)
       // seq sätts av databasen i skrivordning, aldrig av klienten.
       .order("seq", { ascending: false })
       .limit(n);
     if (error) throw failure(error, "läsa samtalet");
     return ((data ?? []) as MessageRow[])
-      .filter((row): row is CofounderMessage => row.role === "founder" || row.role === "cofounder")
-      .map((row) => ({ role: row.role, text: row.text }))
+      .filter((row): row is MessageRow & CofounderMessage => row.role === "founder" || row.role === "cofounder")
+      .map(toMessage)
       .reverse();
   },
 
@@ -68,11 +79,20 @@ export const liveCofounderConversation: CofounderConversationRepository = {
     return data === true;
   },
 
-  async appendCofounderReply(text: string): Promise<void> {
+  async appendCofounderReply(text: string, nextTask?: string): Promise<void> {
     const reply = clean(text);
-    const { supabase, userId } = await requireSupabaseUser();
-    // user_id kommer alltid ur sessionen, och RLS ("insert egen") är spärren.
-    const { error } = await supabase.from(TABLE).insert({ user_id: userId, role: "cofounder", text: reply });
-    if (error) throw failure(error, "spara svaret");
+    const task = typeof nextTask === "string" ? cleanText(nextTask, COFOUNDER_TASK_MAX) : "";
+    const { userId } = await requireSupabaseUser();
+    // Klienten har ingen skrivrätt på tabellen (20261004120000_cofounder_next_task.sql).
+    // Svaret skrivs av servern med service role, och user_id kommer alltid ur
+    // sessionen, aldrig ur indata.
+    try {
+      await writeCofounderReply({ userId, text: reply, nextTask: task || null });
+    } catch (error) {
+      if (error instanceof CofounderReplyWriteError) {
+        throw failure({ code: error.code, message: error.detail }, "spara svaret");
+      }
+      throw error;
+    }
   },
 };

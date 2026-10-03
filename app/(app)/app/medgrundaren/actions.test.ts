@@ -23,7 +23,7 @@ const HISTORY = [
 
 beforeEach(() => {
   getRecentMessagesMock.mockResolvedValue(HISTORY);
-  sendMessageMock.mockResolvedValue({ role: "cofounder", text: "Ring tre kunder." });
+  sendMessageMock.mockResolvedValue({ role: "cofounder", text: "Börja med kunderna.", nextTask: "Ring tre kunder." });
   appendReplyMock.mockResolvedValue(undefined);
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
@@ -31,12 +31,15 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("sendCofounderMessage", () => {
-  it("läser historiken på servern före meddelandet, svarar och sparar svaret", async () => {
+  it("läser historiken på servern före meddelandet, svarar och sparar svaret med uppgiften", async () => {
     const result = await sendCofounderMessage("  Var börjar jag?  ");
-    expect(result).toEqual({ ok: true, reply: { role: "cofounder", text: "Ring tre kunder." } });
+    expect(result).toEqual({
+      ok: true,
+      reply: { role: "cofounder", text: "Börja med kunderna.", nextTask: "Ring tre kunder." },
+    });
     expect(getRecentMessagesMock).toHaveBeenCalledWith(20);
     expect(sendMessageMock).toHaveBeenCalledWith("Var börjar jag?", HISTORY, "sv");
-    expect(appendReplyMock).toHaveBeenCalledWith("Ring tre kunder.");
+    expect(appendReplyMock).toHaveBeenCalledWith("Börja med kunderna.", "Ring tre kunder.");
     expect(getRecentMessagesMock.mock.invocationCallOrder[0]).toBeLessThan(sendMessageMock.mock.invocationCallOrder[0]);
   });
 

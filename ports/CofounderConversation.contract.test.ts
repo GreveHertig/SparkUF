@@ -1,4 +1,4 @@
-import { expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { CofounderConversationRepository } from "./CofounderConversation";
 import { createDemoCofounderConversation } from "@/adapters/demo/CofounderConversation";
 import { liveCofounderConversation } from "@/adapters/live/CofounderConversation";
@@ -27,6 +27,18 @@ const rpc: FakeRpcHandlers = {
 const fake = makeSupabaseFake({ cofounder_messages: [] }, rpc, { identity: { cofounder_messages: "seq" } });
 vi.mock("@/lib/server/session", () => ({
   requireSupabaseUser: async () => ({ supabase: fake, userId: USER }),
+}));
+
+// Medgrundarens svar skrivs av servern med service role
+// (lib/server/cofounderReplies.ts, prövad i egen testfil). Här skriver fejken
+// i samma tabell, så att ordningen och läsningen prövas.
+vi.mock("@/lib/server/cofounderReplies", () => ({
+  CofounderReplyWriteError: class CofounderReplyWriteError extends Error {},
+  writeCofounderReply: async ({ userId, text, nextTask }: { userId: string; text: string; nextTask: string | null }) => {
+    const rows = fake.tables.cofounder_messages;
+    const seq = Math.max(0, ...rows.map((row) => Number(row.seq) || 0)) + 1;
+    rows.push({ user_id: userId, role: "cofounder", text, next_task: nextTask, created_at: new Date().toISOString(), seq });
+  },
 }));
 
 const openCap = () => ({ limit: 1000, sinceIso: new Date(Date.now() - 60_000).toISOString() });
@@ -63,3 +75,16 @@ describeContract<CofounderConversationRepository>(
     });
   },
 );
+
+// `nextTask` är valfri i porten: demon ignorerar den. Liveadaptern sparar och
+// läser den (spec v4 §3.1, beslut Erik 2026-10-03).
+describe("CofounderConversationRepository-kontrakt: bara live", () => {
+  it("appendCofounderReply sparar uppgiften, och getRecentMessages ger den tillbaka", async () => {
+    expect(await liveCofounderConversation.reserveFounderMessage("Och nu?", openCap())).toBe(true);
+    await liveCofounderConversation.appendCofounderReply("Pröva priset.", "Fråga fem kunder om de betalar 100 kr.");
+    expect(await liveCofounderConversation.getRecentMessages(2)).toEqual([
+      { role: "founder", text: "Och nu?" },
+      { role: "cofounder", text: "Pröva priset.", nextTask: "Fråga fem kunder om de betalar 100 kr." },
+    ]);
+  });
+});

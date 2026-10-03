@@ -321,6 +321,8 @@ export type Dictionary = {
       invalidMessage: string;
       /** {max} = längsta meddelande. */
       tooLong: string;
+      /** Rubriken på kortet med Medgrundarens konkreta uppgift (spec v4 §3.1). */
+      taskTitle: string;
       /** Förifylld fråga från en signal i Pulsen. `{headline}`, `{source}`, `{date}`, `{project}`. */
       signalDraft: string;
       /** Som signalDraft, utan aktivt projekt. */

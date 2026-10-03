@@ -7,11 +7,25 @@ vi.mock("@/lib/server/session", () => ({
   requireSupabaseUser: () => requireSupabaseUserMock(),
 }));
 
+const writeReplyMock = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/server/cofounderReplies", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/server/cofounderReplies")>()),
+  writeCofounderReply: writeReplyMock,
+}));
+
 const USER = "user-1";
 const OTHER = "user-2";
 
-function row(userId: string, role: string, text: string, seq: number) {
-  return { id: `${userId}-${seq}`, user_id: userId, role, text, seq, created_at: "2026-10-03T08:00:00Z" };
+function row(userId: string, role: string, text: string, seq: number, nextTask: string | null = null) {
+  return {
+    id: `${userId}-${seq}`,
+    user_id: userId,
+    role,
+    text,
+    next_task: nextTask,
+    seq,
+    created_at: "2026-10-03T08:00:00Z",
+  };
 }
 
 /** En klient vars alla frågor och rpc-anrop svarar med samma fel. */
@@ -30,6 +44,7 @@ const CAP = { limit: 40, sinceIso: "2026-10-02T22:00:00.000Z" };
 
 beforeEach(() => {
   requireSupabaseUserMock.mockReset();
+  writeReplyMock.mockReset().mockResolvedValue(undefined);
 });
 
 describe("liveCofounderConversation", () => {
@@ -48,6 +63,24 @@ describe("liveCofounderConversation", () => {
     expect(await (await load()).getRecentMessages(2)).toEqual([
       { role: "cofounder", text: "Två" },
       { role: "founder", text: "Tre" },
+    ]);
+  });
+
+  it("getRecentMessages ger uppgiften på Medgrundarens svar, aldrig på grundarens", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({
+        cofounder_messages: [
+          row(USER, "founder", "Hej", 1, "Ska inte synas"),
+          row(USER, "cofounder", "Gör så här.", 2, "  Ring tre kunder i veckan.  "),
+          row(USER, "cofounder", "Utan uppgift.", 3, null),
+        ],
+      }),
+      userId: USER,
+    });
+    expect(await (await load()).getRecentMessages(10)).toEqual([
+      { role: "founder", text: "Hej" },
+      { role: "cofounder", text: "Gör så här.", nextTask: "Ring tre kunder i veckan." },
+      { role: "cofounder", text: "Utan uppgift." },
     ]);
   });
 
@@ -94,13 +127,24 @@ describe("liveCofounderConversation", () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it("appendCofounderReply sparar svaret med användaren ur sessionen och behåller radbrytningar", async () => {
+  it("appendCofounderReply sparar via servern med användaren ur sessionen och behåller radbrytningar", async () => {
     const fake = makeSupabaseFake({ cofounder_messages: [] });
     requireSupabaseUserMock.mockResolvedValue({ supabase: fake, userId: USER });
     await (await load()).appendCofounderReply("Ring\r\nen kund.");
-    expect(fake.tables.cofounder_messages.map((r) => [r.user_id, r.role, r.text])).toEqual([
-      [USER, "cofounder", "Ring\nen kund."],
-    ]);
+    expect(writeReplyMock).toHaveBeenCalledWith({ userId: USER, text: "Ring\nen kund.", nextTask: null });
+    // Aldrig med grundarens egen session: klienten saknar skrivrätt.
+    expect(fake.tables.cofounder_messages).toEqual([]);
+  });
+
+  it("appendCofounderReply sparar uppgiften rensad på en rad, och en tom uppgift som null", async () => {
+    requireSupabaseUserMock.mockResolvedValue({ supabase: makeSupabaseFake({}), userId: USER });
+    const conversation = await load();
+    await conversation.appendCofounderReply("Svar", "  Ring\ntre kunder\u200b  ");
+    expect(writeReplyMock.mock.calls[0][0]).toEqual({ userId: USER, text: "Svar", nextTask: "Ring tre kunder" });
+    await conversation.appendCofounderReply("Svar", "   ");
+    expect(writeReplyMock.mock.calls[1][0].nextTask).toBeNull();
+    await conversation.appendCofounderReply("Svar", "x".repeat(800));
+    expect(Array.from(writeReplyMock.mock.calls[2][0].nextTask as string)).toHaveLength(500);
   });
 
   it.each([
@@ -113,7 +157,21 @@ describe("liveCofounderConversation", () => {
     const conversation = await load();
     await expect(conversation.getRecentMessages(5)).rejects.toBeInstanceOf(NotImplementedError);
     await expect(conversation.reserveFounderMessage("Hej", CAP)).rejects.toBeInstanceOf(NotImplementedError);
+    const { CofounderReplyWriteError } = await import("@/lib/server/cofounderReplies");
+    writeReplyMock.mockRejectedValue(new CofounderReplyWriteError(code, message));
     await expect(conversation.appendCofounderReply("Svar")).rejects.toBeInstanceOf(NotImplementedError);
+  });
+
+  it.each([
+    ["42703", "column next_task does not exist"],
+    ["PGRST204", "Could not find the 'next_task' column"],
+  ])("en saknad kolumn next_task (%s) ger NotImplementedError", async (code, message) => {
+    requireSupabaseUserMock.mockResolvedValue({ supabase: failingClient({ code, message }), userId: USER });
+    const conversation = await load();
+    await expect(conversation.getRecentMessages(5)).rejects.toBeInstanceOf(NotImplementedError);
+    const { CofounderReplyWriteError } = await import("@/lib/server/cofounderReplies");
+    writeReplyMock.mockRejectedValue(new CofounderReplyWriteError(code, message));
+    await expect(conversation.appendCofounderReply("Svar", "Ring")).rejects.toBeInstanceOf(NotImplementedError);
   });
 
   it("ett annat fel från Supabase kastas som ett riktigt fel", async () => {
