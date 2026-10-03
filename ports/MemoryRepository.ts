@@ -1,5 +1,6 @@
 import type { Locale } from "@/i18n/context";
 import type { OnboardingEntry } from "@/core/domain";
+import type { OnboardingQuestion } from "@/ports/ProfileRepository";
 
 export type TraceEvent = {
   id: string;
@@ -20,6 +21,13 @@ export type TraceEvent = {
  * Liveadaptern skickar dem alltid, som text eller `null`. Demoadaptern skickar
  * dem inte: demot är fryst och har inga svar på dem, och skärmen visar en
  * sådan fråga bara när fältet finns.
+ *
+ * `answers` är svaren på onboardingens v4-frågor (spec v4 §4), med frågan och
+ * svaret som text ur i18n (ett val visas med sin etikett, aldrig sitt id).
+ * Bara liveadaptern skickar den. När den finns visas fälten role–risk bara om
+ * de har ett svar (fritextsvar från före v4, `onboarding_version = 1`), och de
+ * obesvarade v4-frågorna är luckorna, under Återstår. Ändrad port, beslut
+ * Erik 2026-10-03 (docs/beslut.md).
  */
 export type ProfileSummary = {
   entry: OnboardingEntry;
@@ -31,6 +39,14 @@ export type ProfileSummary = {
   risk: string | null;
   frustrations?: string | null;
   customer?: string | null;
+  answers?: ProfileAnswerView[];
+};
+
+/** Ett givet svar, som Minnet visar det. */
+export type ProfileAnswerView = {
+  questionId: string;
+  question: string;
+  answer: string;
 };
 
 /** En post som en annan modul vill spara i Spåret. Användaren tas alltid ur sessionen, aldrig ur indata. */
@@ -62,4 +78,12 @@ export interface MemoryRepository {
    * ändras. Ändrad port, eget beslut (docs/beslut.md 2026-10-03).
    */
   getKnownProfile?(): Promise<Partial<ProfileSummary>>;
+  /**
+   * Onboardingens frågor som återstår (spec v4 §3.2): ingångens v4-frågor
+   * utan svar, i ordning, med text och val ur i18n. Tom lista när allt är
+   * besvarat. Kastar `EmptyStateError` innan onboardingen är klar. Svaren
+   * sparas via `ProfileRepository.saveOnboardingAnswer`. Valfri, så att
+   * demoadaptern inte behöver ändras. Ändrad port, beslut Erik 2026-10-03.
+   */
+  getPendingOnboardingQuestions?(locale: Locale): Promise<OnboardingQuestion[]>;
 }

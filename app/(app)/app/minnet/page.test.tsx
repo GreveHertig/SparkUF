@@ -3,19 +3,31 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
-import { EmptyStateError, NotAuthenticatedError } from "@/core/errors";
+import {
+  EmptyStateError,
+  NotAuthenticatedError,
+  OnboardingAnswerInvalidError,
+  OnboardingAnswerLockedError,
+} from "@/core/errors";
 
 const getProfileSummaryMock = vi.hoisted(() => vi.fn());
 const getBrainNotesMock = vi.hoisted(() => vi.fn());
 const getTraceEventsMock = vi.hoisted(() => vi.fn());
 const setBrainNotesMock = vi.hoisted(() => vi.fn());
+const getPendingOnboardingQuestionsMock = vi.hoisted(() => vi.fn());
 vi.mock("@/adapters/live/MemoryRepository", () => ({
   liveMemoryRepository: {
     getProfileSummary: getProfileSummaryMock,
     getBrainNotes: getBrainNotesMock,
     getTraceEvents: getTraceEventsMock,
     setBrainNotes: setBrainNotesMock,
+    getPendingOnboardingQuestions: getPendingOnboardingQuestionsMock,
   },
+}));
+
+const saveOnboardingAnswerMock = vi.hoisted(() => vi.fn());
+vi.mock("@/adapters/live/ProfileRepository", () => ({
+  liveProfileRepository: { saveOnboardingAnswer: saveOnboardingAnswerMock },
 }));
 
 const listEvidenceMock = vi.hoisted(() => vi.fn());
@@ -44,6 +56,7 @@ afterEach(() => {
 
 beforeEach(() => {
   listEvidenceMock.mockResolvedValue([]);
+  getPendingOnboardingQuestionsMock.mockResolvedValue([]);
 });
 
 async function renderPage() {
@@ -65,7 +78,7 @@ describe("/app/minnet (PR 5)", () => {
     expect(screen.queryByText(/Sara/)).not.toBeInTheDocument();
   });
 
-  it("ingång B ser sina svar i Profilen, och bio och risk som luckor", async () => {
+  it("utan v4-svar (answers saknas) visas fritextsvaren, och bio och risk som luckor", async () => {
     getProfileSummaryMock.mockResolvedValue(profile);
     getBrainNotesMock.mockResolvedValue("");
     getTraceEventsMock.mockResolvedValue([]);
@@ -77,8 +90,76 @@ describe("/app/minnet (PR 5)", () => {
     expect(screen.getAllByText(sv.memoryPage.notAnswered)).toHaveLength(2);
   });
 
+  it("version 2: Dina svar med etiketter, inga luckor för de gamla fritextfrågorna, och Återstår med val", async () => {
+    getProfileSummaryMock.mockResolvedValue({
+      entry: "noIdea",
+      name: "Alva Ek",
+      role: null,
+      bio: null,
+      time: null,
+      money: null,
+      risk: null,
+      frustrations: null,
+      customer: null,
+      answers: [
+        { questionId: "situation", question: "Vad gör du i dag?", answer: "Jobbar" },
+        { questionId: "time", question: "Hur många timmar?", answer: "3–6 timmar" },
+      ],
+    });
+    getPendingOnboardingQuestionsMock.mockResolvedValue([
+      { id: "knowsOwner", cofounderText: "Känner du en företagare?", suggestedAnswer: null, kind: "choice", choices: [{ id: "yes", label: "Ja" }, { id: "no", label: "Nej" }] },
+    ]);
+    getBrainNotesMock.mockResolvedValue("");
+    getTraceEventsMock.mockResolvedValue([]);
+
+    await renderPage();
+
+    expect(screen.getByRole("heading", { level: 1, name: "Alva Ek" })).toBeInTheDocument();
+    const answers = screen.getByRole("region", { name: sv.memoryPage.answersLabel });
+    expect(answers).toHaveTextContent("Vad gör du i dag?");
+    expect(answers).toHaveTextContent("Jobbar");
+    // En siffra i svaret får källan "Din uppgift".
+    expect(answers).toHaveTextContent(sv.common.userSourceLabel);
+    expect(screen.queryByText(sv.memoryPage.notAnswered)).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: sv.memoryPage.profileBackgroundLabel })).not.toBeInTheDocument();
+    const remaining = screen.getByRole("region", { name: sv.memoryPage.remainingTitle });
+    expect(remaining).toHaveTextContent("Känner du en företagare?");
+    expect(screen.getByRole("group", { name: "Känner du en företagare?" })).toBeInTheDocument();
+  });
+
+  it("version 1 med v4-svar efteråt: fritextsvaren och Dina svar syns båda, utan luckor", async () => {
+    getProfileSummaryMock.mockResolvedValue({
+      ...profile,
+      frustrations: null,
+      customer: "Små byråer",
+      answers: [{ questionId: "payer", question: "Vem betalar för idén?", answer: "Företag" }],
+    });
+    getBrainNotesMock.mockResolvedValue("");
+    getTraceEventsMock.mockResolvedValue([]);
+
+    await renderPage();
+
+    expect(screen.getByText("10 timmar i veckan")).toBeInTheDocument();
+    expect(screen.getByText("Små byråer")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: sv.memoryPage.answersLabel })).toHaveTextContent("Företag");
+    expect(screen.queryByText(sv.memoryPage.notAnswered)).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: sv.memoryPage.remainingTitle })).toHaveTextContent(sv.memoryPage.remainingDone);
+  });
+
+  it("Återstår visar Kommer snart när frågorna inte går att läsa", async () => {
+    getProfileSummaryMock.mockResolvedValue({ ...profile, answers: [] });
+    getPendingOnboardingQuestionsMock.mockRejectedValue(new EmptyStateError("Minnet", "docs/moduler/minnet.md"));
+    getBrainNotesMock.mockResolvedValue("");
+    getTraceEventsMock.mockResolvedValue([]);
+
+    await renderPage();
+
+    expect(screen.getByRole("region", { name: sv.memoryPage.remainingTitle })).toHaveTextContent(sv.comingSoon.title);
+  });
+
   it("en profil som inte är ifylld ger Kommer snart bara i Profilen", async () => {
     getProfileSummaryMock.mockRejectedValue(new EmptyStateError("Minnet", "docs/moduler/minnet.md"));
+    getPendingOnboardingQuestionsMock.mockRejectedValue(new EmptyStateError("Minnet", "docs/moduler/minnet.md"));
     getBrainNotesMock.mockResolvedValue("Anteckning");
     getTraceEventsMock.mockResolvedValue([]);
 
@@ -186,5 +267,39 @@ describe("saveFitAnswer (Server Action)", () => {
     expect(await saveFitAnswer("time", "x".repeat(1001))).toEqual({ ok: false });
     expect(await saveFitAnswer("time", 42)).toEqual({ ok: false });
     expect(recordEvidenceMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("saveRemainingAnswer (Server Action)", () => {
+  it("sparar ett svar på en återstående fråga via Profil och förnyar sidan", async () => {
+    const { saveRemainingAnswer } = await import("./actions");
+    const { revalidatePath } = await import("next/cache");
+    saveOnboardingAnswerMock.mockResolvedValue(undefined);
+    expect(await saveRemainingAnswer("knowsOwner", "yes")).toEqual({ ok: true });
+    expect(saveOnboardingAnswerMock).toHaveBeenCalledWith({ questionId: "knowsOwner", answer: "yes" });
+    expect(revalidatePath).toHaveBeenCalledWith("/app/minnet");
+  });
+
+  it("vägrar fel form utan att nå adaptern", async () => {
+    const { saveRemainingAnswer } = await import("./actions");
+    expect(await saveRemainingAnswer("knowsOwner", "kanske")).toEqual({ ok: false, reason: "invalid" });
+    expect(await saveRemainingAnswer("role", "Säljare")).toEqual({ ok: false, reason: "invalid" });
+    expect(await saveRemainingAnswer(["time"], "h3to6")).toEqual({ ok: false, reason: "invalid" });
+    expect(await saveRemainingAnswer("frustration", 7)).toEqual({ ok: false, reason: "invalid" });
+    expect(saveOnboardingAnswerMock).not.toHaveBeenCalled();
+  });
+
+  it("databasens avslag blir ett svar: fel ingång och redan besvarad", async () => {
+    const { saveRemainingAnswer } = await import("./actions");
+    saveOnboardingAnswerMock.mockRejectedValueOnce(new OnboardingAnswerInvalidError());
+    expect(await saveRemainingAnswer("payer", "business")).toEqual({ ok: false, reason: "invalid" });
+    saveOnboardingAnswerMock.mockRejectedValueOnce(new OnboardingAnswerLockedError());
+    expect(await saveRemainingAnswer("time", "h3to6")).toEqual({ ok: false, reason: "locked" });
+  });
+
+  it("ett riktigt fel kastas vidare", async () => {
+    const { saveRemainingAnswer } = await import("./actions");
+    saveOnboardingAnswerMock.mockRejectedValueOnce(new Error("databasen svarar inte"));
+    await expect(saveRemainingAnswer("time", "h3to6")).rejects.toThrow("databasen svarar inte");
   });
 });

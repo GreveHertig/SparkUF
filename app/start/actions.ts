@@ -4,8 +4,18 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { liveProfileRepository } from "@/adapters/live/ProfileRepository";
 import { liveProjectRepository } from "@/adapters/live/ProjectRepository";
-import { OnboardingAlreadyCompletedError, ProjectExistsError } from "@/core/errors";
-import { PROFILE_QUESTIONS_BY_ENTRY, isValidProfileAnswer, isValidProjectInput } from "@/core/onboarding";
+import {
+  OnboardingAlreadyCompletedError,
+  OnboardingAnswerInvalidError,
+  OnboardingAnswerLockedError,
+  ProjectExistsError,
+} from "@/core/errors";
+import {
+  coreQuestionsAnswered,
+  isOnboardingQuestionFor,
+  isValidOnboardingAnswer,
+  isValidProjectInput,
+} from "@/core/onboarding";
 import { resolveOnboardingEntry } from "./_lib/entry";
 import type { OnboardingFormState } from "@/screens/blocks/OnboardingForms";
 
@@ -24,7 +34,9 @@ const ProjectSchema = z
   .object({ name: z.string(), oneLiner: z.string() })
   .refine((input) => isValidProjectInput(input));
 
-const AnswerSchema = z.string().refine((answer) => isValidProfileAnswer(answer));
+const AnswerInputSchema = z.object({ questionId: z.string(), answer: z.string() });
+
+export type SaveOnboardingAnswerResult = { ok: true } | { ok: false; reason: "invalid" | "locked" };
 
 /** Ingång B: idén blir grundarens aktiva projekt (`is_active: true` i adaptern). */
 export async function createProjectAction(
@@ -44,23 +56,46 @@ export async function createProjectAction(
   redirect("/start/ide");
 }
 
-/** Sparar svaren och markerar onboardingen klar, sedan till /app. */
-export async function completeOnboardingAction(
-  _state: OnboardingFormState,
-  formData: FormData,
-): Promise<OnboardingFormState> {
+/**
+ * Sparar ett svar i profilsamtalet (spec v4 §4: ett svar i taget, så att
+ * samtalet kan avbrytas och fortsätta). Frågan måste höra till grundarens
+ * ingång, som härleds på servern, och svaret ha rätt form. Databasen
+ * (public.save_onboarding_answer) prövar samma sak igen och är den bindande.
+ */
+export async function saveOnboardingAnswerAction(questionId: unknown, answer: unknown): Promise<SaveOnboardingAnswerResult> {
+  const parsed = AnswerInputSchema.safeParse({ questionId, answer });
+  if (!parsed.success) return { ok: false, reason: "invalid" };
   const entry = await resolveOnboardingEntry();
-  const answers = [];
-  for (const questionId of PROFILE_QUESTIONS_BY_ENTRY[entry]) {
-    const parsed = AnswerSchema.safeParse(formData.get(questionId));
-    if (!parsed.success) return { invalid: true };
-    answers.push({ questionId, answer: parsed.data });
+  const input = parsed.data;
+  if (!isOnboardingQuestionFor(entry, input.questionId) || !isValidOnboardingAnswer(input.questionId, input.answer)) {
+    return { ok: false, reason: "invalid" };
   }
 
   try {
-    await liveProfileRepository.completeOnboarding({ entry, answers });
+    await liveProfileRepository.saveOnboardingAnswer(input);
   } catch (error) {
-    // Redan klar (ingen omgörning i v1): svaren skrivs inte över, /app gäller.
+    if (error instanceof OnboardingAnswerInvalidError) return { ok: false, reason: "invalid" };
+    if (error instanceof OnboardingAnswerLockedError) return { ok: false, reason: "locked" };
+    throw error;
+  }
+  return { ok: true };
+}
+
+/**
+ * "Till appen" på startkortet: markerar onboardingen klar, sedan till /app.
+ * Svaren är redan sparade, ett i taget. Saknas en kärnfråga (till exempel
+ * efter ett byte av ingång) blir det `{ invalid: true }`, aldrig en klar
+ * onboarding. Resten av frågorna återstår och syns i Minnet (spec v4 §3.2).
+ */
+export async function completeOnboardingAction(): Promise<OnboardingFormState> {
+  const entry = await resolveOnboardingEntry();
+  const answers = await liveProfileRepository.getOnboardingAnswers();
+  if (!coreQuestionsAnswered(entry, answers)) return { invalid: true };
+
+  try {
+    await liveProfileRepository.completeOnboarding({ entry, answers: [] });
+  } catch (error) {
+    // Redan klar (ingen omgörning): /app gäller.
     if (!(error instanceof OnboardingAlreadyCompletedError)) throw error;
   }
   redirect("/app");

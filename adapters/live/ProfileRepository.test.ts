@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { EmptyStateError, OnboardingAlreadyCompletedError } from "@/core/errors";
+import {
+  EmptyStateError,
+  NotImplementedError,
+  OnboardingAlreadyCompletedError,
+  OnboardingAnswerInvalidError,
+  OnboardingAnswerLockedError,
+} from "@/core/errors";
 import { makeSupabaseFake } from "@/test/stubs/supabaseFake";
 import { onboardingRpcFake } from "@/test/stubs/onboardingRpcFake";
 
@@ -57,22 +63,43 @@ describe("liveProfileRepository.getProfile", () => {
 });
 
 describe("liveProfileRepository.getOnboardingScript", () => {
-  it("ingång A får sex frågor ur i18n i ordning, utan svarsförslag", async () => {
+  it("ingång A får de fyra kärnfrågorna ur i18n i ordning, med val och utan svarsförslag", async () => {
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
     const { sv } = await import("@/i18n/sv");
     const script = await liveProfileRepository.getOnboardingScript("noIdea", "sv");
-    expect(script.questions.map((q) => q.id)).toEqual(["role", "bio", "frustrations", "time", "money", "risk"]);
-    expect(script.questions[0].cofounderText).toBe(sv.onboarding.profileQuestions.noIdea.role);
+    expect(script.questions.map((q) => q.id)).toEqual(["situation", "time", "money", "soldB2b"]);
+    expect(script.questions[1]).toEqual({
+      id: "time",
+      cofounderText: sv.onboarding.v4Questions.noIdea.time,
+      suggestedAnswer: null,
+      kind: "choice",
+      choices: [
+        { id: "under3", label: "Under 3 timmar" },
+        { id: "h3to6", label: "3–6 timmar" },
+        { id: "h6to10", label: "6–10 timmar" },
+        { id: "over10", label: "Mer än 10 timmar" },
+      ],
+    });
     expect(script.questions.every((q) => q.suggestedAnswer === null)).toBe(true);
-    expect(script.closingMessage).toBe(sv.onboarding.profileQuestions.noIdea.closingMessage);
   });
 
-  it("ingång B får fyra frågor, på engelska när locale är en", async () => {
+  it("ingång B får sina kärnfrågor, med kundgissningen som fritext, på engelska när locale är en", async () => {
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
     const { en } = await import("@/i18n/en");
     const script = await liveProfileRepository.getOnboardingScript("hasIdea", "en");
-    expect(script.questions.map((q) => q.id)).toEqual(["role", "customer", "time", "money"]);
-    expect(script.questions[1].cofounderText).toBe(en.onboarding.profileQuestions.hasIdea.customer);
+    expect(script.questions.map((q) => q.id)).toEqual(["situation", "payer", "customer", "talkedTo"]);
+    expect(script.questions[2]).toEqual({
+      id: "customer",
+      cofounderText: en.onboarding.v4Questions.hasIdea.customer,
+      suggestedAnswer: null,
+      kind: "text",
+    });
+    expect(script.questions[1].choices?.map((c) => c.label)).toEqual([
+      "Businesses",
+      "Private individuals",
+      "Municipality, region or school",
+      "Don't know yet",
+    ]);
   });
 });
 
@@ -117,45 +144,125 @@ describe("liveProfileRepository.getOnboardingStatus", () => {
   });
 });
 
+describe("liveProfileRepository.saveOnboardingAnswer och getOnboardingAnswers", () => {
+  beforeEach(() => {
+    requireSupabaseUserMock.mockReset();
+  });
+
+  function fake(row: Record<string, unknown> = {}, tables: Record<string, Record<string, unknown>[]> = {}) {
+    return makeSupabaseFake(
+      {
+        profiles: [
+          { user_id: "another-user", onboarding_answers: {}, onboarding_completed_at: null },
+          { user_id: USER_ID, onboarding_entry: null, onboarding_completed_at: null, onboarding_answers: {}, ...row },
+        ],
+        ...tables,
+      },
+      onboardingRpcFake(USER_ID),
+    );
+  }
+
+  it("sparar ett svar i taget, trimmat, bara på den egna raden, och läser tillbaka dem", async () => {
+    const supabase = fake({}, { projects: [{ user_id: USER_ID, is_active: true }] });
+    requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
+    const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
+
+    await liveProfileRepository.saveOnboardingAnswer({ questionId: "situation", answer: "employed" });
+    await liveProfileRepository.saveOnboardingAnswer({ questionId: "customer", answer: "  Padelhallar " });
+    expect(await liveProfileRepository.getOnboardingAnswers()).toEqual({ situation: "employed", customer: "Padelhallar" });
+    expect(supabase.tables.profiles.find((r) => r.user_id === "another-user")?.onboarding_answers).toEqual({});
+  });
+
+  it("ett ogiltigt svar avvisas redan i adaptern, utan anrop", async () => {
+    const supabase = fake();
+    requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
+    const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
+    for (const input of [
+      { questionId: "time", answer: "massor" },
+      { questionId: "role", answer: "Säljare" },
+      { questionId: "frustration", answer: " " },
+    ]) {
+      await expect(liveProfileRepository.saveOnboardingAnswer(input)).rejects.toThrow(/ogiltigt/);
+    }
+    expect(requireSupabaseUserMock).not.toHaveBeenCalled();
+  });
+
+  it("databasens avslag blir egna fel: fel ingång (22023) och redan besvarad efteråt (55000)", async () => {
+    const supabase = fake({ onboarding_entry: "noIdea", onboarding_completed_at: "2026-10-01T10:00:00Z", onboarding_answers: { archetype: "seller" } });
+    requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
+    const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
+    await expect(liveProfileRepository.saveOnboardingAnswer({ questionId: "payer", answer: "business" })).rejects.toBeInstanceOf(
+      OnboardingAnswerInvalidError,
+    );
+    await expect(liveProfileRepository.saveOnboardingAnswer({ questionId: "archetype", answer: "builder" })).rejects.toBeInstanceOf(
+      OnboardingAnswerLockedError,
+    );
+    await liveProfileRepository.saveOnboardingAnswer({ questionId: "knowsOwner", answer: "yes" });
+    expect(await liveProfileRepository.getOnboardingAnswers()).toEqual({ archetype: "seller", knowsOwner: "yes" });
+  });
+
+  it("getOnboardingAnswers tar bort okända id:n och val, och gissar aldrig", async () => {
+    const supabase = fake({ onboarding_answers: { situation: "employed", time: "massor", role: "Säljare", money: 5 } });
+    requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
+    const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
+    expect(await liveProfileRepository.getOnboardingAnswers()).toEqual({ situation: "employed" });
+  });
+
+  it("utan körd migrering (kolumnen saknas) blir det ett platshållarfel, inte en krasch", async () => {
+    const supabase = {
+      from: () => ({
+        select: () => ({
+          eq: () => ({ maybeSingle: async () => ({ data: null, error: { code: "42703", message: "column does not exist" } }) }),
+        }),
+      }),
+      rpc: async () => ({ data: null, error: { code: "PGRST202", message: "function not found" } }),
+    };
+    requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
+    const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
+    await expect(liveProfileRepository.getOnboardingAnswers()).rejects.toBeInstanceOf(NotImplementedError);
+    await expect(liveProfileRepository.saveOnboardingAnswer({ questionId: "time", answer: "h3to6" })).rejects.toBeInstanceOf(
+      NotImplementedError,
+    );
+  });
+});
+
 describe("liveProfileRepository.completeOnboarding", () => {
   beforeEach(() => {
     requireSupabaseUserMock.mockReset();
   });
 
-  function freshProfiles() {
-    return makeSupabaseFake({
-      profiles: [
-        { user_id: "another-user", role: "Orörd", onboarding_entry: null, onboarding_completed_at: null },
-        { user_id: USER_ID, name: "Sara", initials: "S", onboarding_entry: null, onboarding_completed_at: null },
-      ],
-    }, onboardingRpcFake(USER_ID));
+  function freshProfiles(projects: Record<string, unknown>[] = []) {
+    return makeSupabaseFake(
+      {
+        profiles: [
+          { user_id: "another-user", role: "Orörd", onboarding_entry: null, onboarding_completed_at: null, onboarding_answers: {} },
+          { user_id: USER_ID, name: "Sara", initials: "S", onboarding_entry: null, onboarding_completed_at: null, onboarding_answers: {} },
+        ],
+        projects,
+      },
+      onboardingRpcFake(USER_ID),
+    );
   }
 
-  const answersA = [
-    { questionId: "role", answer: "  Redovisningskonsult  " },
-    { questionId: "bio", answer: "Tio år på byrå." },
-    { questionId: "frustrations", answer: " Kvitton som försvinner. " },
-    { questionId: "time", answer: "10 timmar" },
-    { questionId: "money", answer: "20 000 kr" },
-    { questionId: "risk", answer: "Låg" },
+  const coreA = [
+    { questionId: "situation", answer: "employed" },
+    { questionId: "time", answer: "h3to6" },
+    { questionId: "money", answer: "none" },
+    { questionId: "soldB2b", answer: "no" },
   ];
 
-  it("skickar svaren till complete_onboarding, som skriver dem trimmade och markerar onboardingen klar", async () => {
+  it("med kärnfrågornas svar markeras onboardingen klar, med ingång och version", async () => {
     const supabase = freshProfiles();
     requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
 
-    await liveProfileRepository.completeOnboarding({ entry: "noIdea", answers: answersA });
+    await liveProfileRepository.completeOnboarding({ entry: "noIdea", answers: coreA });
 
     const row = supabase.tables.profiles.find((r) => r.user_id === USER_ID)!;
     expect(row).toMatchObject({
-      role: "Redovisningskonsult",
-      bio: "Tio år på byrå.",
-      frustrations: "Kvitton som försvinner.",
-      time_available: "10 timmar",
-      money_available: "20 000 kr",
-      risk_appetite: "Låg",
+      onboarding_answers: { situation: "employed", time: "h3to6", money: "none", soldB2b: "no" },
       onboarding_entry: "noIdea",
+      onboarding_version: 2,
       name: "Sara",
     });
     expect(row.onboarding_completed_at).toEqual(expect.any(String));
@@ -165,46 +272,31 @@ describe("liveProfileRepository.completeOnboarding", () => {
     });
   });
 
-  it("ingång B skriver bara sina fyra fält", async () => {
-    const supabase = freshProfiles();
+  it("svar som redan sparats räcker: answers får vara tom", async () => {
+    const supabase = freshProfiles([{ user_id: USER_ID, is_active: true }]);
     requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
-
-    await liveProfileRepository.completeOnboarding({
-      entry: "hasIdea",
-      answers: [
-        { questionId: "role", answer: "Säljare" },
-        { questionId: "customer", answer: "Små byråer" },
-        { questionId: "time", answer: "5 timmar" },
-        { questionId: "money", answer: "Inget" },
-      ],
-    });
-
-    const row = supabase.tables.profiles.find((r) => r.user_id === USER_ID)!;
-    expect(row).toMatchObject({ role: "Säljare", customer_guess: "Små byråer", onboarding_entry: "hasIdea" });
-    expect(row).not.toHaveProperty("bio");
-    expect(row).not.toHaveProperty("risk_appetite");
-    expect(row).not.toHaveProperty("frustrations");
+    for (const [questionId, answer] of [["situation", "employed"], ["payer", "business"], ["customer", "Byråer"], ["talkedTo", "none"]]) {
+      await liveProfileRepository.saveOnboardingAnswer({ questionId, answer });
+    }
+    await liveProfileRepository.completeOnboarding({ entry: "hasIdea", answers: [] });
+    expect(supabase.tables.profiles.find((r) => r.user_id === USER_ID)).toMatchObject({ onboarding_entry: "hasIdea" });
   });
 
-  // Varje fall är ett komplett svar för ingång B med ett fel i.
-  const time = { questionId: "time", answer: "5 timmar" };
-  const money = { questionId: "money", answer: "Inget" };
-  const role = { questionId: "role", answer: "Säljare" };
-  const customer = { questionId: "customer", answer: "Små byråer" };
+  const [situation, time, money, soldB2b] = coreA;
   it.each([
-    ["en fråga ingången inte ställer", [role, customer, time, money, { questionId: "risk", answer: "Låg" }]],
-    ["ett okänt fält", [role, customer, time, money, { questionId: "name", answer: "Kapad" }]],
-    ["en fråga två gånger", [role, customer, time, money, { questionId: "role", answer: "Igen" }]],
-    ["ett tomt svar", [{ questionId: "role", answer: "   " }, customer, time, money]],
-    ["ett för långt svar", [{ questionId: "role", answer: "a".repeat(1001) }, customer, time, money]],
-    ["saknade svar", [role, time, money]],
+    ["en fråga ingången inte ställer", [...coreA, { questionId: "payer", answer: "business" }]],
+    ["en fråga från före v4", [...coreA, { questionId: "role", answer: "Säljare" }]],
+    ["ett okänt fält", [...coreA, { questionId: "name", answer: "Kapad" }]],
+    ["en fråga två gånger", [...coreA, { questionId: "time", answer: "over10" }]],
+    ["ett okänt val", [situation, { questionId: "time", answer: "10 timmar" }, money, soldB2b]],
+    ["en saknad kärnfråga", [situation, time, money]],
   ])("avvisar %s utan att skriva något", async (_, answers) => {
     const supabase = freshProfiles();
     requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
 
-    await expect(liveProfileRepository.completeOnboarding({ entry: "hasIdea", answers })).rejects.toThrow();
+    await expect(liveProfileRepository.completeOnboarding({ entry: "noIdea", answers })).rejects.toThrow();
     expect(supabase.tables.profiles.find((r) => r.user_id === USER_ID)?.onboarding_completed_at).toBeNull();
   });
 
@@ -213,19 +305,11 @@ describe("liveProfileRepository.completeOnboarding", () => {
     requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
 
-    await liveProfileRepository.completeOnboarding({ entry: "noIdea", answers: answersA });
-    const first = { ...supabase.tables.profiles.find((r) => r.user_id === USER_ID)! };
+    await liveProfileRepository.completeOnboarding({ entry: "noIdea", answers: coreA });
+    const first = structuredClone(supabase.tables.profiles.find((r) => r.user_id === USER_ID)!);
 
     await expect(
-      liveProfileRepository.completeOnboarding({
-        entry: "hasIdea",
-        answers: [
-          { questionId: "role", answer: "Nytt" },
-          { questionId: "customer", answer: "Nytt" },
-          { questionId: "time", answer: "Nytt" },
-          { questionId: "money", answer: "Nytt" },
-        ],
-      }),
+      liveProfileRepository.completeOnboarding({ entry: "noIdea", answers: [{ questionId: "time", answer: "over10" }] }),
     ).rejects.toBeInstanceOf(OnboardingAlreadyCompletedError);
     expect(supabase.tables.profiles.find((r) => r.user_id === USER_ID)).toEqual(first);
   });
@@ -233,9 +317,7 @@ describe("liveProfileRepository.completeOnboarding", () => {
   it("kastar ett vanligt fel, inte OnboardingAlreadyCompletedError, när profilraden saknas", async () => {
     requireSupabaseUserMock.mockResolvedValue({ supabase: makeSupabaseFake({}, onboardingRpcFake(USER_ID)), userId: USER_ID });
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
-    const error = await liveProfileRepository
-      .completeOnboarding({ entry: "noIdea", answers: answersA })
-      .catch((e: unknown) => e);
+    const error = await liveProfileRepository.completeOnboarding({ entry: "noIdea", answers: coreA }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(Error);
     expect(error).not.toBeInstanceOf(OnboardingAlreadyCompletedError);
   });

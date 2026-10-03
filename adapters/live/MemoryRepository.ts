@@ -1,8 +1,17 @@
 import type { MemoryRepository, ProfileSummary, TraceEvent, RecordTraceEventInput } from "@/ports/MemoryRepository";
+import type { OnboardingQuestion } from "@/ports/ProfileRepository";
+import type { Locale } from "@/i18n/context";
 import { cleanText } from "@/core/text";
 import { EmptyStateError } from "@/core/errors";
 import { requireSupabaseUser } from "@/lib/server/session";
-import { isOnboardingEntry } from "@/core/onboarding";
+import {
+  isOnboardingEntry,
+  parseOnboardingAnswers,
+  remainingOnboardingQuestions,
+  type OnboardingAnswers,
+} from "@/core/onboarding";
+import { answerLabel, toAnswerViews, toOnboardingQuestion } from "@/adapters/live/onboardingQuestions";
+import type { OnboardingEntry } from "@/core/domain";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const DOC = "docs/moduler/minnet.md";
@@ -23,7 +32,12 @@ type ProfileRow = {
   customer_guess: string | null;
   onboarding_entry: string | null;
   onboarding_completed_at: string | null;
+  /** Saknas tills migreringen 20261003150000_onboarding_v4.sql är körd. */
+  onboarding_answers?: unknown;
 };
+
+const PROFILE_COLUMNS =
+  "name, role, bio, time_available, money_available, risk_appetite, frustrations, customer_guess, onboarding_entry, onboarding_completed_at";
 
 /** Tom eller bara blanksteg räknas som obesvarad, aldrig som ett svar. */
 function answerOrNull(value: string | null): string | null {
@@ -33,35 +47,51 @@ function answerOrNull(value: string | null): string | null {
 async function getProfileRow(supabase: SupabaseClient, userId: string): Promise<ProfileRow | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select(
-      "name, role, bio, time_available, money_available, risk_appetite, frustrations, customer_guess, onboarding_entry, onboarding_completed_at",
-    )
+    .select(`${PROFILE_COLUMNS}, onboarding_answers`)
     .eq("user_id", userId)
     .maybeSingle();
-  if (error) throw new Error(`Minnet: kunde inte läsa profilen (${error.message}).`);
-  return data as ProfileRow | null;
+  if (!error) return data as ProfileRow | null;
+  // Utan körd v4-migrering finns inte kolumnen. Då visas profilen som förut,
+  // utan v4-svar, i stället för att hela Minnet faller.
+  if (error.code !== "42703" && error.code !== "PGRST204") {
+    throw new Error(`Minnet: kunde inte läsa profilen (${error.message}).`);
+  }
+  const legacy = await supabase.from("profiles").select(PROFILE_COLUMNS).eq("user_id", userId).maybeSingle();
+  if (legacy.error) throw new Error(`Minnet: kunde inte läsa profilen (${legacy.error.message}).`);
+  return legacy.data as ProfileRow | null;
 }
 
-export const liveMemoryRepository: MemoryRepository = {
-  async getProfileSummary(): Promise<ProfileSummary> {
+/** En klar onboarding: ingången och v4-svaren. Annars tomt tillstånd
+ * (docs/moduler/minnet.md). */
+function completedOnboarding(row: ProfileRow | null): { entry: OnboardingEntry; answers: OnboardingAnswers } {
+  if (!row || !row.onboarding_completed_at || !isOnboardingEntry(row.onboarding_entry)) {
+    throw new EmptyStateError("Minnet", DOC);
+  }
+  return { entry: row.onboarding_entry, answers: parseOnboardingAnswers(row.onboarding_answers) };
+}
+
+// Med de valfria metoderna i porten utskrivna, så att de valfria metoderna i porten (getKnownProfile,
+// getPendingOnboardingQuestions) är kända för /app.
+export const liveMemoryRepository: MemoryRepository & Required<Pick<MemoryRepository, "getKnownProfile" | "getPendingOnboardingQuestions">> = {
+  async getProfileSummary(locale: Locale): Promise<ProfileSummary> {
     const { supabase, userId } = await requireSupabaseUser();
     const row = await getProfileRow(supabase, userId);
     // Tomt tillstånd bara om onboardingen inte är gjord (docs/moduler/minnet.md).
-    // Efter den visas det som finns: ingång B svarar bara på role, time och
-    // money, och de övriga fälten blir null (en lucka), aldrig ifyllda.
-    if (!row || !row.onboarding_completed_at || !isOnboardingEntry(row.onboarding_entry)) {
-      throw new EmptyStateError("Minnet", DOC);
-    }
+    // Efter den visas det som finns, aldrig ifyllt: fritextsvaren från före v4
+    // i sina kolumner, och v4-svaren med frågan och valets etikett (spec v4).
+    // De obesvarade v4-frågorna är luckorna (getPendingOnboardingQuestions).
+    const { entry, answers } = completedOnboarding(row);
     return {
-      entry: row.onboarding_entry,
-      name: answerOrNull(row.name),
-      role: answerOrNull(row.role),
-      bio: answerOrNull(row.bio),
-      time: answerOrNull(row.time_available),
-      money: answerOrNull(row.money_available),
-      risk: answerOrNull(row.risk_appetite),
-      frustrations: answerOrNull(row.frustrations),
-      customer: answerOrNull(row.customer_guess),
+      entry,
+      answers: toAnswerViews(entry, answers, locale),
+      name: answerOrNull(row!.name),
+      role: answerOrNull(row!.role),
+      bio: answerOrNull(row!.bio),
+      time: answerOrNull(row!.time_available),
+      money: answerOrNull(row!.money_available),
+      risk: answerOrNull(row!.risk_appetite),
+      frustrations: answerOrNull(row!.frustrations),
+      customer: answerOrNull(row!.customer_guess),
     };
   },
 
@@ -69,16 +99,36 @@ export const liveMemoryRepository: MemoryRepository = {
     const { supabase, userId } = await requireSupabaseUser();
     const row = await getProfileRow(supabase, userId);
     if (!row) return {};
+    // Medgrundaren läser på svenska, som resten av /app. Ett fritextsvar från
+    // före v4 går före v4-svaret för samma sak, så att inget skrivs över.
+    const answers = parseOnboardingAnswers(row.onboarding_answers);
+    const v4 = (id: keyof OnboardingAnswers) => (answers[id] ? answerLabel(id, answers[id], "sv") : null);
     const fields: [keyof ProfileSummary, string | null][] = [
       ["name", row.name],
-      ["role", row.role],
+      ["role", row.role?.trim() ? row.role : v4("situation")],
       ["bio", row.bio],
-      ["time", row.time_available],
-      ["money", row.money_available],
+      ["time", row.time_available?.trim() ? row.time_available : v4("time")],
+      ["money", row.money_available?.trim() ? row.money_available : v4("money")],
       ["risk", row.risk_appetite],
+      ["frustrations", row.frustrations?.trim() ? row.frustrations : v4("frustration")],
+      ["customer", row.customer_guess?.trim() ? row.customer_guess : v4("customer")],
     ];
     // Bara ifyllda fält, så att en tom sträng aldrig ser ut som ett svar.
-    return Object.fromEntries(fields.filter(([, value]) => value?.trim()).map(([key, value]) => [key, value!.trim()]));
+    const known: Partial<ProfileSummary> = Object.fromEntries(
+      fields.filter(([, value]) => value?.trim()).map(([key, value]) => [key, value!.trim()]),
+    );
+    if (isOnboardingEntry(row.onboarding_entry)) {
+      const views = toAnswerViews(row.onboarding_entry, answers, "sv");
+      if (views.length > 0) known.answers = views;
+    }
+    return known;
+  },
+
+  async getPendingOnboardingQuestions(locale: Locale): Promise<OnboardingQuestion[]> {
+    const { supabase, userId } = await requireSupabaseUser();
+    const { entry, answers } = completedOnboarding(await getProfileRow(supabase, userId));
+    // Härlett, aldrig lagrat: ingångens frågor minus de besvarade (spec v4 §3.2).
+    return remainingOnboardingQuestions(entry, answers).map((id) => toOnboardingQuestion(entry, id, locale));
   },
 
   async getBrainNotes(): Promise<string> {

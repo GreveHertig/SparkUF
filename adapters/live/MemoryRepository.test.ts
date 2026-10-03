@@ -38,6 +38,32 @@ function entryBProfileRow() {
   };
 }
 
+/** Klar med v4: bara onboarding_answers, inga fritextkolumner. */
+function v4ProfileRow() {
+  return {
+    user_id: USER_ID,
+    name: "Sara Lindqvist",
+    initials: "SL",
+    role: null,
+    bio: null,
+    time_available: null,
+    money_available: null,
+    risk_appetite: null,
+    frustrations: null,
+    customer_guess: null,
+    onboarding_entry: "noIdea",
+    onboarding_completed_at: "2026-10-03T08:00:00Z",
+    onboarding_version: 2,
+    onboarding_answers: {
+      frustration: "Kvitton som försvinner.",
+      money: "none",
+      situation: "employed",
+      time: "h3to6",
+      soldB2b: "no",
+    },
+  };
+}
+
 describe("liveMemoryRepository.getProfileSummary", () => {
   beforeEach(() => {
     requireSupabaseUserMock.mockReset();
@@ -76,6 +102,7 @@ describe("liveMemoryRepository.getProfileSummary", () => {
       risk: null,
       frustrations: null,
       customer: "Små redovisningsbyråer",
+      answers: [],
     });
   });
 
@@ -106,7 +133,74 @@ describe("liveMemoryRepository.getProfileSummary", () => {
       risk: "Låg",
       frustrations: "Kvitton som försvinner.",
       customer: null,
+      answers: [],
     });
+  });
+
+  it("version 2: v4-svaren med frågan och valets etikett, i frågornas ordning, och fritextfälten tomma", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({ profiles: [v4ProfileRow()] }),
+      userId: USER_ID,
+    });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    const { sv } = await import("@/i18n/sv");
+    const summary = await liveMemoryRepository.getProfileSummary("sv");
+    expect(summary).toMatchObject({ entry: "noIdea", role: null, time: null, money: null, risk: null });
+    expect(summary.answers).toEqual([
+      { questionId: "situation", question: sv.onboarding.v4Questions.noIdea.situation, answer: "Jobbar" },
+      { questionId: "time", question: sv.onboarding.v4Questions.noIdea.time, answer: "3–6 timmar" },
+      { questionId: "money", question: sv.onboarding.v4Questions.noIdea.money, answer: "Inget" },
+      { questionId: "soldB2b", question: sv.onboarding.v4Questions.noIdea.soldB2b, answer: "Nej" },
+      { questionId: "frustration", question: sv.onboarding.v4Questions.noIdea.frustration, answer: "Kvitton som försvinner." },
+    ]);
+  });
+
+  it("version 1: fritextsvaren står kvar, och v4-svar som getts efteråt syns bredvid, på engelska när locale är en", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({ profiles: [{ ...completeProfileRow(), onboarding_answers: { archetype: "seller", role: "Kapad" } }] }),
+      userId: USER_ID,
+    });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    const summary = await liveMemoryRepository.getProfileSummary("en");
+    expect(summary).toMatchObject({ role: "Redovisningskonsult", time: "Kvällar och helger" });
+    expect(summary.answers).toEqual([
+      { questionId: "archetype", question: "Which of these three sounds most like you?", answer: "I would rather talk to people than sit alone with a task" },
+    ]);
+  });
+
+  it("utan körd v4-migrering (kolumnen saknas) visas profilen som förut", async () => {
+    const legacy = makeSupabaseFake({ profiles: [completeProfileRow()] });
+    let calls = 0;
+    const supabase = {
+      from: (table: string) => {
+        const builder = legacy.from(table);
+        return {
+          select: (columns: string) => {
+            calls++;
+            if (columns.includes("onboarding_answers")) {
+              return { eq: () => ({ maybeSingle: async () => ({ data: null, error: { code: "42703", message: "saknas" } }) }) };
+            }
+            return builder.select();
+          },
+        };
+      },
+    };
+    requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    const summary = await liveMemoryRepository.getProfileSummary("sv");
+    expect(summary).toMatchObject({ role: "Redovisningskonsult", answers: [] });
+    expect(calls).toBe(2);
+  });
+
+  it("ett annat fel kastas vidare", async () => {
+    const supabase = {
+      from: () => ({
+        select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: { code: "57014", message: "timeout" } }) }) }),
+      }),
+    };
+    requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    await expect(liveMemoryRepository.getProfileSummary("sv")).rejects.toThrow(/timeout/);
   });
 });
 
@@ -250,6 +344,70 @@ describe("liveMemoryRepository.getKnownProfile", () => {
       role: "Redovisningskonsult",
       time: "Kvällar och helger",
       money: "20 000 kr",
+      frustrations: "Kvitton som försvinner.",
     });
+  });
+
+  it("version 2: v4-svaren fyller roll, tid, pengar och frustration med etiketter på svenska, och följer med som answers", async () => {
+    requireSupabaseUserMock.mockResolvedValue({ supabase: makeSupabaseFake({ profiles: [v4ProfileRow()] }), userId: USER_ID });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    const known = await liveMemoryRepository.getKnownProfile!();
+    expect(known).toMatchObject({
+      name: "Sara Lindqvist",
+      role: "Jobbar",
+      time: "3–6 timmar",
+      money: "Inget",
+      frustrations: "Kvitton som försvinner.",
+    });
+    expect(known.answers?.map((a) => a.questionId)).toEqual(["situation", "time", "money", "soldB2b", "frustration"]);
+  });
+
+  it("ett fritextsvar från före v4 går före v4-svaret för samma sak", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({ profiles: [{ ...completeProfileRow(), onboarding_answers: { time: "over10" } }] }),
+      userId: USER_ID,
+    });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    expect((await liveMemoryRepository.getKnownProfile!()).time).toBe("Kvällar och helger");
+  });
+});
+
+describe("liveMemoryRepository.getPendingOnboardingQuestions", () => {
+  beforeEach(() => {
+    requireSupabaseUserMock.mockReset();
+  });
+
+  it("version 2: ingångens obesvarade frågor, i ordning, med val ur i18n", async () => {
+    requireSupabaseUserMock.mockResolvedValue({ supabase: makeSupabaseFake({ profiles: [v4ProfileRow()] }), userId: USER_ID });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    const pending = await liveMemoryRepository.getPendingOnboardingQuestions("sv");
+    expect(pending.map((q) => q.id)).toEqual(["archetype", "knowsOwner"]);
+    expect(pending[1]).toMatchObject({ kind: "choice", choices: [{ id: "yes", label: "Ja" }, { id: "no", label: "Nej" }] });
+  });
+
+  it("version 1: alla v4-frågor för ingången återstår, de gamla fritextsvaren räknas inte om", async () => {
+    requireSupabaseUserMock.mockResolvedValue({ supabase: makeSupabaseFake({ profiles: [entryBProfileRow()] }), userId: USER_ID });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    const pending = await liveMemoryRepository.getPendingOnboardingQuestions("sv");
+    expect(pending.map((q) => q.id)).toEqual(["situation", "payer", "customer", "talkedTo", "soldB2b", "time", "money"]);
+  });
+
+  it("allt besvarat ger en tom lista", async () => {
+    const row = v4ProfileRow();
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({ profiles: [{ ...row, onboarding_answers: { ...row.onboarding_answers, archetype: "builder", knowsOwner: "no" } }] }),
+      userId: USER_ID,
+    });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    expect(await liveMemoryRepository.getPendingOnboardingQuestions("sv")).toEqual([]);
+  });
+
+  it("innan onboardingen är klar: tomt tillstånd", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({ profiles: [{ ...v4ProfileRow(), onboarding_completed_at: null }] }),
+      userId: USER_ID,
+    });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    await expect(liveMemoryRepository.getPendingOnboardingQuestions("sv")).rejects.toBeInstanceOf(EmptyStateError);
   });
 });

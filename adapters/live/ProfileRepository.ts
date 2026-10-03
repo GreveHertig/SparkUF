@@ -6,48 +6,64 @@ import type {
 } from "@/ports/ProfileRepository";
 import type { OnboardingEntry, Profile } from "@/core/domain";
 import type { Locale } from "@/i18n/context";
-import { EmptyStateError, OnboardingAlreadyCompletedError } from "@/core/errors";
 import {
-  isProfileQuestionFor,
-  isValidProfileAnswer,
-  PROFILE_QUESTIONS_BY_ENTRY,
-  type ProfileQuestionId,
+  EmptyStateError,
+  NotImplementedError,
+  OnboardingAlreadyCompletedError,
+  OnboardingAnswerInvalidError,
+  OnboardingAnswerLockedError,
+} from "@/core/errors";
+import {
+  ONBOARDING_QUESTIONS_BY_ENTRY,
+  isOnboardingQuestionFor,
+  isValidOnboardingAnswer,
+  parseOnboardingAnswers,
 } from "@/core/onboarding";
 import { requireSupabaseUser } from "@/lib/server/session";
 import { readOnboardingStatus } from "@/lib/server/onboardingStatus";
+import { toOnboardingQuestion } from "@/adapters/live/onboardingQuestions";
 import { sv } from "@/i18n/sv";
 import { en } from "@/i18n/en";
 
 const DOC = "docs/moduler/profil.md";
-/** Felkoden från public.complete_onboarding när onboardingen redan är klar. */
+/** Felkoden från public.complete_onboarding när onboardingen redan är klar,
+ * och från public.save_onboarding_answer när frågan redan är besvarad efteråt. */
 const ALREADY_COMPLETED = "55000";
+/** Felkoden när databasen avvisar indata (fel fråga för ingången, okänt val). */
+const INVALID_INPUT = "22023";
 const dictionaries = { sv, en };
 
 /** Svaren som ett objekt {frågans id: svar}, så som
- * public.complete_onboarding tar emot dem. Kastar om svaren inte är exakt
- * ingångens frågor, en gång var, med 1–1000 tecken efter trim. zod i server
- * actions är det första lagret och databasfunktionen det bindande. */
+ * public.complete_onboarding tar emot dem. Kastar om en fråga inte hör till
+ * ingången, är besvarad två gånger eller har ett ogiltigt svar. zod i server
+ * actions är det första lagret och databasfunktionen det bindande. Kärnfrågorna
+ * kan redan vara sparade (saveOnboardingAnswer), så listan får vara tom. */
 function answerObject(entry: OnboardingEntry, answers: OnboardingAnswer[]): Record<string, string> {
   const result: Record<string, string> = {};
   for (const { questionId, answer } of answers) {
-    if (!isProfileQuestionFor(entry, questionId)) {
+    if (!isOnboardingQuestionFor(entry, questionId)) {
       throw new Error(`Profil: frågan "${questionId}" hör inte till ingången ${entry}.`);
     }
     if (questionId in result) {
       throw new Error(`Profil: frågan "${questionId}" är besvarad två gånger.`);
     }
-    if (!isValidProfileAnswer(answer)) {
-      throw new Error(`Profil: svaret på "${questionId}" är tomt eller för långt.`);
+    if (!isValidOnboardingAnswer(questionId, answer)) {
+      throw new Error(`Profil: svaret på "${questionId}" är ogiltigt.`);
     }
     result[questionId] = answer.trim();
-  }
-  if (Object.keys(result).length !== PROFILE_QUESTIONS_BY_ENTRY[entry].length) {
-    throw new Error(`Profil: alla frågor för ingången ${entry} är inte besvarade.`);
   }
   return result;
 }
 
-export const liveProfileRepository: ProfileRepository = {
+/** En kolumn eller funktion som saknas: migreringen
+ * 20261003150000_onboarding_v4.sql är inte körd. */
+function isMissingMigration(error: { code?: string }): boolean {
+  return ["42703", "PGRST204", "PGRST202", "42883"].includes(error.code ?? "");
+}
+
+// Med de valfria metoderna i porten utskrivna, så att de valfria metoderna i porten (saveOnboardingAnswer,
+// getOnboardingAnswers) är kända för routes och actions i /start.
+export const liveProfileRepository: ProfileRepository & Required<Pick<ProfileRepository, "saveOnboardingAnswer" | "getOnboardingAnswers">> = {
   async getProfile(): Promise<Profile> {
     const { supabase, userId } = await requireSupabaseUser();
     const { data, error } = await supabase
@@ -70,19 +86,13 @@ export const liveProfileRepository: ProfileRepository = {
     return { name: data.name as string, initials: data.initials as string };
   },
 
-  // v1: fasta frågor ur i18n, grundaren skriver sitt eget svar (beslut i
-  // PR 1, docs/moduler/profil.md). Ingen databas och ingen Gemini. En
-  // framtida Gemini-version fyller samma fält.
+  // Spec v4 §4: kärnfrågorna, med val där det går, ur i18n. Grundaren svarar
+  // på en i taget och varje svar sparas direkt (saveOnboardingAnswer). De
+  // återstående frågorna ställs i Minnet (MemoryRepository.getPendingOnboardingQuestions).
   async getOnboardingScript(entry: OnboardingEntry, locale: Locale): Promise<OnboardingScript> {
-    const copy = dictionaries[locale].onboarding.profileQuestions[entry];
-    const texts = copy as Partial<Record<ProfileQuestionId, string>>;
     return {
-      questions: PROFILE_QUESTIONS_BY_ENTRY[entry].map((id) => ({
-        id,
-        cofounderText: texts[id] ?? "",
-        suggestedAnswer: null,
-      })),
-      closingMessage: copy.closingMessage,
+      questions: ONBOARDING_QUESTIONS_BY_ENTRY[entry].core.map((id) => toOnboardingQuestion(entry, id, locale)),
+      closingMessage: dictionaries[locale].onboarding.startFrame.lede,
     };
   },
 
@@ -91,12 +101,12 @@ export const liveProfileRepository: ProfileRepository = {
     return readOnboardingStatus(supabase, userId);
   },
 
-  // Klienten kan inte skriva onboarding_entry eller onboarding_completed_at
-  // själv (supabase/migrations/20261002150000_steg1_onboarding.sql). Bara
-  // public.complete_onboarding (security definer) gör det, och skriver
-  // svaren, ingången och klar-tiden i en enda uppdatering. En klar
-  // onboarding skrivs aldrig över (ingen omgörning i v1): funktionen ger
-  // felkod 55000.
+  // Klienten kan inte skriva onboarding_entry, onboarding_completed_at eller
+  // onboarding_answers själv (supabase/migrations/20261002150000_steg1_onboarding.sql,
+  // 20261003150000_onboarding_v4.sql). Bara public.complete_onboarding
+  // (security definer) sätter ingången och klar-tiden, efter att ha prövat att
+  // alla kärnfrågor har svar. En klar onboarding skrivs aldrig över: funktionen
+  // ger felkod 55000.
   async completeOnboarding({ entry, answers }): Promise<void> {
     const answersById = answerObject(entry, answers);
     const { supabase } = await requireSupabaseUser();
@@ -104,5 +114,32 @@ export const liveProfileRepository: ProfileRepository = {
     if (!error) return;
     if (error.code === ALREADY_COMPLETED) throw new OnboardingAlreadyCompletedError();
     throw new Error(`Profil: kunde inte spara onboardingen (${error.message}).`);
+  },
+
+  async saveOnboardingAnswer({ questionId, answer }: OnboardingAnswer): Promise<void> {
+    // Ingången prövas i databasen (den härleds där, aldrig ur indata). Här
+    // bara att frågan finns och att svaret har rätt form.
+    const known = isOnboardingQuestionFor("noIdea", questionId) || isOnboardingQuestionFor("hasIdea", questionId);
+    if (!known || !isValidOnboardingAnswer(questionId, answer)) {
+      throw new Error(`Profil: svaret på "${questionId}" är ogiltigt.`);
+    }
+    const { supabase } = await requireSupabaseUser();
+    const { error } = await supabase.rpc("save_onboarding_answer", { p_question: questionId, p_answer: answer.trim() });
+    if (!error) return;
+    if (error.code === ALREADY_COMPLETED) throw new OnboardingAnswerLockedError();
+    if (error.code === INVALID_INPUT) throw new OnboardingAnswerInvalidError();
+    if (isMissingMigration(error)) throw new NotImplementedError("Profil (onboarding v4)", DOC);
+    throw new Error(`Profil: kunde inte spara svaret (${error.message}).`);
+  },
+
+  async getOnboardingAnswers(): Promise<Record<string, string>> {
+    const { supabase, userId } = await requireSupabaseUser();
+    const { data, error } = await supabase.from("profiles").select("onboarding_answers").eq("user_id", userId).maybeSingle();
+    if (error) {
+      if (isMissingMigration(error)) throw new NotImplementedError("Profil (onboarding v4)", DOC);
+      throw new Error(`Profil: kunde inte läsa svaren (${error.message}).`);
+    }
+    // Bara giltiga svar: ett okänt id eller val tas bort, aldrig gissat.
+    return parseOnboardingAnswers(data?.onboarding_answers) as Record<string, string>;
   },
 };

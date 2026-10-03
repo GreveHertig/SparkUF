@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { OnboardingAlreadyCompletedError, ProjectExistsError } from "@/core/errors";
+import {
+  OnboardingAlreadyCompletedError,
+  OnboardingAnswerInvalidError,
+  OnboardingAnswerLockedError,
+  ProjectExistsError,
+} from "@/core/errors";
 import { PROJECT_NAME_MAX_LENGTH } from "@/core/onboarding";
 
 // Onboardingens Server Actions (onboarding live, PR 3). Adaptrarna är
@@ -19,8 +24,14 @@ vi.mock("@/adapters/live/ProjectRepository", () => ({
 }));
 
 const completeOnboardingMock = vi.hoisted(() => vi.fn());
+const saveOnboardingAnswerMock = vi.hoisted(() => vi.fn());
+const getOnboardingAnswersMock = vi.hoisted(() => vi.fn());
 vi.mock("@/adapters/live/ProfileRepository", () => ({
-  liveProfileRepository: { completeOnboarding: completeOnboardingMock },
+  liveProfileRepository: {
+    completeOnboarding: completeOnboardingMock,
+    saveOnboardingAnswer: saveOnboardingAnswerMock,
+    getOnboardingAnswers: getOnboardingAnswersMock,
+  },
 }));
 
 const IDLE = { invalid: false };
@@ -35,6 +46,8 @@ beforeEach(() => {
   getProjectMock.mockResolvedValue(null);
   createProjectMock.mockResolvedValue({ id: "p1", name: "Padel", oneLiner: "Bokning." });
   completeOnboardingMock.mockResolvedValue(undefined);
+  saveOnboardingAnswerMock.mockResolvedValue(undefined);
+  getOnboardingAnswersMock.mockResolvedValue({});
 });
 
 afterEach(() => {
@@ -77,60 +90,88 @@ describe("createProjectAction", () => {
   });
 });
 
-describe("completeOnboardingAction", () => {
-  const ALL_A = {
-    role: "Studerar.",
-    bio: "Kan Excel.",
-    frustrations: "Köer.",
-    time: "10 timmar.",
-    money: "Inget.",
-    risk: "Lite.",
-  };
-
-  it("ingång A: sparar de sex svaren och går till /app", async () => {
-    const { completeOnboardingAction } = await import("./actions");
-    await expect(completeOnboardingAction(IDLE, form(ALL_A))).rejects.toThrow("REDIRECT /app");
-    expect(completeOnboardingMock).toHaveBeenCalledWith({
-      entry: "noIdea",
-      answers: Object.entries(ALL_A).map(([questionId, answer]) => ({ questionId, answer })),
-    });
+describe("saveOnboardingAnswerAction", () => {
+  it("ingång A: sparar ett val på en kärnfråga", async () => {
+    const { saveOnboardingAnswerAction } = await import("./actions");
+    expect(await saveOnboardingAnswerAction("time", "h3to6")).toEqual({ ok: true });
+    expect(saveOnboardingAnswerMock).toHaveBeenCalledWith({ questionId: "time", answer: "h3to6" });
   });
 
-  it("ingång B (aktivt projekt): bara de fyra frågorna, extra fält ignoreras", async () => {
+  it("ingång B (aktivt projekt): fritext på kundfrågan sparas", async () => {
     getProjectMock.mockResolvedValue({ id: "p1", name: "Padel", oneLiner: "Bokning." });
-    const { completeOnboardingAction } = await import("./actions");
-    await expect(completeOnboardingAction(IDLE, form({ ...ALL_A, customer: "Byråer.", entry: "noIdea" }))).rejects.toThrow(
-      "REDIRECT /app",
-    );
-    expect(completeOnboardingMock).toHaveBeenCalledWith({
-      entry: "hasIdea",
-      answers: [
-        { questionId: "role", answer: "Studerar." },
-        { questionId: "customer", answer: "Byråer." },
-        { questionId: "time", answer: "10 timmar." },
-        { questionId: "money", answer: "Inget." },
-      ],
-    });
+    const { saveOnboardingAnswerAction } = await import("./actions");
+    expect(await saveOnboardingAnswerAction("customer", " Padelhallar ")).toEqual({ ok: true });
+    expect(saveOnboardingAnswerMock).toHaveBeenCalledWith({ questionId: "customer", answer: " Padelhallar " });
   });
 
-  it("ett saknat eller tomt svar avvisas utan att något sparas", async () => {
+  it.each([
+    ["en fråga som ingången inte ställer", "payer", "business"],
+    ["en fråga från före v4", "role", "Säljare"],
+    ["ett okänt val", "time", "massor"],
+    ["ett svar som inte är text", "time", 5],
+    ["ett fråge-id som inte är text", { id: "time" }, "h3to6"],
+    ["en tom fritext", "frustration", "  "],
+  ])("avvisar %s utan att något sparas", async (_, questionId, answer) => {
+    const { saveOnboardingAnswerAction } = await import("./actions");
+    expect(await saveOnboardingAnswerAction(questionId, answer)).toEqual({ ok: false, reason: "invalid" });
+    expect(saveOnboardingAnswerMock).not.toHaveBeenCalled();
+  });
+
+  it("databasens avslag blir ett svar, inte ett fel", async () => {
+    const { saveOnboardingAnswerAction } = await import("./actions");
+    saveOnboardingAnswerMock.mockRejectedValueOnce(new OnboardingAnswerInvalidError());
+    expect(await saveOnboardingAnswerAction("time", "h3to6")).toEqual({ ok: false, reason: "invalid" });
+    saveOnboardingAnswerMock.mockRejectedValueOnce(new OnboardingAnswerLockedError());
+    expect(await saveOnboardingAnswerAction("time", "h3to6")).toEqual({ ok: false, reason: "locked" });
+  });
+
+  it("ett riktigt fel kastas vidare", async () => {
+    saveOnboardingAnswerMock.mockRejectedValue(new Error("databasen svarar inte"));
+    const { saveOnboardingAnswerAction } = await import("./actions");
+    await expect(saveOnboardingAnswerAction("time", "h3to6")).rejects.toThrow("databasen svarar inte");
+  });
+});
+
+describe("completeOnboardingAction", () => {
+  const CORE_A = { situation: "employed", time: "h3to6", money: "none", soldB2b: "no" };
+
+  it("ingång A: med kärnfrågorna besvarade blir onboardingen klar, sedan /app", async () => {
+    getOnboardingAnswersMock.mockResolvedValue(CORE_A);
     const { completeOnboardingAction } = await import("./actions");
-    expect(await completeOnboardingAction(IDLE, form({ ...ALL_A, risk: "  " }))).toEqual({ invalid: true });
-    const withoutBio = form(ALL_A);
-    withoutBio.delete("bio");
-    expect(await completeOnboardingAction(IDLE, withoutBio)).toEqual({ invalid: true });
+    await expect(completeOnboardingAction()).rejects.toThrow("REDIRECT /app");
+    expect(completeOnboardingMock).toHaveBeenCalledWith({ entry: "noIdea", answers: [] });
+  });
+
+  it("ingång B: ingången härleds ur projektet, inte ur indata", async () => {
+    getProjectMock.mockResolvedValue({ id: "p1", name: "Padel", oneLiner: "Bokning." });
+    getOnboardingAnswersMock.mockResolvedValue({ situation: "employed", payer: "business", customer: "Hallar", talkedTo: "none" });
+    const { completeOnboardingAction } = await import("./actions");
+    await expect(completeOnboardingAction()).rejects.toThrow("REDIRECT /app");
+    expect(completeOnboardingMock).toHaveBeenCalledWith({ entry: "hasIdea", answers: [] });
+  });
+
+  it("en saknad kärnfråga ger invalid, och onboardingen blir inte klar", async () => {
+    getOnboardingAnswersMock.mockResolvedValue({ situation: "employed", time: "h3to6", money: "none" });
+    const { completeOnboardingAction } = await import("./actions");
+    expect(await completeOnboardingAction()).toEqual({ invalid: true });
+    // Ingång A:s svar räcker inte för ingång B.
+    getProjectMock.mockResolvedValue({ id: "p1", name: "Padel", oneLiner: "Bokning." });
+    getOnboardingAnswersMock.mockResolvedValue(CORE_A);
+    expect(await completeOnboardingAction()).toEqual({ invalid: true });
     expect(completeOnboardingMock).not.toHaveBeenCalled();
   });
 
   it("redan klar: inget skrivs över, grundaren går till /app", async () => {
+    getOnboardingAnswersMock.mockResolvedValue(CORE_A);
     completeOnboardingMock.mockRejectedValue(new OnboardingAlreadyCompletedError());
     const { completeOnboardingAction } = await import("./actions");
-    await expect(completeOnboardingAction(IDLE, form(ALL_A))).rejects.toThrow("REDIRECT /app");
+    await expect(completeOnboardingAction()).rejects.toThrow("REDIRECT /app");
   });
 
   it("ett riktigt fel kastas vidare", async () => {
+    getOnboardingAnswersMock.mockResolvedValue(CORE_A);
     completeOnboardingMock.mockRejectedValue(new Error("databasen svarar inte"));
     const { completeOnboardingAction } = await import("./actions");
-    await expect(completeOnboardingAction(IDLE, form(ALL_A))).rejects.toThrow("databasen svarar inte");
+    await expect(completeOnboardingAction()).rejects.toThrow("databasen svarar inte");
   });
 });

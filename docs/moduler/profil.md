@@ -18,7 +18,22 @@ getProfile(): Promise<Profile>
 getOnboardingScript(entry: OnboardingEntry, locale: Locale): Promise<OnboardingScript>
 getOnboardingStatus(): Promise<OnboardingStatus>          // { entry, completed }
 completeOnboarding(input: { entry; answers: OnboardingAnswer[] }): Promise<void>
+saveOnboardingAnswer?(answer: OnboardingAnswer): Promise<void>  // v4, bara plattformen
+getOnboardingAnswers?(): Promise<Record<string, string>>        // v4, bara plattformen
 ```
+
+**Onboarding v4 (2026-10-03, spec v4 §4).** Frågorna, valen och kärnfrågorna
+står i `core/onboarding.ts` (`ONBOARDING_CHOICES`,
+`ONBOARDING_QUESTIONS_BY_ENTRY`). `getOnboardingScript` ger kärnfrågorna med
+`kind` och `choices` (etiketter ur `onboarding.v4Questions`). Varje svar sparas
+med `saveOnboardingAnswer` (`public.save_onboarding_answer`) i
+`profiles.onboarding_answers`. `completeOnboarding` kräver kärnfrågorna och
+sätter `onboarding_version = 2`. Fel från databasen: `55000` blir
+`OnboardingAlreadyCompletedError` (complete) eller `OnboardingAnswerLockedError`
+(save), `22023` blir `OnboardingAnswerInvalidError` (save). En okörd
+migrering ger `NotImplementedError`, alltså "Kommer snart". Texten nedan
+beskriver version 1 (fritext), vars svar finns kvar för konton med
+`onboarding_version = 1`. Beslut: `docs/beslut.md` 2026-10-03.
 
 **Onboarding live (2026-09-30, PR 1 av 3):** `getOnboardingStatus` och
 `completeOnboarding` är tillagda. `OnboardingQuestion.suggestedAnswer` är

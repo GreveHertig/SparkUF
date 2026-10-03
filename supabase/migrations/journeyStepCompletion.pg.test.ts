@@ -39,11 +39,16 @@ function recordFit(userId: string, subjectRef: string) {
   );
 }
 
-/** Onboardingen klar för ingång B, via den enda vägen
- * (public.complete_onboarding, se onboardingWrite.pg.test.ts). */
+/** Onboardingen klar via den enda vägen (public.complete_onboarding, se
+ * onboardingWrite.pg.test.ts). Ingången kommer ur databasen: med ett aktivt
+ * projekt är det ingång B, utan ingång A. */
 function completeOnboarding(userId: string) {
-  return queryAs(db, userId, "select public.complete_onboarding('hasIdea', $1::jsonb)", [
-    JSON.stringify({ role: "Säljare", customer: "Byråer", time: "5 timmar", money: "Inget" }),
+  const answers = projects[userId]
+    ? { situation: "employed", payer: "business", customer: "Byråer", talkedTo: "none" }
+    : { situation: "employed", time: "h3to6", money: "none", soldB2b: "no" };
+  return queryAs(db, userId, "select public.complete_onboarding($1, $2::jsonb)", [
+    projects[userId] ? "hasIdea" : "noIdea",
+    JSON.stringify(answers),
   ]);
 }
 

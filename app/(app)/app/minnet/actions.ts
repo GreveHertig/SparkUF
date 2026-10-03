@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { liveMemoryRepository } from "@/adapters/live/MemoryRepository";
 import { liveEvidenceRecorder, EvidenceInputError } from "@/adapters/live/EvidenceRecorder";
 import { stockholmToday } from "@/adapters/live/evidenceScore";
-import { EmptyStateError } from "@/core/errors";
+import { liveProfileRepository } from "@/adapters/live/ProfileRepository";
+import { EmptyStateError, OnboardingAnswerInvalidError, OnboardingAnswerLockedError } from "@/core/errors";
 import { FIT_ANSWER_MAX, fitSubjectRef, isFitQuestionId } from "@/core/fitQuestions";
+import { isOnboardingQuestionFor, isValidOnboardingAnswer } from "@/core/onboarding";
 
 /**
  * Sparar Hjärnan för den inloggade användaren (/app/minnet). Användaren tas
@@ -56,4 +58,30 @@ export async function saveFitAnswer(questionId: unknown, answer: unknown): Promi
     if (error instanceof EvidenceInputError || error instanceof EmptyStateError) return { ok: false };
     throw error;
   }
+}
+
+export type SaveRemainingAnswerResult = { ok: true } | { ok: false; reason: "invalid" | "locked" };
+
+/**
+ * Svar på en fråga som återstår från profilsamtalet (spec v4 §3.2), under
+ * Återstår i Minnet. Bara frågor utan svar kan besvaras när onboardingen är
+ * klar, och bara de som grundarens ingång ställer: databasen
+ * (public.save_onboarding_answer) prövar det med den sparade ingången. Här
+ * bara formen. Svaret är data, aldrig instruktion. Ger inga bevis och ingen
+ * poäng (onboardingen skapar aldrig passformsbevis, beslut 2026-10-02).
+ */
+export async function saveRemainingAnswer(questionId: unknown, answer: unknown): Promise<SaveRemainingAnswerResult> {
+  if (typeof questionId !== "string" || typeof answer !== "string") return { ok: false, reason: "invalid" };
+  const known = isOnboardingQuestionFor("noIdea", questionId) || isOnboardingQuestionFor("hasIdea", questionId);
+  if (!known || !isValidOnboardingAnswer(questionId, answer)) return { ok: false, reason: "invalid" };
+
+  try {
+    await liveProfileRepository.saveOnboardingAnswer({ questionId, answer });
+  } catch (error) {
+    if (error instanceof OnboardingAnswerInvalidError) return { ok: false, reason: "invalid" };
+    if (error instanceof OnboardingAnswerLockedError) return { ok: false, reason: "locked" };
+    throw error;
+  }
+  revalidatePath("/app/minnet");
+  return { ok: true };
 }

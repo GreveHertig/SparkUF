@@ -32,10 +32,12 @@ vi.mock("@/adapters/live/ProjectRepository", () => ({
 
 const getOnboardingScriptMock = vi.hoisted(() => vi.fn());
 const getOnboardingStatusMock = vi.hoisted(() => vi.fn());
+const getOnboardingAnswersMock = vi.hoisted(() => vi.fn());
 vi.mock("@/adapters/live/ProfileRepository", () => ({
   liveProfileRepository: {
     getOnboardingScript: getOnboardingScriptMock,
     getOnboardingStatus: getOnboardingStatusMock,
+    getOnboardingAnswers: getOnboardingAnswersMock,
   },
 }));
 
@@ -43,6 +45,7 @@ const PROJECT = { id: "p1", name: "Min idé", oneLiner: "En rad." };
 
 beforeEach(() => {
   getOnboardingStatusMock.mockResolvedValue({ entry: null, completed: false });
+  getOnboardingAnswersMock.mockResolvedValue({});
   getProjectMock.mockResolvedValue(PROJECT);
 });
 
@@ -146,21 +149,32 @@ describe("/start (PR 11)", () => {
     expect(getOnboardingScriptMock).toHaveBeenLastCalledWith("noIdea", "sv");
   });
 
-  it("/start/profil: ett fritextfält per fråga, inga färdiga svar", async () => {
-    getOnboardingScriptMock.mockResolvedValue({
-      questions: [
-        { id: "role", cofounderText: "Vad gör du i dag?", suggestedAnswer: null },
-        { id: "time", cofounderText: "Hur mycket tid har du?", suggestedAnswer: null },
-      ],
-      closingMessage: "Nästa steg i resan är Möjligheter.",
-    });
+  it("/start/profil: kärnfrågorna en i taget med val, inga färdiga svar", async () => {
+    getProjectMock.mockResolvedValue(null);
+    const { liveProfileRepository: real } = await vi.importActual<typeof import("@/adapters/live/ProfileRepository")>(
+      "@/adapters/live/ProfileRepository",
+    );
+    getOnboardingScriptMock.mockImplementation((entry, locale) => real.getOnboardingScript(entry, locale));
     const { default: StartProfilePage } = await import("./profil/page");
     renderTree(await StartProfilePage());
-    // Actionen skickar till /app direkt efter sparandet, så repliken står i formuläret.
-    expect(screen.getByText("Nästa steg i resan är Möjligheter.")).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Vad gör du i dag?" })).toHaveAttribute("name", "role");
-    expect(screen.getByRole("textbox", { name: "Hur mycket tid har du?" })).toHaveAttribute("name", "time");
-    expect(screen.getByRole("button", { name: sv.onboarding.profile.submitCta })).toBeInTheDocument();
+    expect(screen.getByText(sv.onboarding.profile.formSubtitle)).toBeInTheDocument();
+    expect(screen.getByText("Fråga 1 av 4")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: sv.onboarding.v4Questions.noIdea.situation })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: sv.onboarding.v4Questions.choices.situation.employed })).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("/start/profil: fortsätter med de sparade svaren, och med kärnfrågorna besvarade visas startkortet", async () => {
+    getProjectMock.mockResolvedValue(null);
+    const { liveProfileRepository: real } = await vi.importActual<typeof import("@/adapters/live/ProfileRepository")>(
+      "@/adapters/live/ProfileRepository",
+    );
+    getOnboardingScriptMock.mockImplementation((entry, locale) => real.getOnboardingScript(entry, locale));
+    getOnboardingAnswersMock.mockResolvedValue({ situation: "employed", time: "h3to6", money: "none", soldB2b: "no" });
+    const { default: StartProfilePage } = await import("./profil/page");
+    renderTree(await StartProfilePage());
+    expect(screen.getByRole("heading", { name: sv.onboarding.startFrame.titleNoIdea })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: sv.onboarding.startFrame.continueCta })).toBeInTheDocument();
   });
 
   it("/start/profil: stubbad adapter ger Kommer snart i samtalet och profilen", async () => {
@@ -170,11 +184,20 @@ describe("/start (PR 11)", () => {
     expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(2);
   });
 
-  it("/start/profil: visar adapterns samtal", async () => {
+  it("/start/profil: utan körd migrering (svaren går inte att läsa) visas Kommer snart, inte ett samtal som inte kan sparas", async () => {
     getOnboardingScriptMock.mockResolvedValue(script);
+    getOnboardingAnswersMock.mockRejectedValue(new NotImplementedError("Profil (onboarding v4)", "docs/moduler/profil.md"));
     const { default: StartProfilePage } = await import("./profil/page");
     renderTree(await StartProfilePage());
-    expect(screen.getByText("Vad gör du idag?")).toBeInTheDocument();
+    expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(2);
+    expect(screen.queryByText("Vad gör du idag?")).not.toBeInTheDocument();
+  });
+
+  it("/start/profil: ett äkta fel kastas vidare", async () => {
+    getOnboardingScriptMock.mockResolvedValue(script);
+    getOnboardingAnswersMock.mockRejectedValue(new Error("databasen svarar inte"));
+    const { default: StartProfilePage } = await import("./profil/page");
+    await expect(StartProfilePage()).rejects.toThrow("databasen svarar inte");
   });
 
   it("importerar inget ur demot", () => {

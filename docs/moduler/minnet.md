@@ -39,6 +39,16 @@ getKnownProfile?(): Promise<Partial<ProfileSummary>>        // valfri, tillagd m
   grundarens egna ord på det språk hen faktiskt skrev dem, den översätts
   aldrig automatiskt (se demoadaptern nedan).
 
+**Onboarding v4 (2026-10-03, spec v4 §3.2).** `ProfileSummary.answers?` ger
+v4-svaren med frågan och valets etikett, och
+`getPendingOnboardingQuestions?(locale)` ger frågorna som återstår (ingångens
+frågor minus de besvarade, härlett och aldrig lagrat). Profilen-fliken i /app
+visar Dina svar och Återstår, där grundaren kan svara med samma valknappar som
+i /start/profil. Fritextsvar från före v4 (`onboarding_version = 1`) visas som
+förut, men bara de som har ett svar: luckorna står under Återstår.
+`getKnownProfile` ger också `frustrations`, `customer` och v4-svaren, så att
+Medgrundaren ser dem. Utan körd migrering läser adaptern profilen som förut.
+
 ## Datakällor och vad som krävs
 
 - **Supabase**, tre delar av datamodellen (uppdrag 14.4): `profiles`

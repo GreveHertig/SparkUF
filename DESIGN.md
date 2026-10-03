@@ -546,3 +546,10 @@ Playwright (cachad `npx`-installation, samma mönster som tidigare sessioner). K
 - **Tre tillstånd:** formuläret, fältfel (via `TextField`s `error`) eller formulärfel (`text-score-red`, `role="alert"`), och tack-texten (`role="status"`), som ersätter formuläret helt när adressen är mottagen. En dubblett ger samma tack-text som en ny adress, så att ingen kan ta reda på vilka adresser som finns.
 - **GDPR-raden** (`text-xs text-slate-500`) står direkt under knappen, så att den syns innan man skickar. Raden anger också vart man mejlar för att bli borttagen från listan.
 - Ingen ny token och ingen ny komponent i `components/ui/`.
+
+### Onboarding v4: valknappar och startkortet (gren `plattform/onboarding-v4`)
+
+- **Valknappar** (`.fdd-choices` i `design/site.css`): befintliga `fd-btn fd-btn--sm`, `--secondary` för ett val och `--primary` för det valda (`aria-pressed`). Den enda nya regeln är att texten får radbrytas (`white-space: normal`, vänsterställd). Annars går de långa valen i "Vilken av de här tre låter mest som du?" utanför skärmen på mobil. Samma knappar används i `/start/profil` och under Återstår i Minnet (`screens/blocks/OnboardingQuestion.tsx`).
+- **En fråga i taget** i samtalets befintliga form (`ChatLine`, `fdd-conversation`), med "Fråga 2 av 4" ovanför och en länk "Ändra" under ett givet svar.
+- **Startkortet** (`screens/blocks/StartFrameCard.tsx`) är en `fd-panel` med befintliga etiketter (`fdd-label`) och punktlista (`fdd-bullets`). Tid och pengar bär `SourceTag` med "Din uppgift". Bedömningen har rubriken "Medgrundarens bedömning", så att den aldrig läses som ett faktum.
+- Ingen ny token och ingen ny komponent i `components/ui/`.
