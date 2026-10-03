@@ -7,7 +7,6 @@ import { liveSimulationProvider } from "@/adapters/live/SimulationProvider";
 import { liveOutreachPrep } from "@/adapters/live/OutreachPrep";
 import { liveOutreachProvider } from "@/adapters/live/OutreachProvider";
 import { liveBuildProvider } from "@/adapters/live/BuildProvider";
-import { liveVerdictProvider } from "@/adapters/live/VerdictProvider";
 
 /**
  * Vakt, inte kontrakt: de moduler vars liveadapter fortfarande är en stub
@@ -24,7 +23,6 @@ const STILL_STUBS: { module: string; call: () => Promise<unknown> }[] = [
   { module: "Simuleringar", call: () => liveSimulationProvider.simulate("test", "sv") },
   { module: "Utskick och svar", call: () => liveOutreachProvider.getStatuses() },
   { module: "Bygg", call: () => liveBuildProvider.getStatus() },
-  { module: "Domen", call: () => liveVerdictProvider.getVerdictReport("sv") },
 ];
 
 describe("Stub-vakt: obyggda liveadaptrar kastar fortfarande NotImplementedError", () => {

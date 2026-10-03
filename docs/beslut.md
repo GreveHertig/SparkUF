@@ -664,3 +664,21 @@ Uppdrag från Bruno (2026-10-04). Se `docs/moduler/webbresearch-och-pulsen.md`
   Utan den fungerar allt som förut.
 - Porten `PulseProvider` fick den valfria `getLearning`, `PulseSignal` fick
   `boosted`, `whyByAi` och `deadline`, och `PlanRepository` fick `due`.
+
+**Valideringen blir en samtalslogg (gren `plattform/validering-samtalsloggen`).**
+Uppdrag från Bruno (2026-10-04). Se `docs/moduler/validering.md`.
+- **Grundaren pratar själv med kunderna och loggar svaren.** Spark skickar
+  ingenting. Sändspärren i `docs/moduler/utskick-och-svar.md` gäller orörd.
+- **Ny port `ValidationLog`** och tabellen `validation_contacts`, en rad per
+  bolag och projekt. Status går aldrig bakåt (trigger), och ett bolag som
+  svarat går inte att ta bort.
+- **Ett loggat svar blir självrapporterade bevis** (B6): ett om problemet och
+  ett om priset, med bolaget som källa och samtalets dag som datum. "Delvis"
+  räknas som att problemet bekräftas, som i Domen. "Tog inte ställning" till
+  priset ger inget prisbevis och återkallar ett tidigare.
+- **Domens liveadapter är byggd** på loggen, med samma kod som demot.
+  Storleksklassens nedre gräns används som antal anställda.
+- **Sidan öppnas efter steg 02**, inte 03. Grundaren bygger listan själv, och
+  steg 03 går inte att nå i live så länge Registret är grindat.
+- **Domen i `/app/validering` visas utan poäng.** `VerdictBlock` tar nu
+  poängen som valfri; demot och Resans steg visar den som förut.

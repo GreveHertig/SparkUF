@@ -136,4 +136,9 @@ Validering, en egen fas) anropar den. Andra domar sparar inget.
 
 ## Status
 
-**Påbörjad: ren logik, port och demoadapter klara; liveadapter är stub.**
+**Liveadaptern byggd (2026-10-04)** på Valideringens samtalslogg
+(`docs/moduler/validering.md`): svaren grundaren loggat, storleksklassens
+nedre gräns som antal anställda. Svar som Spark själv tar emot kommer när
+sändspärren hävs.
+
+Tidigare: ren logik, port och demoadapter klara; liveadapter var stub.

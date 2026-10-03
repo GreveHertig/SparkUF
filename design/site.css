@@ -4340,3 +4340,145 @@ a.fdd-segmented__item {
   margin: 0;
   font-size: 0.9375rem;
 }
+
+/* Valideringen i /app: samtalsloggen (screens/ValidationLive.tsx,
+   screens/blocks/ValidationContacts.tsx, docs/moduler/validering.md). Egna
+   klassnamn (fdd-vlog), så att demots Validering inte påverkas. Bygger på
+   Min plans rader (fdd-myplan) och formulärfälten (fdd-input, fdd-textarea). */
+.fdd-vlog__next {
+  gap: var(--space-4);
+}
+
+.fdd-vlog__nexttext {
+  margin: 0;
+  font-size: 1.0625rem;
+  color: var(--fd-ink);
+}
+
+.fdd-vlog__label {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fd-ink);
+}
+
+.fdd-vlog__bar {
+  display: grid;
+  grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.fdd-vlog__bar .fdd-bars__track {
+  border-radius: 2px;
+  background: var(--sunk);
+}
+
+.fdd-vlog__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: 1.15em;
+  color: var(--fd-muted);
+}
+
+.fdd-vlog__item {
+  align-items: flex-start;
+}
+
+.fdd-vlog__main {
+  display: flex;
+  flex: 1 1 18rem;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.fdd-vlog__main .fdd-rows__title {
+  margin: 0;
+}
+
+.fdd-vlog__add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.fdd-vlog__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.fdd-vlog__field--grow {
+  flex: 1 1 14rem;
+}
+
+.fdd-vlog__select {
+  flex: none;
+  min-height: 2.5rem;
+}
+
+.fdd-self-end {
+  align-self: flex-end;
+}
+
+.fdd-vlog__paste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fdd-vlog__paste > summary {
+  cursor: pointer;
+  color: var(--accent-700);
+  font-size: 0.9375rem;
+}
+
+.fdd-vlog__paste[open] > summary {
+  margin-bottom: var(--space-2);
+}
+
+.fdd-vlog__form {
+  display: flex;
+  flex: 1 1 100%;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--fd-line);
+}
+
+.fdd-vlog__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+}
+
+.fdd-vlog__fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.fdd-vlog__guide > summary {
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.fdd-vlog__guide[open] > summary {
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 40rem) {
+  .fdd-vlog__bar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+}

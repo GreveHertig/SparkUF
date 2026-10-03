@@ -82,18 +82,22 @@ export function SimulationBlock({ simulation }: { simulation: Simulation }) {
 }
 
 /** Domen: poängen vid domen, nivån, utslaget och motiveringen. */
-export function VerdictBlock({ score, headline, reasoning }: { score: number; headline: string; reasoning: string }) {
+export function VerdictBlock({ score, headline, reasoning }: { score?: number; headline: string; reasoning: string }) {
   const { t } = useI18n();
-  const level = getScoreLevel(score);
+  // /app/validering visar domen utan poäng: poängen räknas av calculateScore
+  // och visas i skalets sidhuvud, aldrig som en del av domen.
+  const level = score === undefined ? null : getScoreLevel(score);
   return (
     <div className="fd-panel fdd-verdict">
-      <div className="fdd-figure">
-        <p className="fd-proof__number">
-          <span>{score}</span>
-          <span className="fd-proof__outof">{t.site.proof.outOf}</span>
-        </p>
-        <span className={cn("fd-level", levelTone[level.tone])}>{t.score.levels[level.key].name}</span>
-      </div>
+      {score !== undefined && level && (
+        <div className="fdd-figure">
+          <p className="fd-proof__number">
+            <span>{score}</span>
+            <span className="fd-proof__outof">{t.site.proof.outOf}</span>
+          </p>
+          <span className={cn("fd-level", levelTone[level.tone])}>{t.score.levels[level.key].name}</span>
+        </div>
+      )}
       <p className="fdd-verdict__headline">{headline}</p>
       <p className="fd-nextstep__why">{reasoning}</p>
     </div>

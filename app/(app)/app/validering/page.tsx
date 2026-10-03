@@ -1,64 +1,74 @@
-import { Validation, type ValidationData, type ValidationLock, type ValidationVerdict } from "@/screens/Validation";
+import { ValidationLive, type ValidationLiveData, type ValidationLiveLock } from "@/screens/ValidationLive";
 import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
-import { liveOutreachProvider } from "@/adapters/live/OutreachProvider";
+import { liveValidationLog } from "@/adapters/live/ValidationLog";
+import { liveVerdictProvider } from "@/adapters/live/VerdictProvider";
+import { liveProjectRepository } from "@/adapters/live/ProjectRepository";
+import { stockholmToday } from "@/adapters/live/evidenceScore";
 import { orNull } from "../_lib/orNull";
-
-/** Samma gräns som demot: kontaktlistan byggs i steg 04, så sidan öppnas när steg 03 är klart. */
-const UNLOCKS_AFTER_STEP = 3;
-const VERDICT_STEP = 6;
+import {
+  addValidationContact,
+  logValidationAnswer,
+  markValidationContacted,
+  markValidationDeclined,
+  pasteValidationContacts,
+  removeValidationContact,
+} from "./actions";
 
 /**
- * Valideringen i /app (PR 7, docs/plan-en-design.md). Låst och olåst kommer ur
- * Resans steg. Varje sektion fångas för sig (platshållare per sektion):
+ * Sidan öppnas när grundaren har ett projekt (steg 02 klart). Tidigare låg
+ * gränsen efter steg 03, eftersom demots kontaktlista byggs ur Registret i
+ * steg 04. Här bygger grundaren listan själv, och att prata med kunder tidigt
+ * skadar aldrig. Registret är dessutom grindat, så steg 03 går inte att nå i
+ * live. Beslut i docs/beslut.md 2026-10-04.
+ */
+const UNLOCKS_AFTER_STEP = 2;
+
+/**
+ * Valideringen i /app (docs/moduler/validering.md): samtalsloggen. Grundaren
+ * pratar själv med kunderna och loggar svaren; Spark skickar ingenting
+ * (sändspärren i docs/moduler/utskick-och-svar.md gäller orörd). Domen räknas
+ * ur de loggade svaren av samma kod som demot (core/verdict.ts).
  *
- * - Kontaktlistan: `liveOutreachProvider.getCampaign` kastar
- *   `OutreachSendDisabledError` (sändspärren) och ger "Kommer snart" i
- *   nyckeltalen och i listan.
- * - Antagandena och svaren har ingen portmetod än (de finns bara som
- *   demohjälpare i `adapters/demo/OutreachProvider.ts`), så de är alltid `null`.
- * - Domen: Resans liveadapter ger ingen dom än, så sektionen visar "Kommer
- *   snart" från steg 06. Före steg 06 visas den inte, som i demot.
- * - Simuleringen: Hiasynth är ett koncept och liveadaptern en stubbe. Frågan i
- *   demot är skriven för Saras scenario, och ingen fråga hittas på här.
- *
- * Registret används inte: Valideringen har inga registersiffror, så
- * licensgrinden (docs/moduler/registret.md) har inget att släppa igenom här.
+ * Saknas tabellen (migreringen inte körd) eller ett aktivt projekt blir
+ * loggen `null` och sidan visar "Kommer snart". Ett äkta fel kastas vidare.
+ * Demot (/demo/validering) använder fortfarande `screens/Validation.tsx` med
+ * Saras manusstyrda utskick.
  */
 export default async function LiveValidationPage() {
   const steps = await orNull(liveJourneyRepository.getSteps("sv"));
   const stepStatus = (stepNumber: number) => steps?.find((step) => step.stepNumber === stepNumber)?.status;
 
-  // Okända steg (platshållarfel) ger inget låst läge; sektionerna visar då sina egna luckor.
-  const locked: ValidationLock =
+  // Okända steg (platshållarfel) ger inget låst läge; loggen visar då sin egen lucka.
+  const locked: ValidationLiveLock =
     steps && stepStatus(UNLOCKS_AFTER_STEP) !== "done" ? { unlocksAfterStep: UNLOCKS_AFTER_STEP } : null;
 
-  const verdictReached = steps !== null && stepStatus(VERDICT_STEP) !== "locked";
-  const [rows, stepDetail] = locked
-    ? [null, null]
+  const [contacts, verdict, project] = locked
+    ? [null, null, null]
     : await Promise.all([
-        orNull(liveOutreachProvider.getCampaign("sv")),
-        verdictReached ? orNull(liveJourneyRepository.getStepDetail(VERDICT_STEP, "sv")) : null,
+        orNull(liveValidationLog.getContacts()),
+        orNull(liveVerdictProvider.getVerdictReport("sv")),
+        orNull(liveProjectRepository.getProject()),
       ]);
 
-  let verdict: ValidationVerdict | null | "notReached" = "notReached";
-  if (verdictReached) {
-    const found = stepDetail?.verdict;
-    const score = stepDetail?.scoreDelta?.total;
-    verdict = found && score !== undefined ? { score, headline: found.headline, reasoning: found.reasoning } : null;
-  }
-
-  const data: ValidationData = {
-    // `CampaignRow` bär inget räkenskapsår: omsättningen visas som en lucka.
-    rows: rows && rows.map((row) => ({ ...row, revenueFiscalYear: null })),
-    outreachSource: null,
-    dateRange: null,
-    openRate: null,
-    openRateSource: null,
-    assumptions: null,
-    responses: null,
+  const data: ValidationLiveData = {
+    contacts,
     verdict,
-    simulation: null,
+    projectName: project?.name ?? null,
+    todayIso: stockholmToday(),
   };
 
-  return <Validation data={data} dataKind="live" locked={locked} />;
+  return (
+    <ValidationLive
+      data={data}
+      locked={locked}
+      actions={{
+        addContact: addValidationContact,
+        pasteContacts: pasteValidationContacts,
+        markContacted: markValidationContacted,
+        markDeclined: markValidationDeclined,
+        removeContact: removeValidationContact,
+        logAnswer: logValidationAnswer,
+      }}
+    />
+  );
 }
