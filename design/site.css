@@ -3362,11 +3362,25 @@
 /* Påståenden med ett siffervärde, som nyckeltal. */
 .fdd-bplan-figures {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  /* Bred nog för källtaggen under siffran: två rutor per rad i ett halvt avsnitt. */
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
   gap: var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* Källtaggen i en ruta får radbryta i stället för att spilla över kanten. */
+.fdd-bplan-figure .fdd-inline {
+  max-width: 100%;
+}
+
+.fdd-bplan-figure .fdd-inline > button {
+  max-width: 100%;
+  flex-wrap: wrap;
+  flex-shrink: 1;
+  white-space: normal;
+  text-align: left;
 }
 
 .fdd-bplan-figure {
