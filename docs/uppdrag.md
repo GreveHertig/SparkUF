@@ -19,9 +19,9 @@ Det här dokumentet ligger i repot som `docs/uppdrag.md` och innehåller all pro
 
 1. **Utgå från repot som det är.** Det finns redan ett Next.js-projekt. Bygg vidare på det som finns och skriv aldrig över andras arbete.
 2. **Branch:** allt prototyparbete sker på branchen `prototyp`, som redan finns. Landningssidan byggs på `prototyp-landning` och slås ihop med `prototyp` via pull request. Inget pushas direkt till `main`.
-3. **Läs först, planera sedan.** Varje session läser `CLAUDE.md`, `docs/status.md` och sina avsnitt i det här dokumentet. Därefter föreslår den en plan och väntar på godkännande innan kod skrivs.
+3. **Läs först, planera sedan.** Varje session läser `CLAUDE.md`, de senaste filerna i `docs/status/` och sina avsnitt i det här dokumentet. Därefter föreslår den en plan och väntar på godkännande innan kod skrivs.
 4. **Committa ofta** med tydliga meddelanden. `typecheck` och `lint` ska gå igenom utan fel före varje commit.
-5. **Lämna över.** Varje session avslutas med att `docs/status.md` uppdateras: vad som är klart, vad som återstår, kända problem och beslut som nästa session behöver känna till.
+5. **Lämna över.** Varje session avslutas med en egen fil i `docs/status/` (regeln står i `docs/status.md`): vad som är klart, vad som återstår, kända problem och beslut som nästa session behöver känna till.
 6. **Fråga bara när det spelar roll.** Fråga om något oklart påverkar arkitekturen. Mindre designbeslut fattar du själv och dokumenterar i `DESIGN.md`.
 
 ---
