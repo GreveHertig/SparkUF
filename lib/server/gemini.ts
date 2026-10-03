@@ -168,9 +168,14 @@ function textOrThrow(response: GenerateContentResponse): string {
  * De nyckelord som `responseJsonSchema` stöder, enligt SDK:ns dokumentation
  * (`GenerateContentConfig.responseJsonSchema` i @google/genai 2.23): "only the
  * following properties are supported". Äldre modeller ignorerade resten, men
- * mot gemini-3.8-flash gav schemat 400 INVALID_ARGUMENT (2026-10-03), troligen
- * för `minLength`/`maxLength` som zod lägger på strängfält. `$schema` saknas
- * också i listan.
+ * mot gemini-3.8-flash gav schemat 400 INVALID_ARGUMENT (2026-10-03). `$schema`,
+ * `minLength`, `maxLength` och `pattern` saknas i listan.
+ *
+ * `maxItems` står i listan men tas ändå bort: Eriks felsökning mot
+ * gemini-3.8-flash (2026-10-03, scratchpad/gemini-schema-probe.mjs) visade att
+ * Juridisk kolls schema avvisas med `enum` och `maxItems` tillsammans, men går
+ * igenom utan `maxItems` och utan `enum`. `enum` behövs för att modellen ska
+ * välja bland katalogens ämnen, så `maxItems` är den som tas bort.
  */
 const SUPPORTED_SCHEMA_KEYWORDS = new Set([
   "$id",
@@ -185,7 +190,6 @@ const SUPPORTED_SCHEMA_KEYWORDS = new Set([
   "items",
   "prefixItems",
   "minItems",
-  "maxItems",
   "minimum",
   "maximum",
   "anyOf",
@@ -199,9 +203,9 @@ const SUPPORTED_SCHEMA_KEYWORDS = new Set([
 const SCHEMA_MAPS = new Set(["properties", "$defs"]);
 
 /**
- * Schemat med bara de nyckelord Gemini stöder, på alla nivåer. Det som tas
- * bort (t.ex. `minLength`, `maxLength`, `pattern`) gäller ändå: adaptrarna
- * validerar svaret mot sitt zod-schema efteråt. Ändrar aldrig indata.
+ * Schemat med bara de nyckelord Gemini tar emot, på alla nivåer. Det som tas
+ * bort (`minLength`, `maxLength`, `pattern`, `maxItems` m.fl.) gäller ändå:
+ * adaptrarna validerar svaret mot sitt zod-schema efteråt. Ändrar aldrig indata.
  */
 export function toGeminiSchema(schema: unknown): unknown {
   if (Array.isArray(schema)) return schema.map(toGeminiSchema);

@@ -100,7 +100,7 @@ describe("anropsformen för Gemini 3 och senare", () => {
     }
   });
 
-  it("skickar bara nyckelord som Gemini stöder: minLength, maxLength och pattern tas bort på alla nivåer", async () => {
+  it("skickar bara nyckelord som Gemini tar emot: minLength, maxLength, pattern och maxItems tas bort på alla nivåer", async () => {
     const { generateJson } = await import("./gemini");
     const schema = {
       type: "object",
@@ -117,7 +117,7 @@ describe("anropsformen för Gemini 3 och senare", () => {
       type: "object",
       properties: {
         pattern: { type: "string" },
-        lista: { type: "array", maxItems: 25, items: { type: "string", enum: ["a", "b"] } },
+        lista: { type: "array", items: { type: "string", enum: ["a", "b"] } },
       },
       required: ["pattern", "lista"],
       additionalProperties: false,
@@ -126,12 +126,12 @@ describe("anropsformen för Gemini 3 och senare", () => {
     expect(schema.properties.pattern).toHaveProperty("minLength", 3);
   });
 
-  it("Juridisk kolls riktiga schema skickas utan minLength och maxLength", async () => {
+  it("Juridisk kolls riktiga schema skickas utan minLength, maxLength och maxItems, men med enum", async () => {
     const { z } = await import("zod");
     const { GeminiSvarSchema } = await import("@/adapters/live/legalSchema");
     const { toGeminiSchema } = await import("./gemini");
     const sent = JSON.stringify(toGeminiSchema(z.toJSONSchema(GeminiSvarSchema)));
-    expect(sent).not.toMatch(/"(minLength|maxLength|pattern|\$schema)"/);
+    expect(sent).not.toMatch(/"(minLength|maxLength|pattern|maxItems|\$schema)"/);
     expect(sent).toContain('"rubrik"');
     expect(sent).toContain('"enum"');
   });

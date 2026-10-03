@@ -58,3 +58,12 @@ Eriks körning av felsökningsskriptet: steg "JSON-läge utan schema" gick igeno
 - **Felsökningsskriptet** (`scratchpad/`, gitignorerat) provar nu det schema appen skickar först (`legal-schema-gemini.json`, genererat med `toGeminiSchema`), sedan minimalt schema och det gamla schemat. `PROBE_STEG=1,2` kör bara vissa steg. Är retryDelay över 60 s avbryter det direkt med ett meddelande om att kvoten är slut (exit-kod 2). Provat mot en lokal låtsasserver som svarar 429 med 19 587 s.
 
 Återstår: när kvoten är tillbaka, kör `PROBE_STEG=1,2,3` i skriptet och sedan `pnpm test:live:gemini`.
+
+### Tillägg 4: enum + maxItems (2026-10-03)
+Eriks körning av felsökningsskriptet med betald nyckel: appens schema (efter tillägg 3) 400, minimalt schema OK, gamla schemat 400. Utan `additionalProperties` 400, **utan `maxItems` OK, utan `enum` OK**, utan `thinkingConfig` 400. Slutsats: gemini-3.8-flash avvisar Juridisk kolls schema när `enum` och `maxItems` finns tillsammans, fast båda står bland de nyckelord SDK:n dokumenterar som stödda. Att `minLength`/`maxLength` var orsaken (tillägg 3) stämde alltså inte; de tas ändå bort eftersom de inte är dokumenterade som stödda.
+
+- `toGeminiSchema()` tar nu också bort `maxItems`, i samma filter. `enum` behålls, eftersom modellen ska välja bland katalogens ämnen. `minItems` står kvar (inget av våra scheman använder det).
+- Gränsen på 25 krav kontrolleras fortsatt av zod (`GeminiSvarSchema`, `.max(25)`) när svaret tolkas. Nytt test i `adapters/live/LegalAdvisor.test.ts`: 26 krav avvisas, 25 går igenom.
+- Felsökningsskriptet: steg 1 är exakt det appen skickar nu (`legal-schema-gemini.json`, omgenererat med `toGeminiSchema`). Väntat utfall: steg 1, 2, 5 och 6 går, 3 och 4 ger 400.
+
+Återstår: Erik kör `pnpm test:live:gemini`.
