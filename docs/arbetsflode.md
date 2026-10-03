@@ -16,7 +16,7 @@ Flaskhalsen är granskning, inte kodtimmar. Fler sessioner ger fler halvfärdiga
 
 1. En gren och en yta per session. Aldrig två sessioner i samma filer. Under migreringen rör bara en person `screens/` och `design/site.css`.
 2. Max två egna PR:ar öppna samtidigt.
-3. Färdig = typecheck, lint, test och build gröna, `docs/status.md` uppdaterad, och någon har klickat igenom det i webbläsare.
+3. Färdig = typecheck, lint, test och build gröna, en egen fil i `docs/status/` (se `docs/status.md`), och någon har klickat igenom det i webbläsare.
 4. Sessioner rör aldrig `core/score.ts`, `ports/`, demodatan, andras adaptrar eller nycklar. Inga hemligheter i molnmiljön.
 5. Inga git-kommandon medan en agent arbetar i samma katalog.
 6. Veckan före lansering (från 17 nov) är fryst, även för autonoma sessioner. En kodfri dag per vecka.
@@ -27,10 +27,10 @@ Flaskhalsen är granskning, inte kodtimmar. Fler sessioner ger fler halvfärdiga
 ```
 Uppgift: <en mening>
 Gren: <t.ex. bakgrund/en-texter-marknad, skapad från prototyp>
-Läs först: docs/status.md och <relevant moduldokument>
+Läs först: de senaste filerna i docs/status/ och <relevant moduldokument>
 Får röra: <filer/mappar>
 Får inte röra: core/score.ts, ports/, demodatan, andras adaptrar, nycklar, <annat>
-Klart när: typecheck, lint, test, build gröna; docs/status.md uppdaterad; PR öppnad mot <prototyp | design/en-design> med /forbered-pr
+Klart när: typecheck, lint, test, build gröna; egen fil docs/status/<datum>-<kort-namn>.md; PR öppnad mot <prototyp | design/en-design> med /forbered-pr
 Stoppa och fråga om: du behöver ändra något utanför "får röra"
 ```
 
@@ -46,7 +46,7 @@ Stoppa och fråga om: du behöver ändra något utanför "får röra"
 - `/session-bakgrund <uppgift>`: startar session 2 (utan tillsyn, slutar i PR).
 - `/session-granska`: startar session 3 (granskar öppna PR:ar).
 - `/klicka-igenom <sökväg>`: Claude tittar själv på sidan (skärmbilder, sv/en, mobil) så du slipper skicka skärmdumpar.
-- `/forbered-pr`: kontroller, status.md, PR-text.
+- `/forbered-pr`: kontroller, egen statusfil i `docs/status/`, PR-text.
 - `/granska-pr <nummer eller gren>`: granskning enligt teamets regler.
 
 Skriv uppgiften direkt i Code, till exempel `/session-bygg koppla onboardingen mot ProfileRepository`. Kopiera inte prompter från chatten.
