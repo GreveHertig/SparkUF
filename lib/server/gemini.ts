@@ -67,3 +67,40 @@ export async function generateJson({
   }
   return text;
 }
+
+export type GeminiTurn = { role: "user" | "model"; text: string };
+
+export type GenerateTextInput = {
+  systemInstruction: string;
+  /** Samtalet i ordning, äldst först. Sista turen är den som ska besvaras. */
+  turns: GeminiTurn[];
+  timeoutMs?: number;
+};
+
+/**
+ * Anropar Gemini för ett fritt textsvar i ett samtal och returnerar den råa
+ * texten. Validering (längd, form) är den anropande adapterns ansvar, t.ex.
+ * adapters/live/CofounderAgent.ts. Tänkandet hålls kort så att det inte äter
+ * upp svarets tokens.
+ */
+export async function generateText({ systemInstruction, turns, timeoutMs = 20_000 }: GenerateTextInput): Promise<string> {
+  const genAI = getGeminiClient();
+  const response = await genAI.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: turns.map((turn) => ({ role: turn.role, parts: [{ text: turn.text }] })),
+    config: {
+      systemInstruction,
+      temperature: 0.4,
+      candidateCount: 1,
+      maxOutputTokens: 1024,
+      thinkingConfig: { thinkingBudget: 256 },
+      abortSignal: AbortSignal.timeout(timeoutMs),
+    },
+  });
+
+  const text = response.text;
+  if (!text) {
+    throw new Error("Gemini svarade utan text.");
+  }
+  return text;
+}

@@ -59,7 +59,7 @@ kommande sessioner.
 | Resan | `JourneyRepository` | Supabase | påbörjad (P1) | `docs/moduler/resan.md` |
 | Evidens och poäng | `EvidenceRepository` | Supabase | klar (P1) | `docs/moduler/evidens-och-poang.md` |
 | Minnet | `MemoryRepository` | Supabase | klar (P1) | `docs/moduler/minnet.md` |
-| Medgrundaren | `CofounderAgent` | Gemini | stub | `docs/moduler/medgrundaren.md` |
+| Medgrundaren | `CofounderAgent`, `CofounderConversationRepository` | Gemini (`lib/server/gemini.ts`) + Supabase (`cofounder_messages`) | påbörjad (v1, bara text) | `docs/moduler/medgrundaren.md` |
 | Registret | `RegistryProvider` | Bolagsverket, SCB (`lib/server/scb.ts`, `bolagsverket.ts`, oskrivna; grindad via `lib/server/registryAccess.ts`) | påbörjad, grindad | `docs/moduler/registret.md` |
 | Webbresearch | `ResearchProvider` | Tavily | stub | `docs/moduler/webbresearch-och-pulsen.md` |
 | Pulsen | `PulseProvider` | Tavily | stub | `docs/moduler/webbresearch-och-pulsen.md` |

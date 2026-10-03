@@ -10,7 +10,7 @@ import { exampleSource } from "@/adapters/demo/exampleSource";
 import type { TranscriptItem } from "@/ports/CofounderAgent";
 import type { Locale } from "@/i18n/context";
 import { Cofounder, type CofounderData } from "@/screens/Cofounder";
-import { textHasFigure } from "../../_lib/figures";
+import { textHasFigure } from "@/core/figures";
 
 function hasFigure(item: TranscriptItem, locale: Locale): boolean {
   if (item.kind === "message") return textHasFigure(item.text[locale]);

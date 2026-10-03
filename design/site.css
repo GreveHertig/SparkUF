@@ -2452,6 +2452,8 @@
   border-radius: 1rem;
   font-size: 1rem;
   line-height: 1.5;
+  /* Medgrundarens svar på /app kan ha stycken. Demots manus har inga radbrytningar. */
+  white-space: pre-line;
 }
 
 .fdd-chat--cofounder .fdd-chat__bubble {
@@ -2528,7 +2530,19 @@
   background: transparent;
   color: var(--fd-muted);
   font: inherit;
+}
+
+.fdd-prompt__input:disabled {
   cursor: not-allowed;
+}
+
+.fdd-prompt__input:enabled {
+  color: var(--ink-900);
+}
+
+.fdd-prompt__error {
+  font-size: 0.875rem;
+  color: var(--fd-muted);
 }
 
 .fdd-prompt__input::placeholder {

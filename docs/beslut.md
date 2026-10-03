@@ -435,3 +435,47 @@ Förslag av Bruno (2026-10-02). Två nya tabeller, `pulse_feedback` och
 så att demoadaptern (demot är fryst) inte behöver ändras. Adaptern tål att
 tabellerna saknas, så koden kan mergas före migreringen. "Relevant" sparas
 men används inte än; den är underlag för en senare rangordning.
+
+## 2026-10-03
+
+**Medgrundaren, version 1 (gren `modul/medgrundaren`, väntar på granskning).**
+Uppdrag från Bruno (2026-10-03). Se `docs/moduler/medgrundaren.md`.
+- **Bara text, inga verktygsanrop.** Kontraktet för `sendMessage` ändras inte.
+  Function calling mot de andra portarna tas i en senare session.
+- **Steg 01 och 02.** Prompten får stegets mål ur Resan och det som redan är
+  känt ur Profilen och Minnet (och den aktiva idén ur Projekt och idé), via
+  deras portar. Steg 01 och 02 har egen styrning i prompten.
+- **Steg 03 och senare: Medgrundaren svarar ändå** (Brunos val). Prompten får
+  då bara stegets titel och ingress ur Resan, ingen särskild styrning.
+- **Modell:** Gemini via `lib/server/gemini.ts`, den nya funktionen
+  `generateText`. Samma modell som Juridisk koll.
+- **Samtalet sparas i `public.cofounder_messages`** (migrering
+  `20261003120000_cofounder_messages.sql`), med RLS och utan service role.
+  Bara select- och insert-policy för egna rader. **Ingen update- eller
+  delete-policy, med flit:** taket räknas ur raderna, och gick de att ta bort
+  kunde en grundare nollställa sitt eget tak. Raderna försvinner när kontot tas
+  bort (`on delete cascade`). Att låta grundaren rensa sitt samtal kräver ett
+  nytt beslut (till exempel en security definer-funktion som behåller räkningen).
+- **Kostnadstak:** högst 20 tidigare meddelanden per anrop, högst 40 meddelanden
+  från grundaren per kalenderdag (Stockholm). Över taket visas en text ur i18n.
+  Gränserna ligger i `core/cofounder.ts`.
+- **Taket hålls av databasen** (efter säkerhets- och kodgranskningen
+  2026-10-03). Funktionen `public.reserve_cofounder_message` räknar dagens
+  meddelanden och sparar grundarens nya meddelande i ett steg, under ett lås
+  per användare. Den är `security invoker`, så RLS gäller som vanligt, och
+  ingen service role används. Meddelandet sparas innan Gemini anropas, så att
+  samtidiga anrop inte båda passerar taket och ett misslyckat anrop också
+  räknas. Ordningen i samtalet kommer ur kolumnen `seq` (identity), inte ur en
+  tid som klienten kan sätta.
+- **Siffror i modellens svar** (Brunos val): systemprompten förbjuder egna
+  siffror och statistik. Bara siffror som grundaren själv angett får upprepas.
+  Det finns ingen kodspärr, så en siffra kan slinka igenom. Det är dokumenterat
+  som känd begränsning.
+- **Ändrad port, Minnet:** `MemoryRepository` får den valfria metoden
+  `getKnownProfile()` (Brunos val). Den ger de profilfält som är ifyllda, även
+  för ingång B som bara svarar på tre frågor. Demoadaptern ändras inte.
+- **Ny port:** `CofounderConversationRepository` (`ports/CofounderConversation.ts`)
+  med demo- och liveadapter.
+- **"Sedan tidigare" på /app:** grundarens egna uppgifter. En rad med en siffra
+  får källan "Din uppgift" (profilsamtalet, Hjärnan eller Spåret) med dagens
+  datum, eller postens datum för Spåret.

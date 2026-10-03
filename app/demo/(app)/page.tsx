@@ -11,7 +11,7 @@ import { exampleSource } from "@/adapters/demo/exampleSource";
 import type { Källa, NextStep, SinceLastTime } from "@/core/domain";
 import { AppHome, type AppHomeData } from "@/screens/AppHome";
 import { DEMO_PATHS } from "../_lib/paths";
-import { textHasFigure } from "../_lib/figures";
+import { textHasFigure } from "@/core/figures";
 
 /** Steget i scenariots egna källnamn ("Utskicket, steg 05"). */
 const STEP_IN_SOURCE = /\b(?:steg|step)\s+(\d+)/i;

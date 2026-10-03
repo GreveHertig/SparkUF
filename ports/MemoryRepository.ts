@@ -54,4 +54,12 @@ export interface MemoryRepository {
    * sparas inte två gånger. Ändrad port, eget beslut (docs/bygga-en-modul.md §4).
    */
   recordTraceEvent(event: RecordTraceEventInput): Promise<void>;
+  /**
+   * De profilfält som är ifyllda, även när inte alla sex är det (ingång B
+   * svarar bara på tre frågor). Kastar aldrig för att ett fält saknas, till
+   * skillnad från `getProfileSummary`. Läses av Medgrundaren
+   * (docs/moduler/medgrundaren.md). Valfri, så att demoadaptern inte behöver
+   * ändras. Ändrad port, eget beslut (docs/beslut.md 2026-10-03).
+   */
+  getKnownProfile?(): Promise<Partial<ProfileSummary>>;
 }

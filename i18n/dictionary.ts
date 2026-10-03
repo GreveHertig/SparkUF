@@ -270,6 +270,28 @@ export type Dictionary = {
      * inert i demot — se components/spark/PromptBox.tsx. */
     promptPlaceholder: string;
     promptSendLabel: string;
+    /** Den levande chatten på /app (docs/moduler/medgrundaren.md). */
+    live: {
+      emptyBody: string;
+      sending: string;
+      /** {limit} = dagens tak (core/cofounder.ts). */
+      dailyLimitReached: string;
+      sendFailed: string;
+      invalidMessage: string;
+      /** {max} = längsta meddelande. */
+      tooLong: string;
+    };
+    /** Etiketter för raderna i "Sedan tidigare" på /app, före grundarens egen text. */
+    known: {
+      idea: string;
+      role: string;
+      background: string;
+      time: string;
+      money: string;
+      risk: string;
+      brain: string;
+      trace: string;
+    };
   };
   scorePage: {
     title: string;

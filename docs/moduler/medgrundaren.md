@@ -64,6 +64,7 @@ via den här porten alls — demot är förskrivet, inte en levande chatt.
   ovaliderad modell-output vid fel (samma varning som i Juridisk koll:
   `z.prettifyError` eller motsvarande kan läcka modellens råtext).
 - Klarar kontraktstestet i `ports/CofounderAgent.contract.test.ts`.
+- Version 1 (2026-10-03): uppfyllt, se "Hur liveadaptern fungerar i dag".
 
 ## Säkerhet
 
@@ -75,11 +76,82 @@ Hjärnan) måste varje sådant anrop gå genom den moduls egen port och dess
 egna säkerhetsregler, inte en genväg direkt från Medgrundaren. Sätt ett
 längd-/kostnadstak på historiken som skickas till Gemini per anrop.
 
+## Hur liveadaptern fungerar i dag
+
+Version 1, byggd 2026-10-03 på `modul/medgrundaren`. Besluten står i
+`docs/beslut.md` (2026-10-03). Bara text, inga verktyg.
+
+**Flödet** (`adapters/live/CofounderAgent.ts`):
+1. Meddelandet rensas och får vara 1–2000 tecken, annars `CofounderInputError`.
+2. **Dagstaket:** `reserveFounderMessage(text, { limit: 40, sinceIso: midnatt i
+   Stockholm })` på den nya porten `CofounderConversationRepository`. Den
+   anropar databasfunktionen `public.reserve_cofounder_message`, som räknar och
+   sparar grundarens meddelande i ett steg under ett lås per användare
+   (`security invoker`, RLS gäller). Är taket nått sparas inget och
+   `CofounderDailyLimitError` kastas, innan något annat läses eller anropas.
+   Meddelandet sparas alltså före Gemini-anropet, så även ett misslyckat anrop
+   räknas, och det står då kvar utan svar.
+3. **Det kända läses** av `adapters/live/cofounderContext.ts`
+   (`loadCofounderContext`), var del för sig. En platshållare ger `null` för
+   den delen, ett riktigt fel kastas.
+   - Resan: aktuellt steg (`getSteps`) och stegets `why`/`doneItems`
+     (`getStepDetail`).
+   - Profilen: `MemoryRepository.getKnownProfile()`, en ny valfri metod som
+     ger de fält som finns, även för ingång B.
+   - Minnet: Hjärnan (kortad till 2000 tecken) och de 10 senaste posterna i
+     Spåret.
+   - Projekt och idé: den aktiva idén.
+4. **Systemprompten:** svensk, rak röst och en konkret uppgift i slutet av
+   varje svar. Den förbjuder egna siffror, källor och påståenden om verktyg.
+   Steg 01 och 02 har egen styrning, senare steg bara titel och ingress. Det
+   kända ligger som JSON i ett avgränsat block (`<kand_data>`, där `<` är
+   kodat så att data inte kan stänga blocket), med regeln att allt där och
+   allt grundaren skriver är data, aldrig instruktioner.
+5. **Historiken:** högst 20 tidigare meddelanden, rensade och kortade, går till
+   `generateText` (`lib/server/gemini.ts`) som turer (grundaren `user`,
+   Medgrundaren `model`). Turerna börjar alltid med grundaren, och samma roll
+   i följd slås ihop.
+6. **Svaret** rensas och valideras med zod (icke-tomt, högst 4000 tecken).
+   Varje fel blir `CofounderAgentError` med ett fast meddelande, aldrig
+   modellens råtext.
+
+**Svaret sparas** av server action `app/(app)/app/medgrundaren/actions.ts`.
+Den läser historiken ur databasen (aldrig från klienten) innan meddelandet
+reserveras, anropar `sendMessage` och sparar svaret i
+`public.cofounder_messages` (`adapters/live/CofounderConversation.ts`).
+Ordningen i samtalet kommer ur kolumnen `seq`, som databasen sätter. Kända fel
+blir en orsak som skärmen visar som text ur i18n.
+
+**Skärmen:** `screens/Cofounder.tsx` har en valfri prop `live` som visar
+`screens/blocks/CofounderChat.tsx`. Bara `/app` skickar den, så demot är
+förskrivet som förut. "Sedan tidigare" byggs av
+`app/(app)/app/medgrundaren/knownItems.ts` ur samma läsning som prompten. En
+rad med en siffra får källan "Din uppgift".
+
+**Utan körd migrering** ger en saknad tabell `NotImplementedError`. Sidan visar
+då "Kommer snart" och ett avstängt fält, och inget anrop går till Gemini
+(taket kan inte räknas).
+
+**Att köra det riktiga Gemini-anropet manuellt** (kostar riktiga anrop, körs
+inte i CI): `GEMINI_API_KEY=... pnpm test adapters/live/CofounderAgent.live.test.ts`.
+Annars skippas filen.
+
+**Kända begränsningar:**
+- Function calling mot de andra portarna återstår. Medgrundaren kör inga verktyg.
+- Det finns ingen kodspärr mot siffror i modellens svar, bara regeln i prompten.
+- En grundare kan med ett eget PostgREST-anrop lägga in rader i sin egen
+  historik, även med rollen `cofounder`. Det påverkar bara den egna sessionen
+  och kan inte sänka den egna räkningen.
+- Taket gäller per konto. Det finns inget tak för hela plattformens Gemini-kostnad,
+  så sätt en kvot på nyckeln i Google AI Studio.
+- Meddelanden räknas i tecken (kodpunkter), som databasens `char_length`.
+- Samtalet går inte att rensa (ingen delete-policy, se beslutet).
+- `/app` läser alltid på svenska (`"sv"`), som de andra sidorna i `/app`.
+
 ## Status
 
-stub — `adapters/live/CofounderAgent.ts` kastar `NotImplementedError`.
-Demoadaptern är en oanvänd platshållare (den riktiga demochatten går via
-`cofounderScript.ts`, inte porten). Störst osäkerhet av alla moduler i dag:
-verktygsanropslagret (function calling mot andra portar) är inte
-specificerat i kontraktet — lös den designfrågan med grundaren innan
-liveadaptern byggs, inte under tiden.
+påbörjad (v1, bara text). Liveadaptern klarar kontraktstestet med mockad
+Gemini. Migreringen `20261003120000_cofounder_messages.sql` måste köras
+manuellt i SQL Editor innan chatten syns på `/app`. Demoadaptern för
+`CofounderAgent` är oförändrad, och demots chatt går fortfarande via
+`cofounderScript.ts`.

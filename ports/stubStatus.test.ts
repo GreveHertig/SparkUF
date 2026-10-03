@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { NotImplementedError, OutreachLockedError, RegistryLockedError } from "@/core/errors";
 import { liveProjectRepository } from "@/adapters/live/ProjectRepository";
-import { liveCofounderAgent } from "@/adapters/live/CofounderAgent";
 import { liveRegistryProvider } from "@/adapters/live/RegistryProvider";
 import { liveResearchProvider } from "@/adapters/live/ResearchProvider";
 import { liveSimulationProvider } from "@/adapters/live/SimulationProvider";
@@ -21,7 +20,6 @@ import { liveVerdictProvider } from "@/adapters/live/VerdictProvider";
  * delvis byggda i PARTIELLA_STUBBAR nedan, grindade i Licens-/Grindvakten.
  */
 const STILL_STUBS: { module: string; call: () => Promise<unknown> }[] = [
-  { module: "Medgrundaren", call: () => liveCofounderAgent.sendMessage("hej", [], "sv") },
   { module: "Webbresearch", call: () => liveResearchProvider.search("test") },
   { module: "Simuleringar", call: () => liveSimulationProvider.simulate("test", "sv") },
   { module: "Utskick och svar", call: () => liveOutreachProvider.getStatuses() },
