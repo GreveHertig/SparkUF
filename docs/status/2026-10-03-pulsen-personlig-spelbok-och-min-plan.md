@@ -16,9 +16,13 @@ Beslut i `docs/beslut.md` (2026-10-03), detaljer i
 - **Lägg till stegen i min plan**: ny port `PlanRepository` med demo- och
   liveadapter, tabellen `plan_items` (RLS), Server Actions i Pulsen och Resan,
   och delen "Min plan" i Resan där uppgifterna bockas av och tas bort.
+- **Kompletterande data fäller aldrig sidan** (`app/(app)/app/_lib/optional.ts`):
+  går Profilen, projektet, Resan eller planen inte att läsa visas Pulsen,
+  Resan och Medgrundaren ändå, och felet loggas utan sitt meddelande.
+- Min plan läses om när servern skickar en ny plan (nyckel på listan).
 - Testattrappen för Supabase (`test/stubs/supabaseFake.ts`) kan nu `delete()`.
 - Kontroll: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar),
-  `pnpm test` (1421 gröna, 45 skippade), `pnpm build`. Spelboken och planen
+  `pnpm test` (1425 gröna, 45 skippade), `pnpm build`. Spelboken och planen
   renderade och granskade på en skärmbild med `design/site.css`.
 
 ### Återstår

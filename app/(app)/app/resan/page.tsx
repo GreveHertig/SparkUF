@@ -2,6 +2,7 @@ import { Journey } from "@/screens/Journey";
 import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
 import { livePlanRepository } from "@/adapters/live/PlanRepository";
 import { orNull } from "../_lib/orNull";
+import { optional } from "../_lib/optional";
 import { removePlanItem, togglePlanItem } from "./actions";
 
 /**
@@ -10,13 +11,13 @@ import { removePlanItem, togglePlanItem } from "./actions";
  * krasch. Ett äkta fel kastas vidare.
  *
  * Min plan (docs/moduler/min-plan.md) visas under faserna. Finns tabellen
- * plan_items inte (migreringen inte körd) blir planen `null` och delen visas
- * inte alls.
+ * plan_items inte (migreringen inte körd), eller går planen inte att läsa,
+ * blir den `null` och delen visas inte alls. Stegen visas ändå.
  */
 export default async function LiveJourneyPage() {
   const [steps, planItems] = await Promise.all([
     orNull(liveJourneyRepository.getSteps("sv")),
-    orNull(livePlanRepository.getItems()),
+    optional(livePlanRepository.getItems(), "Resan: Min plan"),
   ]);
   // Layouten släpper bara in den som är klar med onboardingen.
   return (

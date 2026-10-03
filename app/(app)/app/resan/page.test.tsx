@@ -74,6 +74,16 @@ describe("/app/resan (PR 9)", () => {
     );
     expect(functionProps).toEqual([]);
   });
+  it("ett riktigt fel i planen fäller inte Resan", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    getStepsMock.mockResolvedValue(steps);
+    getPlanItemsMock.mockRejectedValue(new Error("nere"));
+    await renderPage();
+    expect(screen.getByRole("heading", { level: 1, name: "Idén" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: sv.journeyPage.plan.title })).not.toBeInTheDocument();
+    log.mockRestore();
+  });
+
   it("utan plan_items visas ingen plan", async () => {
     getStepsMock.mockResolvedValue(steps);
     await renderPage();

@@ -4,6 +4,7 @@ import { liveCofounderConversation } from "@/adapters/live/CofounderConversation
 import { loadCofounderContext } from "@/adapters/live/cofounderContext";
 import { livePulseProvider } from "@/adapters/live/PulseProvider";
 import { orNull } from "../_lib/orNull";
+import { optional } from "../_lib/optional";
 import { sendCofounderMessage } from "./actions";
 import { toKnownItems } from "./knownItems";
 import { isSignalId, toSignalDraft } from "./signalDraft";
@@ -23,7 +24,8 @@ const SHOWN_MESSAGES = 40;
  * `?signal=<id>`. Bara ett uuid tas emot, och signalen letas upp bland
  * grundarens egna signaler på servern. Hittas den förifylls frågan i fältet;
  * inget skickas och inget räknas mot taket förrän grundaren trycker Skicka.
- * Allt annat i adressen ignoreras.
+ * Allt annat i adressen ignoreras, och går signalerna inte att läsa blir
+ * fältet bara tomt.
  */
 export default async function LiveCofounderPage({
   searchParams,
@@ -34,7 +36,7 @@ export default async function LiveCofounderPage({
   const [messages, context, signals] = await Promise.all([
     orNull(liveCofounderConversation.getRecentMessages(SHOWN_MESSAGES)),
     loadCofounderContext("sv"),
-    isSignalId(signalId) ? orNull(livePulseProvider.getSignals("sv")) : Promise.resolve(null),
+    isSignalId(signalId) ? optional(livePulseProvider.getSignals("sv"), "Medgrundaren: signalen") : Promise.resolve(null),
   ]);
 
   const signal = signals?.find((item) => item.id === signalId);

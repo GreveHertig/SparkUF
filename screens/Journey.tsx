@@ -137,7 +137,11 @@ export function Journey({
         <ComingSoon />
       )}
 
-      {plan && <PlanSection plan={plan} />}
+      {/* Nyckeln byts när servern skickar en ny plan (efter revalidering), så
+          att listan läses om i stället för att hålla kvar sitt första läge. */}
+      {plan && (
+        <PlanSection key={plan.items.map((item) => `${item.id}:${item.done}`).join(",")} plan={plan} />
+      )}
     </div>
   );
 }

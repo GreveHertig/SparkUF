@@ -150,6 +150,18 @@ describe("/app/pulsen (steg 6)", () => {
     expect(screen.queryByText(sv.pulsePage.playbook.personalTitle)).not.toBeInTheDocument();
   });
 
+  it("ett riktigt fel i Profilen, projektet, Resan eller planen fäller inte sidan", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    getSignalsMock.mockResolvedValue([signal]);
+    getKnownProfileMock.mockRejectedValue(new Error("nere"));
+    getProjectMock.mockRejectedValue(new Error("nere"));
+    getStepsMock.mockRejectedValue(new Error("nere"));
+    getPlanItemsMock.mockRejectedValue(new Error("nere"));
+    await renderPage();
+    expect(screen.getAllByText(signal.headline).length).toBeGreaterThan(0);
+    log.mockRestore();
+  });
+
   it("ett riktigt fel i bevakningarna sväljs inte", async () => {
     getSignalsMock.mockResolvedValue([signal]);
     getWatchesMock.mockRejectedValue(new Error("Databasen svarar inte"));
