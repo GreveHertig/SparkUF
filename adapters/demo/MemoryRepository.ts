@@ -14,6 +14,7 @@ export const demoMemoryRepository: MemoryRepository = {
     const [profile, background, resources] =
       entry === "hasIdea" ? [jonasProfile, jonasBackground, jonasResources] : [saraProfile, saraBackground, saraResources];
     return {
+      entry,
       name: profile.name,
       role: background[locale].role,
       bio: background[locale].bio,

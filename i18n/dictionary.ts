@@ -11,6 +11,8 @@ export type Dictionary = {
     description: string;
   };
   common: {
+    /** Länk från steg 1 (Hem, Resan) till svaren i Minnets Profilen-flik. */
+    seeYourAnswers: string;
     languageSwitch: {
       sv: string;
       en: string;
@@ -557,6 +559,8 @@ export type Dictionary = {
     brainHintLive: string;
     brainSaveFailed: string;
     traceEmpty: string;
+    /** En profilfråga som inte är besvarad. Luckan fylls aldrig i. */
+    notAnswered: string;
   };
   legalPage: {
     title: string;

@@ -14,10 +14,10 @@ const steps: JourneyStepView[] = [
   { stepNumber: 3, journeyPhase: "tryPhase", title: "Marknaden", oneLiner: "Hur stor.", maxPoints: 10, status: "locked" },
 ];
 
-function renderJourney(data: { steps: JourneyStepView[] | null }) {
+function renderJourney(data: { steps: JourneyStepView[] | null }, profileAnswersHref?: string) {
   return render(
     <LocaleProvider>
-      <Journey data={data} basePath="/x/resan" />
+      <Journey data={data} basePath="/x/resan" profileAnswersHref={profileAnswersHref} />
     </LocaleProvider>,
   );
 }
@@ -51,6 +51,20 @@ describe("Journey (PR 9)", () => {
     expect(screen.getByText("0/1")).toBeInTheDocument();
     // Faser utan steg visas inte.
     expect(screen.queryByRole("heading", { level: 2, name: sv.journeyPage.phaseNames.grow })).not.toBeInTheDocument();
+  });
+
+  it("länken Se dina svar ligger under steg 1:s kort, och bara när routen skickar den", () => {
+    renderJourney({ steps }, "/x/minnet");
+    const links = screen.getAllByRole("link", { name: sv.common.seeYourAnswers });
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", "/x/minnet");
+    // Samma listpost som steg 1:s kort (inte stegraden överst).
+    const item = links[0].closest("li")!;
+    expect(within(item).getByRole("link", { name: /Om dig/ })).toHaveAttribute("href", "/x/resan/1");
+    expect(item.closest("ol")).toBeNull();
+    cleanup();
+    renderJourney({ steps });
+    expect(screen.queryByRole("link", { name: sv.common.seeYourAnswers })).not.toBeInTheDocument();
   });
 
   it("utan steg: Kommer snart och sidans namn, ingen stegrad", () => {

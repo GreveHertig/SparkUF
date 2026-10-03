@@ -9,5 +9,6 @@ import { orNull } from "../_lib/orNull";
  */
 export default async function LiveJourneyPage() {
   const steps = await orNull(liveJourneyRepository.getSteps("sv"));
-  return <Journey data={{ steps }} basePath="/app/resan" />;
+  // Layouten släpper bara in den som är klar med onboardingen.
+  return <Journey data={{ steps }} basePath="/app/resan" profileAnswersHref="/app/minnet" />;
 }

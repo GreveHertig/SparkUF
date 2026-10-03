@@ -64,6 +64,8 @@ export default async function LiveAppHomePage() {
       nextStepHref={nextStepHref}
       journeyBasePath={JOURNEY_BASE_PATH}
       scoreHref="/app/poang"
+      // Layouten släpper bara in den som är klar med onboardingen.
+      profileAnswersHref="/app/minnet"
     />
   );
 }

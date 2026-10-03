@@ -6,9 +6,10 @@ import { describeContract, contractIt } from "./testContract";
 import { makeSupabaseFake } from "@/test/stubs/supabaseFake";
 
 // Alla fyra metoder är klara (docs/moduler/minnet.md) — kontraktet prövas
-// nu mot liveadaptern också. Fixturen ger en komplett profilrad, annars
-// kastar getProfileSummary EmptyStateError och testet failar (contractIt
-// skippar bara NotImplementedError, se testContract.ts). Samma fejkade
+// nu mot liveadaptern också. Fixturen ger en profilrad med klar onboarding
+// från ingång B (bara role, time och money besvarade), annars kastar
+// getProfileSummary EmptyStateError och testet failar (contractIt skippar
+// bara NotImplementedError, se testContract.ts). Samma fejkade
 // klient delas av alla contractIt-anrop i den här filen (en modul-nivå
 // mock), så setBrainNotes-testet skriver till samma underlag som
 // getBrainNotes sedan läser — det är avsiktligt, se
@@ -22,10 +23,12 @@ vi.mock("@/lib/server/session", () => ({
           user_id: "contract-test-user",
           name: "Testanvändare",
           role: "Testroll",
-          bio: "En testbiografi.",
+          bio: null,
           time_available: "Några timmar i veckan",
           money_available: "10 000 kr",
-          risk_appetite: "Medel",
+          risk_appetite: null,
+          onboarding_entry: "hasIdea",
+          onboarding_completed_at: "2026-10-01T08:00:00Z",
         },
       ],
     }),
@@ -37,14 +40,16 @@ describeContract<MemoryRepository>(
   "MemoryRepository",
   { demo: demoMemoryRepository, live: liveMemoryRepository },
   (memory) => {
-    contractIt("getProfileSummary har alla fält ifyllda", async () => {
+    contractIt("getProfileSummary ger ingången och varje fält som text eller null, aldrig tom text", async () => {
       const summary = await memory.getProfileSummary("sv");
-      expect(summary.name).toBeTruthy();
+      expect(["noIdea", "hasIdea"]).toContain(summary.entry);
+      for (const field of [summary.name, summary.role, summary.bio, summary.time, summary.money, summary.risk]) {
+        if (field !== null) expect(field.trim()).not.toBe("");
+      }
+      // Frågorna som båda ingångarna ställer är besvarade efter onboardingen.
       expect(summary.role).toBeTruthy();
-      expect(summary.bio).toBeTruthy();
       expect(summary.time).toBeTruthy();
       expect(summary.money).toBeTruthy();
-      expect(summary.risk).toBeTruthy();
     });
 
     contractIt("getBrainNotes returnerar en sträng (kan vara tom)", async () => {

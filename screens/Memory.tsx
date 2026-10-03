@@ -6,6 +6,7 @@ import { ComingSoon } from "@/components/ui/ComingSoon";
 import { useI18n } from "@/i18n/context";
 import { formatDate } from "@/i18n/format";
 import type { DataKind } from "@/core/domain";
+import type { ProfileQuestionId } from "@/core/onboarding";
 import type { ProfileSummary, TraceEvent } from "@/ports/MemoryRepository";
 import { PageHead } from "./blocks/PageBlocks";
 import { FitPanel, type SaveFitAnswer } from "./blocks/FitPanel";
@@ -48,6 +49,36 @@ export function Memory({ data, dataKind, onSaveBrainNotes, fit }: MemoryProps) {
   const { t, locale } = useI18n();
   const copy = t.memoryPage;
   const { profile, trace } = data;
+  const profileQuestions = t.onboarding.profileQuestions;
+
+  // Frågan som den ställdes i grundarens ingång. En fråga som ingången inte
+  // ställer visas ändå (som en lucka) med den andra ingångens formulering.
+  function questionText(id: ProfileQuestionId): string {
+    if (!profile) return "";
+    const asked: Partial<Record<ProfileQuestionId, string>> = profileQuestions[profile.entry];
+    const noIdea: Partial<Record<ProfileQuestionId, string>> = profileQuestions.noIdea;
+    const hasIdea: Partial<Record<ProfileQuestionId, string>> = profileQuestions.hasIdea;
+    return asked[id] ?? noIdea[id] ?? hasIdea[id] ?? "";
+  }
+
+  // Svaret som det sparades, eller en lucka. Fylls aldrig i. Ett fält som
+  // källan inte skickar alls (undefined, demots nyare frågor) visas inte.
+  function renderAnswers(ids: readonly ProfileQuestionId[]) {
+    if (!profile) return null;
+    return (
+      <ul className="fdd-layers">
+        {ids.filter((id) => profile[id] !== undefined).map((id) => {
+          const answer = profile[id];
+          return (
+            <li key={id}>
+              <p className="fdd-muted">{questionText(id)}</p>
+              <p>{answer ?? <em className="fdd-muted">{copy.notAnswered}</em>}</p>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
   const [notes, setNotes] = useState(data.brainNotes ?? "");
   const [saveFailed, setSaveFailed] = useState(false);
 
@@ -62,8 +93,11 @@ export function Memory({ data, dataKind, onSaveBrainNotes, fit }: MemoryProps) {
 
   return (
     <div className="fdd-page">
-      {profile ? (
-        <PageHead title={`${profile.name}, ${profile.role}`} lede={profile.bio} />
+      {profile && (profile.name || profile.role) ? (
+        <PageHead
+          title={[profile.name, profile.role].filter(Boolean).join(", ")}
+          lede={profile.bio ?? undefined}
+        />
       ) : (
         // Ingen profil att visa namnet för — sidans namn blir rubriken.
         <PageHead title={copy.title} />
@@ -85,19 +119,14 @@ export function Memory({ data, dataKind, onSaveBrainNotes, fit }: MemoryProps) {
                 <h2 id="fdd-mem-bg" className="fdd-label">
                   {copy.profileBackgroundLabel}
                 </h2>
-                <p className="fdd-panel__title">{profile.name}</p>
-                <p className="fdd-muted">{profile.role}</p>
-                <p className="fdd-body">{profile.bio}</p>
+                {profile.name && <p className="fdd-panel__title">{profile.name}</p>}
+                {renderAnswers(["role", "bio", "frustrations", "customer"])}
               </section>
               <section className="fd-panel" aria-labelledby="fdd-mem-res">
                 <h2 id="fdd-mem-res" className="fdd-label">
                   {copy.profileResourcesLabel}
                 </h2>
-                <ul className="fd-checks fd-checks--small">
-                  <li>{profile.time}</li>
-                  <li>{profile.money}</li>
-                  <li>{profile.risk}</li>
-                </ul>
+                {renderAnswers(["time", "money", "risk"])}
               </section>
             </div>
           ) : (

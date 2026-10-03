@@ -57,7 +57,15 @@ function baseData(overrides: Partial<AppHomeData> = {}): AppHomeData {
   };
 }
 
-function renderHome(data: AppHomeData, opts: { dataKind?: "example" | "live"; onNextStep?: () => void; nextStepHref?: string } = {}) {
+function renderHome(
+  data: AppHomeData,
+  opts: {
+    dataKind?: "example" | "live";
+    onNextStep?: () => void;
+    nextStepHref?: string;
+    profileAnswersHref?: string;
+  } = {},
+) {
   return render(
     <LocaleProvider>
       <AppHome
@@ -67,6 +75,7 @@ function renderHome(data: AppHomeData, opts: { dataKind?: "example" | "live"; on
         nextStepHref={opts.nextStepHref}
         journeyBasePath="/demo/resan"
         scoreHref="/demo/poang"
+        profileAnswersHref={opts.profileAnswersHref}
       />
     </LocaleProvider>,
   );
@@ -128,6 +137,14 @@ describe("AppHome (PR 3, Hem)", () => {
   it("Resan-raden länkar via journeyBasePath oavsett om homeSummary/score saknas", () => {
     renderHome(baseData({ homeSummary: null, score: null }));
     expect(screen.getByRole("link", { name: /Marknaden/ })).toHaveAttribute("href", "/demo/resan/3");
+  });
+
+  it("länkar från steg 1 till svaren i Minnet, bara när routen skickar länken", () => {
+    renderHome(baseData(), { profileAnswersHref: "/demo/minnet" });
+    expect(screen.getByRole("link", { name: sv.common.seeYourAnswers })).toHaveAttribute("href", "/demo/minnet");
+    cleanup();
+    renderHome(baseData());
+    expect(screen.queryByRole("link", { name: sv.common.seeYourAnswers })).not.toBeInTheDocument();
   });
 
   it("visar demots 'ingen signal'-text för example och en neutral text för live", () => {

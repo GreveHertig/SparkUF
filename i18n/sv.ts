@@ -6,6 +6,7 @@ export const sv = {
     description: "Testa din affärsidé ett steg i taget, med riktig företagsdata från Bolagsverket och SCB. Gratis i en vecka.",
   },
   common: {
+    seeYourAnswers: "Se dina svar",
     languageSwitch: {
       sv: "SV",
       en: "EN",
@@ -678,6 +679,7 @@ export const sv = {
     brainHintLive: "Dina egna anteckningar. De sparas när du lämnar fältet.",
     brainSaveFailed: "Anteckningarna kunde inte sparas. Försök igen.",
     traceEmpty: "Inga händelser än.",
+    notAnswered: "Inte besvarat än",
   },
   legalPage: {
     title: "Juridik",

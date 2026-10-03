@@ -6,6 +6,7 @@ export const en = {
     description: "Test your business idea one step at a time, with real Swedish company data. Free for a week.",
   },
   common: {
+    seeYourAnswers: "See your answers",
     languageSwitch: {
       sv: "SV",
       en: "EN",
@@ -678,6 +679,7 @@ export const en = {
     brainHintLive: "Your own notes. They are saved when you leave the field.",
     brainSaveFailed: "The notes could not be saved. Try again.",
     traceEmpty: "No events yet.",
+    notAnswered: "Not answered yet",
   },
   legalPage: {
     title: "Legal",
