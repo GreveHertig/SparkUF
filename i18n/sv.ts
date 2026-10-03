@@ -1042,9 +1042,9 @@ export const sv = {
       createAccountCta: "Skapa konto",
     },
     waitlist: {
-      label: "Få besked när Spark öppnar",
+      label: "Få besked när Spark lanserar",
       submitCta: "Ställ mig på väntelistan",
-      privacyNote: "Vi sparar bara din mejladress och använder den bara för att meddela dig när Spark öppnar. Mejla spark.ai.uf@gmail.com om du vill bli borttagen från listan.",
+      privacyNote: "Vi sparar bara din mejladress och använder den bara för att meddela dig när Spark lanserar. Mejla spark.ai.uf@gmail.com om du vill bli borttagen från listan.",
       joined: "Tack! Du står på väntelistan.",
       errors: {
         emailInvalid: "Skriv en giltig mejladress.",
@@ -1319,10 +1319,10 @@ export const sv = {
       invalid: "Skriv en giltig mejladress, till exempel namn@foretag.se.",
       undeliverable: "Den adressen verkar inte kunna ta emot mejl. Kolla stavningen.",
       didYouMean: "Menade du {email}?",
-      joined: "Tack! Vi hör av oss när betan öppnar.",
+      joined: "Tack! Vi hör av oss när betan lanseras.",
       unexpected: "Något gick fel. Försök igen om en stund.",
       rateLimited: "Det har kommit många försök härifrån. Vänta en stund och försök igen.",
-      privacyNote: "Vi sparar bara adressen för att kunna meddela dig när betan öppnar. Du kan när som helst be oss ta bort den.",
+      privacyNote: "Vi sparar bara adressen för att kunna meddela dig när betan lanseras. Du kan när som helst be oss ta bort den.",
       privacyLink: "Så hanterar vi adressen",
     },
     privacy: {
@@ -1339,7 +1339,7 @@ export const sv = {
         },
         {
           heading: "Varför",
-          body: "För att kunna meddela dig när betan av Spark öppnar. Vi sparar adressen med ditt samtycke, som du ger när du skriver upp dig. Vi använder inte adressen till något annat och delar den inte med någon.",
+          body: "För att kunna meddela dig när betan av Spark lanseras. Vi sparar adressen med ditt samtycke, som du ger när du skriver upp dig. Vi använder inte adressen till något annat och delar den inte med någon.",
         },
         {
           heading: "Var den finns",

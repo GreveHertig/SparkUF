@@ -1038,9 +1038,9 @@ export const en = {
       createAccountCta: "Create account",
     },
     waitlist: {
-      label: "Get notified when Spark opens",
+      label: "Get notified when Spark launches",
       submitCta: "Join the waitlist",
-      privacyNote: "We only store your email address and only use it to let you know when Spark opens. Email spark.ai.uf@gmail.com if you want to be removed from the list.",
+      privacyNote: "We only store your email address and only use it to let you know when Spark launches. Email spark.ai.uf@gmail.com if you want to be removed from the list.",
       joined: "Thanks! You're on the waitlist.",
       errors: {
         emailInvalid: "Enter a valid email address.",
@@ -1315,10 +1315,10 @@ export const en = {
       invalid: "Enter a valid email address, for example name@company.se.",
       undeliverable: "That address doesn't seem able to receive email. Check the spelling.",
       didYouMean: "Did you mean {email}?",
-      joined: "Thanks! We'll be in touch when the beta opens.",
+      joined: "Thanks! We'll be in touch when the beta launches.",
       unexpected: "Something went wrong. Please try again in a moment.",
       rateLimited: "There have been many attempts from here. Please wait a moment and try again.",
-      privacyNote: "We keep the address just to let you know when the beta opens. You can ask us to remove it at any time.",
+      privacyNote: "We keep the address just to let you know when the beta launches. You can ask us to remove it at any time.",
       privacyLink: "How we handle your address",
     },
     privacy: {
@@ -1335,7 +1335,7 @@ export const en = {
         },
         {
           heading: "Why",
-          body: "So we can let you know when the Spark beta opens. We save the address with your consent, which you give when you sign up. We don't use the address for anything else and we don't share it with anyone.",
+          body: "So we can let you know when the Spark beta launches. We save the address with your consent, which you give when you sign up. We don't use the address for anything else and we don't share it with anyone.",
         },
         {
           heading: "Where it is stored",

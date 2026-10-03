@@ -41,11 +41,11 @@ describe("WaitlistForm på svenska", () => {
   it("visar bara ett mejlfält, knappen och raden om vad adressen används till", () => {
     renderForm();
 
-    expect(screen.getByLabelText("Få besked när Spark öppnar")).toHaveAttribute("type", "email");
+    expect(screen.getByLabelText("Få besked när Spark lanserar")).toHaveAttribute("type", "email");
     expect(screen.getAllByRole("textbox")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Ställ mig på väntelistan" })).toBeInTheDocument();
     expect(
-      screen.getByText("Vi sparar bara din mejladress och använder den bara för att meddela dig när Spark öppnar. Mejla spark.ai.uf@gmail.com om du vill bli borttagen från listan."),
+      screen.getByText("Vi sparar bara din mejladress och använder den bara för att meddela dig när Spark lanserar. Mejla spark.ai.uf@gmail.com om du vill bli borttagen från listan."),
     ).toBeInTheDocument();
   });
 
@@ -85,10 +85,10 @@ describe("WaitlistForm på engelska", () => {
   it("visar fältet, knappen och raden om vad adressen används till", async () => {
     renderForm();
 
-    expect(await screen.findByLabelText("Get notified when Spark opens")).toHaveAttribute("type", "email");
+    expect(await screen.findByLabelText("Get notified when Spark launches")).toHaveAttribute("type", "email");
     expect(screen.getByRole("button", { name: "Join the waitlist" })).toBeInTheDocument();
     expect(
-      screen.getByText("We only store your email address and only use it to let you know when Spark opens. Email spark.ai.uf@gmail.com if you want to be removed from the list."),
+      screen.getByText("We only store your email address and only use it to let you know when Spark launches. Email spark.ai.uf@gmail.com if you want to be removed from the list."),
     ).toBeInTheDocument();
   });
 
