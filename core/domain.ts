@@ -113,4 +113,23 @@ export type PulseSignal = {
   risk?: { area: PulseRiskArea; actions: string[] };
   /** Satt när signalen är en möjlighet (stöd, bidrag, upphandling). Aldrig samtidigt som `risk`. */
   opportunity?: { area: PulseOpportunityArea; actions: string[] };
+  /**
+   * Sant när signalen visas högre för att den liknar det grundaren markerat
+   * som relevant (bara /app). Skärmen säger det, så att omdömet märks.
+   */
+  boosted?: boolean;
+  /** Sant när `whyItMatters` är skriven av en språkmodell för just den här nyheten (bara /app). */
+  whyByAi?: boolean;
+  /**
+   * Sista ansökningsdag som artikeln själv anger, "YYYY-MM-DD" (bara
+   * möjligheter i /app). Källan är signalens `source`, aldrig en gissning.
+   */
+  deadline?: string;
 };
+
+/**
+ * Vad Pulsen har lärt sig av grundarens "Relevant" (bara /app): sorterna och
+ * orden som nu väger tyngre. Inga antal, bara namn, så att ingen siffra
+ * behöver källa. Tomma listor: inget lärt än.
+ */
+export type PulseLearning = { areas: string[]; terms: string[] };

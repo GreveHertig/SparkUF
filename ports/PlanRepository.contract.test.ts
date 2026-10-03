@@ -114,6 +114,17 @@ describeContract<PlanRepository>(
       expect((await plan.getItems()).find((entry) => entry.id === item.id)!.text).toBe("Ny text för Laddkollen");
     });
 
+    contractIt("sista dag med källa sparas och läses tillbaka; utan sista dag finns ingen", async () => {
+      const due = { date: "2026-11-30", source: { namn: "energimyndigheten.se", hämtad: "2026-10-04" } };
+      await plan.addItems([
+        { text: "Med sista dag", context: "Bidrag", origin: "pulsen", originRef: ref(8), due },
+        { text: "Utan sista dag", context: "Bidrag", origin: "pulsen", originRef: ref(8) },
+      ]);
+      const items = await plan.getItems();
+      expect(items.find((item) => item.text === "Med sista dag")?.due).toEqual(due);
+      expect(items.find((item) => item.text === "Utan sista dag")?.due).toBeUndefined();
+    });
+
     contractIt("över taket för öppna uppgifter läggs ingen till", async () => {
       const open = (await plan.getItems()).filter((item) => !item.done).length;
       const room = PLAN_MAX_OPEN - open;

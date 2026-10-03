@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { livePulseProvider } from "@/adapters/live/PulseProvider";
 import { livePlanRepository } from "@/adapters/live/PlanRepository";
+import type { PlanDue } from "@/ports/PlanRepository";
+import { optional } from "../_lib/optional";
 import { PlanLimitError, PulseWatchError } from "@/core/errors";
 import { sv } from "@/i18n/sv";
 import type { AddPlaybookResult, PulseWatchResult } from "@/screens/Pulse";
@@ -57,9 +59,12 @@ export async function addPlaybookToPlan(request: unknown): Promise<AddPlaybookRe
   const steps = playbookSteps(request);
   if (!steps) return { ok: false, reason: "failed" };
   const { signalId, headline } = request as { signalId: string; headline: string };
+  // Sista ansökningsdag (Pulsen v3) hämtas ur grundarens egen signal på
+  // servern, aldrig från klienten. Går signalen inte att läsa blir det ingen.
+  const due = await signalDue(signalId);
   try {
     const added = await livePlanRepository.addItems(
-      steps.map((text) => ({ text, context: headline, origin: "pulsen" as const, originRef: signalId })),
+      steps.map((text) => ({ text, context: headline, origin: "pulsen" as const, originRef: signalId, due })),
     );
     revalidatePath("/app/resan");
     return { ok: true, added };
@@ -80,4 +85,13 @@ function playbookSteps(request: unknown): string[] | null {
     kind === "risk" ? sv.pulsePage.riskAreas : kind === "opportunity" ? sv.pulsePage.opportunityAreas : null;
   if (!areas || !Object.prototype.hasOwnProperty.call(areas, area)) return null;
   return (areas as Record<string, { playbook: { solve: string[] } }>)[area].playbook.solve;
+}
+
+/** Signalens sista ansökningsdag med signalens källa, eller null. */
+async function signalDue(signalId: string): Promise<PlanDue | null> {
+  if (typeof livePulseProvider.getSignals !== "function") return null;
+  const signals = await optional(livePulseProvider.getSignals("sv"), "Min plan: signalen");
+  const signal = signals?.find((item) => item.id === signalId);
+  if (!signal?.deadline) return null;
+  return { date: signal.deadline, source: { namn: signal.source.namn, hämtad: signal.source.hämtad } };
 }

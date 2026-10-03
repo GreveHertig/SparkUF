@@ -8,8 +8,9 @@ import "server-only";
 //
 // Underlaget är tre saker, och bara dem:
 // 1. Projektet (projects): grundarens egen idé, märkt "Din uppgift".
-// 2. Onboardingsvaren (profiles.onboarding_answers): grundarens egna ord om
-//    kunden och problemet, märkta "Din uppgift" med dagen svaret gavs.
+// 2. Onboardingsvaren (profiles.onboarding_answers, och före v4
+//    profiles.customer_guess och profiles.frustrations): grundarens egna ord
+//    om kunden och problemet, märkta "Din uppgift" med dagen svaret gavs.
 // 3. Bevisen (evidence): samma rader som poängen räknas på, med sin egen
 //    källa och sitt eget datum. Bara bevis som räknas just nu tas med: inte
 //    återkallade och inte för gamla (beslut B9), samma regel som stegens krav.
@@ -78,6 +79,25 @@ async function readAnswers(): Promise<Record<string, SavedOnboardingAnswer>> {
     if (error instanceof NotImplementedError) return {};
     throw error;
   }
+}
+
+/** Fritextsvaren från onboardingen före v4 (profiles.customer_guess och
+ * profiles.frustrations). De går före v4-svaret för samma sak, samma regel
+ * som Medgrundaren (MemoryRepository.getKnownProfile). De sparades utan tid,
+ * så de visas utan datum, aldrig med ett påhittat. */
+async function readPreV4Answers(supabase: SupabaseClient, userId: string): Promise<Record<string, SavedOnboardingAnswer>> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("customer_guess, frustrations")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`Affärsplanen: kunde inte läsa profilen (${error.message}).`);
+  const result: Record<string, SavedOnboardingAnswer> = {};
+  const customer = typeof data?.customer_guess === "string" ? data.customer_guess.trim() : "";
+  const frustration = typeof data?.frustrations === "string" ? data.frustrations.trim() : "";
+  if (customer) result.customer = { answer: customer, answeredOn: null };
+  if (frustration) result.frustration = { answer: frustration, answeredOn: null };
+  return result;
 }
 
 type CurrentEvidence = { row: EvidenceRow; kind: EvidenceKind; source: Källa; dataType: DataType };
@@ -206,7 +226,12 @@ function currentEvidence(rows: EvidenceRow[], status: Record<string, EvidenceSta
 export async function getLiveBusinessPlan(locale: Locale): Promise<BusinessPlan> {
   const t = dictionaries[locale];
   const { supabase, userId } = await requireSupabaseUser();
-  const [project, answers] = await Promise.all([readActiveProject(supabase, userId), readAnswers()]);
+  const [project, v4Answers, preV4Answers] = await Promise.all([
+    readActiveProject(supabase, userId),
+    readAnswers(),
+    readPreV4Answers(supabase, userId),
+  ]);
+  const answers = { ...v4Answers, ...preV4Answers };
 
   let evidence: CurrentEvidence[] = [];
   let lockedParts: LockedScorePart[];

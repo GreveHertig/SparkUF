@@ -631,3 +631,36 @@ Erik 2026-10-03, enligt systemspecifikationen v4 §3.1. Plan och status:
   har ingen tid och visas med källan utan datum. Samma regel som i #70.
 - **Efter lansering (spec v4 §3.6):** styrelsemöte, pitchträning och säljstöd
   byggs inte nu. De står i `docs/moduler/medgrundaren.md`.
+
+## 2026-10-04
+
+**Pulsen v3 (gren `modul/pulsen-v3`, väntar på granskning).**
+Uppdrag från Bruno (2026-10-04). Se `docs/moduler/webbresearch-och-pulsen.md`
+("Pulsen v3") och `docs/moduler/min-plan.md`.
+- **Bevakningar ger inte längre fel träffar.** Ett bevakningsord räcker när
+  det står i rubriken, eller när projektet saknar nyckelord; nämns det bara i
+  förbigående i texten krävs ett av projektets ord. Språkfiltret läser även
+  artikelns text när rubriken saknar svenska tecken och småord, och känner
+  igen vanliga engelska rubrikord ("Gallery", "Photos").
+- **"Varför det spelar roll" av Gemini: byggd men AVSTÄNGD.** Beslutet
+  2026-10-02 (klassning utan modell) står kvar tills Erik och Theodor säger
+  annat. Med `PULSE_AI_WHY=true` skrivs en mening per ny nyhet, ett anrop per
+  hämtning, aldrig vid läsning. Meningen får inte innehålla siffror, länkar
+  eller kod; annars används den förskrivna texten. Den märks på skärmen
+  ("Skrivet av AI … Kontrollera i källan") och visas bara på svenska.
+- **Omdömet märks.** "Pulsen lär sig av dig" visar sorterna och orden som
+  väger tyngre, och en signal som liknar det grundaren gillat märks. Inga
+  antal, så ingen ny siffra behöver källa.
+- **Sista ansökningsdag** ur artikelns text (`core/deadline.ts`, bara efter
+  tydliga fraser, aldrig en gissning), bara för möjligheter. Visas med
+  artikeln som källa, följer med till Min plan och till kortet på Hem. Inget
+  "om 5 dagar": bara datumet, så att siffran har sin källa.
+- **"Veckans puls"** på Hem i stället för "Dagens signal" (bara /app): högst
+  två signaler från den senaste veckan, risker och möjligheter först. Demot
+  är oförändrat.
+- **Layout:** ett ensamt signalkort tar hela bredden, två delar på den.
+- **Migrering** `20261004090000_pulsen_v3.sql`: nya valfria kolumner
+  (`pulse_signals.deadline`, `pulse_signals.why_ai`, `plan_items.due_*`).
+  Utan den fungerar allt som förut.
+- Porten `PulseProvider` fick den valfria `getLearning`, `PulseSignal` fick
+  `boosted`, `whyByAi` och `deadline`, och `PlanRepository` fick `due`.

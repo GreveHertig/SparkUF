@@ -1,4 +1,11 @@
 import type { PlanOrigin } from "@/core/plan";
+import type { Källa } from "@/types/evidence";
+
+/**
+ * Sista dag för en uppgift, med källan den kom från (Pulsen v3): artikelns
+ * namn och dagen den hämtades. Datumet är "YYYY-MM-DD".
+ */
+export type PlanDue = { date: string; source: Källa };
 
 /** En uppgift i grundarens plan, som Resan visar den. */
 export type PlanItem = {
@@ -8,6 +15,8 @@ export type PlanItem = {
   context: string | null;
   /** Spelbok i Pulsen eller grundarens egen uppgift. Resan grupperar efter det. */
   origin: PlanOrigin;
+  /** Sista dag, när uppgiften kom från en möjlighet med sista ansökningsdag. */
+  due?: PlanDue;
   done: boolean;
   createdAtIso: string;
 };
@@ -19,6 +28,8 @@ export type NewPlanItem = {
   origin: PlanOrigin;
   /** Id för det uppgiften kom ifrån, till exempel signalens id. */
   originRef?: string | null;
+  /** Sista dag med källa (Pulsen v3). Sparas bara när migreringen finns. */
+  due?: PlanDue | null;
 };
 
 /**

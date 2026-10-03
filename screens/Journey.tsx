@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { ComingSoon } from "@/components/ui/ComingSoon";
+import { SourceTag } from "@/components/ui/SourceTag";
+import { formatDateWithYear } from "@/i18n/format";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
@@ -184,7 +186,7 @@ export function groupPlanItems(items: PlanItem[], titles: { own: string; other: 
  * och sammanhanget är ren text, aldrig HTML.
  */
 function PlanSection({ plan }: { plan: JourneyPlan }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const copy = t.journeyPage.plan;
   const [items, setItems] = useState(plan.items);
   const [error, setError] = useState<string | null>(null);
@@ -306,7 +308,15 @@ function PlanSection({ plan }: { plan: JourneyPlan }) {
                           onChange={(event) => toggle(item.id, event.target.checked)}
                           aria-label={item.done ? copy.markOpen : copy.markDone}
                         />
-                        <span className="fdd-myplan__text">{item.text}</span>
+                        <span className="fdd-myplan__text">
+                          {item.text}
+                          {item.due && (
+                            <span className="fdd-myplan__due">
+                              {copy.due}: {formatDateWithYear(item.due.date, locale)}{" "}
+                              <SourceTag source={item.due.source} dataType="media" />
+                            </span>
+                          )}
+                        </span>
                       </label>
                       <div className="fdd-myplan__actions">
                         {!item.done && (

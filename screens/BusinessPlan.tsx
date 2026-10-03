@@ -96,6 +96,8 @@ function Figures({ claims }: { claims: BusinessPlanClaim[] }) {
 
 type StepLookup = {
   title: (stepNumber: number) => string | null;
+  /** Det aktuella steget i resan, om det är känt. */
+  current: () => number | null;
   /** Länk till steget, bara om grundaren kan öppna det nu (det aktuella steget). */
   href: (stepNumber: number) => string | null;
   isDone: (stepNumber: number) => boolean;
@@ -260,7 +262,13 @@ function NextStep({
   const next = nextPlanStep(plan, completedStepNumbers);
   const title = next && steps.title(next.stepNumber);
   if (!next || !title) return null;
-  const href = steps.href(next.stepNumber);
+  // Steget som stärker planen mest kan vara låst (grundaren står på ett
+  // tidigare steg). Då säger kortet det och leder till det aktuella steget.
+  const current = steps.current();
+  const reachable = current === null || next.stepNumber <= current;
+  const ctaStep = reachable || current === null ? next.stepNumber : current;
+  const href = steps.href(ctaStep);
+  const currentTitle = current === null ? null : steps.title(current);
 
   return (
     <section className="fd-panel fdd-bplan-next" aria-labelledby="fdd-bplan-next-title">
@@ -272,9 +280,12 @@ function NextStep({
         <p className="fdd-muted">
           {copy.nextStep.feedsLabel}: {next.sectionIds.map((id) => copy.sections[id].title).join(", ")}
         </p>
+        {!reachable && current !== null && currentTitle && (
+          <p className="fdd-muted">{fill(copy.nextStep.lockedTemplate, { step: padStep(current), title: currentTitle })}</p>
+        )}
         {href && (
           <Link href={href} className="fd-btn fd-btn--primary fd-btn--sm">
-            {fill(copy.nextStep.ctaTemplate, { step: padStep(next.stepNumber) })}
+            {fill(copy.nextStep.ctaTemplate, { step: padStep(ctaStep) })}
           </Link>
         )}
       </div>
@@ -297,6 +308,7 @@ export function BusinessPlan({ data }: { data: BusinessPlanData }) {
 
   const steps: StepLookup = {
     title: (stepNumber) => stepViews.find((step) => step.stepNumber === stepNumber)?.title ?? null,
+    current: () => stepViews.find((step) => step.status === "current")?.stepNumber ?? null,
     href: (stepNumber) =>
       stepBasePath && stepViews.find((step) => step.stepNumber === stepNumber)?.status === "current"
         ? `${stepBasePath}/${stepNumber}`

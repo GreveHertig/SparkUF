@@ -1,5 +1,5 @@
 import type { Locale } from "@/i18n/context";
-import type { PulseFeedbackVerdict, PulseSignal, PulseWatch } from "@/core/domain";
+import type { PulseFeedbackVerdict, PulseLearning, PulseSignal, PulseWatch } from "@/core/domain";
 
 /** Modul: Pulsen (avsnitt 14.3), delar dokument med ResearchProvider. Liveadapter bygger på Tavily. */
 export interface PulseProvider {
@@ -18,4 +18,9 @@ export interface PulseProvider {
   /** Lägger till en bevakning. Samma ord två gånger ignoreras. */
   addWatch?(kind: PulseWatch["kind"], term: string): Promise<void>;
   removeWatch?(id: string): Promise<void>;
+  /**
+   * Vad Pulsen har lärt sig av grundarens "Relevant" (Pulsen v3): sorternas
+   * namn i språket `locale` och de inlärda orden. Valfri, som omdömet.
+   */
+  getLearning?(locale: Locale): Promise<PulseLearning>;
 }
