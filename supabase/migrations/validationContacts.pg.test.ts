@@ -2,7 +2,7 @@
 // Valideringens samtalslogg mot en riktig Postgres (PGlite, se
 // test/pgMigrations.ts): RLS, det unika indexet per bolag, triggern som
 // hindrar status att gå bakåt och check-villkoren i
-// 20261004090000_validation_contacts.sql.
+// 20261004100000_validation_contacts.sql.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
 import { createMigratedDb, queryAs } from "@/test/pgMigrations";

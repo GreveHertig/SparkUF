@@ -39,7 +39,7 @@ export type LogAnswerResult =
   | { ok: true; scored: false }
   | { ok: false; reason: ValidationFailure };
 
-/** Samma gränser som i databasen (20261004090000_validation_contacts.sql). */
+/** Samma gränser som i databasen (20261004100000_validation_contacts.sql). */
 export const COMPANY_NAME_MAX = 120;
 export const QUOTE_MAX = 1000;
 /** Ett citat kortare än så säger för lite för att vara ett bevis ("Ja.", "Kanske"). */
