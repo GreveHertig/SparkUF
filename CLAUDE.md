@@ -50,3 +50,8 @@ Repot hade redan ett Next.js-projekt. Läs `AGENTS.md`, bygg i den befintliga st
 - **Koncept-etikett:** Hiasynth och Lovable får `ConceptBadge`.
 - **Fiktiva företag** i demot, och en ansvarsbegränsning på juridiska ytor.
 - **Återanvänd komponenter** innan du skapar nya. Designbeslut dokumenteras i `DESIGN.md`.
+
+## Verktyg och skydd
+- **Designskills** ligger i `.claude/skills/` (se `.claude/skills/KALLOR.md`). `DESIGN.md` och tokens i `design/` gäller alltid framför en skill. Skillsen används för att granska och finputsa, inte för att byta stil. Inga nya beroenden utan att fråga.
+- **Hookar** i `.claude/settings.json` gör reglerna mekaniska: `.env*` nekas, och ändringar i `core/score.ts`, `ports/` och demodata kräver mänsklig bekräftelse. Ber hooken om bekräftelse och du inte uttryckligen fått uppgiften att ändra filen: stoppa och rapportera. Före avslut körs `typecheck` och `lint` på ändrade filer.
+- **Arbetsflöde och kommandon:** `docs/arbetsflode.md`.
