@@ -56,7 +56,8 @@ function asData(value: unknown): string {
   return JSON.stringify(value, null, 2).replace(/</g, "\\u003c");
 }
 
-function short(text: string | undefined, max = FIELD_MAX): string | undefined {
+// null (ett obesvarat profilfält, docs/moduler/minnet.md) räknas som saknat.
+function short(text: string | null | undefined, max = FIELD_MAX): string | undefined {
   if (!text) return undefined;
   const cleaned = cleanMultilineText(text, max);
   return cleaned || undefined;
@@ -86,7 +87,7 @@ function knownData(context: CofounderContext) {
         }
       : null,
     ide: project ? { namn: short(project.name), ingress: short(project.oneLiner) } : null,
-    hjarnan: short(brainNotes ?? undefined, BRAIN_NOTES_MAX) ?? null,
+    hjarnan: short(brainNotes, BRAIN_NOTES_MAX) ?? null,
     sparet: trace ? trace.map((event) => short(event.description)).filter(Boolean) : null,
   };
 }

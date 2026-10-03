@@ -24,7 +24,8 @@ export function toKnownItems(context: CofounderContext, locale: Locale, now: Dat
   const today = stockholmToday(now);
   const items: CofounderContextItem[] = [];
 
-  function add(id: string, label: string, value: string | undefined, sourceName: string, date = today) {
+  // null (ett obesvarat profilfält, docs/moduler/minnet.md) räknas som saknat.
+  function add(id: string, label: string, value: string | null | undefined, sourceName: string, date = today) {
     const text = value ? cleanText(value, ITEM_MAX) : "";
     if (!text) return;
     const line = `${label}: ${text}`;
@@ -45,7 +46,7 @@ export function toKnownItems(context: CofounderContext, locale: Locale, now: Dat
   add("time", copy.time, profile.time, profileSource);
   add("money", copy.money, profile.money, profileSource);
   add("risk", copy.risk, profile.risk, profileSource);
-  add("brain", copy.brain, context.brainNotes ?? undefined, copy.brain);
+  add("brain", copy.brain, context.brainNotes, copy.brain);
   // De tre senaste posterna i Spåret, senast först.
   for (const event of [...(context.trace ?? [])].reverse().slice(0, 3)) {
     add(`trace-${event.id}`, copy.trace, event.description, copy.trace, event.timestampIso.slice(0, 10));
