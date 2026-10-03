@@ -4,9 +4,10 @@ import { ComingSoon } from "@/components/ui/ComingSoon";
 import { ConceptBadge } from "@/components/ui/ConceptBadge";
 import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n } from "@/i18n/context";
-import type { TranscriptItem } from "@/ports/CofounderAgent";
+import type { CofounderMessage, TranscriptItem } from "@/ports/CofounderAgent";
 import { mentionsConcept } from "@/core/concepts";
 import { ChatLine, TimeSkipLine, ToolRun, type ChatSource } from "./blocks/ChatBlocks";
+import { CofounderChat, type SendCofounderMessage } from "./blocks/CofounderChat";
 import { PageHead } from "./blocks/PageBlocks";
 
 /** Det aktuella momentet i samtalet: etiketten ("03 · Marknaden") och inslagen. */
@@ -37,11 +38,22 @@ export type CofounderData = {
 };
 
 /**
+ * Den levande chatten (/app, docs/moduler/medgrundaren.md): det sparade
+ * samtalet och en server action som skickar nästa meddelande. Utan den visar
+ * skärmen momentets inslag och ett avstängt promptfält, som i demot.
+ */
+export type CofounderLive = {
+  messages: CofounderMessage[];
+  onSend: SendCofounderMessage;
+};
+
+/**
  * Medgrundaren (PR 10): det aktuella momentet i samtalet, och det som redan
  * är känt i en egen spalt. Skärmen vet inte att demots samtal är förskrivet —
- * den visar det moment och den kontext den fått in.
+ * den visar det moment och den kontext den fått in. Med `live` (bara /app)
+ * blir samtalet en riktig chatt under momentets etikett.
  */
-export function Cofounder({ data }: { data: CofounderData }) {
+export function Cofounder({ data, live }: { data: CofounderData; live?: CofounderLive }) {
   const { t, locale } = useI18n();
   const copy = t.cofounderPage;
   const { moment, context } = data;
@@ -56,7 +68,9 @@ export function Cofounder({ data }: { data: CofounderData }) {
           <h2 id="fdd-moment-title" className="fdd-label">
             {moment ? moment.label : copy.title}
           </h2>
-          {!moment ? (
+          {moment && live ? (
+            <CofounderChat initialMessages={live.messages} onSend={live.onSend} />
+          ) : !moment ? (
             <ComingSoon />
           ) : moment.items.length === 0 ? (
             <p className="fdd-muted">{copy.emptyStateBody}</p>
@@ -78,18 +92,20 @@ export function Cofounder({ data }: { data: CofounderData }) {
               )}
             </div>
           )}
-          <div className="fdd-prompt">
-            <textarea
-              disabled
-              rows={1}
-              placeholder={copy.promptPlaceholder}
-              aria-label={copy.promptPlaceholder}
-              className="fdd-prompt__input"
-            />
-            <button type="button" disabled className="fd-btn fd-btn--primary fd-btn--sm">
-              {copy.promptSendLabel}
-            </button>
-          </div>
+          {!(moment && live) && (
+            <div className="fdd-prompt">
+              <textarea
+                disabled
+                rows={1}
+                placeholder={copy.promptPlaceholder}
+                aria-label={copy.promptPlaceholder}
+                className="fdd-prompt__input"
+              />
+              <button type="button" disabled className="fd-btn fd-btn--primary fd-btn--sm">
+                {copy.promptSendLabel}
+              </button>
+            </div>
+          )}
         </section>
 
         {showContext && (

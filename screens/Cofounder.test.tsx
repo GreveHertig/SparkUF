@@ -1,9 +1,9 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
-import { Cofounder, type CofounderData } from "./Cofounder";
+import { Cofounder, type CofounderData, type CofounderLive } from "./Cofounder";
 
 afterEach(() => cleanup());
 
@@ -17,10 +17,10 @@ const moment: CofounderData["moment"] = {
   ],
 };
 
-function renderCofounder(data: CofounderData) {
+function renderCofounder(data: CofounderData, live?: CofounderLive) {
   return render(
     <LocaleProvider>
-      <Cofounder data={data} />
+      <Cofounder data={data} live={live} />
     </LocaleProvider>,
   );
 }
@@ -74,5 +74,99 @@ describe("Cofounder (PR 10)", () => {
     renderCofounder({ moment: null, context: null });
     expect(screen.getByRole("textbox", { name: sv.cofounderPage.promptPlaceholder })).toBeDisabled();
     expect(screen.getByRole("button", { name: sv.cofounderPage.promptSendLabel })).toBeDisabled();
+  });
+});
+
+describe("Cofounder, den levande chatten (/app)", () => {
+  const liveMoment: CofounderData["moment"] = { label: "02 · Möjligheter", items: [] };
+
+  function type(text: string) {
+    fireEvent.change(screen.getByRole("textbox", { name: sv.cofounderPage.promptPlaceholder }), { target: { value: text } });
+  }
+
+  it("visar det sparade samtalet och ett aktivt fält, men aldrig demots inslag", () => {
+    renderCofounder({ moment: { ...liveMoment, items: moment!.items }, context: [] }, {
+      messages: [{ role: "cofounder", text: "Vad gör du i dag?" }],
+      onSend: vi.fn(),
+    });
+    expect(screen.getByText("Vad gör du i dag?")).toBeInTheDocument();
+    expect(screen.queryByText("Jag tittar i registret.")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toBeEnabled();
+  });
+
+  it("skickar meddelandet och visar svaret", async () => {
+    const onSend = vi.fn().mockResolvedValue({ ok: true, reply: { role: "cofounder", text: "Ring tre kunder." } });
+    renderCofounder({ moment: liveMoment, context: [] }, { messages: [], onSend });
+    expect(screen.getByText(sv.cofounderPage.live.emptyBody)).toBeInTheDocument();
+    type("  Var börjar jag?  ");
+    fireEvent.click(screen.getByRole("button", { name: sv.cofounderPage.promptSendLabel }));
+    expect(onSend).toHaveBeenCalledWith("Var börjar jag?");
+    expect(await screen.findByText("Ring tre kunder.")).toBeInTheDocument();
+    expect(screen.getByText("Var börjar jag?")).toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toHaveValue("");
+  });
+
+  it("Enter skickar, Skift+Enter gör det inte", async () => {
+    const onSend = vi.fn().mockResolvedValue({ ok: true, reply: { role: "cofounder", text: "Svar" } });
+    renderCofounder({ moment: liveMoment, context: [] }, { messages: [], onSend });
+    type("Hej");
+    fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter", shiftKey: true });
+    expect(onSend).not.toHaveBeenCalled();
+    fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
+    expect(onSend).toHaveBeenCalledWith("Hej");
+    await screen.findByText("Svar");
+  });
+
+  it("vid taket visas texten ur i18n och meddelandet läggs tillbaka i fältet", async () => {
+    const onSend = vi.fn().mockResolvedValue({ ok: false, reason: "dailyLimit" });
+    renderCofounder({ moment: liveMoment, context: [] }, { messages: [], onSend });
+    type("En fråga till");
+    fireEvent.click(screen.getByRole("button", { name: sv.cofounderPage.promptSendLabel }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(sv.cofounderPage.live.dailyLimitReached.replace("{limit}", "40"));
+    expect(screen.getByRole("textbox")).toHaveValue("En fråga till");
+    expect(screen.getByText(sv.cofounderPage.live.emptyBody)).toBeInTheDocument();
+  });
+
+  it("ett fel eller ett kastat anrop ger sendFailed, aldrig felets egen text", async () => {
+    const onSend = vi.fn().mockRejectedValue(new Error("HEMLIGT serverfel"));
+    renderCofounder({ moment: liveMoment, context: [] }, { messages: [], onSend });
+    type("Hej");
+    fireEvent.click(screen.getByRole("button", { name: sv.cofounderPage.promptSendLabel }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(sv.cofounderPage.live.sendFailed);
+    expect(screen.queryByText(/HEMLIGT/)).not.toBeInTheDocument();
+  });
+
+  it("svarar modellen inte står meddelandet kvar (det är sparat), och fokus kommer tillbaka", async () => {
+    const onSend = vi.fn().mockResolvedValue({ ok: false, reason: "failed" });
+    renderCofounder({ moment: liveMoment, context: [] }, { messages: [], onSend });
+    type("Hej igen");
+    fireEvent.click(screen.getByRole("button", { name: sv.cofounderPage.promptSendLabel }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(sv.cofounderPage.live.sendFailed);
+    expect(screen.getByText("Hej igen")).toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toHaveValue("");
+    await waitFor(() => expect(screen.getByRole("textbox")).toHaveFocus());
+  });
+
+  it("längden räknas i tecken: 2000 emoji går att skicka", () => {
+    renderCofounder({ moment: liveMoment, context: [] }, { messages: [], onSend: vi.fn() });
+    type("😀".repeat(2000));
+    expect(screen.getByRole("button", { name: sv.cofounderPage.promptSendLabel })).toBeEnabled();
+  });
+
+  it("tomt eller för långt meddelande går inte att skicka", async () => {
+    const onSend = vi.fn();
+    renderCofounder({ moment: liveMoment, context: [] }, { messages: [], onSend });
+    const button = screen.getByRole("button", { name: sv.cofounderPage.promptSendLabel });
+    expect(button).toBeDisabled();
+    type("x".repeat(2001));
+    expect(button).toBeDisabled();
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(sv.cofounderPage.live.tooLong.replace("{max}", "2000")));
+    expect(onSend).not.toHaveBeenCalled();
+  });
+
+  it("utan moment visas Kommer snart och ett avstängt fält, även med live", () => {
+    renderCofounder({ moment: null, context: null }, { messages: [], onSend: vi.fn() });
+    expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(2);
+    expect(screen.getByRole("textbox")).toBeDisabled();
   });
 });
