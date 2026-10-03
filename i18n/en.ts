@@ -1138,6 +1138,7 @@ export const en = {
       passwordRequired: "Enter your password.",
       invalidCredentials: "Wrong email or password.",
       unexpected: "Something went wrong. Please try again shortly.",
+      tooManyAttempts: "Too many attempts right now. Wait a moment and try again.",
     },
     signOutCta: "Log out",
   },
