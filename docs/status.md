@@ -4092,3 +4092,15 @@ Rättar det kända problemet från "Onboarding live, PR 3": profilsamtalets avsl
 
 ### Beslut
 - Inga kodändringar, bara dokument och kommandon. Ingen ny beroende.
+
+## Genomklick av demot och e-postfältet i mobil (2026-10-03, gren `claude/walkthrough-e2e-testing-h6lhoc`)
+Genomklick med Playwright av landningen (`/`, `/priser`, `/integritet`), onboardingen i demot och alla demoflikar, på sv/en i bredd 1280 och 390. Sidorna nåddes via startsidan och menyn. Inga HTTP-fel, inga konsolfel, ingen horisontell scroll, ingen tom huvudyta och ingen svensk gränssnittstext i engelska läget (bara egennamn).
+
+### Klart
+- **E-postfältet på `/` var 23 px högt under 560 px** i stället för 3rem. `flex: 1` (basis 0) i kolumnläget skrev över höjden. `flex: 1` gäller nu bara i radläget (`design/site.css`, `.fd-form__row .fd-input`). Mätt efteråt: 48 px i 390 och 559, radläget från 560 oförändrat.
+- Kontroll: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar), `pnpm test` (1211 gröna, 42 skippade).
+
+### Kända problem
+- **Stegraden på `/` i 390 bredd:** etiketterna går in i varandra på engelska ("OpportunitiesThe market", 4–8 px överlapp), på svenska 1 px. Kosmetiskt, inte rättat.
+- **`pnpm test:e2e`** hoppar över alla 44 tester utan testkonto i `.env.local`. `@playwright/test` 1.63 vill ha Chromium 1243, men molnmiljön har 1194 (`/opt/pw-browsers/chromium`), så testerna startar inte där ens med testkonto.
+- `/priser` har ingen länk från `/` (startsidan har en egen prissektion).

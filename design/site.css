@@ -1309,10 +1309,14 @@
   .fd-form__row {
     flex-direction: row;
   }
+
+  /* Bara i radläget: i kolumnläget gav flex-basis 0 ett hoptryckt fält (23 px i stället för 3rem). */
+  .fd-form__row .fd-input {
+    flex: 1;
+  }
 }
 
 .fd-input {
-  flex: 1;
   min-width: 0;
   height: 3rem;
   padding: 0 1rem;
