@@ -23,12 +23,16 @@ export type OnboardingFormAction = (state: OnboardingFormState, formData: FormDa
 
 const INITIAL_STATE: OnboardingFormState = { invalid: false };
 
-/** Ett fritextfält per fråga. Fältets namn är frågans id. */
+/** Ett fritextfält per fråga. Fältets namn är frågans id. Avslutningsrepliken
+ * står efter sista frågan, före knappen: actionen skickar vidare till /app så
+ * fort svaren är sparade, så efteråt finns ingen plats att visa den på. */
 export function ProfileAnswerForm({
   questions,
+  closingMessage,
   action,
 }: {
   questions: OnboardingQuestion[];
+  closingMessage: string;
   action: OnboardingFormAction;
 }) {
   const { t } = useI18n();
@@ -57,6 +61,7 @@ export function ProfileAnswerForm({
           </div>
         );
       })}
+      <ChatLine role="cofounder" text={closingMessage} />
       {state.invalid && (
         <p className="fdd-muted" role="alert">
           {fill(copy.invalidTemplate, { max: String(PROFILE_ANSWER_MAX_LENGTH) })}
