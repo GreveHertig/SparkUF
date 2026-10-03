@@ -349,6 +349,23 @@ risker om samma sak. Rättat generellt, för alla idéer:
   hämtdagen som datum. Att skilja dem åt kräver en kolumn (migrering).
   Nyhetsläget ger datum på nästan alla träffar.
 
+## Personlig spelbok (Pulsen, 2026-10-03, gren `modul/pulsen-spelbok`)
+
+Efter Brunos genomklickning: spelboken var samma lista för alla. Tre tillägg,
+beslut i `docs/beslut.md` (2026-10-03):
+
+- **Det du har berättat** (`app/(app)/app/pulsen/personal.ts`): överst i
+  spelboken. Risker får idé, tid, pengar och vad grundaren kan riskera.
+  Möjligheter får idé, om steget "Det formella" är klart, tid och pengar.
+  Ingen modell, bara grundarens egen text ur projektet och Profilen och läget
+  i Resan. En rad med en siffra får källan "Din uppgift". Saknas allt ser
+  spelboken ut som förut.
+- **Gå igenom det här med Medgrundaren**: länk till
+  `/app/medgrundaren?signal=<id>`. Frågan byggs på servern
+  (`app/(app)/app/medgrundaren/signalDraft.ts`) och förifylls i fältet.
+- **Lägg till stegen i min plan**: spelbokens steg blir uppgifter i Resan,
+  se `docs/moduler/min-plan.md`. Knappen visas bara när `plan_items` finns.
+
 ## Acceptanskriterier
 
 - `search(query)` returnerar en lista där varje resultat har `title`, `url`

@@ -205,6 +205,18 @@ export class PulseWatchError extends Error {
 }
 
 /**
+ * Kastas av Min plan (ports/PlanRepository.ts) när nya uppgifter skulle ta
+ * planen över taket för öppna uppgifter. Inga av de nya läggs då till.
+ * Skärmen visar en text ur i18n (docs/moduler/min-plan.md).
+ */
+export class PlanLimitError extends Error {
+  constructor(readonly limit: number) {
+    super(`Min plan: högst ${limit} öppna uppgifter.`);
+    this.name = "PlanLimitError";
+  }
+}
+
+/**
  * Kastas av Medgrundarens liveadapter (adapters/live/CofounderAgent.ts) när
  * Gemini inte svarar eller svaret inte går att lita på. Meddelandet är alltid
  * fast och innehåller aldrig modellens råtext (docs/moduler/medgrundaren.md,

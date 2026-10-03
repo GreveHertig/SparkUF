@@ -3761,6 +3761,32 @@ a.fdd-segmented__item {
   font-size: 0.8125rem;
 }
 
+/* Det grundaren har berättat, överst i spelboken (bara i /app). */
+.fdd-playbook__personal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--r-md);
+  background: var(--paper-50);
+  border: 1px solid var(--fd-line);
+}
+
+/* Medgrundaren och Min plan under spelboken (bara i /app). */
+.fdd-playbook__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+.fdd-playbook__status {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
 /* Pulsens omdöme under en signal (bara i /app). */
 .fdd-feedback {
   display: flex;
@@ -3821,4 +3847,53 @@ a.fdd-segmented__item {
 
 .fdd-watch__select {
   flex: 0 0 auto;
+}
+
+/* Min plan i Resan (bara i /app, docs/moduler/min-plan.md). */
+.fdd-plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fdd-plan__item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--fd-line);
+  border-radius: var(--r-md);
+  background: white;
+}
+
+.fdd-plan__check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.fdd-plan__check input {
+  margin-top: 0.3em;
+  accent-color: var(--accent-700);
+}
+
+.fdd-plan__context {
+  grid-column: 1;
+  padding-left: 1.5rem;
+  font-size: 0.8125rem;
+}
+
+.fdd-plan__item > button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.fdd-plan__item--done .fdd-plan__text {
+  color: var(--fd-quiet);
+  text-decoration: line-through;
 }

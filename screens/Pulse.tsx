@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { ComingSoon } from "@/components/ui/ComingSoon";
 import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n } from "@/i18n/context";
 import { fill } from "@/i18n/fill";
 import type { PulseFeedbackVerdict, PulseSignal, PulseWatch } from "@/core/domain";
 import type { DataType } from "@/design/tokens";
+import type { ChatSource } from "./blocks/ChatBlocks";
 import { PageHead, Pill } from "./blocks/PageBlocks";
 
 /**
@@ -39,7 +41,39 @@ export type PulseWatches = {
   onRemove: (id: string) => Promise<void>;
 };
 
+/** En rad om grundaren överst i spelboken. En rad med en siffra har källan "Din uppgift". */
+export type PulsePersonalFact = { id: string; text: string; source?: ChatSource };
+
+/**
+ * Det grundaren redan har berättat, per sort av signal (bara i /app,
+ * app/(app)/app/pulsen/personal.ts). Ingen modell: grundarens egen text och
+ * läget i Resan. Utelämnad eller tom: spelboken ser ut som förut.
+ */
+export type PulsePersonal = { risk: PulsePersonalFact[]; opportunity: PulsePersonalFact[] };
+
+/** En spelbok som ska bli uppgifter i Min plan. Stegen hämtas ur i18n på servern. */
+export type AddPlaybookRequest = {
+  signalId: string;
+  kind: "risk" | "opportunity";
+  area: string;
+  headline: string;
+};
+
+export type AddPlaybookResult = { ok: true; added: number } | { ok: false; reason: "full" | "failed" };
+
 type FeedbackState = "relevant" | "hidden" | "failed";
+type PlanState = "adding" | "added" | "already" | "full" | "failed";
+
+/** Det som bara /app skickar till spelboken. Allt är valfritt. */
+type PlaybookExtras = {
+  personal?: PulsePersonal | null;
+  /** Medgrundarens sida. Länken får `?signal=<id>`, och sidan förifyller frågan. */
+  cofounderHref?: string;
+  /** Server action för "Lägg till stegen i min plan". Utelämnad: ingen knapp. */
+  onAddToPlan?: (request: AddPlaybookRequest) => Promise<AddPlaybookResult>;
+  /** Resan, där planen visas. */
+  planHref?: string;
+};
 
 type PulseProps = {
   data: PulseData;
@@ -47,7 +81,7 @@ type PulseProps = {
   onFeedback?: (signalId: string, verdict: PulseFeedbackVerdict) => Promise<void>;
   /** Egna bevakningar (bara i /app). Utelämnad: ingen del för bevakningar. */
   watches?: PulseWatches | null;
-};
+} & PlaybookExtras;
 
 /**
  * Pulsen: signalflödet, nyast först. Rubriken är den senaste signalen. Markup
@@ -63,7 +97,7 @@ type PulseProps = {
  * I /app finns dessutom omdömet under varje signal ("Relevant" / "Inte
  * relevant") och grundarens egna bevakningar. Demot skickar inget av dem.
  */
-export function Pulse({ data, onFeedback, watches }: PulseProps) {
+export function Pulse({ data, onFeedback, watches, personal, cofounderHref, onAddToPlan, planHref }: PulseProps) {
   const { t } = useI18n();
   const { signals } = data;
   const latest = signals?.[0];
@@ -80,7 +114,20 @@ export function Pulse({ data, onFeedback, watches }: PulseProps) {
         );
       }
     : undefined;
-  const list = { dataType: data.sourceDataType, feedback, give };
+  const [plan, setPlan] = useState<Record<string, PlanState>>({});
+  const addToPlan = onAddToPlan
+    ? (request: AddPlaybookRequest) => {
+        setPlan((current) => ({ ...current, [request.signalId]: "adding" }));
+        onAddToPlan(request).then(
+          (result) => {
+            const state: PlanState = result.ok ? (result.added > 0 ? "added" : "already") : result.reason;
+            setPlan((current) => ({ ...current, [request.signalId]: state }));
+          },
+          () => setPlan((current) => ({ ...current, [request.signalId]: "failed" })),
+        );
+      }
+    : undefined;
+  const list = { dataType: data.sourceDataType, feedback, give, personal, cofounderHref, plan, addToPlan, planHref };
 
   return (
     <div className="fdd-page">
@@ -138,12 +185,22 @@ function SignalList({
   tourId,
   feedback,
   give,
+  personal,
+  cofounderHref,
+  plan,
+  addToPlan,
+  planHref,
 }: {
   signals: PulseSignal[];
   dataType?: DataType;
   tourId?: string;
   feedback: Record<string, FeedbackState>;
   give?: (signalId: string, verdict: PulseFeedbackVerdict) => void;
+  personal?: PulsePersonal | null;
+  cofounderHref?: string;
+  plan: Record<string, PlanState>;
+  addToPlan?: (request: AddPlaybookRequest) => void;
+  planHref?: string;
 }) {
   const { t } = useI18n();
   const p = t.pulsePage;
@@ -163,6 +220,9 @@ function SignalList({
         // En signal är en risk, en möjlighet eller en vanlig nyhet. Risken vinner om båda skulle vara satta.
         const insight = signal.risk
           ? {
+              kind: "risk" as const,
+              area: signal.risk.area as string,
+              facts: personal?.risk ?? [],
               label: p.riskLabel,
               tone: "orange" as const,
               texts: p.riskAreas[signal.risk.area],
@@ -172,6 +232,9 @@ function SignalList({
             }
           : signal.opportunity
             ? {
+                kind: "opportunity" as const,
+                area: signal.opportunity.area as string,
+                facts: personal?.opportunity ?? [],
                 label: p.opportunityLabel,
                 tone: "green" as const,
                 texts: p.opportunityAreas[signal.opportunity.area],
@@ -212,6 +275,24 @@ function SignalList({
               <details className="fdd-playbook">
                 <summary>{p.playbook.toggle}</summary>
                 <div className="fdd-playbook__body">
+                  {insight.facts.length > 0 && (
+                    <div className="fdd-playbook__personal">
+                      <p className="fdd-label">{p.playbook.personalTitle}</p>
+                      <ul>
+                        {insight.facts.map((fact) => (
+                          <li key={fact.id}>
+                            {fact.text}
+                            {fact.source && (
+                              <>
+                                {" "}
+                                <SourceTag source={fact.source.source} dataType={fact.source.dataType} />
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <p className="fdd-label">{insight.impactTitle}</p>
                   <ul>
                     {insight.texts.playbook.impact.map((item) => (
@@ -224,6 +305,15 @@ function SignalList({
                       <li key={item}>{item}</li>
                     ))}
                   </ol>
+                  {signal.id && (cofounderHref || addToPlan) && (
+                    <PlaybookActions
+                      request={{ signalId: signal.id, kind: insight.kind, area: insight.area, headline: signal.headline }}
+                      cofounderHref={cofounderHref}
+                      state={plan[signal.id]}
+                      addToPlan={addToPlan}
+                      planHref={planHref}
+                    />
+                  )}
                   <p className="fdd-muted fdd-playbook__note">{p.playbook.note}</p>
                 </div>
               </details>
@@ -265,6 +355,73 @@ function SignalList({
         );
       })}
     </ul>
+  );
+}
+
+/**
+ * Spelbokens två vägar vidare (bara i /app): gå igenom signalen med
+ * Medgrundaren, eller lägg stegen i Min plan. Länken bär bara signalens id;
+ * frågan byggs på servern ur grundarens egna signaler.
+ */
+function PlaybookActions({
+  request,
+  cofounderHref,
+  state,
+  addToPlan,
+  planHref,
+}: {
+  request: AddPlaybookRequest;
+  cofounderHref?: string;
+  state?: PlanState;
+  addToPlan?: (request: AddPlaybookRequest) => void;
+  planHref?: string;
+}) {
+  const { t } = useI18n();
+  const pb = t.pulsePage.playbook;
+  const message =
+    state === "added"
+      ? pb.addedToPlan
+      : state === "already"
+        ? pb.alreadyInPlan
+        : state === "full"
+          ? pb.planFull
+          : state === "failed"
+            ? pb.planFailed
+            : null;
+  return (
+    <div className="fdd-playbook__actions">
+      {cofounderHref && (
+        <Link
+          href={`${cofounderHref}?signal=${encodeURIComponent(request.signalId)}`}
+          className="fd-btn fd-btn--primary fd-btn--sm"
+        >
+          {pb.askCofounder}
+        </Link>
+      )}
+      {addToPlan && state !== "added" && state !== "already" && (
+        <button
+          type="button"
+          className="fd-btn fd-btn--secondary fd-btn--sm"
+          disabled={state === "adding"}
+          onClick={() => addToPlan(request)}
+        >
+          {state === "adding" ? pb.adding : pb.addToPlan}
+        </button>
+      )}
+      {message && (
+        <p className="fdd-muted fdd-playbook__status" role={state === "added" || state === "already" ? "status" : "alert"}>
+          {message}
+          {(state === "added" || state === "already" || state === "full") && planHref && (
+            <>
+              {" "}
+              <Link href={planHref} className="fdd-link">
+                {pb.seePlan}
+              </Link>
+            </>
+          )}
+        </p>
+      )}
+    </div>
   );
 }
 
