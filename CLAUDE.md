@@ -15,6 +15,7 @@ Repot hade redan ett Next.js-projekt. Läs `AGENTS.md`, bygg i den befintliga st
 - Allt arbete sker på branchen `prototyp` (landningssidan på `prototyp-landning`). Pusha aldrig direkt till `main`.
 - **Undantag, migrationen till en design:** PR 4–11 i `docs/plan-en-design.md` görs direkt på `design/en-design`, som tas in i `prototyp` med en PR ungefär en gång i veckan. Se avsnittet "Arbetsordning" där. Bara en person i taget rör `screens/` och `design/site.css`.
 - Kör `typecheck`, `lint` och testerna utan fel före varje commit.
+- **CI måste vara grön innan merge.** GitHub Actions (`.github/workflows/ci.yml`) kör typecheck, lint, test och build på varje PR och push mot `prototyp`. Merga aldrig en PR med röd eller pågående CI.
 
 ## Arkitektur
 - **Skärmar vet aldrig varifrån datan kommer.** De får data via portar (gränssnitt i `ports/`).
