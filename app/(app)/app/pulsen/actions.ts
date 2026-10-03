@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { livePulseProvider } from "@/adapters/live/PulseProvider";
-import { PulseWatchError } from "@/core/errors";
-import type { PulseWatchResult } from "@/screens/Pulse";
+import { livePlanRepository } from "@/adapters/live/PlanRepository";
+import { PlanLimitError, PulseWatchError } from "@/core/errors";
+import { sv } from "@/i18n/sv";
+import type { AddPlaybookResult, PulseWatchResult } from "@/screens/Pulse";
 
 /**
  * Pulsens omdöme och bevakningar i /app (docs/moduler/webbresearch-och-pulsen.md,
@@ -41,4 +43,41 @@ export async function removeWatch(id: unknown): Promise<void> {
   if (typeof id !== "string") throw new Error("Pulsen: ogiltigt id.");
   await livePulseProvider.removeWatch!(id);
   revalidatePath("/app/pulsen");
+}
+
+/**
+ * "Lägg till stegen i min plan" (docs/moduler/min-plan.md). Stegen hämtas ur
+ * spelbokens i18n-texter här på servern, aldrig från klienten: klienten
+ * skickar bara signalens id, sorten, området och rubriken. Rubriken blir
+ * uppgiftens sammanhang, rensas och kapas i adaptern, och är grundarens egen
+ * data i grundarens egen plan. Användaren tas ur sessionen i adaptern, och RLS
+ * på plan_items är den bindande spärren.
+ */
+export async function addPlaybookToPlan(request: unknown): Promise<AddPlaybookResult> {
+  const steps = playbookSteps(request);
+  if (!steps) return { ok: false, reason: "failed" };
+  const { signalId, headline } = request as { signalId: string; headline: string };
+  try {
+    const added = await livePlanRepository.addItems(
+      steps.map((text) => ({ text, context: headline, origin: "pulsen" as const, originRef: signalId })),
+    );
+    revalidatePath("/app/resan");
+    return { ok: true, added };
+  } catch (error) {
+    if (error instanceof PlanLimitError) return { ok: false, reason: "full" };
+    // Bara namnet, aldrig meddelandet: det kan bära databasens svar.
+    console.error(`Min plan: stegen kunde inte sparas (${error instanceof Error ? error.name : "okänt fel"}).`);
+    return { ok: false, reason: "failed" };
+  }
+}
+
+/** Spelbokens steg för en giltig förfrågan, annars `null`. Bara egna nycklar, aldrig ärvda. */
+function playbookSteps(request: unknown): string[] | null {
+  if (!request || typeof request !== "object") return null;
+  const { signalId, kind, area, headline } = request as Record<string, unknown>;
+  if (typeof signalId !== "string" || typeof area !== "string" || typeof headline !== "string") return null;
+  const areas =
+    kind === "risk" ? sv.pulsePage.riskAreas : kind === "opportunity" ? sv.pulsePage.opportunityAreas : null;
+  if (!areas || !Object.prototype.hasOwnProperty.call(areas, area)) return null;
+  return (areas as Record<string, { playbook: { solve: string[] } }>)[area].playbook.solve;
 }

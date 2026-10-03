@@ -60,6 +60,7 @@ kommande sessioner.
 | Evidens och poäng | `EvidenceRepository` | Supabase | klar (P1) | `docs/moduler/evidens-och-poang.md` |
 | Minnet | `MemoryRepository` | Supabase | klar (P1) | `docs/moduler/minnet.md` |
 | Medgrundaren | `CofounderAgent`, `CofounderConversationRepository` | Gemini (`lib/server/gemini.ts`) + Supabase (`cofounder_messages`) | påbörjad (v1, bara text) | `docs/moduler/medgrundaren.md` |
+| Min plan | `PlanRepository` | Supabase (`plan_items`) | påbörjad | `docs/moduler/min-plan.md` |
 | Registret | `RegistryProvider` | Bolagsverket, SCB (`lib/server/scb.ts`, `bolagsverket.ts`, oskrivna; grindad via `lib/server/registryAccess.ts`) | påbörjad, grindad | `docs/moduler/registret.md` |
 | Webbresearch | `ResearchProvider` | Tavily | stub | `docs/moduler/webbresearch-och-pulsen.md` |
 | Pulsen | `PulseProvider` | Tavily | stub | `docs/moduler/webbresearch-och-pulsen.md` |

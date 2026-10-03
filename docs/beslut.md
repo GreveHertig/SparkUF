@@ -480,6 +480,32 @@ Uppdrag från Bruno (2026-10-03). Se `docs/moduler/medgrundaren.md`.
   får källan "Din uppgift" (profilsamtalet, Hjärnan eller Spåret) med dagens
   datum, eller postens datum för Spåret.
 
+**Personlig spelbok, Medgrundaren från Pulsen och Min plan (gren `modul/pulsen-spelbok`, väntar på granskning).**
+Uppdrag från Bruno (2026-10-03). Se `docs/moduler/webbresearch-och-pulsen.md`
+("Personlig spelbok") och `docs/moduler/min-plan.md`.
+- **Personlig spelbok utan modell.** Överst i spelboken visas det grundaren
+  redan har berättat: idén ur projektet, tid, pengar och vad hen kan riskera
+  ur Profilen, och för möjligheter om steget "Det formella" är klart. Bara
+  grundarens egen text och läget i Resan. Beslutet att spelböckerna är
+  förskrivna i18n-texter (2026-10-02) står kvar: frågorna och stegen ändras
+  inte, grundaren jämför själv. En rad med en siffra får källan "Din uppgift".
+- **"Gå igenom det här med Medgrundaren".** Länken bär bara signalens id
+  (`/app/medgrundaren?signal=<uuid>`). Sidan letar upp signalen bland
+  grundarens egna signaler på servern och förifyller en fråga ur i18n med
+  rubrik, källa och datum. Inget skickas och inget räknas mot Medgrundarens
+  tak förrän grundaren trycker Skicka. Ingen ny modellkostnad.
+- **Min plan: ny port och ny tabell.** `PlanRepository` (`ports/PlanRepository.ts`)
+  med demo- och liveadapter, tabellen `public.plan_items` (migrering
+  `20261003180000_plan_items.sql`) med RLS för select, insert, update och
+  delete på egna rader. Raderna försvinner när kontot tas bort. Stegen hämtas
+  ur spelbokens i18n på servern, aldrig från klienten. Samma steg från samma
+  signal sparas en gång (unikt index). Högst 50 öppna uppgifter
+  (`core/plan.ts`). Planen visas och bockas av i Resan.
+- **`screens/` är ändrad** (`Pulse.tsx`, `Journey.tsx`, `Cofounder.tsx`,
+  `blocks/CofounderChat.tsx`) och `design/site.css` har nya klasser
+  (`fdd-playbook__personal`, `fdd-playbook__actions`, `fdd-plan`). Stäm av
+  med den som har `screens/` innan merge.
+
 **Onboarding v4 (gren `plattform/onboarding-v4`, PR 1 av 2).** Erik
 2026-10-03, enligt systemspecifikationen v4 §4 och §3.2. Plan och status:
 `docs/status/2026-10-03-onboarding-v4.md`.
