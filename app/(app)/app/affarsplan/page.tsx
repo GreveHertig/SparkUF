@@ -1,14 +1,30 @@
 import { BusinessPlan, type BusinessPlanData } from "@/screens/BusinessPlan";
+import { getLiveBusinessPlan } from "@/adapters/live/businessPlan";
+import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
+import { orNull } from "../_lib/orNull";
 
 /**
- * Affärsplanen i /app (PR 10, docs/plan-en-design.md). Planen har ingen egen
- * port: den sätts samman av `buildBusinessPlan` (core/businessPlan.ts) ur
- * kontrollpunkter som någon måste samla ihop ur portarna. I demot gör
- * demots egen hopsamling det; för /app finns ingen sådan hopsamling
- * än. Varje avsnitt visar därför "Kommer snart" och mognaden luckan "—".
- * Ingen plan sätts samman av halva underlaget, och demots plan används aldrig.
+ * Affärsplanen i /app (PR 10, kopplad till riktig data 2026-10-03). Planen
+ * sätts samman av `getLiveBusinessPlan` (adapters/live/businessPlan.ts) ur
+ * projektet, onboardingsvaren och bevisen, och `buildBusinessPlan`
+ * (core/businessPlan.ts) avgör varje avsnitts status. Avsnitt utan riktigt
+ * underlag visas som luckor med steget som skulle ge det, aldrig med demots
+ * data. Ett platshållarfel ger "Kommer snart" i alla avsnitt, som förut.
+ *
+ * Resans steg ger luckorna sina namn och en länk till det aktuella steget.
  */
-export default function LiveBusinessPlanPage() {
-  const data: BusinessPlanData = { plan: null };
+export default async function LiveBusinessPlanPage() {
+  const [plan, steps] = await Promise.all([
+    orNull(getLiveBusinessPlan("sv")),
+    orNull(liveJourneyRepository.getSteps("sv")),
+  ]);
+
+  const data: BusinessPlanData = {
+    plan,
+    completedStepNumbers: (steps ?? []).filter((step) => step.status === "done").map((step) => step.stepNumber),
+    steps: steps && steps.map(({ stepNumber, title, status }) => ({ stepNumber, title, status })),
+    stepBasePath: "/app/resan",
+  };
+
   return <BusinessPlan data={data} />;
 }

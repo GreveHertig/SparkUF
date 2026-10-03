@@ -108,3 +108,45 @@ describe("BusinessPlan (PR 10)", () => {
     expect(tag).toHaveTextContent(`${sv.common.exampleSourceLabel}·Påhittad data, steg 01`);
   });
 });
+
+describe("BusinessPlan, omgjord (2026-10-03)", () => {
+  const steps = Array.from({ length: 12 }, (_, index) => ({
+    stepNumber: index + 1,
+    title: `Steget ${index + 1}`,
+    status: (index + 1 < 3 ? "done" : index + 1 === 3 ? "current" : "locked") as "done" | "current" | "locked",
+  }));
+
+  it("översikten länkar till varje avsnitt med dess läge", () => {
+    renderPlan({ plan });
+    const nav = screen.getByRole("navigation", { name: sv.businessPlanPage.overviewLabel });
+    const links = nav.querySelectorAll("a");
+    expect(links).toHaveLength(plan.sections.length);
+    expect(links[0]).toHaveAttribute("href", "#fdd-plan-idea");
+    expect(links[0]).toHaveAccessibleName(
+      fill(sv.businessPlanPage.overviewLinkTemplate, { title: sv.businessPlanPage.sections.idea.title, status: sv.businessPlanPage.status.solid }),
+    );
+  });
+
+  it("ett siffervärde visas som nyckeltal med sin källa", () => {
+    renderPlan({ plan });
+    const figure = screen.getByText("312").closest(".fdd-bplan-figure");
+    expect(figure).not.toBeNull();
+    expect(figure).toHaveTextContent("Byråer i registret");
+    expect(figure?.querySelector("button")).toHaveTextContent("Kundsamtal");
+  });
+
+  it("nästa steg pekar på det aktuella steget; bara det aktuella steget får en länk", () => {
+    renderPlan({ plan, completedStepNumbers: [1, 2], steps, stepBasePath: "/app/resan" });
+    expect(
+      screen.getByRole("heading", { name: fill(sv.businessPlanPage.nextStep.titleTemplate, { step: "03", title: "Steget 3" }) }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: fill(sv.businessPlanPage.openStepTemplate, { step: "03" }) }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: fill(sv.businessPlanPage.openStepTemplate, { step: "05" }) })).not.toBeInTheDocument();
+  });
+
+  it("utan plan finns varken översikt, nästa steg eller utskriftsknapp", () => {
+    renderPlan({ plan: null });
+    expect(screen.queryByRole("navigation", { name: sv.businessPlanPage.overviewLabel })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: sv.businessPlanPage.printCta })).not.toBeInTheDocument();
+  });
+});

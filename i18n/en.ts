@@ -1304,6 +1304,23 @@ export const en = {
     coverageValueTemplate: "growth: {growth} of {total}, region: {region} of {total}",
     contradictionLabel: "Contradiction — both sides shown",
     lockedPartsTitle: "Not yet proven",
+    overviewLabel: "The plan at a glance",
+    overviewLinkTemplate: "{title}: {status}",
+    nextStep: {
+      eyebrow: "Strengthens the plan most right now",
+      titleTemplate: "Step {step} · {title}",
+      feedsLabel: "Gives evidence to",
+      ctaTemplate: "Open step {step}",
+    },
+    openStepTemplate: "Open step {step}",
+    printCta: "Save as PDF",
+    liveClaims: {
+      ideaTemplate: "{name}: {oneLiner}",
+      projectSource: "Your project",
+      targetCustomer: "The customer you're aiming for",
+      payer: "Who pays",
+      problemSeen: "The problem you see",
+    },
     sections: {
       idea: {
         title: "The business idea",

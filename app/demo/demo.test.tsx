@@ -363,8 +363,10 @@ describe("/demo", () => {
     ).toBeInTheDocument();
     expect(document.querySelectorAll("h2[id^='fdd-plan-']")).toHaveLength(plan.sections.length);
     const claims = plan.sections.reduce((sum, s) => sum + s.claims.length + s.contradictions.length * 2, 0);
-    expect(document.querySelectorAll(".fdd-claim")).toHaveLength(claims);
-    for (const item of document.querySelectorAll(".fdd-claim")) {
+    // Påståenden med ett siffervärde visas som nyckeltal (.fdd-bplan-figure), resten som rader.
+    const shown = document.querySelectorAll(".fdd-claim, .fdd-bplan-figure");
+    expect(shown).toHaveLength(claims);
+    for (const item of shown) {
       expect(item.querySelector(".fdd-inline")?.textContent).not.toBe("");
     }
     expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();

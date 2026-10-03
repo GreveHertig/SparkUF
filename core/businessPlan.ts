@@ -171,3 +171,28 @@ export function buildBusinessPlan(sections: BusinessPlanSectionInput[]): Busines
     },
   };
 }
+
+/** Steget som stärker planen mest just nu, och de avsnitt det ger underlag
+ * till. Se `nextPlanStep`. */
+export type NextPlanStep = {
+  stepNumber: number;
+  sectionIds: BusinessPlanSectionId[];
+};
+
+/**
+ * Det lägsta steget som någon lucka i planen väntar på och som inte är klart.
+ * Resan låser stegen i ordning, så det är också det steg grundaren kan göra
+ * först. Ett klart steg som ändå lämnade en lucka räknas inte: att göra om
+ * det fyller ingenting. `null` när inget återstår. Avsnitten kommer i planens
+ * ordning och bara en gång var.
+ */
+export function nextPlanStep(plan: BusinessPlan, completedStepNumbers: readonly number[]): NextPlanStep | null {
+  const done = new Set(completedStepNumbers);
+  const open = plan.sections.flatMap((section) =>
+    section.gaps.filter((gap) => !done.has(gap.requiredStepNumber)).map((gap) => ({ section: section.id, step: gap.requiredStepNumber })),
+  );
+  if (open.length === 0) return null;
+  const stepNumber = Math.min(...open.map((gap) => gap.step));
+  const sectionIds = BUSINESS_PLAN_SECTION_ORDER.filter((id) => open.some((gap) => gap.step === stepNumber && gap.section === id));
+  return { stepNumber, sectionIds };
+}

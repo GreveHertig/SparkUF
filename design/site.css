@@ -3216,19 +3216,261 @@
   font-variant-numeric: tabular-nums;
 }
 
-.fdd-plan {
+/* Avsnitten. Klassen hette .fdd-plan, men Min plan i Resan använder samma
+   namn längre ner och tog över layouten (en kolumn). Därför .fdd-bplan. */
+.fdd-bplan {
   display: grid;
   gap: var(--space-6);
+  align-items: start;
 }
 
 @media (min-width: 960px) {
-  .fdd-plan {
+  .fdd-bplan {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 .fdd-plansection {
   gap: var(--space-4);
+  /* Översiktens länkar landar under den klibbiga toppraden. */
+  scroll-margin-top: 8.5rem;
+}
+
+/* Ett avsnitt helt utan underlag: lugnare, så att det som håller syns först. */
+.fdd-plansection--missing {
+  gap: var(--space-3);
+  background: var(--sunk);
+  box-shadow: none;
+}
+
+.fdd-bplan-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+/* Översikten och nästa steg överst. */
+.fdd-bplan-top {
+  display: grid;
+  gap: var(--space-6);
+}
+
+@media (min-width: 960px) {
+  .fdd-bplan-top {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: stretch;
+  }
+}
+
+.fdd-bplan-overview {
+  gap: var(--space-4);
+}
+
+.fdd-bplan-bar {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.fdd-bplan-bar__seg {
+  height: 0.5rem;
+  border-radius: var(--r-pill);
+  background: var(--slate-100);
+}
+
+.fdd-bplan-bar__seg--solid {
+  background: var(--score-green);
+}
+
+.fdd-bplan-bar__seg--thin {
+  background: color-mix(in srgb, var(--score-yellow) 55%, var(--score-yellow-bg));
+}
+
+.fdd-bplan-ov {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fdd-bplan-ov__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  color: var(--ink-900);
+  font-size: 0.9375rem;
+  text-decoration: none;
+}
+
+.fdd-bplan-ov__item--missing {
+  color: var(--fd-quiet);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fdd-bplan-ov__item:hover span:last-child {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+}
+
+.fdd-bplan-ov__dot {
+  flex-shrink: 0;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--r-pill);
+  border: 1.5px solid var(--slate-300);
+}
+
+.fdd-bplan-ov__item--solid .fdd-bplan-ov__dot {
+  border-color: var(--score-green);
+  background: var(--score-green);
+}
+
+.fdd-bplan-ov__item--thin .fdd-bplan-ov__dot {
+  border-color: var(--score-yellow);
+  background: linear-gradient(90deg, var(--score-yellow) 50%, transparent 50%);
+}
+
+.fdd-bplan-next {
+  gap: var(--space-3);
+  justify-content: space-between;
+  border-color: var(--accent-200);
+  background: linear-gradient(180deg, var(--accent-50), white 70%);
+}
+
+.fdd-bplan-next__title {
+  font-size: clamp(1.35rem, 2.2vw, 1.75rem);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.fdd-bplan-next__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--hair-2);
+}
+
+/* Påståenden med ett siffervärde, som nyckeltal. */
+.fdd-bplan-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fdd-bplan-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--hair-2);
+  border-radius: var(--r-md);
+}
+
+.fdd-bplan-figure__value {
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-bplan-figure__label {
+  margin-bottom: var(--space-1);
+  color: var(--fd-muted);
+  font-size: 0.9375rem;
+}
+
+/* Luckorna: en rad var, aldrig en stor låst ruta. */
+.fdd-bplan-gaps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fdd-bplan-gap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--slate-300);
+  border-radius: var(--r-md);
+  font-size: 0.9375rem;
+}
+
+.fdd-bplan-gap__text {
+  color: var(--slate-700);
+}
+
+.fdd-bplan-gap__step {
+  color: var(--fd-quiet);
+}
+
+.fdd-bplan-gap__link {
+  white-space: nowrap;
+}
+
+.fdd-bplan-locked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fdd-bplan-locked ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fdd-bplan-locked li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--slate-700);
+  font-size: 0.9375rem;
+}
+
+.fdd-bplan-locked .fdd-lock {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+/* Utskrift ("Spara som PDF"): bara planen, utan skal, demorad och knappar. */
+@media print {
+  .fdd-top,
+  .fdd-tabs,
+  .fdd-bar,
+  .fdd-bplan-print,
+  .fdd-bplan-next,
+  .fdd-bplan-gap__link {
+    display: none !important;
+  }
+
+  .fdd-bplan-page .fd-panel {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .fdd-bplan,
+  .fdd-bplan-top {
+    grid-template-columns: 1fr;
+  }
 }
 
 .fdd-claims {

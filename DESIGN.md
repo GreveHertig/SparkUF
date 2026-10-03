@@ -115,10 +115,24 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
   och `example` (streckad, "Exempel"). Bara registret är grått. Tonerna
   ligger i `design/tokens.css` (`--data-media*`, `--data-user*`) och
   `design/tokens.ts`. Tabellen och motivet står i `docs/beslut.md`.
-- **Luckan i affärsplanen**: ett steg som inte är klart ger det låsta läget
-  "Underlag saknas — kommer från steg N". Ett klart steg som ändå inte gav
-  något påstående med källa ger en dämpad rad, "Steg N är klart, men gav
-  inget underlag med källa till det här avsnittet." (PR 11).
+- **Luckan i affärsplanen**: ett steg som inte är klart ger en streckad rad
+  (inte längre den stora låsta rutan), "Underlag saknas — kommer från steg N
+  · stegets namn", med en länk "Öppna steg NN" bara när steget är det
+  aktuella i resan. Två kontrollpunkter som väntar på samma steg visas som en
+  rad. Ett klart steg som ändå inte gav något påstående med källa ger en
+  dämpad rad, "Steg N är klart, men gav inget underlag med källa till det
+  här avsnittet." (PR 11). Ett avsnitt som helt saknas får en lugnare yta
+  (`.fdd-plansection--missing`), så att det som håller syns först
+  (2026-10-03).
+- **Affärsplanens överdel** (2026-10-03): en översikt med en statusstapel
+  och en länk per avsnitt (`.fdd-bplan-overview`), och ett kort med steget
+  som stärker planen mest (`nextPlanStep` i `core/businessPlan.ts`), som
+  räknar upp avsnitten det ger underlag till utan någon siffra. Påståenden
+  med ett kort siffervärde visas som nyckeltal (`.fdd-bplan-figure`), med
+  källan kvar under siffran. "Spara som PDF" öppnar webbläsarens utskrift;
+  utskriften döljer skalet, demoraden, kortet och länkarna. Avsnittens
+  behållare heter `.fdd-bplan`: det gamla namnet `.fdd-plan` krockade med
+  Min plan i Resan, som tog över layouten.
 - **Färdighetsgraden** (PR 10, "8/9") bär ingen källmärkning. Den räknas av
   `buildBusinessPlan` ur de nio avsnitten på samma sida (undantaget i
   `CLAUDE.md`). Utan plan visas luckan "—".

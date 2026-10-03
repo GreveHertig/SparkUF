@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   BUSINESS_PLAN_SECTION_ORDER,
   buildBusinessPlan,
+  nextPlanStep,
   type BusinessPlanCheck,
   type BusinessPlanClaim,
   type BusinessPlanSectionInput,
@@ -138,5 +139,27 @@ describe("buildBusinessPlan — låsta poängdelar (risks)", () => {
   it("ett avsnitt utan låsta delar får en tom lista", () => {
     const plan = buildBusinessPlan([section({ id: "risks" })]);
     expect(plan.sections.find((s) => s.id === "risks")!.lockedParts).toEqual([]);
+  });
+});
+
+describe("nextPlanStep", () => {
+  const plan = buildBusinessPlan([
+    { id: "idea", checks: [met([claim("Idén")], 2)] },
+    { id: "market", checks: [unmet(3), unmet(3)] },
+    { id: "competition", checks: [unmet(4)] },
+    { id: "customerAndProblem", checks: [unmet(3), unmet(5)] },
+  ]);
+
+  it("väljer det lägsta steget som en lucka väntar på, med avsnitten i planens ordning och bara en gång", () => {
+    expect(nextPlanStep(plan, [1, 2])).toEqual({ stepNumber: 3, sectionIds: ["customerAndProblem", "market"] });
+  });
+
+  it("hoppar över ett klart steg som ändå lämnade en lucka", () => {
+    expect(nextPlanStep(plan, [1, 2, 3])).toEqual({ stepNumber: 4, sectionIds: ["competition"] });
+  });
+
+  it("ger null när inga luckor återstår", () => {
+    expect(nextPlanStep(buildBusinessPlan([{ id: "idea", checks: [met([claim("Idén")])] }]), [])).toBeNull();
+    expect(nextPlanStep(plan, [1, 2, 3, 4, 5])).toBeNull();
   });
 });
