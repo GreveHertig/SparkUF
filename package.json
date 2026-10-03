@@ -10,6 +10,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:live:gemini": "vitest run --no-file-parallelism adapters/live/LegalAdvisor.live.test.ts adapters/live/CofounderAgent.live.test.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

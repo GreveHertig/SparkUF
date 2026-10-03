@@ -44,6 +44,21 @@ describe("liveLegalAdvisor.getLegalMap", () => {
     await expect(liveLegalAdvisor.getLegalMap("aktiebolag")).rejects.toThrow();
   });
 
+  it("kastar när Gemini skickar fler än 25 krav (maxItems skickas inte till Gemini, zod håller gränsen)", async () => {
+    const ettKrav = {
+      topicId: "registrering",
+      rubrik: "Registrering",
+      beskrivning: "Bolaget ska registreras hos Bolagsverket.",
+      tillamplighet: "applicable",
+    };
+    mockedGenerateJson.mockResolvedValue(svar(Array.from({ length: 26 }, () => ettKrav)));
+    await expect(liveLegalAdvisor.getLegalMap("aktiebolag")).rejects.toThrow(/schemat/);
+
+    // 25 är fortfarande tillåtet.
+    mockedGenerateJson.mockResolvedValue(svar(Array.from({ length: 25 }, () => ettKrav)));
+    await expect(liveLegalAdvisor.getLegalMap("aktiebolag")).resolves.toBeInstanceOf(Array);
+  });
+
   it("kastar på ett topicId som inte finns i katalogen", async () => {
     mockedGenerateJson.mockResolvedValue(
       svar([

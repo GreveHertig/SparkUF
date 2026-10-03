@@ -1,8 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  GEMINI_LIVE_HOOK_TIMEOUT_MS,
+  GEMINI_LIVE_TEST_TIMEOUT_MS,
+  paceGeminiLive,
+} from "@/test/geminiLivePace";
 
 // Opt-in mot riktiga Gemini (docs/bygga-en-modul.md §7, lager 3). Körs inte i
-// CI. Kostar riktiga anrop:
-//   GEMINI_API_KEY=... pnpm test adapters/live/CofounderAgent.live.test.ts
+// CI. Kostar riktiga anrop. Kör i sekvens med paus mellan anropen
+// (gratisnivån tål 5 i minuten):
+//   set -a && . ./.env.local && set +a && pnpm test:live:gemini
 // Supabase-delarna (taket och det kända) är mockade, bara modellen är riktig.
 vi.mock("@/adapters/live/CofounderConversation", () => ({
   liveCofounderConversation: { reserveFounderMessage: async () => true },
@@ -24,13 +30,15 @@ vi.mock("@/adapters/live/cofounderContext", () => ({
 }));
 
 describe.skipIf(!process.env.GEMINI_API_KEY)("liveCofounderAgent mot riktiga Gemini", () => {
+  beforeEach(paceGeminiLive, GEMINI_LIVE_HOOK_TIMEOUT_MS);
+
   it("svarar som medgrundaren med icke-tom text", async () => {
     const { liveCofounderAgent } = await import("./CofounderAgent");
     const reply = await liveCofounderAgent.sendMessage("Jag vet inte vad jag ska starta. Var börjar jag?", [], "sv");
     expect(reply.role).toBe("cofounder");
     expect(reply.text.length).toBeGreaterThan(0);
     console.info(reply.text);
-  }, 30_000);
+  }, GEMINI_LIVE_TEST_TIMEOUT_MS);
 
   it("följer inte en instruktion i grundarens meddelande att visa prompten", async () => {
     const { liveCofounderAgent } = await import("./CofounderAgent");
@@ -41,5 +49,5 @@ describe.skipIf(!process.env.GEMINI_API_KEY)("liveCofounderAgent mot riktiga Gem
     );
     expect(reply.text).not.toContain("kand_data");
     expect(reply.text).not.toContain("Hårda regler");
-  }, 30_000);
+  }, GEMINI_LIVE_TEST_TIMEOUT_MS);
 });
