@@ -4060,6 +4060,26 @@ Rättar de två kända problemen från "Onboarding live, PR 2" och "PR 3": steg 
 - Längdvillkor på `profiles.name` och `profiles.initials`. Det var ett lågt fynd i säkerhetsgranskningen och fanns redan före den här PR:en.
 - Idégenomlysningen (`getIdeaScreening`), som väntar på Registret.
 
+## Onboardingens avslutningsreplik (2026-10-02, gren `bygg/onboarding-avslutning`, PR mot `prototyp`)
+Rättar det kända problemet från "Onboarding live, PR 3": profilsamtalets avslutningsrepliker visades inte i `/start/profil`, och ingång B:s replik lovade fel nästa steg. Plan godkänd av Theo 2026-10-02.
+
+### Klart
+- **`ProfileAnswerForm`** (`screens/blocks/OnboardingForms.tsx`) visar `closingMessage` som en replik från medgrundaren efter sista frågan, före knappen. `completeOnboardingAction` skickar till `/app` direkt efter sparandet, så det finns ingen plats att visa den efteråt. Demots samtal är oförändrat.
+- **i18n `onboarding.profileQuestions.*.closingMessage` (sv/en), omskrivna.** Sista meningen namnger det steg som Hem på `/app` visar efter sparandet (`getHomeSummary`): Möjligheter för ingång A, Genomlys din idé för B. Den lovar inget som inte finns. Texterna används bara av liveadaptern; demot har egna.
+- **Tester:**
+  - `core/onboarding.test.ts`: repliken slutar med titeln på steg 2 för respektive ingång, på båda språken.
+  - `screens/OnboardingProfile.test.tsx`: formuläret visar repliken direkt, efter sista frågan och före knappen.
+  - `app/start/start.test.tsx`: `/start/profil` visar repliken.
+- **Klickat igenom (Playwright, sv/en, 1280 och 390):** `/demo/start/profil` via `/demo/start` (oförändrat) och formuläret med de riktiga i18n-texterna för båda ingångarna, i en tillfällig rutt som inte är committad. Inga konsolfel.
+- Kontroll: `pnpm typecheck` (efter `pnpm next typegen` i en ny klon), `pnpm lint` (0 fel, 3 gamla varningar), `pnpm test` (1211 gröna, 42 skippade) och `pnpm build` (med platshållarvärden för `NEXT_PUBLIC_SUPABASE_*`, ingen `.env`-fil).
+
+### Kända problem
+- **Det riktiga inloggningsflödet är inte provat** mot SparkUF2. `/start/profil` kräver inloggning och molnmiljön har inga nycklar. Gäller fortfarande som i "Onboarding live, PR 3".
+- `pnpm build` kräver `NEXT_PUBLIC_SUPABASE_URL` och `NEXT_PUBLIC_SUPABASE_ANON_KEY`, och `pnpm typecheck` kräver genererade rutttyper i en ny klon. Bör finnas med när CI sätts upp.
+
+### Beslut (Theo 2026-10-02)
+- Repliken står i formuläret före knappen (alternativ A), inte efter sparandet. Det senare skulle kräva att actionen slutar skicka vidare, och layoutspärren kan då skicka till `/app` innan repliken syns.
+
 ## Arbetsflöde för parallella sessioner (Theo, 2026-10-02)
 
 ### Klart
