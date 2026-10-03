@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
+import { fill } from "@/i18n/fill";
 import { NotImplementedError, RegistryLockedError, RegistryTransportError } from "@/core/errors";
 import type { JourneyStepStatus, JourneyStepView } from "@/ports/JourneyRepository";
 import type { MarketOverview, RegistryCompany } from "@/ports/RegistryProvider";
@@ -14,9 +15,16 @@ const assertAccessMock = vi.hoisted(() => vi.fn());
 vi.mock("@/adapters/live/JourneyRepository", () => ({
   liveJourneyRepository: { getSteps: getStepsMock, getStepDetail: vi.fn(), getHomeSummary: vi.fn() },
 }));
+const listEvidenceMock = vi.hoisted(() => vi.fn());
+const industryNameMock = vi.hoisted(() => vi.fn());
+const searchIndustriesMock = vi.hoisted(() => vi.fn());
 vi.mock("@/adapters/live/RegistryProvider", () => ({
   liveRegistryProvider: { searchCompanies: searchCompaniesMock, getMarketOverview: getMarketOverviewMock },
+  getLiveIndustryName: industryNameMock,
+  searchLiveIndustries: searchIndustriesMock,
 }));
+vi.mock("@/adapters/live/EvidenceRecorder", () => ({ liveEvidenceRecorder: { listEvidence: listEvidenceMock } }));
+vi.mock("./actions", () => ({ chooseIndustry: vi.fn() }));
 vi.mock("@/lib/server/registryAccess", () => ({ assertRegistryAccessAllowed: assertAccessMock }));
 
 const m = sv.marketPage;
@@ -55,6 +63,9 @@ beforeEach(() => {
   assertAccessMock.mockResolvedValue(undefined);
   getMarketOverviewMock.mockResolvedValue(overview);
   searchCompaniesMock.mockResolvedValue(companies);
+  listEvidenceMock.mockResolvedValue([]);
+  industryNameMock.mockResolvedValue(null);
+  searchIndustriesMock.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -81,7 +92,8 @@ describe("/app/marknad", () => {
     expect(screen.getAllByText(m.registryClosed)).toHaveLength(3);
     expect(getMarketOverviewMock).not.toHaveBeenCalled();
     expect(searchCompaniesMock).not.toHaveBeenCalled();
-    expect(screen.queryByLabelText(m.sniPickerLabel)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(m.industry.orCodeLabel)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(m.industry.searchLabel)).not.toBeInTheDocument();
     expect(container.querySelector(".fdd-figures, .fdd-bars")).toBeNull();
     expect(container.textContent).not.toMatch(/1\s234|Riktig|Mkr|Baserat på/);
   });
@@ -102,8 +114,9 @@ describe("/app/marknad", () => {
 
     expect(assertAccessMock).toHaveBeenCalled();
     expect(getMarketOverviewMock).not.toHaveBeenCalled();
-    expect(screen.getByLabelText(m.sniPickerLabel)).toBeInTheDocument();
-    expect(screen.getByText(m.sniPrompt)).toBeInTheDocument();
+    // Sök på namn först, koden som alternativ (steg 03, 2026-10-04).
+    expect(screen.getByLabelText(m.industry.searchLabel)).toBeInTheDocument();
+    expect(screen.getByLabelText(m.industry.orCodeLabel)).toBeInTheDocument();
     expect(screen.getAllByText(m.sniChooseFirst)).toHaveLength(3);
   });
 
@@ -113,7 +126,7 @@ describe("/app/marknad", () => {
 
     expect(getMarketOverviewMock).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(m.sniInvalid);
-    expect(screen.getByLabelText(m.sniPickerLabel)).toHaveValue("");
+    expect(screen.getByLabelText(m.industry.orCodeLabel)).toHaveValue("");
   });
 
   it("öppen grind: riktig registerbild, men medianen visas som lucka utan räkenskapsår", async () => {
@@ -172,5 +185,76 @@ describe("/app/marknad", () => {
       props: Record<string, unknown>;
     };
     for (const value of Object.values(tree.props)) expect(typeof value).not.toBe("function");
+  });
+});
+
+describe("/app/marknad: min bransch (steg 03)", () => {
+  const view = (subjectRef: string, status = "counted") => ({
+    id: "e1",
+    partId: "market",
+    kind: "registerMarketCount",
+    kindLabel: "Antal bolag i registret",
+    subjectRef,
+    source: { namn: "SCB:s företagsregister", hämtad: "2026-10-04" },
+    enteredBy: "system",
+    selfReported: false,
+    status,
+    canRetract: false,
+  });
+
+  it("utan kod i adressen öppnas grundarens valda bransch, med SCB:s namn och etiketten Din bransch", async () => {
+    getStepsMock.mockResolvedValue(stepsAt(5));
+    listEvidenceMock.mockResolvedValue([view("sni:62.010")]);
+    industryNameMock.mockResolvedValue("Dataprogrammering");
+    await renderPage();
+    expect(getMarketOverviewMock).toHaveBeenCalledWith("sv", "62.010");
+    expect(screen.getByRole("heading", { level: 1, name: /^Dataprogrammering \(62\.010\)/ })).toBeInTheDocument();
+    expect(screen.getByText(m.industry.chosenLabel)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: m.industry.chooseCta })).not.toBeInTheDocument();
+  });
+
+  it("ett föråldrat bevis räknas inte som vald bransch", async () => {
+    getStepsMock.mockResolvedValue(stepsAt(5));
+    listEvidenceMock.mockResolvedValue([view("sni:62.010", "stale")]);
+    await renderPage();
+    expect(getMarketOverviewMock).not.toHaveBeenCalled();
+  });
+
+  it("en annan bransch i adressen visar knappen Det här är min bransch", async () => {
+    getStepsMock.mockResolvedValue(stepsAt(3));
+    await renderPage({ sni: "62.010" });
+    expect(screen.getByRole("button", { name: m.industry.chooseCta })).toBeInTheDocument();
+    expect(screen.getByText(m.industry.chooseHint)).toBeInTheDocument();
+  });
+
+  it("utan bolag med koden finns ingen knapp, bara en uppmaning att prova en annan bransch", async () => {
+    getStepsMock.mockResolvedValue(stepsAt(3));
+    getMarketOverviewMock.mockResolvedValue({ ...overview, companyCount: 0 });
+    await renderPage({ sni: "62.010" });
+    expect(screen.queryByRole("button", { name: m.industry.chooseCta })).not.toBeInTheDocument();
+    expect(screen.getByText(m.industry.noCompanies)).toBeInTheDocument();
+  });
+
+  it("efter valet säger sidan att steget är klart och länkar till resan", async () => {
+    getStepsMock.mockResolvedValue(stepsAt(4));
+    await renderPage({ sni: "62.010", sparad: "steg3" });
+    expect(screen.getByText(fill(m.industry.savedStepDoneTemplate, { step: "03" }))).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: m.industry.openJourneyCta })).toHaveAttribute("href", "/app/resan");
+  });
+
+  it("sökningen på namn listar SCB:s branscher som länkar till koden", async () => {
+    getStepsMock.mockResolvedValue(stepsAt(3));
+    searchIndustriesMock.mockResolvedValue([{ sniCode: "43.210", name: "Elinstallationer" }]);
+    await renderPage({ q: "elinstall" });
+    expect(searchIndustriesMock).toHaveBeenCalledWith("elinstall");
+    expect(screen.getByRole("link", { name: /Elinstallationer/ })).toHaveAttribute("href", "/app/marknad?sni=43.210");
+    // Ingen bransch vald än: registret anropas inte.
+    expect(getMarketOverviewMock).not.toHaveBeenCalled();
+  });
+
+  it("en sökning utan träffar säger det", async () => {
+    getStepsMock.mockResolvedValue(stepsAt(3));
+    await renderPage({ q: "zzzz" });
+    expect(screen.getByText(fill(m.industry.searchEmptyTemplate, { query: "zzzz" }))).toBeInTheDocument();
   });
 });

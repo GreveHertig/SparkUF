@@ -196,12 +196,13 @@ describe("vakt: service role-nyckeln", () => {
 
   // Varje ny läsare kräver ett beslut i docs/beslut.md. lib/server/scoreSnapshots.ts:
   // beslut 2026-10-01 (poänghistoriken skrivs bara av servern).
-  it("läses bara av lib/server/registryCache.ts och lib/server/scoreSnapshots.ts (och tester)", () => {
+  // lib/server/systemEvidence.ts: beslut 2026-10-04 (systembevis från Marknad).
+  it("läses bara av registryCache.ts, scoreSnapshots.ts och systemEvidence.ts (och tester)", () => {
     const readers = files
       .filter((f) => !/\.test\.tsx?$/.test(f.path))
       .filter((f) => f.text.includes("SUPABASE_SERVICE_ROLE_KEY"))
       .map((f) => f.path)
       .sort();
-    expect(readers).toEqual(["lib/server/registryCache.ts", "lib/server/scoreSnapshots.ts"]);
+    expect(readers).toEqual(["lib/server/registryCache.ts", "lib/server/scoreSnapshots.ts", "lib/server/systemEvidence.ts"]);
   });
 });

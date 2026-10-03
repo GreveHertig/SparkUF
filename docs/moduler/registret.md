@@ -159,6 +159,18 @@ policies och är stängd för alla klienter.
 
 ## Status
 
+**Steg 03 kopplat (2026-10-04, gren `modul/marknad-steg3`).** `lib/server/scb.ts`
+har nu `fetchCompanyCount` (`/count`, ett anrop) och branschsökningen ur
+kodtabellen (`searchIndustries`, `fetchIndustryName`, 7 dagar i minnet). Hela
+bolagslistan (`fetchCompanies`) kastar `ScbListingUnavailableError`, ett
+platshållarfel. Utan listan ger `getMarketOverview` för en vald bransch SCB:s
+antal med källa och länk, och resten som luckor (basis 0, inga konkurrenter).
+På `/app/marknad` söker grundaren bransch på namn och väljer "Det här är min
+bransch", som sparar antalet som systembevis och klarar steg 03. Se
+`docs/beslut.md` 2026-10-04 och `docs/status/2026-10-04-marknad-steg-03.md`.
+
+Tidigare:
+
 **påbörjad — grindad, Bolagsverket-transporten delvis skriven (2026-09-23).**
 `adapters/live/RegistryProvider.ts` är byggd: grind, indatavalidering,
 aktiebolag utan reklamspärr, källstämpling och ärlighet kring luckor.
@@ -216,7 +228,7 @@ svarsform** (`lib/server/registrySchemas.ts`). **Exponering är spärrad**, se
   att prova med mindre aktiebolag** som har lämnat årsredovisningen
   digitalt. Det behövs innan `/dokument` och iXBRL byggs.
 
-## SCB AFR (`lib/server/scb.ts`, inte skriven)
+## SCB AFR (`lib/server/scb.ts`, antal och branscher byggda 2026-10-04, listan inte)
 
 Spiken mot SCB:s allmänna företagsregister-API gjordes 2026-09-30, se
 `docs/dataspiken.md`, "SCB AFR, provkörning 2026-09-30". Det här avsnittet

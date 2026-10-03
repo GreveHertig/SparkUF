@@ -3970,6 +3970,125 @@ a.fdd-segmented__item {
   box-shadow: 0 0 0 3px var(--accent-100);
 }
 
+/* Branschsökningen och valet av bransch i /app/marknad (steg 03). */
+.fdd-industry {
+  gap: var(--space-6);
+}
+
+.fdd-industry .fdd-sni {
+  max-width: 36rem;
+}
+
+.fdd-industry__results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.fdd-industry__results ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fdd-industry__hit {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--hair-2);
+  border-radius: var(--r-md);
+  color: var(--ink-900);
+  text-decoration: none;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fdd-industry__hit:hover {
+    border-color: var(--accent-300);
+    background: var(--accent-50);
+  }
+}
+
+.fdd-industry__hit--current {
+  border-color: var(--accent-600);
+  background: var(--accent-50);
+}
+
+.fdd-industry__code {
+  flex-shrink: 0;
+  color: var(--fd-quiet);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.fdd-industry-choice {
+  gap: var(--space-3);
+  border-color: var(--accent-200);
+  background: linear-gradient(180deg, var(--accent-50), white 80%);
+}
+
+.fdd-industry-choice__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+}
+
+.fdd-industry-choice__form p {
+  flex: 1 1 22rem;
+  margin: 0;
+}
+
+.fdd-industry-choice__done,
+.fdd-industry-choice__chosen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.fdd-industry-choice__done p {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.fdd-industry-choice__chosen {
+  justify-content: flex-start;
+}
+
+/* Bocken ritas med CSS, som .fd-checks. */
+.fdd-check {
+  position: relative;
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: var(--r-pill);
+  background: var(--score-green);
+}
+
+.fdd-check::after {
+  content: "";
+  position: absolute;
+  left: 0.45rem;
+  top: 0.25rem;
+  width: 0.3rem;
+  height: 0.6rem;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
 /* Pulsens risksignaler (adapters/live/PulseProvider.ts): förslagen under en
    risk. Bara risker har dem, så inget befintligt kort ändras. */
 .fdd-risk-actions {

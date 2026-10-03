@@ -1,18 +1,25 @@
-import { Market, type MarketData, type MarketLock, type MarketRegistry } from "@/screens/Market";
+import { Market, type IndustryChoice, type MarketData, type MarketLock, type MarketRegistry, type SniPicker } from "@/screens/Market";
 import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
-import { liveRegistryProvider } from "@/adapters/live/RegistryProvider";
+import { getLiveIndustryName, liveRegistryProvider, searchLiveIndustries } from "@/adapters/live/RegistryProvider";
+import { liveEvidenceRecorder } from "@/adapters/live/EvidenceRecorder";
 import { isPlaceholderError, RegistryLockedError, RegistryTransportError } from "@/core/errors";
 import { assertRegistryAccessAllowed } from "@/lib/server/registryAccess";
 import { orNull } from "../_lib/orNull";
+import { chooseIndustry } from "./actions";
 
 /** Samma gräns som demot: marknadsbilden öppnas när steg 02 är klart. */
 const UNLOCKS_AFTER_STEP = 2;
 /** Samma form som Registret-adaptern kräver (adapters/live/RegistryProvider.ts). */
 const SNI_PATTERN = /^\d{2}\.\d{3}$/;
 const BASE_PATH = "/app/marknad";
+const JOURNEY_PATH = "/app/resan";
+const MAX_QUERY = 80;
+
+type SearchParams = { [key: string]: string | string[] | undefined };
+const single = (value: string | string[] | undefined) => (typeof value === "string" ? value.trim() : "");
 
 /**
- * Marknad i /app (PR 8, docs/plan-en-design.md). Låst och olåst kommer ur
+ * Marknad i /app (PR 8; steg 03 kopplat 2026-10-04). Låst och olåst kommer ur
  * Resans steg; i låst läge görs inga andra anrop.
  *
  * Licensgrinden (docs/moduler/registret.md): registerdelen hämtas bara om
@@ -22,20 +29,16 @@ const BASE_PATH = "/app/marknad";
  * Adaptern kör samma grind en gång till som första sats i varje metod.
  * Ingen cache här: registersvaren får aldrig delas mellan användare.
  *
- * Ingen port ger användarens bransch, så den väljs i adressen (`?sni=69.201`),
- * samma öppna uppgift som bolagsformen i Juridik (plan-en-design.md, beslut 5).
- * Porten bär inga räkenskapsår, så medianomsättningen visas som en lucka.
- * Utskicket har ingen källa i porten och sändspärren gäller, och simuleringen
- * saknar en fråga som inte är skriven för Saras scenario: båda visar "Kommer snart".
+ * Branschen: `?sni=69.201` i adressen, eller sökning på namn (`?q=`) ur SCB:s
+ * kodtabell. Utan någon av dem öppnas grundarens valda bransch, alltså den
+ * som det senaste giltiga registerbeviset gäller ("sni:69.201"). "Det här är
+ * min bransch" sparar antalet som bevis (`chooseIndustry`) och klarar steg 03.
  */
-export default async function LiveMarketPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const requested = (await searchParams).sni;
-  const raw = typeof requested === "string" ? requested.trim() : "";
-  const sni = SNI_PATTERN.test(raw) ? raw : null;
+export default async function LiveMarketPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const params = await searchParams;
+  const raw = single(params.sni);
+  const requested = SNI_PATTERN.test(raw) ? raw : null;
+  const query = single(params.q).slice(0, MAX_QUERY);
 
   const steps = await orNull(liveJourneyRepository.getSteps("sv"));
   // Okända steg (platshållarfel) ger inget låst läge; sektionerna visar då sina egna luckor.
@@ -44,11 +47,21 @@ export default async function LiveMarketPage({
       ? { unlocksAfterStep: UNLOCKS_AFTER_STEP }
       : null;
 
-  const registry: MarketRegistry = locked ? "notChosen" : await loadRegistry(sni);
+  const access = locked ? "locked" : await registryAccess();
+  const chosen = access === "open" ? await chosenIndustry() : null;
+  const sni = requested ?? (raw === "" && !query ? chosen : null);
+
+  const registry: MarketRegistry =
+    access === "locked" ? "notChosen" : access === "closed" ? "closed" : await loadRegistry(sni);
   const overview = typeof registry === "object" ? registry.overview : null;
 
+  const [industryName, results] =
+    access === "open"
+      ? await Promise.all([sni ? quiet(getLiveIndustryName(sni)) : null, query ? quiet(searchLiveIndustries(query)) : null])
+      : [null, null];
+
   const data: MarketData = {
-    industryLabel: null,
+    industryLabel: industryName && sni ? `${industryName} (${sni})` : null,
     registry,
     outreach: null,
     simulation: null,
@@ -59,23 +72,80 @@ export default async function LiveMarketPage({
     ...(overview && { competitorsSource: { source: overview.source, dataType: "register" as const } }),
   };
 
+  const sniPicker: SniPicker = {
+    basePath: BASE_PATH,
+    current: sni,
+    invalid: raw !== "" && requested === null,
+    search: { query, results },
+  };
+
+  const industryChoice: IndustryChoice | undefined =
+    overview && sni
+      ? {
+          sniCode: sni,
+          chosen: chosen === sni,
+          hasCompanies: overview.companyCount > 0,
+          action: chooseIndustry,
+          outcome: outcomeOf(single(params.sparad)),
+          journeyHref: JOURNEY_PATH,
+        }
+      : undefined;
+
   return (
     <Market
       data={data}
       dataKind="live"
       locked={locked}
-      sniPicker={{ basePath: BASE_PATH, current: sni, invalid: raw !== "" && sni === null }}
+      sniPicker={sniPicker}
+      industryChoice={industryChoice}
     />
   );
 }
 
-async function loadRegistry(sni: string | null): Promise<MarketRegistry> {
+function outcomeOf(value: string): IndustryChoice["outcome"] {
+  const step = /^steg(\d{1,2})$/.exec(value);
+  if (step) return { kind: "stepDone", stepNumber: Number(step[1]) };
+  if (value === "1") return { kind: "saved" };
+  if (value === "fel") return { kind: "failed" };
+  return null;
+}
+
+async function registryAccess(): Promise<"open" | "closed"> {
   try {
     await assertRegistryAccessAllowed();
+    return "open";
   } catch (error) {
     if (error instanceof RegistryLockedError) return "closed";
     throw error;
   }
+}
+
+/** Branschen som grundarens senaste giltiga registerbevis gäller, eller null. */
+async function chosenIndustry(): Promise<string | null> {
+  const views = await orNull(liveEvidenceRecorder.listEvidence("market", "sv"));
+  const current = (views ?? []).filter(
+    (view) =>
+      view.kind === "registerMarketCount" &&
+      view.enteredBy === "system" &&
+      (view.status === "counted" || view.status === "capped") &&
+      (view.subjectRef ?? "").startsWith("sni:"),
+  );
+  const latest = current[current.length - 1];
+  const sni = latest?.subjectRef?.slice("sni:".length) ?? null;
+  return sni && SNI_PATTERN.test(sni) ? sni : null;
+}
+
+/** Ett fel i en hjälpdel (branschnamn, sökning) får aldrig fälla sidan. */
+async function quiet<T>(promise: Promise<T>): Promise<T | null> {
+  try {
+    return await promise;
+  } catch (error) {
+    if (!isPlaceholderError(error) && !(error instanceof RegistryTransportError)) throw error;
+    return null;
+  }
+}
+
+async function loadRegistry(sni: string | null): Promise<MarketRegistry> {
   if (!sni) return "notChosen";
 
   const [overview, companies] = await Promise.allSettled([

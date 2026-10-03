@@ -38,12 +38,13 @@ const registryCachePattern = {
   message:
     "Registercachen (service role) importeras bara av adapters/live/RegistryProvider.ts. Se docs/arkitektur.md, avsnitt 9.",
 };
-// Poänghistoriken (lib/server/scoreSnapshots.ts) bär också service role-nyckeln.
-// Bara bevisens skrivadapter och tester får importera den (docs/beslut.md 2026-10-01).
+// Poänghistoriken (lib/server/scoreSnapshots.ts) och systembevisen
+// (lib/server/systemEvidence.ts) bär också service role-nyckeln. Bara bevisens
+// skrivadapter och tester får importera dem (docs/beslut.md 2026-10-01).
 const scoreSnapshotsPattern = {
-  group: ["**/lib/server/scoreSnapshots", "./scoreSnapshots"],
+  group: ["**/lib/server/scoreSnapshots", "./scoreSnapshots", "**/lib/server/systemEvidence", "./systemEvidence"],
   message:
-    "Poänghistoriken (service role) importeras bara av adapters/live/EvidenceRecorder.ts. Se docs/beslut.md 2026-10-01.",
+    "Poänghistoriken och systembevisen (service role) importeras bara av adapters/live/EvidenceRecorder.ts. Se docs/beslut.md 2026-10-01.",
 };
 // Transporterna och cachen har samma tillåtna importörer.
 const registryAdapter = ["adapters/live/RegistryProvider.ts"];
