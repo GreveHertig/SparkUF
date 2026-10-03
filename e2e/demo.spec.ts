@@ -81,6 +81,15 @@ async function finishProfileConversation(page: Page, t: Dictionary) {
   );
 }
 
+/** Startsidan → demot → ingång A → Hem, utan djupa länkar. */
+async function reachDemoHome(page: Page, locale: Locale) {
+  const t = DICTIONARIES[locale];
+  await openLanding(page, locale);
+  await startDemo(page, t);
+  await page.getByRole("link", { name: new RegExp(t.onboarding.entry.noIdea.cta) }).click();
+  await finishProfileConversation(page, t);
+}
+
 function demoMenu(page: Page, t: Dictionary) {
   return page.getByRole("navigation", { name: t.site.demo.navLabel });
 }
@@ -90,6 +99,20 @@ async function openJourney(page: Page, t: Dictionary) {
   await demoMenu(page, t).getByRole("link", { name: t.appShell.nav.journey, exact: true }).click();
   await page.waitForURL("**/demo/resan");
   await expectJourney(page, t);
+}
+
+/** Öppnar en sida via demomenyn och kontrollerar att menyn markerar den. */
+async function openViaMenu(page: Page, t: Dictionary, label: string, path: string) {
+  const link = demoMenu(page, t).getByRole("link", { name: label, exact: true });
+  await link.click();
+  await page.waitForURL(`**${path}`);
+  await expect(link).toHaveAttribute("aria-current", "page");
+}
+
+/** Demoradens skärmläsartext, t.ex. "Moment 2 av 30". Antalet moment kontrolleras inte. */
+function positionPattern(t: Dictionary, current: number): RegExp {
+  const escaped = t.site.demo.bar.position.replace(/[.*+?^$()|[\]\\]/g, "\\$&");
+  return new RegExp(escaped.replace("{current}", String(current)).replace("{total}", "\\d+"));
 }
 
 async function expectJourney(page: Page, t: Dictionary) {
@@ -110,10 +133,7 @@ for (const locale of ["sv", "en"] as const) {
     test("ingång A: startsidan, profilsamtalet, Hem och Resan", async ({ page }) => {
       const errors = collectErrors(page);
 
-      await openLanding(page, locale);
-      await startDemo(page, t);
-      await page.getByRole("link", { name: new RegExp(t.onboarding.entry.noIdea.cta) }).click();
-      await finishProfileConversation(page, t);
+      await reachDemoHome(page, locale);
       await openJourney(page, t);
 
       expect(errors).toEqual([]);
@@ -133,6 +153,37 @@ for (const locale of ["sv", "en"] as const) {
 
       expect(errors).toEqual([]);
     });
+
+    test("Poäng och Marknad via menyn, och demoraden låser upp Marknad", async ({ page }) => {
+      const errors = collectErrors(page);
+      await reachDemoHome(page, locale);
+
+      // Poäng: nedbrytningen finns, och menyn markerar sidan.
+      await openViaMenu(page, t, t.appShell.nav.score, "/demo/poang");
+      await expect(page.locator("main").getByRole("heading", { level: 2, name: t.scorePage.breakdownTitle })).toBeVisible();
+
+      // Marknad är låst till efter steg 02 i början av Saras resa.
+      await openViaMenu(page, t, t.appShell.nav.market, "/demo/marknad");
+      await expect(page.getByRole("heading", { level: 1, name: t.marketPage.title })).toBeVisible();
+      await expect(page.locator("main")).toContainText(`${t.homePage.unlocksAfterStepBefore} 02`);
+      await expect(page.locator("main").getByRole("heading", { name: t.marketPage.kpiTitleExample })).toHaveCount(0);
+
+      // Demoraden: "Nästa" flyttar fram ett moment.
+      const bar = page.getByRole("region", { name: t.site.demo.bar.label });
+      await expect(bar).toContainText(positionPattern(t, 1));
+      await bar.getByRole("button", { name: t.site.demo.bar.next }).click();
+      await expect(bar).toContainText(positionPattern(t, 2));
+
+      // "Hoppa till steg" till steg 03 låser upp Marknad utan att lämna sidan.
+      await bar.getByRole("button", { name: t.demoBar.jumpToStep }).click();
+      await page.locator(".fdd-jump__item").filter({ has: page.locator(".fdd-jump__step", { hasText: /^03$/ }) }).first().click();
+      await expect(bar).toContainText(`${t.demoBar.stepLabel} 03`);
+      expect(new URL(page.url()).pathname).toBe("/demo/marknad");
+      await expect(page.locator("main").getByRole("heading", { level: 2, name: t.marketPage.kpiTitleExample })).toBeVisible();
+      await expect(page.locator("main")).not.toContainText(`${t.homePage.unlocksAfterStepBefore} 02`);
+
+      expect(errors).toEqual([]);
+    });
   });
 }
 
@@ -140,10 +191,7 @@ test.describe("språkbyte i demot", () => {
   test("växeln översätter Resan direkt, och språket följer med i menyn", async ({ page }) => {
     const errors = collectErrors(page);
 
-    await openLanding(page, "sv");
-    await startDemo(page, sv);
-    await page.getByRole("link", { name: new RegExp(sv.onboarding.entry.noIdea.cta) }).click();
-    await finishProfileConversation(page, sv);
+    await reachDemoHome(page, "sv");
     await openJourney(page, sv);
 
     await switchLanguage(page, "sv", "en");

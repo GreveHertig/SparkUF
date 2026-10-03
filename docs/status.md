@@ -4069,6 +4069,7 @@ Bakgrundsjobb (session 2). Bara `e2e/`, `playwright.config.ts` och den här file
   - Ingång B på sv och en: idégenomlysningen, profilsamtalet och Hem.
   - Språkbyte: Resan översätts direkt när man byter språk, språket ligger kvar på Hem och går att byta tillbaka. Ett språk som valts på startsidan gäller också i onboardingen, och ett byte där översätter valet av ingång.
   - Varje test kräver att inga sidfel och inga `console.error` uppstår.
+- **Tillägg samma dag:** ett sjunde test per språk, alltså 16 körningar totalt. Det besöker Poäng och Marknad via menyn. Marknad är låst till efter steg 02, demoradens "Nästa" flyttar fram ett moment, och "Hoppa till steg" till steg 03 låser upp Marknad utan att lämna sidan. Stabilitet: 48 av 48 gröna med `--repeat-each=3 --workers=2`.
 - **Inga djupa länkar.** Varje test börjar på `/` och klickar sig fram, så den kända hydreringen vid hård sidladdning av nästlade demorutter undviks.
 - **Texterna läses ur `i18n/sv.ts` och `i18n/en.ts`.** Ingen text är hårdkodad i testerna.
 - **`playwright.config.ts`:** servern startas nu alltid, inte bara när det finns ett testkonto.
@@ -4097,7 +4098,7 @@ Bakgrundsjobb (session 2). Bara `e2e/`, `playwright.config.ts` och den här file
 - Reserven till `pnpm dev` i `playwright.config.ts` behålls. `pnpm test:e2e` får inte kräva `.env.local`, eftersom Bruno och Oskar inte har några nycklar. Demotesterna ska gå att köra utan nycklar. Testerna av `/app` hoppas över tills ett testkonto finns.
 
 ### Återstår
-- Fler demoytor i e2e (Poäng, Marknad, demoraden med "Hoppa till steg" och "Nästa").
+- Fler demoytor i e2e: Medgrundaren, Validering, Pulsen, Minnet, Juridik, Bygg, Affärsplanen, och demoradens "Byt ingång" och "Börja om".
 - Om CI sätts upp (Eriks beslut) kan `pnpm test:e2e` köras där utan hemligheter. Demotesterna kräver inga.
 ## Arbetsflöde för parallella sessioner (Theo, 2026-10-02)
 
