@@ -444,7 +444,7 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
     });
 
     it("onboardingflödet fungerar via complete_onboarding, ett andra anrop ger 55000, och steg 2 kan markeras klart efteråt", async () => {
-      const answers = { role: "RLS-test", time: "1 timme", money: "Inget" };
+      const answers = { role: "RLS-test", customer: "RLS-test", time: "1 timme", money: "Inget" };
       const status = await clientA.from("profiles").select("onboarding_completed_at").eq("user_id", userIdA).single();
       expect(status.error).toBeNull();
       if (status.data!.onboarding_completed_at === null) {

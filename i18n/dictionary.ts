@@ -11,6 +11,8 @@ export type Dictionary = {
     description: string;
   };
   common: {
+    /** Länk från steg 1 (Hem, Resan) till svaren i Minnets Profilen-flik. */
+    seeYourAnswers: string;
     languageSwitch: {
       sv: string;
       en: string;
@@ -579,6 +581,8 @@ export type Dictionary = {
     brainHintLive: string;
     brainSaveFailed: string;
     traceEmpty: string;
+    /** En profilfråga som inte är besvarad. Luckan fylls aldrig i. */
+    notAnswered: string;
   };
   legalPage: {
     title: string;
@@ -699,8 +703,16 @@ export type Dictionary = {
      * core/onboarding.ts's PROFILE_QUESTIONS_BY_ENTRY. Demot har egna frågor
      * i adapters/demo/ProfileRepository.ts. */
     profileQuestions: {
-      noIdea: { role: string; bio: string; time: string; money: string; risk: string; closingMessage: string };
-      hasIdea: { role: string; time: string; money: string; closingMessage: string };
+      noIdea: {
+        role: string;
+        bio: string;
+        frustrations: string;
+        time: string;
+        money: string;
+        risk: string;
+        closingMessage: string;
+      };
+      hasIdea: { role: string; customer: string; time: string; money: string; closingMessage: string };
     };
   };
   /** De 12 officiella stegens titel/ingress (uppdrag 1.5) — produktkonstanter,

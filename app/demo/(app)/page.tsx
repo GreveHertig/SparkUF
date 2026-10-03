@@ -101,6 +101,8 @@ export default function DemoHomePage() {
       onNextStep={next}
       journeyBasePath={DEMO_PATHS.journey}
       scoreHref={DEMO_PATHS.score}
+      // Länken till onboardingsvaren finns bara i /app (beslut 2026-10-03).
+      profileAnswersHref={null}
     />
   );
 }

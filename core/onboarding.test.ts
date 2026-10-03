@@ -11,11 +11,15 @@ import { sv } from "@/i18n/sv";
 import { en } from "@/i18n/en";
 
 describe("core/onboarding", () => {
-  it("ingång B:s frågor är en delmängd av ingång A:s", () => {
-    for (const id of PROFILE_QUESTIONS_BY_ENTRY.hasIdea) {
+  it("ingång B:s frågor är ingång A:s utom kundgissningen, som bara passar den som har en idé", () => {
+    // Beslut 2026-10-02 (Theodor, Bruno): "customer" ("Vem tror du skulle köpa?")
+    // ställs bara i ingång B. Ingång A har ingen idé att gissa en kund till.
+    for (const id of PROFILE_QUESTIONS_BY_ENTRY.hasIdea.filter((id) => id !== "customer")) {
       expect(PROFILE_QUESTIONS_BY_ENTRY.noIdea).toContain(id);
     }
-    expect(PROFILE_QUESTIONS_BY_ENTRY.noIdea).toEqual([...PROFILE_QUESTION_IDS]);
+    expect(PROFILE_QUESTIONS_BY_ENTRY.noIdea).not.toContain("customer");
+    const used = new Set([...PROFILE_QUESTIONS_BY_ENTRY.noIdea, ...PROFILE_QUESTIONS_BY_ENTRY.hasIdea]);
+    expect([...used].sort()).toEqual([...PROFILE_QUESTION_IDS].sort());
   });
 
   it.each([

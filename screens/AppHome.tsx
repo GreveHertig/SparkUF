@@ -67,12 +67,21 @@ export function AppHome({
   data,
   dataKind,
   onNextStep,
+  nextStepHref,
   journeyBasePath,
   scoreHref,
+  profileAnswersHref,
 }: {
   data: AppHomeData;
   dataKind: DataKind;
   onNextStep?: () => void;
+  /**
+   * Handlingskortets knapp som länk (t.ex. `/app/resan/3`). En sträng av samma
+   * skäl som `journeyBasePath`: `/app`-rutten är en Server Component och kan
+   * inte skicka `onNextStep`. Satt: knappen blir en `<Link>`. Osatt: knappen
+   * som förut (demot).
+   */
+  nextStepHref?: string;
   /**
    * Resans bas-väg (t.ex. `/demo/resan`); stegets länk blir `<bas>/<nummer>`.
    * En sträng, inte en funktion: `/app`-rutten är en Server Component, och
@@ -81,12 +90,19 @@ export function AppHome({
    */
   journeyBasePath: string | null;
   scoreHref: string;
+  /**
+   * Minnets Profilen-flik, där grundaren ser sina svar från onboardingen
+   * (steg 1). Routen skickar den bara när onboardingen är klar; utan värde
+   * visas ingen länk.
+   */
+  profileAnswersHref?: string | null;
 }) {
   const { t, locale } = useI18n();
   const copy = t.site;
 
   const signal = data.pulseSignals[0];
   const sinceLastTime = data.homeSummary?.sinceLastTime ?? null;
+  const step1 = data.journeySteps.find((step) => step.stepNumber === 1);
 
   return (
     <div className="fdd-page">
@@ -123,14 +139,24 @@ export function AppHome({
                 </div>
               )}
               <div className="fd-nextstep__foot">
-                <button
-                  type="button"
-                  onClick={onNextStep}
-                  aria-describedby={dataKind === "example" ? "fdd-next-hint" : undefined}
-                  className="fd-btn fd-btn--primary"
-                >
-                  {data.homeSummary.nextStep.actionLabel}
-                </button>
+                {nextStepHref ? (
+                  <Link
+                    href={nextStepHref}
+                    aria-describedby={dataKind === "example" ? "fdd-next-hint" : undefined}
+                    className="fd-btn fd-btn--primary"
+                  >
+                    {data.homeSummary.nextStep.actionLabel}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onNextStep}
+                    aria-describedby={dataKind === "example" ? "fdd-next-hint" : undefined}
+                    className="fd-btn fd-btn--primary"
+                  >
+                    {data.homeSummary.nextStep.actionLabel}
+                  </button>
+                )}
                 {dataKind === "example" && (
                   <span id="fdd-next-hint" className="fd-sr-only">
                     {copy.demo.nextAction}
@@ -174,6 +200,14 @@ export function AppHome({
         <div className="fd-journey">
           <JourneyStepper steps={data.journeySteps} basePath={journeyBasePath} />
         </div>
+        {profileAnswersHref && step1 && (
+          <p className="fdd-muted">
+            {t.journeyPage.stepLabel} 01 · {step1.title} ·{" "}
+            <Link href={profileAnswersHref} className="fdd-link">
+              {t.common.seeYourAnswers}
+            </Link>
+          </p>
+        )}
       </section>
 
       <div className="fdd-two">

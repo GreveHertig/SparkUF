@@ -6,6 +6,7 @@ export const en = {
     description: "Test your business idea one step at a time, with real Swedish company data. Free for a week.",
   },
   common: {
+    seeYourAnswers: "See your answers",
     languageSwitch: {
       sv: "SV",
       en: "EN",
@@ -696,6 +697,7 @@ export const en = {
     brainHintLive: "Your own notes. They are saved when you leave the field.",
     brainSaveFailed: "The notes could not be saved. Try again.",
     traceEmpty: "No events yet.",
+    notAnswered: "Not answered yet",
   },
   legalPage: {
     title: "Legal",
@@ -809,6 +811,7 @@ export const en = {
       noIdea: {
         role: "Before we start, I need to know who you are. What do you do today?",
         bio: "What are you good at, and who do you know? Tell me about experience, interests and people you can reach.",
+        frustrations: "What bothers you in everyday life, at school or at work?",
         time: "How many hours a week can you put into this?",
         money: "How much money can you put in yourself, if any?",
         risk: "How much are you prepared to risk, in time and money, if it doesn't go as planned?",
@@ -817,6 +820,7 @@ export const en = {
       },
       hasIdea: {
         role: "You already have an idea, so let's focus on fit. What do you do today, and what have you done that relates to the idea?",
+        customer: "Who do you think would buy it? A guess is enough.",
         time: "How many hours a week can you put into the idea?",
         money: "How much money can you put in yourself, if any?",
         closingMessage: "When you save, your answers become your profile, next to the idea you described. The next step in the journey is Screen your idea.",

@@ -22,7 +22,17 @@ recordTraceEvent(event: RecordTraceEventInput): Promise<void>   // tillagd med D
 getKnownProfile?(): Promise<Partial<ProfileSummary>>        // valfri, tillagd med Medgrundaren (docs/beslut.md 2026-10-03)
 ```
 
-- `ProfileSummary`: `{ name, role, bio, time, money, risk }` — Profilen-fliken.
+- `ProfileSummary`: `{ entry, name, role, bio, time, money, risk }` — Profilen-fliken.
+  `entry` är ingången i onboardingen. De sex fälten är `string | null`
+  (ändrad port 2026-10-03): `role`–`risk` är svaren på onboardingens
+  profilfrågor, och `null` betyder obesvarad. Ingång B ställer bara `role`,
+  `time` och `money`. Skärmen visar en obesvarad fråga som en lucka och
+  fyller aldrig i den.
+  Två valfria fält kom till med de nya frågorna (2026-10-03):
+  `frustrations` (ingång A) och `customer` (ingång B, kolumnen
+  `customer_guess`). Liveadaptern skickar dem alltid som text eller `null`.
+  Demoadaptern skickar dem inte, och skärmen visar bara en fråga vars fält
+  finns.
 - `TraceEvent`: `{ id, timestampIso, description }` — en rad i Spåret.
 - `RecordTraceEventInput`: `{ module, description, occurredAtIso }` — vad en annan modul skriver till Spåret. Användaren tas alltid ur sessionen, aldrig ur indata.
 - `getBrainNotes`/`setBrainNotes` har medvetet ingen `locale` — Hjärnan är
@@ -54,7 +64,10 @@ getKnownProfile?(): Promise<Partial<ProfileSummary>>        // valfri, tillagd m
 
 - `getProfileSummary` bygger ihop `saraProfile.name` +
   `saraBackground[locale]` (`role`, `bio`) + `saraResources[locale]`
-  (`time`, `money`, `risk`) — alla ur `adapters/demo/sara.ts`.
+  (`time`, `money`, `risk`) — alla ur `adapters/demo/sara.ts`, eller
+  `jonas.ts` i ingång B. Demot ger alltid alla sex fält, även Jonas `bio`
+  och `risk` som ingång B inte frågar efter: demot är fryst inför
+  pitcharna (beslut 2026-10-03). Bara liveadaptern ger `null`.
 - `getBrainNotes` returnerar **alltid den svenska** texten
   (`saraBackground.sv.quote`) — grundarens egna ord i profilsamtalet
   översätts medvetet inte till engelska ens när gränssnittet är på
@@ -66,8 +79,10 @@ getKnownProfile?(): Promise<Partial<ProfileSummary>>        // valfri, tillagd m
 
 ## Acceptanskriterier
 
-- `getProfileSummary` har alla sex fält ifyllda (`name`, `role`, `bio`,
-  `time`, `money`, `risk`).
+- `getProfileSummary` ger `entry` och varje fält som text eller `null`,
+  aldrig tom text. `role`, `time` och `money` är besvarade efter
+  onboardingen (båda ingångarna ställer dem). `EmptyStateError` bara om
+  onboardingen inte är gjord.
 - `getBrainNotes` returnerar en sträng (tom sträng är giltigt för en
   grundare som inte skrivit något än).
 - Ett `setBrainNotes`-anrop följt av ett `getBrainNotes`-anrop ger samma
@@ -104,9 +119,11 @@ tills en skrivande modul, t.ex. Utskick och svar, finns).
 
 `adapters/live/MemoryRepository.ts`:
 
-- `getProfileSummary`: läser `profiles`-radens sex fält, kastar
-  `EmptyStateError` om något saknas (ett konto som gjort **01 Om dig** men
-  inte fyllt i bakgrund/resurser).
+- `getProfileSummary`: läser `profiles`-radens sex fält och
+  `onboarding_entry`/`onboarding_completed_at`. Kastar `EmptyStateError`
+  bara om onboardingen inte är klar. Annars blir varje saknat eller tomt
+  fält `null` (2026-10-03; tidigare krävdes alla sex, så ingång B såg
+  ingen profil alls).
 - `getBrainNotes`/`setBrainNotes`: `setBrainNotes` trimmar och hävdar
   ≤20000 tecken (samma gräns som databasens `check`-villkor, en andra
   spärr), `upsert`ar på `user_id`. Skriv-läs-rundtur bevisad med ett test —

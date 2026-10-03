@@ -7,14 +7,14 @@ import type { OnboardingEntry } from "@/core/domain";
 /** En profilfråga = ett fält i profilen. Samma fält som Minnets Profilen-flik
  * läser (docs/moduler/minnet.md), så svaren syns där utan en egen tabell. En
  * framtida Gemini-version av samtalet fyller samma fält. */
-export const PROFILE_QUESTION_IDS = ["role", "bio", "time", "money", "risk"] as const;
+export const PROFILE_QUESTION_IDS = ["role", "bio", "frustrations", "customer", "time", "money", "risk"] as const;
 export type ProfileQuestionId = (typeof PROFILE_QUESTION_IDS)[number];
 
 /** Ingång A får hela samtalet, ingång B det kortare passform-samtalet
  * (uppdrag 2.1). Ordningen är ordningen frågorna ställs i. */
 export const PROFILE_QUESTIONS_BY_ENTRY: Record<OnboardingEntry, readonly ProfileQuestionId[]> = {
-  noIdea: ["role", "bio", "time", "money", "risk"],
-  hasIdea: ["role", "time", "money"],
+  noIdea: ["role", "bio", "frustrations", "time", "money", "risk"],
+  hasIdea: ["role", "customer", "time", "money"],
 };
 
 /** Speglas av check-villkoren i

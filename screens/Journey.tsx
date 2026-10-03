@@ -25,7 +25,17 @@ const PHASE_ORDER = ["discover", "tryPhase", "launch", "grow"] as const;
  * `basePath` är Resans väg (t.ex. `/demo/resan`); stegets länk blir
  * `<bas>/<nummer>`. En sträng, så att en Server Component kan skicka den.
  */
-export function Journey({ data, basePath }: { data: JourneyData; basePath: string }) {
+export function Journey({
+  data,
+  basePath,
+  profileAnswersHref,
+}: {
+  data: JourneyData;
+  basePath: string;
+  /** Minnets Profilen-flik (svaren från onboardingen). Visas under steg 1:s
+   * kort när routen skickar den, det vill säga när onboardingen är klar. */
+  profileAnswersHref?: string | null;
+}) {
   const { t } = useI18n();
   const { steps } = data;
   const stepHref = (stepNumber: number) => `${basePath}/${stepNumber}`;
@@ -92,6 +102,11 @@ export function Journey({ data, basePath }: { data: JourneyData; basePath: strin
                             {t.common.upToPointsBefore} {step.maxPoints} {t.common.upToPointsAfter}
                           </span>
                         </Link>
+                        {step.stepNumber === 1 && profileAnswersHref && (
+                          <Link href={profileAnswersHref} className="fdd-link">
+                            {t.common.seeYourAnswers}
+                          </Link>
+                        )}
                       </li>
                     ))}
                   </ul>

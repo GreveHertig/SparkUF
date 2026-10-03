@@ -57,15 +57,25 @@ function baseData(overrides: Partial<AppHomeData> = {}): AppHomeData {
   };
 }
 
-function renderHome(data: AppHomeData, opts: { dataKind?: "example" | "live"; onNextStep?: () => void } = {}) {
+function renderHome(
+  data: AppHomeData,
+  opts: {
+    dataKind?: "example" | "live";
+    onNextStep?: () => void;
+    nextStepHref?: string;
+    profileAnswersHref?: string;
+  } = {},
+) {
   return render(
     <LocaleProvider>
       <AppHome
         data={data}
         dataKind={opts.dataKind ?? "example"}
         onNextStep={opts.onNextStep}
+        nextStepHref={opts.nextStepHref}
         journeyBasePath="/demo/resan"
         scoreHref="/demo/poang"
+        profileAnswersHref={opts.profileAnswersHref}
       />
     </LocaleProvider>,
   );
@@ -78,6 +88,12 @@ describe("AppHome (PR 3, Hem)", () => {
     expect(screen.getByRole("heading", { level: 2, name: nextStep.title })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: nextStep.actionLabel }));
     expect(onNextStep).toHaveBeenCalledTimes(1);
+  });
+
+  it("renderar handlingskortets knapp som länk till steget när nextStepHref är satt", () => {
+    renderHome(baseData(), { dataKind: "live", nextStepHref: "/app/resan/3" });
+    expect(screen.getByRole("link", { name: nextStep.actionLabel })).toHaveAttribute("href", "/app/resan/3");
+    expect(screen.queryByRole("button", { name: nextStep.actionLabel })).not.toBeInTheDocument();
   });
 
   it("visar den skärmläsar-dolda demoledtråden bara för dataKind='example'", () => {
@@ -121,6 +137,14 @@ describe("AppHome (PR 3, Hem)", () => {
   it("Resan-raden länkar via journeyBasePath oavsett om homeSummary/score saknas", () => {
     renderHome(baseData({ homeSummary: null, score: null }));
     expect(screen.getByRole("link", { name: /Marknaden/ })).toHaveAttribute("href", "/demo/resan/3");
+  });
+
+  it("länkar från steg 1 till svaren i Minnet, bara när routen skickar länken", () => {
+    renderHome(baseData(), { profileAnswersHref: "/demo/minnet" });
+    expect(screen.getByRole("link", { name: sv.common.seeYourAnswers })).toHaveAttribute("href", "/demo/minnet");
+    cleanup();
+    renderHome(baseData());
+    expect(screen.queryByRole("link", { name: sv.common.seeYourAnswers })).not.toBeInTheDocument();
   });
 
   it("visar demots 'ingen signal'-text för example och en neutral text för live", () => {

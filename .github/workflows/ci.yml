@@ -1,0 +1,53 @@
+# CI för Spark UF: typecheck, lint, test och build på varje PR och push mot
+# prototyp. Inga hemligheter: bygget får uppenbara platshållare för Supabase,
+# och opt-in-testerna mot riktiga tjänster (*.live.test.ts, rls.live.test.ts)
+# hoppas över eftersom deras variabler saknas. pg-testerna kör PGlite i
+# processen och behöver ingen databas.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [prototyp]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # Version ur "packageManager" i package.json (pnpm@10.11.0).
+      - uses: pnpm/action-setup@v4
+
+      # Samma Node som devcontainern (typescript-node:1-22). cache: pnpm
+      # cachar pnpm-lagret med pnpm-lock.yaml som nyckel.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Rutttyperna (LayoutProps m.fl.) som tsc behöver i en ny klon.
+      - run: pnpm next typegen
+
+      - run: pnpm typecheck
+
+      - run: pnpm lint
+
+      # Inga Supabase-variabler här: rls.live.test.ts ska hoppas över.
+      - run: pnpm test
+
+      - run: pnpm build
+        env:
+          # Platshållare, inga riktiga nycklar. Bygget kräver bara att de finns.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key

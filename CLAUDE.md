@@ -15,6 +15,7 @@ Repot hade redan ett Next.js-projekt. Läs `AGENTS.md`, bygg i den befintliga st
 - Allt arbete sker på branchen `prototyp` (landningssidan på `prototyp-landning`). Pusha aldrig direkt till `main`.
 - **Undantag, migrationen till en design:** PR 4–11 i `docs/plan-en-design.md` görs direkt på `design/en-design`, som tas in i `prototyp` med en PR ungefär en gång i veckan. Se avsnittet "Arbetsordning" där. Bara en person i taget rör `screens/` och `design/site.css`.
 - Kör `typecheck`, `lint` och testerna utan fel före varje commit.
+- **CI måste vara grön innan merge.** GitHub Actions (`.github/workflows/ci.yml`) kör typecheck, lint, test och build på varje PR och push mot `prototyp`. Merga aldrig en PR med röd eller pågående CI.
 
 ## Arkitektur
 - **Skärmar vet aldrig varifrån datan kommer.** De får data via portar (gränssnitt i `ports/`).
@@ -50,3 +51,8 @@ Repot hade redan ett Next.js-projekt. Läs `AGENTS.md`, bygg i den befintliga st
 - **Koncept-etikett:** Hiasynth och Lovable får `ConceptBadge`.
 - **Fiktiva företag** i demot, och en ansvarsbegränsning på juridiska ytor.
 - **Återanvänd komponenter** innan du skapar nya. Designbeslut dokumenteras i `DESIGN.md`.
+
+## Verktyg och skydd
+- **Designskills** ligger i `.claude/skills/` (se `.claude/skills/KALLOR.md`). `DESIGN.md` och tokens i `design/` gäller alltid framför en skill. Skillsen används för att granska och finputsa, inte för att byta stil. Inga nya beroenden utan att fråga.
+- **Hookar** i `.claude/settings.json` gör reglerna mekaniska: `.env*` nekas, och ändringar i `core/score.ts`, `ports/` och demodata kräver mänsklig bekräftelse. Ber hooken om bekräftelse och du inte uttryckligen fått uppgiften att ändra filen: stoppa och rapportera. Före avslut körs `typecheck` och `lint` på ändrade filer.
+- **Arbetsflöde och kommandon:** `docs/arbetsflode.md`.
