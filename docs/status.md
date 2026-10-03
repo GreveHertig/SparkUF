@@ -4064,12 +4064,12 @@ Rättar de två kända problemen från "Onboarding live, PR 2" och "PR 3": steg 
 Bakgrundsjobb (session 2). Bara `e2e/`, `playwright.config.ts` och den här filen är ändrade.
 
 ### Klart
-- **Nya `e2e/demo.spec.ts`:** sex tester per projekt (desktop och mobil), alltså tolv körningar.
+- **Nya `e2e/demo.spec.ts`:** åtta tester per projekt (desktop och mobil), alltså 16 körningar. Sex fanns i första versionen, och tillägget nedan lade till två.
   - Ingång A på sv och en: startsidan, "Se demot", valet av ingång, profilsamtalet, Hem och Resan via demomenyn (fyra faser, tolv stegkort, menyn markerar Resan).
   - Ingång B på sv och en: idégenomlysningen, profilsamtalet och Hem.
   - Språkbyte: Resan översätts direkt när man byter språk, språket ligger kvar på Hem och går att byta tillbaka. Ett språk som valts på startsidan gäller också i onboardingen, och ett byte där översätter valet av ingång.
   - Varje test kräver att inga sidfel och inga `console.error` uppstår.
-- **Tillägg samma dag:** ett sjunde test per språk, alltså 16 körningar totalt. Det besöker Poäng och Marknad via menyn. Marknad är låst till efter steg 02, demoradens "Nästa" flyttar fram ett moment, och "Hoppa till steg" till steg 03 låser upp Marknad utan att lämna sidan. Stabilitet: 48 av 48 gröna med `--repeat-each=3 --workers=2`.
+- **Tillägg samma dag:** två tester till, ett per språk, alltså åtta per projekt och 16 körningar totalt. Det besöker Poäng och Marknad via menyn. Marknad är låst till efter steg 02, demoradens "Nästa" flyttar fram ett moment, och "Hoppa till steg" till steg 03 låser upp Marknad utan att lämna sidan. Stabilitet: 48 av 48 gröna med `--repeat-each=3 --workers=2`.
 - **Inga djupa länkar.** Varje test börjar på `/` och klickar sig fram, så den kända hydreringen vid hård sidladdning av nästlade demorutter undviks.
 - **Texterna läses ur `i18n/sv.ts` och `i18n/en.ts`.** Ingen text är hårdkodad i testerna.
 - **`playwright.config.ts`:** servern startas nu alltid, inte bara när det finns ett testkonto.
@@ -4100,6 +4100,7 @@ Bakgrundsjobb (session 2). Bara `e2e/`, `playwright.config.ts` och den här file
 ### Återstår
 - Fler demoytor i e2e: Medgrundaren, Validering, Pulsen, Minnet, Juridik, Bygg, Affärsplanen, och demoradens "Byt ingång" och "Börja om".
 - Om CI sätts upp (Eriks beslut) kan `pnpm test:e2e` köras där utan hemligheter. Demotesterna kräver inga.
+
 ## Onboardingens avslutningsreplik (2026-10-02, gren `bygg/onboarding-avslutning`, PR mot `prototyp`)
 Rättar det kända problemet från "Onboarding live, PR 3": profilsamtalets avslutningsrepliker visades inte i `/start/profil`, och ingång B:s replik lovade fel nästa steg. Plan godkänd av Theo 2026-10-02.
 
