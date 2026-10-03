@@ -72,11 +72,35 @@ const OPPORTUNITY_CATEGORY_PREFIX = "opportunity:";
  */
 const MAX_LIKED_SIGNALS = 20;
 /**
+ * Kundgissningen (profiles.customer_guess, profilsamtalets "Vem tror du
+ * skulle köpa?"): högst så många ord ur den läggs till sökningen
+ * (moduldokumentet, "Kunden i sökningen").
+ */
+const MAX_CUSTOMER_TERMS = 3;
+/**
  * Högst så många omdömen läses per sidvisning, nyast först. pulse_feedback
  * saknar project_id, så taket är det enda som begränsar läsningen
  * (granskningen av #50, 2026-10-03).
  */
 const MAX_FEEDBACK_ROWS = 500;
+/**
+ * Sökningarna ber Tavily om nyhetsartiklar från så här många dagar bakåt
+ * (moduldokumentet, "Bara nyheter"). Utan det kom produktsidor och guider
+ * från konkurrenter med, och de saknade datum.
+ */
+const NEWS_DAYS = 30;
+/** Två rubriker räknas som samma nyhet när så stor del av den kortares ord finns i den andra. */
+const DUPLICATE_OVERLAP = 0.75;
+/** Vanliga engelska småord. Två av dem, och fler än svenska, gör en rubrik engelsk. */
+const ENGLISH_WORDS = new Set([
+  "the", "and", "of", "in", "for", "to", "with", "on", "is", "are", "a", "an", "how", "what", "why",
+  "new", "from", "by", "at", "its", "this", "that", "will", "your",
+]);
+/** Vanliga svenska småord, motvikten när rubriken saknar å, ä och ö. */
+const SWEDISH_WORDS = new Set([
+  "och", "i", "för", "med", "på", "av", "till", "om", "som", "är", "en", "ett", "det", "den", "nya",
+  "ny", "nytt", "när", "hur", "vad", "kan", "ska", "har", "inte", "efter", "mot", "vid", "från",
+]);
 const MAX_LEARNED_TERMS = 3;
 const MIN_TERM_LIKES = 2;
 /** Vanliga nyhetsord som inte säger något om vad grundaren bryr sig om. Bara för inlärningen. */
@@ -196,6 +220,38 @@ export function extractKeywords(text: string): string[] {
   return keywords;
 }
 
+/**
+ * Sökord ur grundarens gissning om kunden. Bara bokstäver och siffror
+ * (extractKeywords), aldrig vanliga nyhetsord, och inga ord som redan söks.
+ * Grundarens text är data, aldrig instruktion.
+ */
+export function customerTerms(guess: string | null, known: string[] = []): string[] {
+  if (!guess) return [];
+  const knownStems = known.map((word) => stem(word.toLocaleLowerCase("sv-SE")));
+  return extractKeywords(guess)
+    .filter((word) => !NEWS_STOPWORDS.has(word) && !/^\p{N}+$/u.test(word) && !knownStems.includes(stem(word)))
+    .slice(0, MAX_CUSTOMER_TERMS);
+}
+
+/** PostgREST och Postgres svar när en kolumn saknas, t.ex. när en migrering inte är körd. */
+function isMissingColumn(error: { code?: string }): boolean {
+  return error.code === "42703" || error.code === "PGRST204";
+}
+
+/**
+ * Grundarens gissning om kunden ur profilen, eller null. Saknas kolumnen
+ * (migreringen 20261002190000 inte körd) söker Pulsen som förut.
+ */
+async function readCustomerGuess(supabase: SupabaseClient, userId: string): Promise<string | null> {
+  const { data, error } = await supabase.from("profiles").select("customer_guess").eq("user_id", userId).maybeSingle();
+  if (error) {
+    if (isMissingColumn(error)) return null;
+    throw new Error(`Pulsen: kunde inte läsa profilen (${error.message}).`);
+  }
+  const guess = (data as { customer_guess?: unknown } | null)?.customer_guess;
+  return typeof guess === "string" ? guess : null;
+}
+
 /** Steg 1 i flödet: `insert ... on conflict do nothing returning`. Databasen sätter fetch_date. */
 async function claimToday(supabase: SupabaseClient, userId: string): Promise<FetchRow | null> {
   const { data, error } = await supabase
@@ -275,6 +331,81 @@ function sourceName(url: string): string {
   return new URL(url).hostname.replace(/^www\./, "");
 }
 
+/** Bara bokstäver och siffror, gemener: "Sveriges Riksbank" → "sverigesriksbank". */
+function squash(text: string): string {
+  return (text.toLocaleLowerCase("sv-SE").match(/[\p{L}\p{N}]+/gu) ?? []).join("");
+}
+
+/**
+ * Tar bort sajtnamnet i slutet av en rubrik ("… | Sveriges Riksbank",
+ * "… - SBAB"), eftersom källan redan står i taggen. Bara när det sista ledet
+ * matchar källans domän, så att en rubrik som "Räntan sänks – igen" står kvar.
+ */
+export function stripSiteSuffix(title: string, url: string | null): string {
+  if (!url) return title;
+  let host: string;
+  try {
+    host = new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return title;
+  }
+  const labels = host.split(".");
+  const label = squash(labels.length >= 2 ? labels[labels.length - 2] : labels[0]);
+  if (!label) return title;
+  // Rubriken är okänd text: kapas innan regexen körs, så kostnaden har ett tak.
+  let result = Array.from(title).slice(0, 2 * MAX_HEADLINE_CHARS).join("");
+  for (let round = 0; round < 2; round++) {
+    const match = result.match(/^(.*\S)\s+[|\-–—:]\s+([^|\-–—:]+)$/u);
+    if (!match) break;
+    const [, head, tail] = match;
+    const segment = squash(tail);
+    const words = tail.trim().split(/\s+/).length;
+    const sameSite = segment === label || (label.length >= 3 && (segment.includes(label) || label.includes(segment)));
+    if (!sameSite || words > 6 || Array.from(head).length < 10) break;
+    result = head;
+  }
+  return result;
+}
+
+/**
+ * Är rubriken svensk? Å, ä eller ö räcker. Annars är den engelsk om den har
+ * minst två vanliga engelska småord och fler engelska än svenska. Spark
+ * riktar sig till svenska grundare, och förslagen är skrivna för Sverige.
+ */
+export function isSwedishHeadline(title: string): boolean {
+  const lower = title.toLocaleLowerCase("sv-SE");
+  if (/[åäö]/u.test(lower)) return true;
+  const words = lower.match(/[\p{L}]+/gu) ?? [];
+  const english = words.filter((word) => ENGLISH_WORDS.has(word)).length;
+  const swedish = words.filter((word) => SWEDISH_WORDS.has(word)).length;
+  return !(english >= 2 && english > swedish);
+}
+
+/** Rubrikens innehållsord, stammade: underlaget för att känna igen samma nyhet. */
+function headlineWords(title: string): Set<string> {
+  return new Set(
+    (title.toLocaleLowerCase("sv-SE").match(/[\p{L}\p{N}]+/gu) ?? [])
+      .filter((word) => Array.from(word).length >= MIN_KEYWORD_CHARS && !STOPWORDS.has(word))
+      .map(stem),
+  );
+}
+
+/** Handlar två rubriker om samma sak ("Riksbanken sänker räntan" och "Riksbanken sänker styrräntan igen")? */
+export function isNearDuplicate(a: string, b: string): boolean {
+  const left = headlineWords(a);
+  const right = headlineWords(b);
+  const smaller = Math.min(left.size, right.size);
+  if (smaller < 2) return squash(a) === squash(b);
+  let shared = 0;
+  for (const word of left) {
+    // Böjningar och sammansättningar räknas: "räntan" finns i "styrräntan".
+    const related = (other: string) =>
+      other.startsWith(word) || word.startsWith(other) || other.endsWith(word) || word.endsWith(other);
+    if (right.has(word) || [...right].some(related)) shared++;
+  }
+  return shared / smaller >= DUPLICATE_OVERLAP;
+}
+
 /** Publiceringsdatumet om det är giltigt och inte ligger i framtiden, annars nu. */
 function signalAt(result: TavilySearchResult): string {
   const now = Date.now();
@@ -300,7 +431,7 @@ export function pickRelevant(results: TavilySearchResult[], keywords: string[]):
   const stems = keywords.map(stem);
   const seen = new Set<string>();
   return results.filter((result) => {
-    if (!cleanHeadline(result.title) || seen.has(result.url)) return false;
+    if (!cleanHeadline(result.title) || !isSwedishHeadline(result.title) || seen.has(result.url)) return false;
     const text = `${result.title} ${result.content}`.toLocaleLowerCase("sv-SE");
     if (!stems.some((s) => text.includes(s))) return false;
     seen.add(result.url);
@@ -441,7 +572,7 @@ type Candidate = { result: TavilySearchResult; insight: Insight | null };
  */
 export function pickThemed(results: TavilySearchResult[], competitors: string[] = []): Candidate[] {
   return results.flatMap((result) => {
-    if (!cleanHeadline(result.title)) return [];
+    if (!cleanHeadline(result.title) || !isSwedishHeadline(result.title)) return [];
     const insight: Insight | null =
       classify(result) ?? (mentionsAny(result, competitors) ? { kind: "risk", area: "competition" } : null);
     return insight ? [{ result, insight }] : [];
@@ -478,9 +609,11 @@ async function runSearch(
   const insightFor = (result: TavilySearchResult): Insight | null =>
     classify(result) ?? (mentionsAny(result, competitors) ? { kind: "risk", area: "competition" } : null);
 
+  // Bara nyhetsartiklar från den senaste månaden, inga produktsidor.
+  const newsQuery = `${QUERY_PREFIX} ${terms.join(" ")}`;
   let results: TavilySearchResult[];
   try {
-    results = await search({ query: `${QUERY_PREFIX} ${terms.join(" ")}`, maxResults: MAX_SIGNALS });
+    results = await search({ query: newsQuery, maxResults: MAX_SIGNALS, topic: "news", days: NEWS_DAYS });
   } catch (error) {
     await finish(supabase, userId, claim, "error");
     // Nätverk/HTTP/ogiltigt svar: tomläge nu, nytt försök om 6 timmar.
@@ -491,10 +624,23 @@ async function runSearch(
 
   // Temasökningen är ett tillägg: ett nätverksfel där stoppar inte dagens
   // nyheter. Ett konfigurationsfel syns, som ovan.
+  // Gav nyhetssökningen ingenting alls (smal bransch) blir dagens andra anrop
+  // en vanlig webbsökning på samma ord i stället för temat, så att taket på
+  // två anrop håller och grundaren ändå får något.
   let riskResults: TavilySearchResult[] = [];
   const theme = themeFor(claim.fetch_date, favoriteInsight(preferences));
+  const fallback = results.length === 0;
   try {
-    riskResults = await search({ query: `${themeQuery(theme)} ${terms.join(" ")}`, maxResults: MAX_SIGNALS });
+    if (fallback) {
+      results = await search({ query: newsQuery, maxResults: MAX_SIGNALS });
+    } else {
+      riskResults = await search({
+        query: `${themeQuery(theme)} ${terms.join(" ")}`,
+        maxResults: MAX_SIGNALS,
+        topic: "news",
+        days: NEWS_DAYS,
+      });
+    }
   } catch (error) {
     if (!(error instanceof OutreachTransportError)) {
       await finish(supabase, userId, claim, "error");
@@ -564,7 +710,7 @@ async function insertSignals(
       user_id: userId,
       project_id: project.id,
       category: insight ? categoryOf(insight) : texts.liveCategory,
-      headline: cleanHeadline(result.title),
+      headline: cleanHeadline(stripSiteSuffix(result.title, result.url)),
       why_it_matters: (insight ? insightTexts(insight, "sv").whyItMatters : texts.liveWhyItMatters).replace(
         "{project}",
         project.name,
@@ -585,11 +731,17 @@ async function refreshIfNeeded(
   project: Project,
   liked: LikedSignal[],
 ): Promise<void> {
-  const keywords = extractKeywords(`${project.name} ${project.oneLiner}`);
+  const projectWords = extractKeywords(`${project.name} ${project.oneLiner}`);
   // Saknas tabellen (migreringen inte körd) blir det inga bevakningar.
   const watches = (await readWatches(supabase, userId, project.id)) ?? [];
+  // Kunden efter idén: nyheter om dem som ska köpa, inte bara om produkten.
+  const customer = customerTerms(await readCustomerGuess(supabase, userId), [
+    ...projectWords,
+    ...watches.map((watch) => watch.term),
+  ]);
+  const keywords = [...projectWords, ...customer];
   const preferences = learnPreferences(liked, [...keywords, ...watches.map((watch) => watch.term)]);
-  // Utan nyckelord, bevakningar och inlärda ord går det inte att filtrera på bransch: sök inte alls.
+  // Utan nyckelord, kundord, bevakningar och inlärda ord går det inte att filtrera på bransch: sök inte alls.
   if (keywords.length === 0 && watches.length === 0 && preferences.terms.length === 0) return;
 
   let claim = await claimToday(supabase, userId);
@@ -632,16 +784,26 @@ async function readSignals(
   // omdömen är alla poäng noll och ordningen densamma som förut.
   const byPreference = (a: SignalRow, b: SignalRow) =>
     score(b) - score(a) || Date.parse(b.signal_at) - Date.parse(a.signal_at);
-  const rows = ((data as SignalRow[] | null) ?? [])
+  // Äldre rader sparades med sajtnamnet kvar och utan språkfilter: samma regler vid läsning.
+  const sorted = ((data as SignalRow[] | null) ?? [])
     .filter((row) => row.headline && row.source_name && row.fetched_at && !feedback.hidden.has(row.id))
+    .map((row) => ({ ...row, headline: cleanHeadline(stripSiteSuffix(row.headline, row.source_url)) }))
+    .filter((row) => row.headline && isSwedishHeadline(row.headline))
     .sort(byPreference);
+  // Samma nyhet från två källor visas en gång: den som kommer först (gillad sort, annars nyast).
+  const rows: SignalRow[] = [];
+  for (const row of sorted) {
+    if (!rows.some((kept) => isNearDuplicate(kept.headline, row.headline))) rows.push(row);
+  }
+  // Högst en signal per risk- och möjlighetsområde, så att listan varierar.
+  const onePerArea = (list: SignalRow[]) =>
+    list.filter((row, index) => list.findIndex((other) => other.category === row.category) === index);
   // Högst MAX_RISKS risker och MAX_OPPORTUNITIES möjligheter, resten nyheter,
   // högst MAX_SIGNALS totalt (porten: 3–5). Risker och möjligheter trängs
   // alltså inte undan av en dag med många nyheter.
   const kindOf = (row: SignalRow) => insightOf(row.category)?.kind ?? "news";
-  const risks = rows.filter((row) => kindOf(row) === "risk").slice(0, MAX_RISKS);
-  const opportunities = rows
-    .filter((row) => kindOf(row) === "opportunity")
+  const risks = onePerArea(rows.filter((row) => kindOf(row) === "risk")).slice(0, MAX_RISKS);
+  const opportunities = onePerArea(rows.filter((row) => kindOf(row) === "opportunity"))
     .slice(0, Math.min(MAX_OPPORTUNITIES, MAX_SIGNALS - risks.length));
   const news = rows.filter((row) => kindOf(row) === "news").slice(0, MAX_SIGNALS - risks.length - opportunities.length);
   const chosen = [...risks, ...opportunities, ...news].sort(byPreference);

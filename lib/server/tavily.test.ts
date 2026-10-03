@@ -37,6 +37,25 @@ describe("search", () => {
     expect(JSON.parse(init.body).include_raw_content).toBe(true);
   });
 
+  it("skickar topic och days bara när de är satta, och days bara för nyheter", async () => {
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ results: [] }), { status: 200 }));
+    await search({ query: "x" });
+    const plain = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(plain).not.toHaveProperty("topic");
+    expect(plain).not.toHaveProperty("days");
+
+    await search({ query: "x", topic: "news", days: 30 });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({ topic: "news", days: 30 });
+
+    await search({ query: "x", topic: "news", days: 9999 });
+    expect(JSON.parse(fetchMock.mock.calls[2][1].body).days).toBe(365);
+
+    await search({ query: "x", topic: "general", days: 30 });
+    const general = JSON.parse(fetchMock.mock.calls[3][1].body);
+    expect(general.topic).toBe("general");
+    expect(general).not.toHaveProperty("days");
+  });
+
   it("begränsar antal resultat och sidtext, släpper okända fält", async () => {
     const many = Array.from({ length: 9 }, (_, i) => ({
       title: `t${i}`,

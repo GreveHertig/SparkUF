@@ -13,6 +13,10 @@ import {
   classifyOpportunity,
   cleanWatchTerm,
   classifyRisk,
+  customerTerms,
+  isNearDuplicate,
+  isSwedishHeadline,
+  stripSiteSuffix,
   extractKeywords,
   favoriteInsight,
   learnPreferences,
@@ -34,9 +38,12 @@ const ago = (ms: number) => new Date(NOW.getTime() - ms).toISOString();
 
 const project = { id: "p1", user_id: USER, name: "Kvittojakten", one_liner: "Kvittohantering för redovisningsbyråer", is_active: true };
 
+/** Olika verb per träff, så att träffarna inte räknas som samma nyhet (isNearDuplicate). */
+const HIT_VERBS = ["förlorar", "växer", "anställer", "digitaliserar", "flyttar", "investerar", "rekryterar", "expanderar", "samarbetar"];
+
 function hit(n: number, extra: Partial<{ title: string; url: string; content: string; publishedDate: string }> = {}) {
   return {
-    title: `Redovisningsbyråer växer ${n}`,
+    title: `Redovisningsbyråer ${HIT_VERBS[n % HIT_VERBS.length]} ${n}`,
     url: `https://www.nyheter.se/a-${n}`,
     content: "Nyheter om redovisning.",
     publishedDate: `2026-09-2${n}T08:00:00Z`,
@@ -45,10 +52,15 @@ function hit(n: number, extra: Partial<{ title: string; url: string; content: st
 }
 
 let tables: PulseFakeTables;
-function setup(extra: PulseFakeTables = {}, failOn: string[] = [], missingTables: string[] = []) {
+function setup(
+  extra: PulseFakeTables = {},
+  failOn: string[] = [],
+  missingTables: string[] = [],
+  missingColumns: string[] = [],
+) {
   tables = { projects: [project], pulse_fetches: [], pulse_signals: [], ...extra };
   requireSupabaseUser.mockResolvedValue({
-    supabase: makePulseSupabaseFake(tables, { today: TODAY, failOn, missingTables }),
+    supabase: makePulseSupabaseFake(tables, { today: TODAY, failOn, missingTables, missingColumns }),
     userId: USER,
   });
 }
@@ -187,8 +199,8 @@ describe("signalerna", () => {
   it("varje signal har källa, hämtdatum och url, nyast först", async () => {
     const signals = await pulse.getSignals("sv");
     expect(signals.map((s) => s.headline)).toEqual([
-      "Redovisningsbyråer växer 3",
-      "Redovisningsbyråer växer 2",
+      "Redovisningsbyråer digitaliserar 3",
+      "Redovisningsbyråer anställer 2",
       "Redovisningsbyråer växer 1",
     ]);
     for (const s of signals) {
@@ -220,6 +232,8 @@ describe("signalerna", () => {
     expect(search).toHaveBeenCalledWith({
       query: "svenska näringslivsnyheter kvittojakten kvittohantering redovisningsbyråer",
       maxResults: 5,
+      topic: "news",
+      days: 30,
     });
   });
 
@@ -334,7 +348,12 @@ describe("risksignaler", () => {
   it("högst 3 risker, och risker trängs inte undan av många nyheter", async () => {
     searchReturns(
       [1, 2, 3, 4, 5].map((n) => hit(n)),
-      [5, 6, 7, 8].map((n) => riskHit(n, `Konkurrent lanserar tjänst ${n}`)),
+      [
+        riskHit(5, "Konkurrent lanserar tjänst"),
+        riskHit(6, "Elpriset stiger i vinter"),
+        riskHit(7, "Räntan höjs av Riksbanken"),
+        riskHit(8, "Ny lagändring skärper kraven"),
+      ],
     );
     const signals = await pulse.getSignals("sv");
     expect(signals).toHaveLength(5);
@@ -365,8 +384,8 @@ describe("risksignaler", () => {
   });
 
   it("följer språket, även förslagen", async () => {
-    searchReturns([], [riskHit(5, "Ny lagändring skärper kraven", "Regelverk för företag")]);
-    const [signal] = await pulse.getSignals("en");
+    searchReturns([hit(1)], [riskHit(5, "Ny lagändring skärper kraven", "Regelverk för företag")]);
+    const signal = (await pulse.getSignals("en")).find((s) => s.risk)!;
     expect(signal.risk!.area).toBe("regulation");
     expect(signal.category).toBe(`Risk · ${en.pulsePage.riskAreas.regulation.name}`);
     expect(signal.risk!.actions).toEqual(en.pulsePage.riskAreas.regulation.actions);
@@ -439,9 +458,9 @@ describe("möjligheter", () => {
       [1, 2, 3, 4, 5].map((n) => hit(n)),
       [
         riskHit(5, "Konkurrent lanserar tjänst"),
-        riskHit(6, "Konkurrent köper upp byrå", "uppköp"),
+        riskHit(6, "Elpriset stiger i vinter"),
         riskHit(7, "Ny upphandling av redovisning"),
-        riskHit(8, "Kommunen upphandlar bokföring"),
+        riskHit(8, "Vinnova öppnar utlysning för småföretag"),
         riskHit(9, "Region upphandlar ekonomitjänster"),
       ],
     );
@@ -476,8 +495,8 @@ describe("möjligheter", () => {
   });
 
   it("följer språket", async () => {
-    searchReturns([], [riskHit(5, "New public tender: upphandling of accounting")]);
-    const [signal] = await pulse.getSignals("en");
+    searchReturns([hit(1)], [riskHit(5, "Ny offentlig upphandling av redovisning")]);
+    const signal = (await pulse.getSignals("en")).find((s) => s.opportunity)!;
     expect(signal.category).toBe(`${en.pulsePage.opportunityLabel} · ${en.pulsePage.opportunityAreas.procurement.name}`);
     expect(signal.opportunity!.actions).toEqual(en.pulsePage.opportunityAreas.procurement.actions);
   });
@@ -678,12 +697,12 @@ describe("inlärning ur Relevant", () => {
     expect((await pulse.getSignals("sv"))[0].headline).toBe("Redovisningsbyråer växer");
     await pulse.setFeedback!(signalRow(3, "", "").id, "relevant");
     const after = await pulse.getSignals("sv");
-    // Båda kostnadsriskerna före de andra, den gillade av dem först (lika poäng: nyast först).
-    expect(after.map((signal) => signal.headline).slice(0, 2)).toEqual([
+    // Den gillade sorten först. Bara en kostnadsrisk visas (en per område): den nyaste.
+    expect(after.map((signal) => signal.headline)).toEqual([
       "Elpriset stiger i vinter",
-      "Dyrare frakt för småföretag",
+      "Redovisningsbyråer växer",
+      "Räntan höjs igen",
     ]);
-    expect(after).toHaveLength(4);
   });
 
   it("nästa dags sökning tar med inlärda ord och, en udda dag, favoritområdet som tema", async () => {
@@ -751,5 +770,148 @@ describe("inlärning ur Relevant", () => {
       "pulse_feedback",
     ]);
     expect(await pulse.getSignals("sv")).toHaveLength(1);
+  });
+});
+
+describe("kunden i sökningen", () => {
+  const withGuess = (guess: string | null) => ({ profiles: [{ user_id: USER, customer_guess: guess }] });
+
+  it("customerTerms tar ord ur gissningen, utan nyhetsord, siffror och ord som redan söks", () => {
+    expect(customerTerms("Styrelser i bostadsrättsföreningar med 20 lägenheter")).toEqual([
+      "styrelser",
+      "bostadsrättsföreningar",
+      "lägenheter",
+    ]);
+    expect(customerTerms("Små redovisningsbyråer i Sverige", ["redovisningsbyråer"])).toEqual([]);
+    expect(customerTerms("Kaféer, bagerier, restauranger och hotell")).toHaveLength(3);
+    expect(customerTerms(null)).toEqual([]);
+    expect(customerTerms("   ")).toEqual([]);
+  });
+
+  it("gissningens ord läggs till sökningen och relevansfiltret", async () => {
+    setup(withGuess("Styrelser i bostadsrättsföreningar"));
+    searchReturns([hit(1, { title: "Bostadsrättsföreningar höjer avgifterna", content: "" })], []);
+    const signals = await pulse.getSignals("sv");
+    const [news, theme] = queries();
+    expect(news).toBe("svenska näringslivsnyheter kvittojakten kvittohantering redovisningsbyråer styrelser bostadsrättsföreningar");
+    expect(theme).toContain("bostadsrättsföreningar");
+    // Nämner bara kunden, inte idén: släpps ändå igenom.
+    expect(signals.map((signal) => signal.headline)).toEqual(["Bostadsrättsföreningar höjer avgifterna"]);
+  });
+
+  it("utan gissning söker Pulsen som förut", async () => {
+    setup(withGuess(null));
+    await pulse.getSignals("sv");
+    expect(queries()[0]).toBe("svenska näringslivsnyheter kvittojakten kvittohantering redovisningsbyråer");
+  });
+
+  it("gissningen räcker för att söka när projektets egna ord inte gör det", async () => {
+    setup({ ...withGuess("Padelhallar"), projects: [{ ...project, name: "X", one_liner: "app" }] });
+    searchReturns([hit(1, { title: "Padelhallar går bra", content: "" })], []);
+    expect((await pulse.getSignals("sv")).map((s) => s.headline)).toEqual(["Padelhallar går bra"]);
+  });
+
+  it("utan kolumnen (migreringen inte körd) söker Pulsen som förut", async () => {
+    setup(withGuess("Styrelser"), [], [], ["profiles.customer_guess"]);
+    expect(await pulse.getSignals("sv")).toHaveLength(3);
+    expect(queries()[0]).not.toContain("styrelser");
+  });
+
+  it("ett annat fel när profilen läses syns", async () => {
+    setup(withGuess("Styrelser"), ["profiles:select"]);
+    await expect(pulse.getSignals("sv")).rejects.toThrow("kunde inte läsa profilen");
+  });
+});
+
+describe("bättre signaler för alla idéer", () => {
+  it("stripSiteSuffix tar bort sajtnamnet bara när det matchar källan", () => {
+    expect(stripSiteSuffix("Riksbankens räntebesked 2026 - information och datum - SBAB", "https://www.sbab.se/x")).toBe(
+      "Riksbankens räntebesked 2026 - information och datum",
+    );
+    expect(stripSiteSuffix("Laddbox hemma under 2026: bidrag och regler | Inselo", "https://inselo.se/a")).toBe(
+      "Laddbox hemma under 2026: bidrag och regler",
+    );
+    expect(stripSiteSuffix("Penningpolitiken i höst | Sveriges Riksbank", "https://www.riksbank.se/p")).toBe(
+      "Penningpolitiken i höst",
+    );
+    // Ett led som inte är källan står kvar.
+    expect(stripSiteSuffix("Räntan sänks – igen", "https://www.dn.se/a")).toBe("Räntan sänks – igen");
+    // Ett kort källnamn matchar bara exakt, aldrig som en del av ett ord.
+    expect(stripSiteSuffix("Nytt jobb för Bodil | Bodil", "https://di.se/a")).toBe("Nytt jobb för Bodil | Bodil");
+    expect(stripSiteSuffix("Börsen stiger | DI", "https://www.di.se/a")).toBe("Börsen stiger");
+    expect(stripSiteSuffix("Kort | SBAB", "https://sbab.se/a")).toBe("Kort | SBAB");
+    expect(stripSiteSuffix("Utan källa | SBAB", null)).toBe("Utan källa | SBAB");
+  });
+
+  it("isSwedishHeadline släpper igenom svenska och sorterar bort engelska rubriker", () => {
+    expect(isSwedishHeadline("Riksbanken sänker räntan")).toBe(true);
+    expect(isSwedishHeadline("Elbilsladdning BRF")).toBe(true);
+    expect(isSwedishHeadline("Ny lag om laddboxar i BRF")).toBe(true);
+    expect(isSwedishHeadline("The e-krona – state money in digital form")).toBe(false);
+    expect(isSwedishHeadline("How to choose an EV charger for your home")).toBe(false);
+    expect(isSwedishHeadline("Northvolt")).toBe(true);
+  });
+
+  it("isNearDuplicate känner igen samma nyhet med andra ord, men inte olika nyheter", () => {
+    expect(isNearDuplicate("Riksbanken sänker räntan", "Riksbanken sänker styrräntan igen")).toBe(true);
+    expect(isNearDuplicate("Elpriset stiger i vinter", "Elpriset stiger kraftigt i vinter")).toBe(true);
+    expect(isNearDuplicate("Riksbanken sänker räntan", "Elpriset stiger i vinter")).toBe(false);
+    expect(isNearDuplicate("Redovisningsbyråer växer", "Redovisningsbyråer anställer")).toBe(false);
+  });
+
+  it("båda sökningarna ber om nyheter från de senaste 30 dagarna", async () => {
+    searchReturns([hit(1)], []);
+    await pulse.getSignals("sv");
+    expect(search.mock.calls.map((call) => call[0])).toEqual([
+      expect.objectContaining({ topic: "news", days: 30 }),
+      expect.objectContaining({ topic: "news", days: 30 }),
+    ]);
+  });
+
+  it("utan nyheter blir dagens andra anrop en vanlig sökning på samma ord, aldrig ett tredje anrop", async () => {
+    search.mockReset().mockImplementation(async (input: { topic?: string }) =>
+      input.topic === "news" ? [] : [hit(1, { title: "Redovisningsbyråer i Malmö satsar digitalt" })],
+    );
+    const signals = await pulse.getSignals("sv");
+    expect(search).toHaveBeenCalledTimes(2);
+    expect(search.mock.calls[1][0]).toEqual({
+      query: "svenska näringslivsnyheter kvittojakten kvittohantering redovisningsbyråer",
+      maxResults: 5,
+    });
+    expect(signals.map((signal) => signal.headline)).toEqual(["Redovisningsbyråer i Malmö satsar digitalt"]);
+  });
+
+  it("engelska träffar sparas inte, och sajtnamnet tas bort ur rubriken", async () => {
+    searchReturns(
+      [
+        hit(1, { title: "Redovisningsbyråer digitaliserar | Breakit", url: "https://www.breakit.se/a" }),
+        hit(2, { title: "How accounting firms use the new tools" }),
+      ],
+      [],
+    );
+    const signals = await pulse.getSignals("sv");
+    expect(signals.map((signal) => signal.headline)).toEqual(["Redovisningsbyråer digitaliserar"]);
+    expect(tables.pulse_signals.map((row) => row.headline)).toEqual(["Redovisningsbyråer digitaliserar"]);
+  });
+
+  it("äldre rader rensas vid läsning: sajtnamn bort, engelska bort, samma nyhet en gång, en signal per område", async () => {
+    setup({
+      pulse_fetches: doneToday(),
+      pulse_signals: [
+        { ...signalRow(1, "risk:finance", "Riksbankens räntebesked 2026 - SBAB"), source_url: "https://www.sbab.se/r" },
+        signalRow(2, "risk:finance", "Räntan höjs av Riksbanken"),
+        signalRow(3, "risk:costs", "Elpriset stiger i vinter"),
+        signalRow(4, "risk:costs", "Elpriset stiger kraftigt i vinter"),
+        signalRow(5, "risk:finance", "The e-krona – state money in digital form"),
+        signalRow(6, "opportunity:funding", "Bidrag till laddboxar i BRF"),
+        signalRow(7, "opportunity:funding", "Naturvårdsverket öppnar nytt stöd"),
+      ],
+    });
+    const signals = await pulse.getSignals("sv");
+    expect(signals.map((signal) => signal.headline)).toEqual([
+      "Riksbankens räntebesked 2026",
+      "Elpriset stiger i vinter",
+      "Bidrag till laddboxar i BRF",
+    ]);
   });
 });

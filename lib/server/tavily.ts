@@ -20,6 +20,8 @@ const TIMEOUT_MS = 10_000;
 const MAX_RESULTS = 5;
 const MAX_RAW_CHARS = 20_000;
 const MAX_QUERY_CHARS = 400;
+/** Högst så långt bakåt en nyhetssökning får gå. */
+const MAX_NEWS_DAYS = 365;
 
 function getTavilyApiKey(): string {
   const apiKey = process.env.TAVILY_API_KEY;
@@ -34,6 +36,13 @@ function getTavilyApiKey(): string {
 export type TavilySearchInput = {
   query: string;
   maxResults?: number;
+  /**
+   * "news" söker bara nyhetsartiklar (Tavilys `topic`). Utelämnat är
+   * Tavilys vanliga webbsökning, som förut.
+   */
+  topic?: "general" | "news";
+  /** Bara för `topic: "news"`: artiklar från så här många dagar bakåt (1–365). */
+  days?: number;
 };
 
 export type TavilySearchResult = {
@@ -65,6 +74,11 @@ export async function search(input: TavilySearchInput): Promise<TavilySearchResu
         max_results: maxResults,
         include_raw_content: true,
         search_depth: "basic",
+        // Skickas bara när de är satta, så att andra anropare får exakt samma anrop som förut.
+        ...(input.topic === "news" || input.topic === "general" ? { topic: input.topic } : {}),
+        ...(input.topic === "news" && input.days !== undefined && Number.isFinite(input.days)
+          ? { days: Math.min(Math.max(1, Math.floor(input.days)), MAX_NEWS_DAYS) }
+          : {}),
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
