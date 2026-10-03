@@ -4086,12 +4086,12 @@ Rättar de två kända problemen från "Onboarding live, PR 2" och "PR 3": steg 
 Bakgrundsjobb (session 2). Bara `e2e/`, `playwright.config.ts` och den här filen är ändrade.
 
 ### Klart
-- **Nya `e2e/demo.spec.ts`:** sex tester per projekt (desktop och mobil), alltså tolv körningar.
+- **Nya `e2e/demo.spec.ts`:** åtta tester per projekt (desktop och mobil), alltså 16 körningar. Sex fanns i första versionen, och tillägget nedan lade till två.
   - Ingång A på sv och en: startsidan, "Se demot", valet av ingång, profilsamtalet, Hem och Resan via demomenyn (fyra faser, tolv stegkort, menyn markerar Resan).
   - Ingång B på sv och en: idégenomlysningen, profilsamtalet och Hem.
   - Språkbyte: Resan översätts direkt när man byter språk, språket ligger kvar på Hem och går att byta tillbaka. Ett språk som valts på startsidan gäller också i onboardingen, och ett byte där översätter valet av ingång.
   - Varje test kräver att inga sidfel och inga `console.error` uppstår.
-- **Tillägg samma dag:** ett sjunde test per språk, alltså 16 körningar totalt. Det besöker Poäng och Marknad via menyn. Marknad är låst till efter steg 02, demoradens "Nästa" flyttar fram ett moment, och "Hoppa till steg" till steg 03 låser upp Marknad utan att lämna sidan. Stabilitet: 48 av 48 gröna med `--repeat-each=3 --workers=2`.
+- **Tillägg samma dag:** två tester till, ett per språk, alltså åtta per projekt och 16 körningar totalt. Det besöker Poäng och Marknad via menyn. Marknad är låst till efter steg 02, demoradens "Nästa" flyttar fram ett moment, och "Hoppa till steg" till steg 03 låser upp Marknad utan att lämna sidan. Stabilitet: 48 av 48 gröna med `--repeat-each=3 --workers=2`.
 - **Inga djupa länkar.** Varje test börjar på `/` och klickar sig fram, så den kända hydreringen vid hård sidladdning av nästlade demorutter undviks.
 - **Texterna läses ur `i18n/sv.ts` och `i18n/en.ts`.** Ingen text är hårdkodad i testerna.
 - **`playwright.config.ts`:** servern startas nu alltid, inte bara när det finns ett testkonto.
@@ -4122,6 +4122,7 @@ Bakgrundsjobb (session 2). Bara `e2e/`, `playwright.config.ts` och den här file
 ### Återstår
 - Fler demoytor i e2e: Medgrundaren, Validering, Pulsen, Minnet, Juridik, Bygg, Affärsplanen, och demoradens "Byt ingång" och "Börja om".
 - Om CI sätts upp (Eriks beslut) kan `pnpm test:e2e` köras där utan hemligheter. Demotesterna kräver inga.
+
 ## Onboardingens avslutningsreplik (2026-10-02, gren `bygg/onboarding-avslutning`, PR mot `prototyp`)
 Rättar det kända problemet från "Onboarding live, PR 3": profilsamtalets avslutningsrepliker visades inte i `/start/profil`, och ingång B:s replik lovade fel nästa steg. Plan godkänd av Theo 2026-10-02.
 
@@ -4171,3 +4172,21 @@ Kvar att prova är bara samma flöde mot SparkUF2, för att se att produktionens
 
 ### Beslut
 - Inga kodändringar, bara dokument och kommandon. Ingen ny beroende.
+
+## `<html lang>` följer språket, och ny text i profilsamtalet (2026-10-03, gren `bakgrund/sprak-och-profiltext`, PR mot `prototyp`)
+Bakgrundsjobb (session 2). Rättar två fynd från "E2E-röktester för demots huvudflöde" på Theos uppdrag. Inga ändringar i `screens/`, `design/site.css`, `core/`, `ports/` eller demodatan.
+
+### Klart
+- **`<html lang>` följer det valda språket.** `LocaleProvider` (`i18n/context.tsx`) sätter `document.documentElement.lang` i en effekt när språket ändras. Servern renderar fortfarande `lang="sv"` (`app/layout.tsx` är orörd), eftersom språket bara finns i localStorage. Attributet byts efter hydreringen.
+- **Profilsamtalets underrubrik** (`onboarding.profile.subtitle`) bad om ett klick som inte finns. Ny text:
+  - sv: "Samtalet spelar upp sig självt. Svaren bygger profilen Spark utgår från."
+  - en: "The conversation plays out on its own. The answers build the profile Spark works from."
+- **Nya `i18n/context.test.tsx`** (3 fall): svenska som standard, att attributet följer bytet åt båda hållen, och ett sparat språk. Motprov: utan effekten fallerar alla tre.
+- **Provat i webbläsaren** (Playwright mot `pnpm start`, desktop och mobil): `lang` byts på startsidan, följer med in i demot och tillbaka, och den nya texten syns på båda språken.
+- Kontroll: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar i `design-referens/`), `pnpm test` (1211 gröna, 42 skippade) och `pnpm build`. Bygget kördes med platshållare för de två publika Supabase-variablerna i skalet, eftersom det inte finns någon `.env.local` här.
+
+### Kända problem
+- Den förrenderade HTML:en säger alltid `lang="sv"`. En engelsk besökare får `en` först efter hydreringen. För att rätta det måste språket finnas på servern (en cookie eller en rutt), vilket är ett större beslut.
+
+### Beslut (session 2)
+- Attributet sätts i `LocaleProvider` och inte i varje layout, eftersom alla sidor redan ligger under providern.

@@ -758,7 +758,7 @@ export const sv = {
     },
     profile: {
       title: "Berätta om dig",
-      subtitle: "Klicka på svaret för att gå vidare — det bygger profilen Spark utgår från.",
+      subtitle: "Samtalet spelar upp sig självt. Svaren bygger profilen Spark utgår från.",
       buildingTitle: "Din profil så här långt",
       continueCta: "Fortsätt",
       formSubtitle: "Svara med egna ord. Svaren bygger profilen Spark utgår från.",
