@@ -27,7 +27,7 @@ export type PulseFakeOptions = {
   failOn?: string[];
   /** Tabeller som inte finns, som när en migrering inte är körd. */
   missingTables?: string[];
-  /** Kolumner som inte finns, "tabell.kolumn", som när en migrering inte är körd. Postgres svarar 42703. */
+  /** Kolumner som inte finns, "tabell.kolumn", som när en migrering inte är körd. Postgres svarar 42703, för select och insert. */
   missingColumns?: string[];
 };
 
@@ -152,7 +152,11 @@ class PulseQuery implements PromiseLike<Result> {
     }
     const missingColumn = this.options.missingColumns?.find((name) => {
       const [table, column] = name.split(".");
-      return table === this.tableName && this.selected.split(",").some((part) => part.trim() === column);
+      if (table !== this.tableName) return false;
+      if (this.selected.split(",").some((part) => part.trim() === column)) return true;
+      // En insert med en kolumn som saknas nekas också, som i PostgREST (PGRST204/42703).
+      const written = this.mode === "insert" ? (Array.isArray(this.payload) ? this.payload : [this.payload]) : [];
+      return written.some((row) => column in row);
     });
     if (missingColumn) {
       return { data: null, error: { code: "42703", message: `column ${missingColumn} does not exist` } };

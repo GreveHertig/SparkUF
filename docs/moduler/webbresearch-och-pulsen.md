@@ -366,6 +366,25 @@ beslut i `docs/beslut.md` (2026-10-03):
 - **Lägg till stegen i min plan**: spelbokens steg blir uppgifter i Resan,
   se `docs/moduler/min-plan.md`. Knappen visas bara när `plan_items` finns.
 
+## Pulsen v3 (2026-10-04, gren `modul/pulsen-v3`)
+
+Beslut i `docs/beslut.md` (2026-10-04).
+
+- **Bevakningar:** `pickRelevant(results, keywords, watchTerms)` och
+  `isCompetitorNews`. Ett bevakningsord räcker i rubriken; bara i texten
+  krävs ett av projektets ord. `isSwedishResult` läser artikelns text när
+  rubriken inte avgör språket.
+- **AI-text** (`adapters/live/pulseWhy.ts`): `PULSE_AI_WHY=true`, annars av.
+  Ett `generateJson`-anrop per hämtning. `acceptWhy` nekar siffror, länkar och
+  kod. Sparas i `why_it_matters` med `why_ai = true`.
+- **Inlärningen syns:** `getLearning` (valfri i porten) och `describeLearning`;
+  `boosted` på signaler med poäng över noll.
+- **Sista ansökningsdag:** `extractDeadline` (`core/deadline.ts`) vid
+  sparandet, kolumnen `deadline`. Bara datum som inte passerat visas.
+- **Veckans puls:** `pickWeekPulse` (`core/weekPulse.ts`) på Hem.
+- **Utan migreringen** `20261004090000_pulsen_v3.sql` läser och skriver
+  adaptern utan de nya kolumnerna, och en AI-text sparas aldrig omärkt.
+
 ## Acceptanskriterier
 
 - `search(query)` returnerar en lista där varje resultat har `title`, `url`

@@ -19,11 +19,12 @@ export function createDemoPlanRepository(): PlanRepository {
     async getItems() {
       const open = items.filter((item) => !item.done);
       const done = items.filter((item) => item.done);
-      return [...open, ...done].map(({ id, text, context, origin, done: isDone, createdAtIso }) => ({
+      return [...open, ...done].map(({ id, text, context, origin, due, done: isDone, createdAtIso }) => ({
         id,
         text,
         context,
         origin,
+        ...(due ? { due } : {}),
         done: isDone,
         createdAtIso,
       }));
@@ -48,6 +49,7 @@ export function createDemoPlanRepository(): PlanRepository {
           createdAtIso: new Date().toISOString(),
           origin: item.origin,
           originRef,
+          ...(item.due ? { due: item.due } : {}),
         });
       }
       const open = items.filter((item) => !item.done).length;

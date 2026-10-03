@@ -3,10 +3,12 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ComingSoon } from "@/components/ui/ComingSoon";
+import { cn } from "@/design/cn";
 import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n } from "@/i18n/context";
 import { fill } from "@/i18n/fill";
-import type { PulseFeedbackVerdict, PulseSignal, PulseWatch } from "@/core/domain";
+import type { PulseFeedbackVerdict, PulseLearning, PulseSignal, PulseWatch } from "@/core/domain";
+import { formatDateWithYear } from "@/i18n/format";
 import type { DataType } from "@/design/tokens";
 import type { ChatSource } from "./blocks/ChatBlocks";
 import { PageHead, Pill } from "./blocks/PageBlocks";
@@ -81,6 +83,8 @@ type PulseProps = {
   onFeedback?: (signalId: string, verdict: PulseFeedbackVerdict) => Promise<void>;
   /** Egna bevakningar (bara i /app). Utelämnad: ingen del för bevakningar. */
   watches?: PulseWatches | null;
+  /** Vad Pulsen har lärt sig av omdömena (bara i /app). Utelämnad: ingen ruta. */
+  learning?: PulseLearning | null;
 } & PlaybookExtras;
 
 /**
@@ -97,7 +101,16 @@ type PulseProps = {
  * I /app finns dessutom omdömet under varje signal ("Relevant" / "Inte
  * relevant") och grundarens egna bevakningar. Demot skickar inget av dem.
  */
-export function Pulse({ data, onFeedback, watches, personal, cofounderHref, onAddToPlan, planHref }: PulseProps) {
+export function Pulse({
+  data,
+  onFeedback,
+  watches,
+  learning,
+  personal,
+  cofounderHref,
+  onAddToPlan,
+  planHref,
+}: PulseProps) {
   const { t } = useI18n();
   const { signals } = data;
   const latest = signals?.[0];
@@ -136,6 +149,8 @@ export function Pulse({ data, onFeedback, watches, personal, cofounderHref, onAd
         title={latest?.headline ?? t.pulsePage.title}
         lede={latest?.whyItMatters ?? t.pulsePage.subtitle}
       />
+
+      {learning && signals && signals.length > 0 && <LearningNote learning={learning} />}
 
       {signals === null ? (
         <ComingSoon />
@@ -202,10 +217,13 @@ function SignalList({
   addToPlan?: (request: AddPlaybookRequest) => void;
   planHref?: string;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const p = t.pulsePage;
   return (
-    <ul className="fdd-signals" data-tour-id={tourId}>
+    <ul
+      className={cn("fdd-signals", signals.length === 1 && "fdd-signals--1", signals.length === 2 && "fdd-signals--2")}
+      data-tour-id={tourId}
+    >
       {signals.map((signal, index) => {
         const state = signal.id ? feedback[signal.id] : undefined;
         if (state === "hidden") {
@@ -257,10 +275,18 @@ function SignalList({
                 <span className="fdd-signal__category">{signal.category}</span>
               )}
             </p>
+            {signal.boosted && <p className="fdd-signal__boosted">{p.boosted}</p>}
             <p className="fdd-signal__headline">{signal.headline}</p>
             <p className="fd-nextstep__why">
               {t.common.pulseWhyItMattersPrefix} {signal.whyItMatters}
             </p>
+            {signal.whyByAi && <p className="fdd-muted fdd-signal__ai">{p.aiWhy}</p>}
+            {signal.deadline && (
+              <p className="fdd-signal__deadline">
+                {p.deadline}: <strong>{formatDateWithYear(signal.deadline, locale)}</strong>{" "}
+                <SourceTag source={signal.source} dataType={dataType} />
+              </p>
+            )}
             {insight && insight.actions.length > 0 && (
               <div className="fdd-risk-actions">
                 <p className="fdd-label">{p.actionsTitle}</p>
@@ -355,6 +381,32 @@ function SignalList({
         );
       })}
     </ul>
+  );
+}
+
+/**
+ * "Pulsen lär sig av dig" (bara i /app): vad omdömena har ändrat, så att
+ * knapparna Relevant och Inte relevant märks. Inga antal, bara namn.
+ */
+function LearningNote({ learning }: { learning: PulseLearning }) {
+  const { t } = useI18n();
+  const copy = t.pulsePage.learning;
+  const learned = learning.areas.length > 0 || learning.terms.length > 0;
+  return (
+    <aside className="fdd-learning" aria-labelledby="fdd-pulse-learning">
+      <p id="fdd-pulse-learning" className="fdd-label">
+        {copy.title}
+      </p>
+      {learned ? (
+        <>
+          {learning.areas.length > 0 && <p>{fill(copy.areas, { list: learning.areas.join(", ") })}</p>}
+          {learning.terms.length > 0 && <p>{fill(copy.terms, { list: learning.terms.join(", ") })}</p>}
+          <p className="fdd-muted">{copy.hidden}</p>
+        </>
+      ) : (
+        <p className="fdd-muted">{copy.empty}</p>
+      )}
+    </aside>
   );
 }
 

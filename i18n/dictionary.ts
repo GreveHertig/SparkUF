@@ -168,6 +168,12 @@ export type Dictionary = {
     planFrom: string;
     planSeeAll: string;
     planHelp: string;
+    /** Sista ansökningsdag på kortet, när uppgiften har en. */
+    planDue: string;
+    /** "Veckans puls" (bara /app): veckans viktigaste signaler. */
+    weekPulseTitle: string;
+    weekPulseEmpty: string;
+    weekPulseOpen: string;
     emailSentLabel: string;
     openRateLabel: string;
     reminderSentLabel: string;
@@ -288,6 +294,8 @@ export type Dictionary = {
       addPlaceholder: string;
       addButton: string;
       errors: { empty: string; duplicate: string; full: string; failed: string };
+      /** Sista ansökningsdag ur artikeln, med artikeln som källa. */
+      due: string;
     };
   };
   cofounderPage: {
@@ -600,6 +608,20 @@ export type Dictionary = {
       seePlan: string;
     };
     /** Omdömet under en signal i /app (pulse_feedback). */
+    /** "Pulsen lär sig av dig" (bara /app). `{list}` = namn, kommaseparerade. */
+    learning: {
+      title: string;
+      areas: string;
+      terms: string;
+      hidden: string;
+      empty: string;
+    };
+    /** Märkning på en signal som visas högre för att den liknar det grundaren gillat. */
+    boosted: string;
+    /** Märkning när "varför det spelar roll" är skrivet av en språkmodell. */
+    aiWhy: string;
+    /** Sista ansökningsdag ur artikeln. */
+    deadline: string;
     feedback: {
       question: string;
       relevant: string;

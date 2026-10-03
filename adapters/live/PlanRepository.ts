@@ -31,22 +31,40 @@ type PlanRow = {
   context: string | null;
   origin: string;
   origin_ref: string | null;
+  /** Pulsen v3 (migreringen 20261004090000). Saknas när kolumnerna inte finns. */
+  due_date?: string | null;
+  due_source?: string | null;
+  due_fetched?: string | null;
   done: boolean;
   created_at: string;
 };
 
 const key = (text: string, originRef: string | null) => `${originRef ?? ""}|${text.toLowerCase()}`;
 
+/** PostgREST och Postgres svar när en kolumn saknas (migreringen inte körd). */
+function isMissingColumn(error: { code?: string }): boolean {
+  return error.code === "42703" || error.code === "PGRST204";
+}
+
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const DUE_SOURCE_MAX = 100;
+
 async function readRows(): Promise<PlanRow[]> {
   const { supabase, userId } = await requireSupabaseUser();
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select("id, text, context, origin, origin_ref, done, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true })
-    .limit(MAX_READ);
+  const BASE = "id, text, context, origin, origin_ref, done, created_at";
+  const read = (columns: string) =>
+    supabase.from(TABLE).select(columns).eq("user_id", userId).order("created_at", { ascending: true }).limit(MAX_READ);
+  // Pulsen v3: sista dag. Utan migreringen läses som förut.
+  let { data, error } = await read(`${BASE}, due_date, due_source, due_fetched`);
+  if (error && isMissingColumn(error)) ({ data, error } = await read(BASE));
   if (error) throw failure(error, "läsa planen");
-  return (data ?? []) as PlanRow[];
+  return (data ?? []) as unknown as PlanRow[];
+}
+
+/** Sista dag med källa ur en rad, eller undefined när någon del saknas. */
+function dueOf(row: PlanRow): PlanItem["due"] {
+  if (!row.due_date || !row.due_source || !row.due_fetched) return undefined;
+  return { date: row.due_date.slice(0, 10), source: { namn: row.due_source, hämtad: row.due_fetched.slice(0, 10) } };
 }
 
 export const livePlanRepository: PlanRepository = {
@@ -58,6 +76,7 @@ export const livePlanRepository: PlanRepository = {
       context: row.context,
       // En okänd sort (en framtida migrering) visas som en egen uppgift, aldrig som en krasch.
       origin: (PLAN_ORIGINS.includes(row.origin as PlanOrigin) ? row.origin : "own") as PlanOrigin,
+      ...(dueOf(row) ? { due: dueOf(row) } : {}),
       done: row.done === true,
       createdAtIso: row.created_at,
     }));
@@ -70,11 +89,17 @@ export const livePlanRepository: PlanRepository = {
       if (!PLAN_ORIGINS.includes(item.origin)) throw new Error("Min plan: okänt ursprung.");
       const originRef = item.originRef ?? null;
       if (originRef !== null && !UUID_PATTERN.test(originRef)) throw new Error("Min plan: ogiltigt ursprungs-id.");
+      const dueSource = item.due ? cleanText(item.due.source.namn, DUE_SOURCE_MAX) : "";
+      const due =
+        item.due && DATE_PATTERN.test(item.due.date) && DATE_PATTERN.test(item.due.source.hämtad) && dueSource
+          ? { due_date: item.due.date, due_source: dueSource, due_fetched: item.due.source.hämtad }
+          : null;
       return {
         text: cleanText(item.text, PLAN_ITEM_TEXT_MAX),
         context: item.context ? cleanText(item.context, PLAN_ITEM_CONTEXT_MAX) || null : null,
         origin: item.origin,
         originRef,
+        due,
       };
     });
 
@@ -98,13 +123,16 @@ export const livePlanRepository: PlanRepository = {
     // (unikt index, 23505) hoppas just det över, inte hela spelboken.
     for (const item of fresh) {
       // user_id kommer alltid ur sessionen, och RLS ("insert egen") är spärren.
-      const { error } = await supabase.from(TABLE).insert({
+      const base = {
         user_id: userId,
         text: item.text,
         context: item.context,
         origin: item.origin,
         origin_ref: item.originRef,
-      });
+      };
+      let { error } = await supabase.from(TABLE).insert(item.due ? { ...base, ...item.due } : base);
+      // Utan migreringen 20261004090000: spara utan sista dag, som förut.
+      if (error && item.due && isMissingColumn(error)) ({ error } = await supabase.from(TABLE).insert(base));
       if (error) {
         if (error.code === "23505") continue;
         throw failure(error, "spara uppgiften");
