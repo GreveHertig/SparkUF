@@ -27,5 +27,6 @@ export default function DemoJourneyPage() {
 
   if (!steps) return null;
 
-  return <Journey data={{ steps }} basePath={DEMO_PATHS.journey} />;
+  // Länken till onboardingsvaren finns bara i /app (beslut 2026-10-03).
+  return <Journey data={{ steps }} basePath={DEMO_PATHS.journey} profileAnswersHref={null} />;
 }

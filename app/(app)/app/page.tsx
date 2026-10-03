@@ -51,6 +51,13 @@ export default async function LiveAppHomePage() {
   };
 
   return (
-    <AppHome data={data} dataKind="live" journeyBasePath="/app/resan" scoreHref="/app/poang" />
+    <AppHome
+      data={data}
+      dataKind="live"
+      journeyBasePath="/app/resan"
+      scoreHref="/app/poang"
+      // Layouten släpper bara in den som är klar med onboardingen.
+      profileAnswersHref="/app/minnet"
+    />
   );
 }

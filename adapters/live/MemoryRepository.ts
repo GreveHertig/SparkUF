@@ -2,6 +2,7 @@ import type { MemoryRepository, ProfileSummary, TraceEvent, RecordTraceEventInpu
 import { cleanText } from "@/core/text";
 import { EmptyStateError } from "@/core/errors";
 import { requireSupabaseUser } from "@/lib/server/session";
+import { isOnboardingEntry } from "@/core/onboarding";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const DOC = "docs/moduler/minnet.md";
@@ -18,12 +19,19 @@ type ProfileRow = {
   time_available: string | null;
   money_available: string | null;
   risk_appetite: string | null;
+  onboarding_entry: string | null;
+  onboarding_completed_at: string | null;
 };
+
+/** Tom eller bara blanksteg räknas som obesvarad, aldrig som ett svar. */
+function answerOrNull(value: string | null): string | null {
+  return value && value.trim() ? value : null;
+}
 
 async function getProfileRow(supabase: SupabaseClient, userId: string): Promise<ProfileRow | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("name, role, bio, time_available, money_available, risk_appetite")
+    .select("name, role, bio, time_available, money_available, risk_appetite, onboarding_entry, onboarding_completed_at")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error(`Minnet: kunde inte läsa profilen (${error.message}).`);
@@ -34,19 +42,20 @@ export const liveMemoryRepository: MemoryRepository = {
   async getProfileSummary(): Promise<ProfileSummary> {
     const { supabase, userId } = await requireSupabaseUser();
     const row = await getProfileRow(supabase, userId);
-    // Alla sex fält krävs (docs/moduler/minnet.md) — ett konto som gjort
-    // 01 Om dig men inte fyllt i bakgrund/resurser är ett tomt tillstånd,
-    // inte ett fel.
-    if (!row || !row.name || !row.role || !row.bio || !row.time_available || !row.money_available || !row.risk_appetite) {
+    // Tomt tillstånd bara om onboardingen inte är gjord (docs/moduler/minnet.md).
+    // Efter den visas det som finns: ingång B svarar bara på role, time och
+    // money, och de övriga fälten blir null (en lucka), aldrig ifyllda.
+    if (!row || !row.onboarding_completed_at || !isOnboardingEntry(row.onboarding_entry)) {
       throw new EmptyStateError("Minnet", DOC);
     }
     return {
-      name: row.name,
-      role: row.role,
-      bio: row.bio,
-      time: row.time_available,
-      money: row.money_available,
-      risk: row.risk_appetite,
+      entry: row.onboarding_entry,
+      name: answerOrNull(row.name),
+      role: answerOrNull(row.role),
+      bio: answerOrNull(row.bio),
+      time: answerOrNull(row.time_available),
+      money: answerOrNull(row.money_available),
+      risk: answerOrNull(row.risk_appetite),
     };
   },
 

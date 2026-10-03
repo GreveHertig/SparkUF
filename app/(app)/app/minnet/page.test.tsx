@@ -28,12 +28,13 @@ vi.mock("@/adapters/live/evidenceScore", () => ({ stockholmToday: () => "2026-10
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 const profile = {
+  entry: "hasIdea",
   name: "Alva Ek",
   role: "22 år, Umeå",
-  bio: "Läser ekonomi.",
+  bio: null,
   time: "10 timmar i veckan",
   money: "5 000 kr",
-  risk: "Låg",
+  risk: null,
 };
 
 afterEach(() => {
@@ -62,6 +63,18 @@ describe("/app/minnet (PR 5)", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Alva Ek, 22 år, Umeå" })).toBeInTheDocument();
     expect(screen.queryByText(sv.comingSoon.title)).not.toBeInTheDocument();
     expect(screen.queryByText(/Sara/)).not.toBeInTheDocument();
+  });
+
+  it("ingång B ser sina svar i Profilen, och bio och risk som luckor", async () => {
+    getProfileSummaryMock.mockResolvedValue(profile);
+    getBrainNotesMock.mockResolvedValue("");
+    getTraceEventsMock.mockResolvedValue([]);
+
+    await renderPage();
+
+    expect(screen.getByText(sv.onboarding.profileQuestions.hasIdea.time)).toBeInTheDocument();
+    expect(screen.getByText("10 timmar i veckan")).toBeInTheDocument();
+    expect(screen.getAllByText(sv.memoryPage.notAnswered)).toHaveLength(2);
   });
 
   it("en profil som inte är ifylld ger Kommer snart bara i Profilen", async () => {

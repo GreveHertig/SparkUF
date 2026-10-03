@@ -69,6 +69,7 @@ export function AppHome({
   onNextStep,
   journeyBasePath,
   scoreHref,
+  profileAnswersHref,
 }: {
   data: AppHomeData;
   dataKind: DataKind;
@@ -81,12 +82,19 @@ export function AppHome({
    */
   journeyBasePath: string | null;
   scoreHref: string;
+  /**
+   * Minnets Profilen-flik, där grundaren ser sina svar från onboardingen
+   * (steg 1). Routen skickar den bara när onboardingen är klar; utan värde
+   * visas ingen länk.
+   */
+  profileAnswersHref?: string | null;
 }) {
   const { t, locale } = useI18n();
   const copy = t.site;
 
   const signal = data.pulseSignals[0];
   const sinceLastTime = data.homeSummary?.sinceLastTime ?? null;
+  const step1 = data.journeySteps.find((step) => step.stepNumber === 1);
 
   return (
     <div className="fdd-page">
@@ -174,6 +182,14 @@ export function AppHome({
         <div className="fd-journey">
           <JourneyStepper steps={data.journeySteps} basePath={journeyBasePath} />
         </div>
+        {profileAnswersHref && step1 && (
+          <p className="fdd-muted">
+            {t.journeyPage.stepLabel} 01 · {step1.title} ·{" "}
+            <Link href={profileAnswersHref} className="fdd-link">
+              {t.common.seeYourAnswers}
+            </Link>
+          </p>
+        )}
       </section>
 
       <div className="fdd-two">

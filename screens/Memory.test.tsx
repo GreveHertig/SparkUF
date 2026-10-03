@@ -4,11 +4,13 @@ import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
 import type { DataKind } from "@/core/domain";
+import type { ProfileSummary } from "@/ports/MemoryRepository";
 import { Memory, type MemoryData } from "./Memory";
 
 afterEach(() => cleanup());
 
-const profile = {
+const profile: ProfileSummary = {
+  entry: "noIdea",
   name: "Alva Ek",
   role: "22 år, Umeå",
   bio: "Läser ekonomi.",
@@ -44,6 +46,41 @@ describe("Memory (skärmen, PR 5)", () => {
     renderMemory();
     expect(screen.getByRole("heading", { level: 1, name: "Alva Ek, 22 år, Umeå" })).toBeInTheDocument();
     expect(screen.getByText("10 timmar i veckan")).toBeInTheDocument();
+  });
+
+  it("visar varje besvarad fråga med frågetexten från onboardingen och svaret", () => {
+    renderMemory();
+    const questions = sv.onboarding.profileQuestions.noIdea;
+    for (const [question, answer] of [
+      [questions.role, profile.role],
+      [questions.bio, profile.bio],
+      [questions.time, profile.time],
+      [questions.money, profile.money],
+      [questions.risk, profile.risk],
+    ]) {
+      expect(screen.getByText(question!).closest("li")).toHaveTextContent(answer!);
+    }
+    expect(screen.queryByText(sv.memoryPage.notAnswered)).not.toBeInTheDocument();
+  });
+
+  it("ingång B: B:s frågetexter, och bio och risk som luckor som aldrig fylls i", () => {
+    const hasIdea: ProfileSummary = { ...profile, entry: "hasIdea", bio: null, risk: null };
+    renderMemory({ profile: hasIdea });
+    const b = sv.onboarding.profileQuestions.hasIdea;
+    const a = sv.onboarding.profileQuestions.noIdea;
+    expect(screen.getByText(b.role).closest("li")).toHaveTextContent(profile.role!);
+    expect(screen.getByText(b.time).closest("li")).toHaveTextContent(profile.time!);
+    expect(screen.getByText(b.money).closest("li")).toHaveTextContent(profile.money!);
+    expect(screen.getByText(a.bio).closest("li")).toHaveTextContent(sv.memoryPage.notAnswered);
+    expect(screen.getByText(a.risk).closest("li")).toHaveTextContent(sv.memoryPage.notAnswered);
+    expect(screen.getAllByText(sv.memoryPage.notAnswered)).toHaveLength(2);
+    // Ingen ingress när bio saknas, och inget påhittat i dess ställe.
+    expect(screen.queryByText(profile.bio!)).not.toBeInTheDocument();
+  });
+
+  it("utan namn: rollen ensam i rubriken, utan ett ensamt kommatecken", () => {
+    renderMemory({ profile: { ...profile, name: null } });
+    expect(screen.getByRole("heading", { level: 1, name: "22 år, Umeå" })).toBeInTheDocument();
   });
 
   it("utan profil: sidans namn som rubrik och Kommer snart bara i Profilen, Hjärnan och Spåret syns ändå", () => {

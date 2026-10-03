@@ -19,6 +19,18 @@ function completeProfileRow() {
     time_available: "Kvällar och helger",
     money_available: "20 000 kr",
     risk_appetite: "Låg",
+    onboarding_entry: "noIdea",
+    onboarding_completed_at: "2026-10-01T08:00:00Z",
+  };
+}
+
+/** Ingång B efter onboardingen: bara role, time och money är besvarade. */
+function entryBProfileRow() {
+  return {
+    ...completeProfileRow(),
+    bio: null,
+    risk_appetite: null,
+    onboarding_entry: "hasIdea",
   };
 }
 
@@ -33,15 +45,43 @@ describe("liveMemoryRepository.getProfileSummary", () => {
     await expect(liveMemoryRepository.getProfileSummary("sv")).rejects.toBeInstanceOf(EmptyStateError);
   });
 
-  it("kastar EmptyStateError när bara delar av bakgrunden är ifylld", async () => {
+  it("kastar EmptyStateError när onboardingen inte är klar, även om fält finns", async () => {
     requireSupabaseUserMock.mockResolvedValue({
       supabase: makeSupabaseFake({
-        profiles: [{ ...completeProfileRow(), bio: null, risk_appetite: null }],
+        profiles: [{ ...completeProfileRow(), onboarding_entry: null, onboarding_completed_at: null }],
       }),
       userId: USER_ID,
     });
     const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
     await expect(liveMemoryRepository.getProfileSummary("sv")).rejects.toBeInstanceOf(EmptyStateError);
+  });
+
+  it("ingång B: returnerar de besvarade fälten och null för bio och risk", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({ profiles: [entryBProfileRow()] }),
+      userId: USER_ID,
+    });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    expect(await liveMemoryRepository.getProfileSummary("sv")).toEqual({
+      entry: "hasIdea",
+      name: "Sara Lindqvist",
+      role: "Redovisningskonsult",
+      bio: null,
+      time: "Kvällar och helger",
+      money: "20 000 kr",
+      risk: null,
+    });
+  });
+
+  it("tomma strängar (signupens standardvärde för name) blir null, aldrig ett svar", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({ profiles: [{ ...entryBProfileRow(), name: "", bio: "   " }] }),
+      userId: USER_ID,
+    });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    const summary = await liveMemoryRepository.getProfileSummary("sv");
+    expect(summary.name).toBeNull();
+    expect(summary.bio).toBeNull();
   });
 
   it("returnerar alla sex fält när profilen är komplett", async () => {
@@ -51,6 +91,7 @@ describe("liveMemoryRepository.getProfileSummary", () => {
     });
     const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
     expect(await liveMemoryRepository.getProfileSummary("sv")).toEqual({
+      entry: "noIdea",
       name: "Sara Lindqvist",
       role: "Redovisningskonsult",
       bio: "Jobbat med bokföring i tio år.",
