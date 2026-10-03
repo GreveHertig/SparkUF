@@ -1125,8 +1125,10 @@ export type Dictionary = {
     overviewLabel: string;
     /** Skärmläsartext för en översiktslänk. Platshållare: {title}, {status}. */
     overviewLinkTemplate: string;
-    /** Kortet med steget som stärker planen mest. Platshållare: {step}, {title}. */
-    nextStep: { eyebrow: string; titleTemplate: string; feedsLabel: string; ctaTemplate: string };
+    /** Kortet med steget som stärker planen mest. Platshållare: {step}, {title}.
+     * `lockedTemplate` visas när det steget inte är öppet än, med det aktuella
+     * steget som {step} och {title}. */
+    nextStep: { eyebrow: string; titleTemplate: string; feedsLabel: string; ctaTemplate: string; lockedTemplate: string };
     /** Länken i en lucka till steget den väntar på. Platshållare: {step}. */
     openStepTemplate: string;
     /** Knappen som öppnar webbläsarens utskrift, där planen kan sparas som PDF. */

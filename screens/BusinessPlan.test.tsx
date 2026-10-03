@@ -150,3 +150,21 @@ describe("BusinessPlan, omgjord (2026-10-03)", () => {
     expect(screen.queryByRole("button", { name: sv.businessPlanPage.printCta })).not.toBeInTheDocument();
   });
 });
+
+describe("BusinessPlan, nästa steg när det steget är låst", () => {
+  it("säger att steget öppnas efter det aktuella, och länkar till det aktuella", () => {
+    const steps = Array.from({ length: 12 }, (_, index) => ({
+      stepNumber: index + 1,
+      title: `Steget ${index + 1}`,
+      status: (index + 1 < 2 ? "done" : index + 1 === 2 ? "current" : "locked") as "done" | "current" | "locked",
+    }));
+    const lockedPlan = buildBusinessPlan([
+      { id: "idea", checks: [{ claims: [claim("Idén")], requiredStepNumber: 2 }] },
+      { id: "market", checks: [{ claims: [], requiredStepNumber: 3 }] },
+    ]);
+    renderPlan({ plan: lockedPlan, completedStepNumbers: [1], steps, stepBasePath: "/app/resan" });
+    expect(screen.getByRole("heading", { name: fill(sv.businessPlanPage.nextStep.titleTemplate, { step: "03", title: "Steget 3" }) })).toBeInTheDocument();
+    expect(screen.getByText(fill(sv.businessPlanPage.nextStep.lockedTemplate, { step: "02", title: "Steget 2" }))).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: fill(sv.businessPlanPage.nextStep.ctaTemplate, { step: "02" }) })).toHaveAttribute("href", "/app/resan/2");
+  });
+});
