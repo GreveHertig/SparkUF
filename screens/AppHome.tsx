@@ -71,6 +71,7 @@ export function AppHome({
   journeyBasePath,
   scoreHref,
   profileAnswersHref,
+  planNext,
 }: {
   data: AppHomeData;
   dataKind: DataKind;
@@ -96,6 +97,12 @@ export function AppHome({
    * visas ingen länk.
    */
   profileAnswersHref?: string | null;
+  /**
+   * Första öppna uppgiften i Min plan (bara /app, docs/moduler/min-plan.md),
+   * med länk till planen i Resan och till Medgrundaren. Utelämnad eller
+   * `null` (ingen öppen uppgift, eller tabellen saknas): inget kort.
+   */
+  planNext?: { text: string; context: string | null; planHref: string; helpHref: string } | null;
 }) {
   const { t, locale } = useI18n();
   const copy = t.site;
@@ -192,6 +199,28 @@ export function AppHome({
           )}
         </section>
       </div>
+
+      {planNext && (
+        <section aria-labelledby="fdd-plannext-title" className="fd-panel fdd-plannext">
+          <h2 id="fdd-plannext-title" className="fdd-label">
+            {t.homePage.planTitle}
+          </h2>
+          <p className="fdd-plannext__task">{planNext.text}</p>
+          {planNext.context && (
+            <p className="fdd-muted fdd-plannext__from">
+              {t.homePage.planFrom}: {planNext.context}
+            </p>
+          )}
+          <div className="fdd-plannext__actions">
+            <Link href={planNext.helpHref} className="fd-btn fd-btn--primary fd-btn--sm">
+              {t.homePage.planHelp}
+            </Link>
+            <Link href={planNext.planHref} className="fd-btn fd-btn--secondary fd-btn--sm">
+              {t.homePage.planSeeAll}
+            </Link>
+          </div>
+        </section>
+      )}
 
       <section aria-labelledby="fdd-journey-title" className="fdd-block">
         <h2 id="fdd-journey-title" className="fdd-block__title">

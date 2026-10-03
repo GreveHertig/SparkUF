@@ -95,23 +95,32 @@ describe("/app/resan (PR 9)", () => {
     expect(screen.queryByRole("heading", { name: sv.journeyPage.plan.title })).not.toBeInTheDocument();
   });
 
-  it("Min plan: öppna uppgifter först, med sammanhang, och ett tomläge med länk till Pulsen", async () => {
+  it("Min plan: en grupp per nyhet, egna uppgifter för sig, helt avbockade grupper sist", async () => {
     getStepsMock.mockResolvedValue(steps);
     getPlanItemsMock.mockResolvedValue([
-      { id: "a", text: "Läs villkoren", context: "Bidrag till laddboxar", done: false, createdAtIso: "2026-10-03T10:00:00Z" },
-      { id: "b", text: "Skriv in sista ansökningsdag", context: null, done: true, createdAtIso: "2026-10-03T10:00:00Z" },
+      { id: "a", text: "Läs villkoren", context: "Bidrag till laddboxar", origin: "pulsen", done: false, createdAtIso: "" },
+      { id: "b", text: "Ring banken", context: "Räntebesked", origin: "pulsen", done: true, createdAtIso: "" },
+      { id: "c", text: "Ring Riksbyggen", context: null, origin: "own", done: false, createdAtIso: "" },
     ]);
     await renderPage();
     expect(screen.getByRole("heading", { name: sv.journeyPage.plan.title })).toBeInTheDocument();
-    const boxes = screen.getAllByRole("checkbox");
-    expect(boxes[0]).not.toBeChecked();
-    expect(boxes[1]).toBeChecked();
-    expect(screen.getByText(`${sv.journeyPage.plan.from}: Bidrag till laddboxar`)).toBeInTheDocument();
+    const titles = Array.from(document.querySelectorAll(".fdd-myplan-group__title")).map((node) => node.textContent);
+    expect(titles).toEqual(["Bidrag till laddboxar", sv.journeyPage.plan.ownGroup, "Räntebesked"]);
+    // En helt avbockad grupp är ihopfälld.
+    expect(document.querySelectorAll("details.fdd-myplan-group")[2]).not.toHaveAttribute("open");
+    expect(screen.getAllByRole("link", { name: sv.journeyPage.plan.help })[0]).toHaveAttribute(
+      "href",
+      "/app/medgrundaren?task=a",
+    );
+    expect(screen.getByRole("textbox", { name: sv.journeyPage.plan.addLabel })).toBeInTheDocument();
+  });
 
-    cleanup();
+  it("Min plan utan uppgifter: tomläge med länk till Pulsen och fältet för en egen uppgift", async () => {
+    getStepsMock.mockResolvedValue(steps);
     getPlanItemsMock.mockResolvedValue([]);
     await renderPage();
     expect(screen.getByText(sv.journeyPage.plan.empty, { exact: false })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: sv.journeyPage.plan.openPulse })).toHaveAttribute("href", "/app/pulsen");
+    expect(screen.getByRole("button", { name: sv.journeyPage.plan.addButton })).toBeDisabled();
   });
 });

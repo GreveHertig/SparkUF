@@ -548,3 +548,25 @@ Uppdrag från Bruno (2026-10-03). Se `docs/moduler/webbresearch-och-pulsen.md`
   granskningen av #70). Varje svar sparas som `{answer, answered_at}`, där
   `answered_at` sätts av databasen. Ett svar utan tid visar källan "Din
   uppgift" utan datum (`SourceTag` med tomt `hämtad`), aldrig ett påhittat.
+
+**Min plan, version 2 (gren `modul/min-plan-v2`, väntar på granskning).**
+Uppdrag från Bruno (2026-10-03). Se `docs/moduler/min-plan.md`.
+- **Grupper per nyhet.** Rubriken visas en gång och stegen under. Egna
+  uppgifter och uppgifter utan sammanhang får egna grupper. Helt avbockade
+  grupper hamnar sist och är ihopfällda. Inga räknare ("2 av 4"), så att
+  ingen ny siffra behöver källa.
+- **"Hjälp mig med det här"** på varje öppen uppgift, och på Hem: länk till
+  `/app/medgrundaren?task=<uuid>`. Uppgiften letas upp i grundarens egen plan
+  på servern och blir en förifylld fråga. Inget skickas förrän grundaren
+  trycker Skicka.
+- **Ändra och egna uppgifter.** Porten `PlanRepository` får `updateText`, och
+  `PlanItem` får `origin`. Nytt ursprung `own` (migrering
+  `20261003210000_plan_items_egna.sql`, vidgar bara check-villkoret, RLS och
+  policyerna är oförändrade). Samma text två gånger från samma ursprung nekas.
+- **"Nästa i din plan" på Hem:** första öppna uppgiften, med länk till
+  Medgrundaren och till planen i Resan. Inget kort utan öppna uppgifter.
+- **Rättat från förra versionen:** Min plans CSS använde klassen `.fdd-plan`,
+  som Affärsplanen redan använder, och skrev över dess rutnät. Min plan heter
+  nu `.fdd-myplan`.
+- **Ingen poäng för avbockade uppgifter.** Poängen kommer bara från bevis med
+  källa; en ikryssad ruta är inget bevis.

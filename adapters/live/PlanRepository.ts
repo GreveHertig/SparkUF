@@ -1,6 +1,7 @@
 import type { NewPlanItem, PlanItem, PlanRepository } from "@/ports/PlanRepository";
 import { PLAN_ITEM_CONTEXT_MAX, PLAN_ITEM_TEXT_MAX, PLAN_MAX_OPEN, PLAN_ORIGINS } from "@/core/plan";
-import { NotImplementedError, PlanLimitError } from "@/core/errors";
+import { NotImplementedError, PlanLimitError, PlanTextError } from "@/core/errors";
+import type { PlanOrigin } from "@/core/plan";
 import { cleanText } from "@/core/text";
 import { requireSupabaseUser } from "@/lib/server/session";
 
@@ -28,6 +29,7 @@ type PlanRow = {
   id: string;
   text: string;
   context: string | null;
+  origin: string;
   origin_ref: string | null;
   done: boolean;
   created_at: string;
@@ -39,7 +41,7 @@ async function readRows(): Promise<PlanRow[]> {
   const { supabase, userId } = await requireSupabaseUser();
   const { data, error } = await supabase
     .from(TABLE)
-    .select("id, text, context, origin_ref, done, created_at")
+    .select("id, text, context, origin, origin_ref, done, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: true })
     .limit(MAX_READ);
@@ -54,6 +56,8 @@ export const livePlanRepository: PlanRepository = {
       id: row.id,
       text: row.text,
       context: row.context,
+      // En okänd sort (en framtida migrering) visas som en egen uppgift, aldrig som en krasch.
+      origin: (PLAN_ORIGINS.includes(row.origin as PlanOrigin) ? row.origin : "own") as PlanOrigin,
       done: row.done === true,
       createdAtIso: row.created_at,
     }));
@@ -108,6 +112,26 @@ export const livePlanRepository: PlanRepository = {
       added += 1;
     }
     return added;
+  },
+
+  async updateText(id: string, text: string): Promise<void> {
+    if (!UUID_PATTERN.test(id)) throw new Error("Min plan: ogiltigt id.");
+    if (typeof text !== "string") throw new PlanTextError("empty");
+    const cleaned = cleanText(text, PLAN_ITEM_TEXT_MAX);
+    if (!cleaned) throw new PlanTextError("empty");
+    const rows = await readRows();
+    const item = rows.find((row) => row.id === id);
+    if (!item) return;
+    if (item.text === cleaned) return;
+    const clash = rows.some((row) => row.id !== id && key(row.text, row.origin_ref) === key(cleaned, item.origin_ref));
+    if (clash) throw new PlanTextError("duplicate");
+    const { supabase, userId } = await requireSupabaseUser();
+    const { error } = await supabase.from(TABLE).update({ text: cleaned }).eq("id", id).eq("user_id", userId);
+    if (error) {
+      // Samma text från samma ursprung finns redan (unikt index).
+      if (error.code === "23505") throw new PlanTextError("duplicate");
+      throw failure(error, "ändra uppgiften");
+    }
   },
 
   async setDone(id: string, done: boolean): Promise<void> {

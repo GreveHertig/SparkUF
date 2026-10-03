@@ -6,6 +6,8 @@ export type PlanItem = {
   text: string;
   /** Varifrån uppgiften kom, till exempel signalens rubrik. Ren text. */
   context: string | null;
+  /** Spelbok i Pulsen eller grundarens egen uppgift. Resan grupperar efter det. */
+  origin: PlanOrigin;
   done: boolean;
   createdAtIso: string;
 };
@@ -20,8 +22,8 @@ export type NewPlanItem = {
 };
 
 /**
- * Min plan (docs/moduler/min-plan.md): uppgifter som grundaren lägger till,
- * i dag från en spelbok i Pulsen, och bockar av i Resan. Liveadapter bygger
+ * Min plan (docs/moduler/min-plan.md): uppgifter som grundaren lägger till
+ * från en spelbok i Pulsen eller skriver själv, ändrar och bockar av i Resan. Liveadapter bygger
  * på Supabase (`public.plan_items`). Användaren tas alltid ur sessionen, aldrig
  * ur indata. Ny port, eget beslut (docs/beslut.md 2026-10-03).
  */
@@ -36,6 +38,12 @@ export interface PlanRepository {
    * till någon.
    */
   addItems(items: NewPlanItem[]): Promise<number>;
+  /**
+   * Byter texten på en uppgift (grundarens egen formulering). Ett okänt id gör
+   * ingenting. Kastar `PlanTextError("empty")` för en tom text och
+   * `PlanTextError("duplicate")` när samma text redan finns från samma ursprung.
+   */
+  updateText(id: string, text: string): Promise<void>;
   /** Bockar av en uppgift, eller tillbaka. Ett okänt id gör ingenting. */
   setDone(id: string, done: boolean): Promise<void>;
   /** Tar bort en uppgift. Ett okänt id gör ingenting. */

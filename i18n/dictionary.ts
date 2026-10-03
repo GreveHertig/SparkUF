@@ -163,6 +163,11 @@ export type Dictionary = {
     /** Pillen ovanpå handlingskortet (artefaktens `actHTML`: "Gör det här nu"). */
     actNowLabel: string;
     sinceLastTimeTitle: string;
+    /** Kortet "Nästa i din plan" (bara /app, docs/moduler/min-plan.md). */
+    planTitle: string;
+    planFrom: string;
+    planSeeAll: string;
+    planHelp: string;
     emailSentLabel: string;
     openRateLabel: string;
     reminderSentLabel: string;
@@ -269,6 +274,20 @@ export type Dictionary = {
       markOpen: string;
       remove: string;
       failed: string;
+      /** Grupperna: egna uppgifter, och uppgifter utan sammanhang. */
+      ownGroup: string;
+      otherGroup: string;
+      /** Länken till Medgrundaren med uppgiften som förifylld fråga. */
+      help: string;
+      edit: string;
+      save: string;
+      cancel: string;
+      editLabel: string;
+      addTitle: string;
+      addLabel: string;
+      addPlaceholder: string;
+      addButton: string;
+      errors: { empty: string; duplicate: string; full: string; failed: string };
     };
   };
   cofounderPage: {
@@ -298,6 +317,11 @@ export type Dictionary = {
       signalDraft: string;
       /** Som signalDraft, utan aktivt projekt. */
       signalDraftNoProject: string;
+      /** Förifylld fråga från en uppgift i Min plan. `{task}`, `{project}`. */
+      taskDraft: string;
+      taskDraftNoProject: string;
+      /** Läggs till när uppgiften kom från en nyhet. `{context}`. */
+      taskDraftContext: string;
     };
     /** Etiketter för raderna i "Sedan tidigare" på /app, före grundarens egen text. */
     known: {

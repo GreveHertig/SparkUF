@@ -12,6 +12,6 @@ export const PLAN_ITEM_CONTEXT_MAX = 200;
 /** Högst så många uppgifter som inte är avbockade. En spelbok har fyra till fem steg. */
 export const PLAN_MAX_OPEN = 50;
 
-/** Var en uppgift kom ifrån. I dag bara Pulsens spelböcker. */
-export const PLAN_ORIGINS = ["pulsen"] as const;
+/** Var en uppgift kom ifrån: en spelbok i Pulsen, eller grundaren själv. */
+export const PLAN_ORIGINS = ["pulsen", "own"] as const;
 export type PlanOrigin = (typeof PLAN_ORIGINS)[number];

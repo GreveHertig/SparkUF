@@ -242,6 +242,18 @@ export class PlanLimitError extends Error {
 }
 
 /**
+ * Kastas av Min plan (ports/PlanRepository.ts) när en ny eller ändrad text är
+ * tom, eller samma som en annan uppgift från samma ursprung. Skärmen visar en
+ * text ur i18n (docs/moduler/min-plan.md).
+ */
+export class PlanTextError extends Error {
+  constructor(readonly reason: "empty" | "duplicate") {
+    super(`Min plan: texten gick inte att spara (${reason}).`);
+    this.name = "PlanTextError";
+  }
+}
+
+/**
  * Kastas av Medgrundarens liveadapter (adapters/live/CofounderAgent.ts) när
  * Gemini inte svarar eller svaret inte går att lita på. Meddelandet är alltid
  * fast och innehåller aldrig modellens råtext (docs/moduler/medgrundaren.md,

@@ -2,7 +2,7 @@ import { expect, vi } from "vitest";
 import type { PlanRepository } from "./PlanRepository";
 import { createDemoPlanRepository } from "@/adapters/demo/PlanRepository";
 import { livePlanRepository } from "@/adapters/live/PlanRepository";
-import { PlanLimitError } from "@/core/errors";
+import { PlanLimitError, PlanTextError } from "@/core/errors";
 import { PLAN_MAX_OPEN } from "@/core/plan";
 import { describeContract, contractIt } from "./testContract";
 import { makeSupabaseFake } from "@/test/stubs/supabaseFake";
@@ -89,6 +89,29 @@ describeContract<PlanRepository>(
       const item = (await plan.getItems()).find((entry) => entry.text === "Tas bort")!;
       await plan.removeItem(item.id);
       expect((await plan.getItems()).some((entry) => entry.id === item.id)).toBe(false);
+    });
+
+    contractIt("en egen uppgift har ursprunget own och inget sammanhang", async () => {
+      expect(await plan.addItems([{ text: "Ring Riksbyggen", origin: "own" }])).toBe(1);
+      const own = (await plan.getItems()).find((item) => item.text === "Ring Riksbyggen")!;
+      expect(own.origin).toBe("own");
+      expect(own.context).toBeNull();
+      expect(await plan.addItems([{ text: "ring riksbyggen", origin: "own" }])).toBe(0);
+    });
+
+    contractIt("updateText byter texten, nekar tom text och en text som redan finns från samma ursprung", async () => {
+      await plan.addItems([
+        { text: "Gammal text", context: "Ändra", origin: "pulsen", originRef: ref(7) },
+        { text: "Redan här", context: "Ändra", origin: "pulsen", originRef: ref(7) },
+      ]);
+      const item = (await plan.getItems()).find((entry) => entry.text === "Gammal text")!;
+      await plan.updateText(item.id, "  Ny text för Laddkollen  ");
+      const after = (await plan.getItems()).find((entry) => entry.id === item.id)!;
+      expect(after.text).toBe("Ny text för Laddkollen");
+      expect(after.origin).toBe("pulsen");
+      await expect(plan.updateText(item.id, "   ")).rejects.toBeInstanceOf(PlanTextError);
+      await expect(plan.updateText(item.id, "REDAN här")).rejects.toBeInstanceOf(PlanTextError);
+      expect((await plan.getItems()).find((entry) => entry.id === item.id)!.text).toBe("Ny text för Laddkollen");
     });
 
     contractIt("över taket för öppna uppgifter läggs ingen till", async () => {

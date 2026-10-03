@@ -19,6 +19,8 @@ vi.mock("@/adapters/live/CofounderAgent", () => ({
   liveCofounderAgent: { sendMessage: sendMessageMock },
 }));
 
+const getPlanItemsMock = vi.hoisted(() => vi.fn());
+vi.mock("@/adapters/live/PlanRepository", () => ({ livePlanRepository: { getItems: getPlanItemsMock } }));
 const getSignalsMock = vi.hoisted(() => vi.fn());
 vi.mock("@/adapters/live/PulseProvider", () => ({ livePulseProvider: { getSignals: getSignalsMock } }));
 
@@ -142,6 +144,30 @@ describe("/app/medgrundaren (version 1)", () => {
     render(
       <LocaleProvider>
         {await LiveCofounderPage({ searchParams: Promise.resolve({ signal: "00000000-0000-4000-8000-000000000010" }) })}
+      </LocaleProvider>,
+    );
+    expect(screen.getByRole("textbox")).toHaveValue("");
+  });
+
+  it("från Min plan: grundarens egen uppgift förifyller frågan", async () => {
+    const id = "00000000-0000-4000-8000-000000000011";
+    getPlanItemsMock.mockResolvedValue([
+      { id, text: "Ring HSB", context: null, origin: "own", done: false, createdAtIso: "" },
+    ]);
+    const { default: LiveCofounderPage } = await import("./page");
+    render(<LocaleProvider>{await LiveCofounderPage({ searchParams: Promise.resolve({ task: id }) })}</LocaleProvider>);
+    expect(screen.getByRole("textbox")).toHaveValue(
+      'Hjälp mig med uppgiften "Ring HSB" i min plan. Hur gör jag den konkret för min idé, och vad gör jag först?',
+    );
+    expect(sendMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("en uppgift som inte är grundarens ger ett tomt fält", async () => {
+    getPlanItemsMock.mockResolvedValue([]);
+    const { default: LiveCofounderPage } = await import("./page");
+    render(
+      <LocaleProvider>
+        {await LiveCofounderPage({ searchParams: Promise.resolve({ task: "00000000-0000-4000-8000-000000000012" }) })}
       </LocaleProvider>,
     );
     expect(screen.getByRole("textbox")).toHaveValue("");
