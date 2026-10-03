@@ -164,3 +164,80 @@ describe("ett avvisat anrop loggas med Googles felbeskrivning", () => {
     log.mockRestore();
   });
 });
+
+describe("omförsök vid 503 och 429", () => {
+  async function apiError(status: number, details?: unknown[]) {
+    const { ApiError } = await import("@google/genai");
+    return new ApiError({
+      message: JSON.stringify({ error: { code: status, status: status === 429 ? "RESOURCE_EXHAUSTED" : "UNAVAILABLE", message: "x", details } }),
+      status,
+    });
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it("503 försöks om med backoff och lyckas på tredje försöket", async () => {
+    const { generateText } = await import("./gemini");
+    generateContentMock
+      .mockRejectedValueOnce(await apiError(503))
+      .mockRejectedValueOnce(await apiError(503))
+      .mockResolvedValueOnce(response("Hej!"));
+    const result = generateText({ systemInstruction: "s", turns: [{ role: "user", text: "Hej" }] });
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(generateContentMock).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(3_000);
+    await expect(result).resolves.toBe("Hej!");
+    expect(generateContentMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("högst två omförsök: tredje 503 visas som fel", async () => {
+    const { generateText } = await import("./gemini");
+    const third = await apiError(503);
+    generateContentMock
+      .mockRejectedValueOnce(await apiError(503))
+      .mockRejectedValueOnce(await apiError(503))
+      .mockRejectedValueOnce(third);
+    const result = generateText({ systemInstruction: "s", turns: [{ role: "user", text: "Hej" }] });
+    const settled = expect(result).rejects.toBe(third);
+    await vi.advanceTimersByTimeAsync(4_000);
+    await settled;
+    expect(generateContentMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("429 väntar retryDelay när den är högst 10 s", async () => {
+    const { generateJson } = await import("./gemini");
+    const retryInfo = { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "7s" };
+    generateContentMock.mockRejectedValueOnce(await apiError(429, [retryInfo])).mockResolvedValueOnce(response("{}"));
+    const result = generateJson({ systemInstruction: "s", userText: "u", responseJsonSchema: {} });
+    await vi.advanceTimersByTimeAsync(6_900);
+    expect(generateContentMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(200);
+    await expect(result).resolves.toBe("{}");
+    expect(generateContentMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("429 med retryDelay över 10 s visas som fel direkt, utan att vänta", async () => {
+    const { generateJson } = await import("./gemini");
+    const error = await apiError(429, [{ "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "47s" }]);
+    generateContentMock.mockRejectedValueOnce(error);
+    await expect(generateJson({ systemInstruction: "s", userText: "u", responseJsonSchema: {} })).rejects.toBe(error);
+    expect(generateContentMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("400 försöks aldrig om", async () => {
+    const { generateJson } = await import("./gemini");
+    const error = await apiError(400);
+    generateContentMock.mockRejectedValueOnce(error);
+    await expect(generateJson({ systemInstruction: "s", userText: "u", responseJsonSchema: {} })).rejects.toBe(error);
+    expect(generateContentMock).toHaveBeenCalledTimes(1);
+  });
+});

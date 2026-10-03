@@ -37,3 +37,13 @@ Kontrollerat mot Googles dokumentation för Gemini 3.8 Flash (ai.google.dev/gemi
 - Utan `temperature: 0` är Juridisk kolls JSON-svar inte längre så nära deterministiska som förut. Svaren valideras fortfarande mot zod-schemat.
 
 Återstår: Erik kör live-testerna igen. Faller de fortfarande, står fältet i loggens `details`.
+
+### Tillägg 2: omförsök, live-tester i sekvens och felsökning av 400 i generateJson (2026-10-03)
+Eriks nya körning: `generateText` (Medgrundaren) har inget 400 längre, bara 503 UNAVAILABLE ("high demand") och 429 RESOURCE_EXHAUSTED (gratisnivån, 5 anrop i minuten, retryDelay 47 s). `generateJson` (Juridisk koll) ger fortfarande 400 INVALID_ARGUMENT, utan `details`, i 4 av 5 tester.
+
+- **Omförsök** i `lib/server/gemini.ts` (`withRetry`): högst två omförsök vid 503 (väntar 1 s, sedan 3 s) och 429 (väntar `retryDelay` ur Googles RetryInfo om den är högst 10 s, annars visas felet direkt). 400 och övriga fel försöks aldrig om. Varje försök får en egen timeout. Omförsöken loggas med `console.warn`, och det sista felet loggas som förut med `details`.
+- **Live-testerna i sekvens:** nytt skript `pnpm test:live:gemini` (`vitest run --no-file-parallelism` på `LegalAdvisor.live.test.ts` och `CofounderAgent.live.test.ts`). `test/geminiLivePace.ts` håller 13 s mellan anropen, också över testfilerna (tiden sparas i en fil i tmp). Testernas timeout höjd till 90 s för omförsöken. Provat med en ogiltig nyckel: sju anrop i sekvens på 80 s, varje 400 loggat en gång och inte omförsökt. I CI hoppas de över som förut.
+- **400 i generateJson:** schemat som Juridisk koll skickar har inga `$ref`, inga icke-ASCII-namn och inga `format`/`pattern`. Misstänkta: `additionalProperties: false`, `maxItems`, `minLength`/`maxLength`, eller att JSON-läget inte går ihop med `thinkingConfig` eller `maxOutputTokens: 8192`. Felsökningsskriptet `scratchpad/gemini-schema-probe.mjs` (gitignorerat, med schemat i `scratchpad/legal-schema.json`) provar tio steg ett i taget och skriver ut Googles svar för varje. Kör: `set -a && . ./.env.local && set +a && node scratchpad/gemini-schema-probe.mjs`. Ej kört av agenten (ingen nyckel).
+- Tester i `lib/server/geminiModel.test.ts`: 503 försöks om och lyckas, högst två omförsök, 429 väntar en kort retryDelay, 429 med 47 s visas direkt, 400 försöks aldrig om.
+
+Återstår: kör felsökningsskriptet och live-testerna, och rätta schemat eller anropet efter det som skriptet visar.
