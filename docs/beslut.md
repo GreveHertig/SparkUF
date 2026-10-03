@@ -603,3 +603,37 @@ Uppdrag från Bruno (2026-10-04). Se `docs/moduler/webbresearch-och-pulsen.md`
   Utan den fungerar allt som förut.
 - Porten `PulseProvider` fick den valfria `getLearning`, `PulseSignal` fick
   `boosted`, `whyByAi` och `deadline`, och `PlanRepository` fick `due`.
+
+> Förslag från sessionen "Marknad låser upp steg 03" (gren `modul/marknad-steg3`).
+> Godkänns eller nekas i PR:en.
+
+**Systembevis skrivs av servern med service role (`lib/server/systemEvidence.ts`).**
+`public.record_evidence` vägrar medvetet registersorterna, så att en grundare
+aldrig kan skriva in egna registersiffror. Det betyder att ingen väg fanns för
+systemets egna bevis, och att steg 03 och 04 inte gick att klara. Servern
+skriver dem nu med `SUPABASE_SERVICE_ROLE_KEY`, samma mönster som
+`lib/server/scoreSnapshots.ts`. Skydden: bara sorter som är `system` i
+`core/evidenceKinds.ts`, användare och projekt ur sessionen, https-länk till
+källan (bevislagring 7.3c), triggern sätter del, datatyp och poäng, och
+lint-regeln tillåter bara `adapters/live/EvidenceRecorder.ts` att importera
+filen. Marknadsbilden hämtas på nytt på servern med licensgrinden innan något
+sparas, aldrig mottagen från webbläsaren. Vakten i `lib/server/registryCache.test.ts`
+har fått filen som tredje tillåtna läsare. Ingen ny migrering.
+
+**SCB:s bolagslista per bransch är ett platshållarfel tills den byggs.**
+Före 2026-10-04 kastade `fetchCompanies` ett riktigt `RegistryTransportError`
+eftersom ingenting i SCB-transporten fanns. Nu finns antalet per bransch
+(`fetchCompanyCount`, `/count`, ett anrop, inga namn) och branschsökningen ur
+kodtabellen. Hela listan kräver 26–32 sidor i tur och ordning och därmed cache,
+som väntar på SCB:s villkor. Den kastar därför `ScbListingUnavailableError`
+(ärver `NotImplementedError`): sektionerna som behöver listan visar "Kommer
+snart", och marknadsbilden visar antalet med resten som luckor.
+
+**Grundarens bransch är den som det senaste giltiga registerbeviset gäller.**
+Ingen ny kolumn på `projects`: `subject_ref` på `registerMarketCount`
+("sni:69.201") är redan branschen. Byter grundaren bransch återkallas de gamla
+registerbevisen, så att två branscher aldrig ger dubbelt underlag till samma del.
+
+**"Det här är min bransch" klarar steg 03 (och 04) direkt** när det är det
+aktuella steget och kraven håller, i samma server action. Databasen prövar
+kraven igen i `public.complete_journey_step`.

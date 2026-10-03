@@ -474,6 +474,26 @@ export type Dictionary = {
     sniPrompt: string;
     sniInvalid: string;
     sniChooseFirst: string;
+    /** Branschsökningen och valet av bransch i /app (steg 03). */
+    industry: {
+      searchLabel: string;
+      searchPlaceholder: string;
+      searchSubmit: string;
+      /** Platshållare: {query}. */
+      searchEmptyTemplate: string;
+      resultsLabel: string;
+      orCodeLabel: string;
+      chosenLabel: string;
+      chooseCta: string;
+      chooseHint: string;
+      noCompanies: string;
+      saved: string;
+      /** Platshållare: {step}. */
+      savedStepDoneTemplate: string;
+      openJourneyCta: string;
+      saveFailed: string;
+      competitorsLater: string;
+    };
     dataLayers: {
       title: string;
       registerName: string;

@@ -9,7 +9,15 @@ import type {
 import { RegistryInputError, RegistryTransportError } from "@/core/errors";
 import { cleanText } from "@/core/text";
 import { assertRegistryAccessAllowed } from "@/lib/server/registryAccess";
-import { fetchCompanies } from "@/lib/server/scb";
+import {
+  fetchCompanies,
+  fetchCompanyCount,
+  fetchIndustryName,
+  fromAfrSni,
+  searchIndustries,
+  SCB_REGISTER_INFO_URL,
+  ScbListingUnavailableError,
+} from "@/lib/server/scb";
 import { fetchAnnualFigures } from "@/lib/server/bolagsverket";
 import {
   AKTIEBOLAG_FORM,
@@ -95,10 +103,30 @@ function median(values: number[]): number {
   return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
 }
 
+/** Antalet kommer bara från SCB:s företagsregister, inte från Bolagsverket. */
+const COUNT_SOURCE_NAME: Record<Locale, string> = {
+  sv: "SCB:s företagsregister",
+  en: "Statistics Sweden (SCB) business register",
+};
+
 const SOURCE_NAME: Record<Locale, string> = {
   sv: "Bolagsverket och SCB",
   en: "Bolagsverket and Statistics Sweden (SCB)",
 };
+
+/** Marknadsbilden när bara SCB:s antal finns: antalet med källa, resten luckor. */
+function countOnlyOverview(locale: Locale, companyCount: number): MarketOverview {
+  return {
+    companyCount,
+    medianRevenueKsek: 0,
+    growthSharePercent: 0,
+    regionSharePercent: 0,
+    // Länken gör beviset kontrollerbart (docs/bevislagring.md 7.3c).
+    source: { namn: COUNT_SOURCE_NAME[locale], hämtad: new Date().toISOString().slice(0, 10), url: SCB_REGISTER_INFO_URL },
+    competitors: [],
+    basis: { medianRevenueCompanies: 0, growthCompanies: 0, regionCompanies: 0 },
+  };
+}
 
 export const liveRegistryProvider: RegistryProvider = {
   async searchCompanies(query: RegistryQuery): Promise<RegistryCompany[]> {
@@ -150,7 +178,20 @@ export const liveRegistryProvider: RegistryProvider = {
     await assertRegistryAccessAllowed();
     const sni = sniCode === undefined ? undefined : requireSni(sniCode);
 
-    const all = parseRows(await fetchCompanies({ sniCode: sni }));
+    let listing: unknown;
+    try {
+      listing = await fetchCompanies({ sniCode: sni });
+    } catch (error) {
+      // Hela bolagslistan är inte byggd än (lib/server/scb.ts). För en vald
+      // bransch finns ändå SCB:s eget antal, i ett anrop och utan namn: det
+      // räcker för steg 03. Allt som kräver listan blir en lucka (basis 0),
+      // inga konkurrenter, aldrig en gissning. Utan bransch finns inget att räkna.
+      if (error instanceof ScbListingUnavailableError && sni !== undefined) {
+        return countOnlyOverview(locale, await fetchCompanyCount(sni));
+      }
+      throw error;
+    }
+    const all = parseRows(listing);
     const active = all.filter((r) => !r.deregistered && (sni === undefined || r.sniCode === sni));
 
     // Regionandel: andelen bolag i Stockholmsregionen av de bolag där län är känt.
@@ -210,3 +251,23 @@ export const liveRegistryProvider: RegistryProvider = {
     };
   },
 };
+
+/** En bransch i appens form ("69.201") med SCB:s namn. */
+export type LiveIndustry = { sniCode: string; name: string };
+
+/**
+ * Branscher vars namn matchar en sökning ("elinstallation"), ur SCB:s
+ * kodtabell. Utanför porten: bara /app har en branschsökning, demot har Saras
+ * fasta bransch. Samma licensgrind som allt annat i registret.
+ */
+export async function searchLiveIndustries(text: string): Promise<LiveIndustry[]> {
+  await assertRegistryAccessAllowed();
+  const hits = await searchIndustries(text);
+  return hits.map((hit) => ({ sniCode: fromAfrSni(hit.code), name: hit.name }));
+}
+
+/** SCB:s namn på en bransch, eller null om koden inte finns. */
+export async function getLiveIndustryName(sniCode: string): Promise<string | null> {
+  await assertRegistryAccessAllowed();
+  return fetchIndustryName(requireSni(sniCode));
+}

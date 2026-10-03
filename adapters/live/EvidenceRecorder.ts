@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { EvidenceRecorder, EvidenceView, RecordEvidenceInput, RecordEvidenceResult } from "@/ports/EvidenceRecorder";
 import type { Locale } from "@/i18n/context";
 import type { ScoreSnapshot } from "@/core/domain";
+import type { EvidenceKind } from "@/core/evidenceKinds";
 import { ALL_PART_IDS, type ScorePartId } from "@/core/score";
 import { EVIDENCE_KINDS, founderMayRecord, isEvidenceKind, isSelfReported } from "@/core/evidenceKinds";
 import { cleanText } from "@/core/text";
@@ -9,6 +10,8 @@ import { EmptyStateError } from "@/core/errors";
 import { requireSupabaseUser } from "@/lib/server/session";
 import { getActiveProjectId } from "@/lib/server/activeProject";
 import { writeScoreSnapshot } from "@/lib/server/scoreSnapshots";
+import { retractSystemEvidence, writeSystemEvidence } from "@/lib/server/systemEvidence";
+import type { MarketOverview } from "@/ports/RegistryProvider";
 import { liveMemoryRepository } from "@/adapters/live/MemoryRepository";
 import { fill } from "@/i18n/fill";
 import { sv } from "@/i18n/sv";
@@ -260,3 +263,97 @@ export const liveEvidenceRecorder: EvidenceRecorder = {
       });
   },
 };
+
+// ---------------------------------------------------------------- systembevis
+
+const MARKET_MODULE = "Marknad";
+const REGISTER_KINDS: readonly EvidenceKind[] = ["registerMarketCount", "registerMarketRevenue", "registerCompetitorSet"];
+const SNI_PATTERN = /^\d{2}\.\d{3}$/;
+/** Sparas i retracted_reason, som annan serverskriven text i databasen. */
+const REASON_NEW_INDUSTRY = "Grundaren valde en annan bransch.";
+const REASON_REFETCHED = "För gammalt, hämtat igen ur registret.";
+
+export type MarketEvidenceResult = {
+  /** "recorded": minst ett nytt bevis. "duplicate": samma bransch fanns redan.
+   * "noData": registret gav inget att spara (0 bolag), inget ändrades. */
+  status: "recorded" | "duplicate" | "noData";
+  snapshot: ScoreSnapshot;
+};
+
+/**
+ * Grundaren väljer sin bransch på /app/marknad (docs/bevislagring.md 5.1,
+ * "Marknad, Konkurrens"). Marknadsbilden ska vara hämtad på SERVERN av
+ * registrets liveadapter, med licensgrinden, aldrig mottagen från webbläsaren:
+ * siffrorna här blir poäng.
+ *
+ * - Antalet bolag blir `registerMarketCount` (steg 03), konkurrenterna
+ *   `registerCompetitorSet` (steg 04). `subjectRef` är branschen ("sni:69.201").
+ * - Systembevis för en annan bransch återkallas: en grundare har en bransch,
+ *   och två branscher skulle ge dubbelt underlag till samma del.
+ * - Ett föråldrat bevis för samma bransch återkallas och hämtas på nytt.
+ * - Poängen räknas om och en snapshot skrivs, som för grundarens egna bevis.
+ */
+export async function recordMarketEvidence(
+  sniCode: string,
+  overview: MarketOverview,
+  locale: Locale,
+): Promise<MarketEvidenceResult> {
+  if (!SNI_PATTERN.test(sniCode)) throw new EvidenceInputError("Ogiltig SNI-kod.");
+  if (!overview.source.url) throw new EvidenceInputError("Registrets källa saknar länk.");
+  const context = await requireProject();
+  const before = await computeScore(context.supabase, context.userId, context.projectId, locale);
+  const subjectRef = `sni:${sniCode}`;
+  const ids = { userId: context.userId, projectId: context.projectId };
+
+  const writes: { kind: EvidenceKind; quote: string; stepNumber: number }[] = [];
+  if (overview.companyCount > 0) {
+    writes.push({ kind: "registerMarketCount", quote: String(overview.companyCount), stepNumber: 3 });
+  }
+  const names = overview.competitors.map((competitor) => cleanText(competitor.name, 100)).filter(Boolean);
+  if (names.length > 0) {
+    writes.push({ kind: "registerCompetitorSet", quote: cleanText(names.join(", "), MAX_QUOTE), stepNumber: 4 });
+  }
+  if (writes.length === 0) return { status: "noData", snapshot: withPrevious(before, { total: before.snapshot.total }) };
+
+  let changed = false;
+  for (const row of before.rows) {
+    if (row.retracted_at !== null || row.entered_by !== "system" || !REGISTER_KINDS.includes(row.kind as EvidenceKind)) continue;
+    const otherIndustry = row.subject_ref !== subjectRef;
+    const stale = before.status[row.id] === "stale";
+    if (otherIndustry || stale) {
+      await retractSystemEvidence({ ...ids, evidenceId: row.id, reason: otherIndustry ? REASON_NEW_INDUSTRY : REASON_REFETCHED });
+      changed = true;
+    }
+  }
+
+  let recorded = false;
+  for (const write of writes) {
+    const status = await writeSystemEvidence({
+      ...ids,
+      kind: write.kind,
+      subjectRef,
+      sourceName: overview.source.namn,
+      sourceUrl: overview.source.url,
+      fetchedAt: overview.source.hämtad,
+      quote: write.quote,
+      module: MARKET_MODULE,
+      stepNumber: write.stepNumber,
+    });
+    if (status === "recorded") recorded = true;
+  }
+
+  if (!recorded && !changed) {
+    return { status: "duplicate", snapshot: withPrevious(before, { total: before.snapshot.total }) };
+  }
+
+  const snapshot = await settleScore(context, before, locale, "recorded:registerMarketCount");
+  const copy = dictionaries[locale].evidence;
+  if (recorded) {
+    await liveMemoryRepository.recordTraceEvent({
+      module: MARKET_MODULE,
+      description: fill(copy.trace.recorded, { kind: copy.kinds.registerMarketCount, source: overview.source.namn }),
+      occurredAtIso: new Date().toISOString(),
+    });
+  }
+  return { status: recorded ? "recorded" : "duplicate", snapshot };
+}

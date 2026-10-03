@@ -15,7 +15,18 @@ const getCurrentUserMock = vi.hoisted(() => vi.fn());
 const fetchCompaniesMock = vi.hoisted(() => vi.fn());
 const fetchAnnualFiguresMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/server/session", () => ({ getCurrentUser: () => getCurrentUserMock() }));
-vi.mock("@/lib/server/scb", () => ({ fetchCompanies: fetchCompaniesMock }));
+vi.mock("@/lib/server/scb", () => ({
+  fetchCompanies: fetchCompaniesMock,
+  fetchCompanyCount: vi.fn(),
+  fetchIndustryName: async () => null,
+  searchIndustries: async () => [],
+  fromAfrSni: (code: string) => code,
+  ScbListingUnavailableError: class extends Error {},
+  SCB_REGISTER_INFO_URL: "https://www.scb.se/vara-tjanster/foretagsregistret/",
+}));
+vi.mock("@/adapters/live/EvidenceRecorder", () => ({ liveEvidenceRecorder: { listEvidence: async () => [] } }));
+vi.mock("@/app/(app)/app/marknad/actions", () => ({ chooseIndustry: vi.fn() }));
+vi.mock("./actions", () => ({ chooseIndustry: vi.fn() }));
 vi.mock("@/lib/server/bolagsverket", () => ({ fetchAnnualFigures: fetchAnnualFiguresMock }));
 vi.mock("@/adapters/live/JourneyRepository", () => ({
   liveJourneyRepository: {

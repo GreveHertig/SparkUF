@@ -4,6 +4,7 @@ import { ComingSoon } from "@/components/ui/ComingSoon";
 import { ConceptBadge } from "@/components/ui/ConceptBadge";
 import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n, type Locale } from "@/i18n/context";
+import { fill } from "@/i18n/fill";
 import type { Dictionary } from "@/i18n/dictionary";
 import { formatCount, formatSek } from "@/i18n/format";
 import type { DataKind, Källa } from "@/core/domain";
@@ -72,7 +73,31 @@ export type MarketLock = { unlocksAfterStep: number } | "notInScenario" | null;
  * Juridik (docs/plan-en-design.md, beslut 5). `invalid` betyder att adressen
  * hade en kod med fel form; den visas inte tillbaka.
  */
-export type SniPicker = { basePath: string; current: string | null; invalid: boolean };
+export type SniPicker = {
+  basePath: string;
+  current: string | null;
+  invalid: boolean;
+  /** Sökningen på branschens namn (`?q=`), bara i /app. `results` är null
+   * när ingen sökning gjorts eller registret inte svarade. */
+  search?: { query: string; results: { sniCode: string; name: string }[] | null };
+};
+
+/**
+ * Valet "Det här är min bransch" i /app (steg 03). Formuläret postar till en
+ * server action som hämtar marknadsbilden på nytt på servern och sparar
+ * antalet som ett bevis; skärmen skickar bara SNI-koden.
+ */
+export type IndustryChoice = {
+  sniCode: string;
+  /** Redan grundarens valda bransch: knappen ersätts av en etikett. */
+  chosen: boolean;
+  /** Registret har bolag med koden. Utan dem finns inget att spara. */
+  hasCompanies: boolean;
+  action: (formData: FormData) => void | Promise<void>;
+  /** Resultatet av ett nyss gjort val, ur adressen efter omdirigeringen. */
+  outcome: { kind: "saved" } | { kind: "stepDone"; stepNumber: number } | { kind: "failed" } | null;
+  journeyHref: string;
+};
 
 type M = Dictionary["marketPage"];
 type RegistryTag = { source: Källa; dataType: DataType };
@@ -95,11 +120,13 @@ export function Market({
   dataKind,
   locked,
   sniPicker,
+  industryChoice,
 }: {
   data: MarketData;
   dataKind: DataKind;
   locked: MarketLock;
   sniPicker?: SniPicker;
+  industryChoice?: IndustryChoice;
 }) {
   const { t, locale } = useI18n();
   const m = t.marketPage;
@@ -152,6 +179,7 @@ export function Market({
       <PageHead title={title} lede={subtitle} />
 
       {sniPicker && data.registry !== "closed" && <SniForm picker={sniPicker} m={m} />}
+      {industryChoice && overview && <IndustryChoicePanel choice={industryChoice} m={m} />}
 
       <section className="fdd-block" aria-labelledby="fdd-market-kpi">
         <h2 id="fdd-market-kpi" className="fdd-block__title">
@@ -232,6 +260,7 @@ export function Market({
         {overview ? (
           <>
             <ExampleLabel dataKind={dataKind} />
+            {overview.competitors.length === 0 && dataKind === "live" && <p className="fdd-muted">{m.industry.competitorsLater}</p>}
             <ul className="fdd-cells">
               {overview.competitors.map((competitor) => (
                 <li key={competitor.name}>
@@ -396,33 +425,130 @@ function Outreach({
   );
 }
 
-/** Ett vanligt GET-formulär: valet hamnar i adressen och kräver ingen JavaScript. */
+/**
+ * Branschväljaren: sök på namn (`?q=`) eller ange koden (`?sni=`). Två vanliga
+ * GET-formulär: valet hamnar i adressen och kräver ingen JavaScript.
+ */
 function SniForm({ picker, m }: { picker: SniPicker; m: M }) {
+  const search = picker.search;
   return (
-    <form className="fdd-sni" method="get" action={picker.basePath}>
-      <label className="fdd-sni__label" htmlFor="fdd-sni-input">
-        {m.sniPickerLabel}
-      </label>
-      <div className="fdd-sni__row">
-        <input
-          id="fdd-sni-input"
-          className="fdd-input"
-          name="sni"
-          inputMode="decimal"
-          pattern="\d{2}\.\d{3}"
-          placeholder="69.201"
-          defaultValue={picker.current ?? ""}
-          aria-describedby="fdd-sni-hint"
-          aria-invalid={picker.invalid || undefined}
-          required
-        />
-        <button type="submit" className="fd-btn fd-btn--primary fd-btn--sm">
-          {m.sniPickerSubmit}
-        </button>
-      </div>
-      <p id="fdd-sni-hint" className="fdd-muted" role={picker.invalid ? "alert" : undefined}>
-        {picker.invalid ? m.sniInvalid : picker.current === null ? m.sniPrompt : null}
-      </p>
-    </form>
+    <section className="fd-panel fdd-industry">
+      {search && (
+        <form className="fdd-sni" method="get" action={picker.basePath} role="search">
+          <label id="fdd-industry-search" className="fdd-sni__label" htmlFor="fdd-industry-q">
+            {m.industry.searchLabel}
+          </label>
+          <div className="fdd-sni__row">
+            <input
+              id="fdd-industry-q"
+              className="fdd-input"
+              name="q"
+              type="search"
+              placeholder={m.industry.searchPlaceholder}
+              defaultValue={search.query}
+              maxLength={80}
+              minLength={2}
+              required
+            />
+            <button type="submit" className="fd-btn fd-btn--primary fd-btn--sm">
+              {m.industry.searchSubmit}
+            </button>
+          </div>
+          {search.results && search.query && (
+            search.results.length > 0 ? (
+              <div className="fdd-industry__results">
+                <p className="fdd-label">{m.industry.resultsLabel}</p>
+                <ul>
+                  {search.results.map((result) => (
+                    <li key={result.sniCode}>
+                      <a
+                        className={`fdd-industry__hit${result.sniCode === picker.current ? " fdd-industry__hit--current" : ""}`}
+                        href={`${picker.basePath}?sni=${encodeURIComponent(result.sniCode)}`}
+                        aria-current={result.sniCode === picker.current ? "true" : undefined}
+                      >
+                        <span className="fdd-industry__name">{result.name}</span>
+                        <span className="fdd-industry__code">{result.sniCode}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="fdd-muted" role="status">
+                {fill(m.industry.searchEmptyTemplate, { query: search.query })}
+              </p>
+            )
+          )}
+        </form>
+      )}
+      <form className="fdd-sni" method="get" action={picker.basePath}>
+        <label className="fdd-sni__label" htmlFor="fdd-sni-input">
+          {search ? m.industry.orCodeLabel : m.sniPickerLabel}
+        </label>
+        <div className="fdd-sni__row">
+          <input
+            id="fdd-sni-input"
+            className="fdd-input"
+            name="sni"
+            inputMode="decimal"
+            pattern="\d{2}\.\d{3}"
+            placeholder="69.201"
+            defaultValue={picker.current ?? ""}
+            aria-describedby="fdd-sni-hint"
+            aria-invalid={picker.invalid || undefined}
+            required
+          />
+          <button type="submit" className={`fd-btn fd-btn--sm ${search ? "fd-btn--secondary" : "fd-btn--primary"}`}>
+            {m.sniPickerSubmit}
+          </button>
+        </div>
+        <p id="fdd-sni-hint" className="fdd-muted" role={picker.invalid ? "alert" : undefined}>
+          {picker.invalid ? m.sniInvalid : picker.current === null && !search ? m.sniPrompt : null}
+        </p>
+      </form>
+    </section>
+  );
+}
+
+/** "Det här är min bransch": sparar antalet som bevis och klarar steg 03. */
+function IndustryChoicePanel({ choice, m }: { choice: IndustryChoice; m: M }) {
+  const copy = m.industry;
+  const outcome = choice.outcome;
+  return (
+    <section className="fd-panel fdd-industry-choice" aria-live="polite">
+      {outcome?.kind === "stepDone" || outcome?.kind === "saved" ? (
+        <div className="fdd-industry-choice__done">
+          <p>
+            <span className="fdd-check" aria-hidden="true" />
+            {outcome.kind === "stepDone"
+              ? fill(copy.savedStepDoneTemplate, { step: String(outcome.stepNumber).padStart(2, "0") })
+              : copy.saved}
+          </p>
+          <a className="fd-btn fd-btn--primary fd-btn--sm" href={choice.journeyHref}>
+            {copy.openJourneyCta}
+          </a>
+        </div>
+      ) : choice.chosen ? (
+        <p className="fdd-industry-choice__chosen">
+          <span className="fdd-pill fdd-pill--green">{copy.chosenLabel}</span>
+          <span className="fdd-muted">{choice.sniCode}</span>
+        </p>
+      ) : choice.hasCompanies ? (
+        <form action={choice.action} className="fdd-industry-choice__form">
+          <input type="hidden" name="sni" value={choice.sniCode} />
+          <p className="fdd-muted">{copy.chooseHint}</p>
+          <button type="submit" className="fd-btn fd-btn--primary">
+            {copy.chooseCta}
+          </button>
+        </form>
+      ) : (
+        <p className="fdd-muted">{copy.noCompanies}</p>
+      )}
+      {outcome?.kind === "failed" && (
+        <p className="fdd-muted" role="alert">
+          {copy.saveFailed}
+        </p>
+      )}
+    </section>
   );
 }
