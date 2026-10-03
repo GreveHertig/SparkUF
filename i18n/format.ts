@@ -27,6 +27,16 @@ export function formatDate(iso: string, locale: Locale): string {
   }).format(date);
 }
 
+/** "30 november 2026" (sv) / "30 November 2026" (en). För sista ansökningsdag, där året spelar roll. */
+export function formatDateWithYear(iso: string, locale: Locale): string {
+  const date = new Date(`${iso}T00:00:00`);
+  return new Intl.DateTimeFormat(localeTag[locale], {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
 /** "312" / "312" — samma i båda språken, men via Intl för tusentalsavgränsare. */
 export function formatCount(value: number, locale: Locale): string {
   return new Intl.NumberFormat(localeTag[locale]).format(value);

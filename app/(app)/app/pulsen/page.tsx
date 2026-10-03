@@ -36,7 +36,7 @@ import { toPulsePersonal } from "./personal";
  * inte (`optional`).
  */
 export default async function LivePulsePage() {
-  const [signals, watchItems, profile, project, steps, planItems] = await Promise.all([
+  const [signals, watchItems, profile, project, steps, planItems, learning] = await Promise.all([
     orNull(livePulseProvider.getSignals("sv")),
     orNull(livePulseProvider.getWatches!()),
     liveMemoryRepository.getKnownProfile
@@ -45,6 +45,9 @@ export default async function LivePulsePage() {
     optional(liveProjectRepository.getProject(), "Pulsen: projektet"),
     optional(liveJourneyRepository.getSteps("sv"), "Pulsen: Resan"),
     optional(livePlanRepository.getItems(), "Pulsen: Min plan"),
+    livePulseProvider.getLearning
+      ? optional(livePulseProvider.getLearning("sv"), "Pulsen: inlärningen")
+      : Promise.resolve(null),
   ]);
   const available = watchItems !== null;
   return (
@@ -54,6 +57,8 @@ export default async function LivePulsePage() {
       watches={
         available ? { items: watchItems, max: MAX_WATCHES, onAdd: addWatch, onRemove: removeWatch } : null
       }
+      // "Pulsen lär sig" visas bara när omdömet finns (tabellerna finns).
+      learning={available ? learning : null}
       personal={toPulsePersonal({ profile, project, steps }, "sv")}
       cofounderHref="/app/medgrundaren"
       onAddToPlan={planItems !== null ? addPlaybookToPlan : undefined}

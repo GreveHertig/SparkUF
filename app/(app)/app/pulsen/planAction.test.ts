@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PlanLimitError } from "@/core/errors";
 import { sv } from "@/i18n/sv";
 
 const addItemsMock = vi.hoisted(() => vi.fn());
 const revalidatePath = vi.hoisted(() => vi.fn());
-vi.mock("@/adapters/live/PulseProvider", () => ({ livePulseProvider: {} }));
+const getSignalsMock = vi.hoisted(() => vi.fn());
+vi.mock("@/adapters/live/PulseProvider", () => ({ livePulseProvider: { getSignals: getSignalsMock } }));
 vi.mock("@/adapters/live/PlanRepository", () => ({ livePlanRepository: { addItems: addItemsMock } }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 
@@ -13,6 +14,7 @@ import { addPlaybookToPlan } from "./actions";
 const SIGNAL = "00000000-0000-4000-8000-000000000001";
 
 afterEach(() => vi.clearAllMocks());
+beforeEach(() => getSignalsMock.mockResolvedValue([]));
 
 describe("addPlaybookToPlan (Min plan)", () => {
   it("lägger till spelbokens steg ur i18n, med rubriken som sammanhang och signalen som ursprung", async () => {
@@ -25,6 +27,7 @@ describe("addPlaybookToPlan (Min plan)", () => {
         context: "Bidrag",
         origin: "pulsen",
         originRef: SIGNAL,
+        due: null,
       })),
     );
     expect(revalidatePath).toHaveBeenCalledWith("/app/resan");
@@ -66,5 +69,25 @@ describe("addPlaybookToPlan (Min plan)", () => {
     });
     expect(log.mock.calls.flat().join(" ")).not.toContain("hemligt");
     log.mockRestore();
+  });
+
+  it("sista ansökningsdag följer med ur grundarens egen signal, med signalens källa (Pulsen v3)", async () => {
+    getSignalsMock.mockResolvedValue([
+      {
+        id: SIGNAL,
+        category: "",
+        headline: "Bidrag",
+        whyItMatters: "",
+        timestamp: "",
+        source: { namn: "energimyndigheten.se", hämtad: "2026-10-04" },
+        deadline: "2026-11-30",
+      },
+    ]);
+    addItemsMock.mockResolvedValue(4);
+    await addPlaybookToPlan({ signalId: SIGNAL, kind: "opportunity", area: "funding", headline: "Bidrag" });
+    expect(addItemsMock.mock.calls[0][0][0].due).toEqual({
+      date: "2026-11-30",
+      source: { namn: "energimyndigheten.se", hämtad: "2026-10-04" },
+    });
   });
 });

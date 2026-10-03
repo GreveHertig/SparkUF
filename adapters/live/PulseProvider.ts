@@ -7,12 +7,15 @@ import {
   type PulseRiskArea,
   type PulseSignal,
   type PulseWatch,
+  type PulseLearning,
 } from "@/core/domain";
 import type { Locale } from "@/i18n/context";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { EmptyStateError, NotImplementedError, OutreachTransportError, PulseWatchError } from "@/core/errors";
 import { requireSupabaseUser } from "@/lib/server/session";
 import { search, type TavilySearchResult } from "@/lib/server/tavily";
+import { extractDeadline } from "@/core/deadline";
+import { writeWhy } from "./pulseWhy";
 import { formatDate } from "@/i18n/format";
 import { sv } from "@/i18n/sv";
 import { en } from "@/i18n/en";
@@ -95,6 +98,10 @@ const DUPLICATE_OVERLAP = 0.75;
 const ENGLISH_WORDS = new Set([
   "the", "and", "of", "in", "for", "to", "with", "on", "is", "are", "a", "an", "how", "what", "why",
   "new", "from", "by", "at", "its", "this", "that", "will", "your",
+  // Vanliga ord i engelska rubriker utan småord ("Gallery: 2028 Volvo XC60 PHEV Photos").
+  // Inget av dem är ett svenskt ord.
+  "gallery", "photos", "pictures", "review", "reviews", "video", "videos", "launch", "launches", "price",
+  "prices", "pricing", "specs", "release", "revealed", "unveiled", "update", "sales", "first", "drive",
 ]);
 /** Vanliga svenska småord, motvikten när rubriken saknar å, ä och ö. */
 const SWEDISH_WORDS = new Set([
@@ -189,6 +196,10 @@ type SignalRow = {
   source_name: string;
   source_url: string | null;
   fetched_at: string;
+  /** Pulsen v3 (migreringen 20261004090000). Saknas när kolumnerna inte finns. */
+  why_it_matters?: string;
+  why_ai?: boolean | null;
+  deadline?: string | null;
 };
 
 const FETCH_COLUMNS = "fetch_date, status, claimed_at, fetched_at";
@@ -426,14 +437,49 @@ export function stem(keyword: string): string {
   return keyword;
 }
 
-/** Bara träffar med rubrik som nämner minst ett nyckelord. URL:en är redan validerad (https, ingen userinfo) i lib/server/tavily.ts. */
-export function pickRelevant(results: TavilySearchResult[], keywords: string[]): TavilySearchResult[] {
+/**
+ * Är träffen svensk? Rubriken avgör först (isSwedishHeadline). Har rubriken
+ * varken å, ä, ö eller ett svenskt småord avgör texten: utan å, ä och ö och
+ * med minst två engelska småord är den engelsk. Bara vid sparandet, där
+ * texten finns; vid läsning finns bara rubriken.
+ */
+export function isSwedishResult(result: Pick<TavilySearchResult, "title" | "content">): boolean {
+  if (!isSwedishHeadline(result.title)) return false;
+  const title = result.title.toLocaleLowerCase("sv-SE");
+  const titleWords = title.match(/[\p{L}]+/gu) ?? [];
+  if (/[åäö]/u.test(title) || titleWords.some((word) => SWEDISH_WORDS.has(word))) return true;
+  const content = (result.content ?? "").toLocaleLowerCase("sv-SE");
+  if (!content.trim() || /[åäö]/u.test(content)) return true;
+  const words = content.match(/[\p{L}]+/gu) ?? [];
+  const english = words.filter((word) => ENGLISH_WORDS.has(word)).length;
+  const swedish = words.filter((word) => SWEDISH_WORDS.has(word)).length;
+  return !(english >= 2 && english > swedish);
+}
+
+/**
+ * Bara träffar med rubrik som nämner minst ett nyckelord. URL:en är redan
+ * validerad (https, ingen userinfo) i lib/server/tavily.ts.
+ *
+ * `watchTerms` (egna bevakningar) räcker när ordet står i rubriken, eller
+ * när projektet saknar nyckelord. Ett bevakningsord som bara nämns i
+ * förbigående i texten räcker inte ensamt (moduldokumentet, "Pulsen v3").
+ */
+export function pickRelevant(
+  results: TavilySearchResult[],
+  keywords: string[],
+  watchTerms: string[] = [],
+): TavilySearchResult[] {
   const stems = keywords.map(stem);
+  const watchStems = watchTerms.map(stem);
   const seen = new Set<string>();
   return results.filter((result) => {
-    if (!cleanHeadline(result.title) || !isSwedishHeadline(result.title) || seen.has(result.url)) return false;
+    if (!cleanHeadline(result.title) || !isSwedishResult(result) || seen.has(result.url)) return false;
     const text = `${result.title} ${result.content}`.toLocaleLowerCase("sv-SE");
-    if (!stems.some((s) => text.includes(s))) return false;
+    const title = result.title.toLocaleLowerCase("sv-SE");
+    const relevant =
+      stems.some((s) => text.includes(s)) ||
+      watchStems.some((s) => (stems.length === 0 ? text : title).includes(s));
+    if (!relevant) return false;
     seen.add(result.url);
     return true;
   });
@@ -570,13 +616,35 @@ type Candidate = { result: TavilySearchResult; insight: Insight | null };
  * risk- eller möjlighetsord. Att den kom från dagens temasökning räcker
  * inte, och sort och område läses alltid ur texten, inte ur temat.
  */
-export function pickThemed(results: TavilySearchResult[], competitors: string[] = []): Candidate[] {
+export function pickThemed(
+  results: TavilySearchResult[],
+  competitors: string[] = [],
+  keywords: string[] = [],
+): Candidate[] {
   return results.flatMap((result) => {
-    if (!cleanHeadline(result.title) || !isSwedishHeadline(result.title)) return [];
+    if (!cleanHeadline(result.title) || !isSwedishResult(result)) return [];
     const insight: Insight | null =
-      classify(result) ?? (mentionsAny(result, competitors) ? { kind: "risk", area: "competition" } : null);
+      classify(result) ?? (isCompetitorNews(result, competitors, keywords) ? { kind: "risk", area: "competition" } : null);
     return insight ? [{ result, insight }] : [];
   });
+}
+
+/**
+ * En konkurrensrisk: konkurrenten står i rubriken, eller nämns i texten
+ * tillsammans med ett av projektets ord. En konkurrent som bara nämns i
+ * förbigående gör inte nyheten till en konkurrensrisk.
+ */
+export function isCompetitorNews(
+  result: Pick<TavilySearchResult, "title" | "content">,
+  competitors: string[],
+  keywords: string[] = [],
+): boolean {
+  if (!mentionsAny(result, competitors)) return false;
+  if (keywords.length === 0) return true;
+  const title = result.title.toLocaleLowerCase("sv-SE");
+  if (competitors.some((term) => title.includes(term))) return true;
+  const text = `${result.title} ${result.content}`.toLocaleLowerCase("sv-SE");
+  return keywords.map(stem).some((s) => text.includes(s));
 }
 
 /** Nämner rubrik eller text något av orden (redan gemener)? */
@@ -606,8 +674,11 @@ async function runSearch(
   for (const term of [...keywords, ...watchTerms, ...preferences.terms]) {
     if (!terms.includes(term)) terms.push(term);
   }
+  // Projektets ord och inlärda ord avgör relevansen; en bevakning räcker inte ensam.
+  const relevanceTerms = [...keywords, ...preferences.terms];
   const insightFor = (result: TavilySearchResult): Insight | null =>
-    classify(result) ?? (mentionsAny(result, competitors) ? { kind: "risk", area: "competition" } : null);
+    classify(result) ??
+    (isCompetitorNews(result, competitors, relevanceTerms) ? { kind: "risk", area: "competition" } : null);
 
   // Bara nyhetsartiklar från den senaste månaden, inga produktsidor.
   const newsQuery = `${QUERY_PREFIX} ${terms.join(" ")}`;
@@ -652,8 +723,8 @@ async function runSearch(
   // artikel från båda sökningarna tas bara en gång.
   const seen = new Set<string>();
   const candidates = [
-    ...pickRelevant(results, terms).map((result) => ({ result, insight: insightFor(result) })),
-    ...pickThemed(riskResults, competitors),
+    ...pickRelevant(results, relevanceTerms, watchTerms).map((result) => ({ result, insight: insightFor(result) })),
+    ...pickThemed(riskResults, competitors, relevanceTerms),
   ].filter(({ result }) => (seen.has(result.url) ? false : (seen.add(result.url), true)));
 
   let saved: number;
@@ -705,23 +776,42 @@ async function insertSignals(
   // För en risk eller möjlighet sparas sorten som "risk:<område>" eller
   // "opportunity:<område>" i category.
   const texts = dictionaries.sv.pulsePage;
-  const { error } = await supabase.from("pulse_signals").insert(
-    fresh.map(({ result, insight }) => ({
+  // Pulsen v3: en egen mening per nyhet från Gemini (bara med PULSE_AI_WHY,
+  // adapters/live/pulseWhy.ts) och sista ansökningsdag ur artikeln för
+  // möjligheter (core/deadline.ts). Annars den förskrivna texten och inget datum.
+  const headlines = fresh.map(({ result }) => cleanHeadline(stripSiteSuffix(result.title, result.url)));
+  const aiWhy = await writeWhy(
+    { name: project.name, oneLiner: project.oneLiner },
+    fresh.map(({ result }, index) => ({ headline: headlines[index], content: result.content ?? "" })),
+  );
+  const rows = fresh.map(({ result, insight }, index) => {
+    const template = (insight ? insightTexts(insight, "sv").whyItMatters : texts.liveWhyItMatters).replace(
+      "{project}",
+      project.name,
+    );
+    const base = {
       user_id: userId,
       project_id: project.id,
       category: insight ? categoryOf(insight) : texts.liveCategory,
-      headline: cleanHeadline(stripSiteSuffix(result.title, result.url)),
-      why_it_matters: (insight ? insightTexts(insight, "sv").whyItMatters : texts.liveWhyItMatters).replace(
-        "{project}",
-        project.name,
-      ),
+      headline: headlines[index],
+      why_it_matters: template,
       signal_at: signalAt(result),
       source_name: sourceName(result.url),
       source_url: result.url,
       fetched_at: claim.fetch_date,
-    })),
-  );
-  if (error) throw new Error(error.message);
+    };
+    const deadline =
+      insight?.kind === "opportunity" ? extractDeadline(`${result.title}. ${result.content ?? ""}`, claim.fetch_date) : null;
+    const v3 = { deadline, why_ai: aiWhy[index] !== null, why_it_matters: aiWhy[index] ?? template };
+    return { base, v3 };
+  });
+  const { error } = await supabase.from("pulse_signals").insert(rows.map(({ base, v3 }) => ({ ...base, ...v3 })));
+  if (!error) return;
+  // Utan migreringen 20261004090000 saknas kolumnerna: spara som förut, med
+  // den förskrivna texten (en AI-text utan märkning sparas aldrig).
+  if (!isMissingColumn(error)) throw new Error(error.message);
+  const { error: retry } = await supabase.from("pulse_signals").insert(rows.map(({ base }) => base));
+  if (retry) throw new Error(retry.message);
 }
 
 /** Dagscachens flöde. Söker bara om den här förfrågan äger dagens rad. */
@@ -768,14 +858,20 @@ async function readSignals(
   locale: Locale,
   feedback: Feedback,
 ): Promise<PulseSignal[]> {
-  const { data, error } = await supabase
-    .from("pulse_signals")
-    .select("id, category, headline, signal_at, source_name, source_url, fetched_at")
-    .eq("user_id", userId)
-    .eq("project_id", project.id)
-    .order("signal_at", { ascending: false })
-    .limit(READ_WINDOW);
+  const BASE_COLUMNS = "id, category, headline, signal_at, source_name, source_url, fetched_at";
+  const read = (columns: string) =>
+    supabase
+      .from("pulse_signals")
+      .select(columns)
+      .eq("user_id", userId)
+      .eq("project_id", project.id)
+      .order("signal_at", { ascending: false })
+      .limit(READ_WINDOW);
+  // Pulsen v3: AI-texten och sista ansökningsdag. Utan migreringen läses som förut.
+  let { data, error } = await read(`${BASE_COLUMNS}, why_it_matters, why_ai, deadline`);
+  if (error && isMissingColumn(error)) ({ data, error } = await read(BASE_COLUMNS));
   if (error) throw new Error(`Pulsen: kunde inte läsa signalerna (${error.message}).`);
+  const today = stockholmDate(new Date().toISOString());
 
   // Signaler som grundaren markerat "Inte relevant" visas inte igen.
   const preferences = learnPreferences(feedback.liked);
@@ -785,7 +881,7 @@ async function readSignals(
   const byPreference = (a: SignalRow, b: SignalRow) =>
     score(b) - score(a) || Date.parse(b.signal_at) - Date.parse(a.signal_at);
   // Äldre rader sparades med sajtnamnet kvar och utan språkfilter: samma regler vid läsning.
-  const sorted = ((data as SignalRow[] | null) ?? [])
+  const sorted = ((data as unknown as SignalRow[] | null) ?? [])
     .filter((row) => row.headline && row.source_name && row.fetched_at && !feedback.hidden.has(row.id))
     .map((row) => ({ ...row, headline: cleanHeadline(stripSiteSuffix(row.headline, row.source_url)) }))
     .filter((row) => row.headline && isSwedishHeadline(row.headline))
@@ -816,9 +912,19 @@ async function readSignals(
     const label = insight?.kind === "opportunity" ? texts.opportunityLabel : texts.riskLabel;
     return {
       id: row.id,
+      ...(score(row) > 0 ? { boosted: true } : {}),
       category: areaTexts ? `${label} · ${areaTexts.name}` : texts.liveCategory,
       headline: row.headline,
-      whyItMatters: (areaTexts ? areaTexts.whyItMatters : texts.liveWhyItMatters).replace("{project}", project.name),
+      // En AI-text finns bara på svenska; på engelska visas den förskrivna texten.
+      whyItMatters:
+        row.why_ai === true && locale === "sv" && row.why_it_matters
+          ? row.why_it_matters
+          : (areaTexts ? areaTexts.whyItMatters : texts.liveWhyItMatters).replace("{project}", project.name),
+      ...(row.why_ai === true && locale === "sv" && row.why_it_matters ? { whyByAi: true } : {}),
+      // Bara ett datum som inte har passerat, och bara för möjligheter.
+      ...(insight?.kind === "opportunity" && row.deadline && row.deadline.slice(0, 10) >= today
+        ? { deadline: row.deadline.slice(0, 10) }
+        : {}),
       timestamp: formatDate(stockholmDate(row.signal_at), locale),
       source: {
         namn: row.source_name,
@@ -991,6 +1097,32 @@ async function getSignals(locale: Locale): Promise<PulseSignal[]> {
   return readSignals(supabase, userId, project, locale, feedback);
 }
 
+/** Sortens namn i språket, för "Pulsen lär sig". Vanliga nyheter heter "Branschnyheter". */
+function kindName(key: string, locale: Locale): string {
+  const insight = insightOf(key);
+  return insight ? insightTexts(insight, locale).name : dictionaries[locale].pulsePage.newsTitle;
+}
+
+/**
+ * Vad omdömena har lärt Pulsen (Pulsen v3): sorterna med flest "Relevant",
+ * flest först, och de inlärda orden. Samma inlärning som sorteringen och
+ * sökningen använder, så att det som visas är det som faktiskt påverkar.
+ */
+export function describeLearning(preferences: Preferences, locale: Locale): PulseLearning {
+  const areas = [...preferences.areaLikes.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([key]) => kindName(key, locale));
+  return { areas: [...new Set(areas)], terms: [...preferences.terms] };
+}
+
+async function getLearning(locale: Locale): Promise<PulseLearning> {
+  const { supabase, userId } = await requireSupabaseUser();
+  const project = await getActiveProject(supabase, userId);
+  if (!project) return { areas: [], terms: [] };
+  const feedback = await readFeedback(supabase, userId, project.id);
+  return describeLearning(learnPreferences(feedback.liked), locale);
+}
+
 export const livePulseProvider: PulseProvider = {
   async getTodaysSignal(locale: Locale) {
     const [latest] = await getSignals(locale);
@@ -1004,4 +1136,5 @@ export const livePulseProvider: PulseProvider = {
   getWatches,
   addWatch,
   removeWatch,
+  getLearning,
 };

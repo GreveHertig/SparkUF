@@ -45,7 +45,12 @@ stora och små bokstäver), så knappen kan tryckas två gånger.
   uppgift har "Hjälp mig med det här".
 - **Medgrundaren** (`/app/medgrundaren?task=<id>`): uppgiften blir en
   förifylld fråga (`toTaskDraft` i `app/(app)/app/medgrundaren/signalDraft.ts`).
-- **Hem**: "Nästa i din plan", första öppna uppgiften.
+- **Hem**: "Nästa i din plan": den öppna uppgiften med närmast sista dag,
+  annars den första öppna.
+- **Sista dag** (Pulsen v3): `PlanItem.due` med källa (artikelns namn och
+  hämtdag), kolumnerna `due_date`, `due_source`, `due_fetched`
+  (migrering `20261004090000_pulsen_v3.sql`). Datumet hämtas ur grundarens
+  egen signal på servern, aldrig från klienten.
 - **Demot** visar ingen plan. Demoadaptern finns för kontraktstestet.
 
 ## Utan tabellen

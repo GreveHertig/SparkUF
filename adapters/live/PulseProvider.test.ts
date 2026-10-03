@@ -6,6 +6,8 @@ const requireSupabaseUser = vi.fn();
 const search = vi.fn();
 vi.mock("@/lib/server/session", () => ({ requireSupabaseUser: () => requireSupabaseUser() }));
 vi.mock("@/lib/server/tavily", () => ({ search: (...a: unknown[]) => search(...a) }));
+const generateJson = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/server/gemini", () => ({ generateJson: (...a: unknown[]) => generateJson(...a) }));
 
 import {
   livePulseProvider as pulse,
@@ -20,6 +22,7 @@ import {
   extractKeywords,
   favoriteInsight,
   learnPreferences,
+  describeLearning,
   preferenceScore,
   pickRelevant,
   pickThemed,
@@ -586,6 +589,22 @@ describe("bevakningar", () => {
     expect(signals[0].risk?.area).toBe("competition");
   });
 
+  it("en engelsk bevakningsträff och en konkurrent som bara nämns i texten sorteras bort (Pulsen v3)", async () => {
+    await pulse.addWatch!("competitor", "Volvo");
+    searchReturns(
+      [
+        hit(1, { title: "Gallery: 2028 Volvo XC60 PHEV Photos", content: "The new plug-in hybrid is here with a bigger battery." }),
+        hit(2, { title: "Bilmarknaden i september", content: "Volvo och andra tillverkare sålde fler bilar." }),
+        hit(3, { title: "Volvo bygger laddstationer", content: "" }),
+      ],
+      [],
+    );
+    const headlines = (await pulse.getSignals("sv")).map((s) => s.headline);
+    expect(headlines).not.toContain("Gallery: 2028 Volvo XC60 PHEV Photos");
+    expect(headlines).not.toContain("Bilmarknaden i september");
+    expect(headlines).toContain("Volvo bygger laddstationer");
+  });
+
   it("utan nyckelord men med bevakningar söks det ändå", async () => {
     setup({ projects: [{ ...project, name: "X", one_liner: "app" }] });
     expect(await pulse.getSignals("sv")).toEqual([]);
@@ -765,6 +784,37 @@ describe("inlärning ur Relevant", () => {
     expect((await pulse.getSignals("sv")).map((signal) => signal.headline)).toEqual(["Äldst dold"]);
   });
 
+  it("describeLearning: sorternas namn, flest först, och de inlärda orden (Pulsen v3)", () => {
+    const preferences = learnPreferences([
+      { category: "opportunity:funding", headline: "Bidrag till laddboxar" },
+      { category: "opportunity:funding", headline: "Nya bidrag för laddboxar i BRF" },
+      { category: "Branschnyhet", headline: "Laddboxar växer" },
+    ]);
+    const learning = describeLearning(preferences, "sv");
+    expect(learning.areas).toEqual([sv.pulsePage.opportunityAreas.funding.name, sv.pulsePage.newsTitle]);
+    expect(learning.terms).toEqual(expect.arrayContaining(["bidrag"]));
+    expect(describeLearning(learnPreferences([]), "sv")).toEqual({ areas: [], terms: [] });
+  });
+
+  it("en signal som liknar det grundaren gillat märks som boosted, andra inte", async () => {
+    setup({
+      pulse_fetches: doneToday(),
+      pulse_signals: [
+        signalRow(1, "risk:costs", "Elpriset slår mot kaféer"),
+        signalRow(3, "Branschnyhet", "Redovisningsbyråer växer"),
+      ],
+      pulse_feedback: [{ user_id: USER, signal_id: signalRow(1, "", "").id, verdict: "relevant" }],
+    });
+    const signals = await pulse.getSignals("sv");
+    // Samma sort som en gillad signal (här den gillade själv) visas högre och märks.
+    expect(signals.find((signal) => signal.headline === "Elpriset slår mot kaféer")?.boosted).toBe(true);
+    expect(signals.find((signal) => signal.headline === "Redovisningsbyråer växer")?.boosted).toBeUndefined();
+    expect(await pulse.getLearning!("sv")).toEqual({
+      areas: [sv.pulsePage.riskAreas.costs.name],
+      terms: [],
+    });
+  });
+
   it("utan tabellen lärs ingenting och sidan fungerar som förut", async () => {
     setup({ pulse_fetches: doneToday(), pulse_signals: [signalRow(1, "Branschnyhet", "Redovisningsbyråer växer")] }, [], [
       "pulse_feedback",
@@ -850,6 +900,7 @@ describe("bättre signaler för alla idéer", () => {
     expect(isSwedishHeadline("The e-krona – state money in digital form")).toBe(false);
     expect(isSwedishHeadline("How to choose an EV charger for your home")).toBe(false);
     expect(isSwedishHeadline("Northvolt")).toBe(true);
+    expect(isSwedishHeadline("Gallery: 2028 Volvo XC60 PHEV Photos")).toBe(false);
   });
 
   it("isNearDuplicate känner igen samma nyhet med andra ord, men inte olika nyheter", () => {
@@ -913,5 +964,69 @@ describe("bättre signaler för alla idéer", () => {
       "Elpriset stiger i vinter",
       "Bidrag till laddboxar i BRF",
     ]);
+  });
+});
+
+describe("Pulsen v3: sista ansökningsdag och AI-texten", () => {
+  const funding = (n: number, content: string) =>
+    hit(n, { title: `Nytt bidrag till redovisningsbyråer ${n}`, content: `Stöd för redovisningsbyråer. ${content}` });
+
+  afterEach(() => {
+    delete process.env.PULSE_AI_WHY;
+    generateJson.mockReset();
+  });
+
+  it("en möjlighet får sista ansökningsdag ur artikeln, en vanlig nyhet inte", async () => {
+    search.mockReset().mockResolvedValueOnce([funding(1, "Sista ansökningsdag är 30 oktober 2026.")]).mockResolvedValue([]);
+    const [signal] = await pulse.getSignals("sv");
+    expect(signal.opportunity?.area).toBe("funding");
+    expect(signal.deadline).toBe("2026-10-30");
+    expect(tables.pulse_signals[0].deadline).toBe("2026-10-30");
+    expect(signal.whyByAi).toBeUndefined();
+    expect(generateJson).not.toHaveBeenCalled();
+  });
+
+  it("ett passerat datum visas inte", async () => {
+    setup({
+      pulse_fetches: doneToday(),
+      pulse_signals: [{ ...signalRow(1, "opportunity:funding", "Bidrag till byråer"), deadline: "2026-09-01" }],
+    });
+    expect((await pulse.getSignals("sv"))[0].deadline).toBeUndefined();
+  });
+
+  it("med PULSE_AI_WHY: Geminis mening sparas och märks, en mening med siffra används inte", async () => {
+    process.env.PULSE_AI_WHY = "true";
+    generateJson.mockResolvedValue(
+      JSON.stringify({
+        items: [
+          { index: 0, why: "Byråer kan behöva hjälp att söka stödet, ett läge att erbjuda tjänsten." },
+          { index: 1, why: "Stödet är på 50 000 kronor." },
+        ],
+      }),
+    );
+    search
+      .mockReset()
+      .mockResolvedValueOnce([hit(1), hit(2)])
+      .mockResolvedValue([]);
+    const signals = await pulse.getSignals("sv");
+    const ai = signals.filter((signal) => signal.whyByAi);
+    expect(ai.map((signal) => signal.whyItMatters)).toEqual([
+      "Byråer kan behöva hjälp att söka stödet, ett läge att erbjuda tjänsten.",
+    ]);
+    expect(signals.filter((signal) => !signal.whyByAi)).toHaveLength(1);
+    // På engelska visas alltid den förskrivna texten.
+    expect((await pulse.getSignals("en")).some((signal) => signal.whyByAi)).toBe(false);
+  });
+
+  it("utan migreringen: sparas och läses som förut, utan datum och utan AI-text", async () => {
+    process.env.PULSE_AI_WHY = "true";
+    generateJson.mockResolvedValue(JSON.stringify({ items: [{ index: 0, why: "En mening utan siffror." }] }));
+    setup({}, [], [], ["pulse_signals.deadline", "pulse_signals.why_ai"]);
+    search.mockReset().mockResolvedValueOnce([funding(1, "Sista ansökningsdag är 30 oktober 2026.")]).mockResolvedValue([]);
+    const [signal] = await pulse.getSignals("sv");
+    expect(signal.headline).toContain("Nytt bidrag");
+    expect(signal.deadline).toBeUndefined();
+    expect(signal.whyByAi).toBeUndefined();
+    expect(tables.pulse_signals[0].why_it_matters).not.toBe("En mening utan siffror.");
   });
 });

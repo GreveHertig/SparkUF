@@ -166,7 +166,7 @@ describe("/app Hem (PR 3)", () => {
     expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(3);
   });
 
-  it("visar den neutrala 'ingen signal'-texten, inte demots scenariotext", async () => {
+  it("Veckans puls: utan signaler den här veckan visas en neutral text, inte demots scenariotext", async () => {
     getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
     getScoreSnapshotMock.mockResolvedValue(snapshot);
     getStepsMock.mockResolvedValue(steps);
@@ -174,7 +174,8 @@ describe("/app Hem (PR 3)", () => {
 
     await renderPage();
 
-    expect(screen.getByText(sv.homePage.noPulseSignal)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: sv.homePage.weekPulseTitle })).toBeInTheDocument();
+    expect(screen.getByText(sv.homePage.weekPulseEmpty)).toBeInTheDocument();
     expect(screen.queryByText(sv.site.demo.noPulse)).not.toBeInTheDocument();
   });
 
@@ -188,7 +189,8 @@ describe("/app Hem (PR 3)", () => {
         headline: "Ny regel för digitala kvitton",
         whyItMatters: "Påverkar dina kunder.",
         timestamp: "30 september",
-        source: { namn: "breakit.se", hämtad: "2026-09-30", url: "https://breakit.se/a" },
+        // Hämtad i dag: Veckans puls visar bara den senaste veckan.
+        source: { namn: "breakit.se", hämtad: new Date().toISOString().slice(0, 10), url: "https://breakit.se/a" },
       },
     ]);
     const { container } = await renderPage();
@@ -239,5 +241,47 @@ describe("/app Hem (PR 3)", () => {
     ]);
     await renderPage();
     expect(screen.queryByRole("heading", { name: sv.homePage.planTitle })).not.toBeInTheDocument();
+  });
+
+  it("Veckans puls: risker och möjligheter först, högst två, med länk till Pulsen", async () => {
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getStepsMock.mockResolvedValue(steps);
+    const today = new Date().toISOString().slice(0, 10);
+    const base = { whyItMatters: "", timestamp: "", source: { namn: "a.se", hämtad: today } };
+    getSignalsMock.mockResolvedValue([
+      { ...base, category: "Nyhet", headline: "En vanlig nyhet" },
+      { ...base, category: "Risk", headline: "En risk", risk: { area: "costs", actions: [] } },
+      { ...base, category: "Möjlighet", headline: "Ett bidrag", opportunity: { area: "funding", actions: [] } },
+    ]);
+    await renderPage();
+    const headlines = Array.from(document.querySelectorAll("[data-tour-id='hem-pulse'] .fdd-signal__headline")).map(
+      (node) => node.textContent,
+    );
+    expect(headlines).toEqual(["En risk", "Ett bidrag"]);
+    expect(screen.getByRole("link", { name: sv.homePage.weekPulseOpen })).toHaveAttribute("href", "/app/pulsen");
+  });
+
+  it("Nästa i din plan väljer uppgiften med närmast sista dag och visar datumet med källa", async () => {
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs"));
+    getSignalsMock.mockResolvedValue(signals);
+    getStepsMock.mockResolvedValue(steps);
+    getPlanItemsMock.mockResolvedValue([
+      { id: "a", text: "Utan datum", context: null, origin: "own", done: false, createdAtIso: "" },
+      {
+        id: "b",
+        text: "Sök bidraget",
+        context: "Bidrag",
+        origin: "pulsen",
+        done: false,
+        createdAtIso: "",
+        due: { date: "2026-11-30", source: { namn: "energimyndigheten.se", hämtad: "2026-10-04" } },
+      },
+    ]);
+    await renderPage();
+    expect(screen.getByText("Sök bidraget")).toBeInTheDocument();
+    expect(screen.getByText("30 november 2026")).toBeInTheDocument();
+    expect(document.querySelector(".fdd-plannext__due button")).toHaveTextContent("energimyndigheten.se");
   });
 });

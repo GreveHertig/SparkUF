@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ComingSoon } from "@/components/ui/ComingSoon";
 import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n } from "@/i18n/context";
-import { formatDate } from "@/i18n/format";
+import { formatDate, formatDateWithYear } from "@/i18n/format";
 import { fill } from "@/i18n/fill";
 import type { DataKind, Källa, NextStep, PulseSignal, ScoreSnapshot, SinceLastTime } from "@/core/domain";
 import type { DataType } from "@/design/tokens";
@@ -72,6 +72,7 @@ export function AppHome({
   scoreHref,
   profileAnswersHref,
   planNext,
+  weekPulse,
 }: {
   data: AppHomeData;
   dataKind: DataKind;
@@ -102,7 +103,19 @@ export function AppHome({
    * med länk till planen i Resan och till Medgrundaren. Utelämnad eller
    * `null` (ingen öppen uppgift, eller tabellen saknas): inget kort.
    */
-  planNext?: { text: string; context: string | null; planHref: string; helpHref: string } | null;
+  planNext?: {
+    text: string;
+    context: string | null;
+    planHref: string;
+    helpHref: string;
+    /** Sista dag med källa (Pulsen v3), när uppgiften har en. */
+    due?: { date: string; source: Källa };
+  } | null;
+  /**
+   * "Veckans puls" (bara /app, Pulsen v3): veckans viktigaste signaler i
+   * stället för "Dagens signal". Utelämnad: "Dagens signal" som förut (demot).
+   */
+  weekPulse?: { signals: PulseSignal[]; pulseHref: string } | null;
 }) {
   const { t, locale } = useI18n();
   const copy = t.site;
@@ -211,6 +224,12 @@ export function AppHome({
               {t.homePage.planFrom}: {planNext.context}
             </p>
           )}
+          {planNext.due && (
+            <p className="fdd-plannext__due">
+              {t.homePage.planDue}: <strong>{formatDateWithYear(planNext.due.date, locale)}</strong>{" "}
+              <SourceTag source={planNext.due.source} dataType="media" />
+            </p>
+          )}
           <div className="fdd-plannext__actions">
             <Link href={planNext.helpHref} className="fd-btn fd-btn--primary fd-btn--sm">
               {t.homePage.planHelp}
@@ -287,9 +306,37 @@ export function AppHome({
 
         <section aria-labelledby="fdd-pulse-title" className="fdd-block" data-tour-id="hem-pulse">
           <h2 id="fdd-pulse-title" className="fdd-block__title">
-            {t.homePage.todaysPulseTitle}
+            {weekPulse ? t.homePage.weekPulseTitle : t.homePage.todaysPulseTitle}
           </h2>
-          {signal ? (
+          {weekPulse ? (
+            weekPulse.signals.length > 0 ? (
+              <>
+                {weekPulse.signals.map((item, index) => (
+                  <article key={item.id ?? `${item.headline}-${index}`} className="fd-panel fdd-signal">
+                    <p className="fdd-signal__meta">
+                      <span className="fdd-signal__category">{item.category}</span>
+                      {item.timestamp && <span className="fdd-muted">{item.timestamp}</span>}
+                    </p>
+                    <p className="fdd-signal__headline">{item.headline}</p>
+                    <p className="fd-nextstep__why">
+                      {t.common.pulseWhyItMattersPrefix} {item.whyItMatters}
+                    </p>
+                    {item.deadline && (
+                      <p className="fdd-signal__deadline">
+                        {t.pulsePage.deadline}: <strong>{formatDateWithYear(item.deadline, locale)}</strong>
+                      </p>
+                    )}
+                    <SourceTag source={item.source} dataType={data.sourceDataTypes?.pulse} />
+                  </article>
+                ))}
+                <Link href={weekPulse.pulseHref} className="fdd-link">
+                  {t.homePage.weekPulseOpen}
+                </Link>
+              </>
+            ) : (
+              <p className="fdd-muted">{t.homePage.weekPulseEmpty}</p>
+            )
+          ) : signal ? (
             <article className="fd-panel fdd-signal">
               <p className="fdd-signal__meta">
                 <span className="fdd-signal__category">{signal.category}</span>
