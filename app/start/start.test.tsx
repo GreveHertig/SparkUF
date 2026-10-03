@@ -152,10 +152,12 @@ describe("/start (PR 11)", () => {
         { id: "role", cofounderText: "Vad gör du i dag?", suggestedAnswer: null },
         { id: "time", cofounderText: "Hur mycket tid har du?", suggestedAnswer: null },
       ],
-      closingMessage: "Tack.",
+      closingMessage: "Nästa steg i resan är Möjligheter.",
     });
     const { default: StartProfilePage } = await import("./profil/page");
     renderTree(await StartProfilePage());
+    // Actionen skickar till /app direkt efter sparandet, så repliken står i formuläret.
+    expect(screen.getByText("Nästa steg i resan är Möjligheter.")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Vad gör du i dag?" })).toHaveAttribute("name", "role");
     expect(screen.getByRole("textbox", { name: "Hur mycket tid har du?" })).toHaveAttribute("name", "time");
     expect(screen.getByRole("button", { name: sv.onboarding.profile.submitCta })).toBeInTheDocument();

@@ -75,6 +75,22 @@ describe("OnboardingProfile", () => {
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
+  it("formuläret visar avslutningsrepliken direkt, efter sista frågan och före knappen", () => {
+    const answerAction = vi.fn().mockResolvedValue({ invalid: false });
+    render(
+      <LocaleProvider>
+        <OnboardingProfile data={{ script }} continueHref="/app" answerAction={answerAction} />
+      </LocaleProvider>,
+    );
+    const closing = screen.getByText("Bra att veta.");
+    const lastQuestion = screen.getByText("Hur mycket tid har du?");
+    const submit = screen.getByRole("button", { name: "Spara och gå vidare" });
+    expect(lastQuestion.compareDocumentPosition(closing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(closing.compareDocumentPosition(submit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Inga färdiga svar ur skriptet i formuläret.
+    expect(screen.queryByText("Jag jobbar med redovisning.")).not.toBeInTheDocument();
+  });
+
   it("visar Kommer snart i samtalet och profilen utan samtal, och ingen Fortsätt", () => {
     render(
       <LocaleProvider>
