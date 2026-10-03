@@ -4098,6 +4098,7 @@ Genomklick med Playwright av landningen (`/`, `/priser`, `/integritet`), onboard
 
 ### Klart
 - **E-postfältet på `/` var 23 px högt under 560 px** i stället för 3rem. `flex: 1` (basis 0) i kolumnläget skrev över höjden. `flex: 1` gäller nu bara i radläget (`design/site.css`, `.fd-form__row .fd-input`). Mätt efteråt: 48 px i 390 och 559, radläget från 560 oförändrat.
+- **Rubriken vid e-postfältet** säger nu "Vill du veta när Spark lanserar?" / "Want to know when Spark launches?" (Theo 2026-10-03). Bara `titleEm`; fältets etikett och integritetstexten säger fortfarande "öppnar"/"opens".
 - Kontroll: `pnpm typecheck`, `pnpm lint` (0 fel, 3 gamla varningar), `pnpm test` (1211 gröna, 42 skippade).
 
 ### Kända problem

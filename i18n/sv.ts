@@ -1309,7 +1309,7 @@ export const sv = {
     },
     close: {
       titleStart: "Vill du veta",
-      titleEm: "när Spark öppnar?",
+      titleEm: "när Spark lanserar?",
       body: "Lämna din mejladress. Eller se demot först, med fiktiv data.",
       emailLabel: "Mejladress",
       placeholder: "namn@foretag.se",

@@ -1305,7 +1305,7 @@ export const en = {
     },
     close: {
       titleStart: "Want to know",
-      titleEm: "when Spark opens?",
+      titleEm: "when Spark launches?",
       body: "Leave your email address. Or see the demo first, with fictional data.",
       emailLabel: "Email address",
       placeholder: "name@company.se",
