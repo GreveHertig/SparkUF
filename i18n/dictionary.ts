@@ -548,6 +548,104 @@ export type Dictionary = {
     /** Rubriken i /app, utan demots byråer. */
     simulationTitleLive: string;
   };
+  /** Valideringen i /app: samtalsloggen (docs/moduler/validering.md). Grundaren
+   * pratar själv med kunderna och loggar svaren; Spark skickar ingenting. */
+  validationLog: {
+    lede: string;
+    /** Källan på siffror ur grundarens egen logg. */
+    sourceName: string;
+    nextTitle: string;
+    /** {missing}, {planned}: antal. */
+    next: Record<"addContacts" | "reachOut" | "moreAnswers" | "readVerdict", string>;
+    progressTitle: string;
+    /** {count} av {min}. */
+    progressAnswers: string;
+    progressCompanies: string;
+    progressReached: string;
+    progressStepLink: string;
+    warningsTitle: string;
+    warnings: Record<"allPositive" | "priceNotTested" | "oneSize", string>;
+    kpiTitle: string;
+    contactedLabel: string;
+    respondedLabel: string;
+    responseRateLabel: string;
+    declinedLabel: string;
+    verdictTitle: string;
+    verdictLede: string;
+    quotesTitle: string;
+    listTitle: string;
+    listLede: string;
+    listEmpty: string;
+    addLabel: string;
+    addPlaceholder: string;
+    sizeLabel: string;
+    sizeUnknown: string;
+    add: string;
+    adding: string;
+    pasteSummary: string;
+    pasteLabel: string;
+    paste: string;
+    /** {added}, {skipped}. */
+    pasteResult: string;
+    status: Record<"planned" | "contacted" | "responded" | "declined", string>;
+    channels: Record<"phone" | "email" | "linkedin" | "meeting" | "other", string>;
+    channelLabel: string;
+    dateLabel: string;
+    /** {date}: dagen bolaget kontaktades, {channel}: kanalen. */
+    contactedOn: string;
+    markContacted: string;
+    confirmContacted: string;
+    markDeclined: string;
+    remove: string;
+    logAnswer: string;
+    editAnswer: string;
+    cancel: string;
+    save: string;
+    saving: string;
+    answer: {
+      /** {company}. */
+      title: string;
+      dateLabel: string;
+      sizeLabel: string;
+      problemLabel: string;
+      problem: Record<"confirms" | "partial" | "rejects", string>;
+      priceTestedLabel: string;
+      priceLabel: string;
+      price: Record<"accepts" | "declines" | "undecided", string>;
+      counterOfferLabel: string;
+      quoteLabel: string;
+      quoteHint: string;
+      privacyHint: string;
+      selfReportedNote: string;
+    };
+    /** {price}: kronor. */
+    priceTested: string;
+    /** {price}: kronor. */
+    counterOffer: string;
+    perMonth: string;
+    errors: Record<"invalid" | "duplicate" | "backwards" | "limit" | "answered" | "unavailable", string>;
+    /** {total} är den nya poängen, {delta} förändringen med tecken. */
+    scoreAfter: string;
+    scoreUnchanged: string;
+    notScored: string;
+    guide: {
+      title: string;
+      lede: string;
+      findTitle: string;
+      find: string[];
+      questionsTitle: string;
+      questions: string[];
+      priceTitle: string;
+      price: string[];
+      avoidTitle: string;
+      avoid: string[];
+      messageTitle: string;
+      /** {project}: projektets namn. */
+      message: string;
+      copy: string;
+      copied: string;
+    };
+  };
   pulsePage: {
     title: string;
     subtitle: string;

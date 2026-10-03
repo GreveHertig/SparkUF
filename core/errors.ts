@@ -287,6 +287,18 @@ export class CofounderInputError extends Error {
   }
 }
 
+/**
+ * Kastas av Valideringens samtalslogg (ports/ValidationLog.ts) när indata inte
+ * går att spara. Skärmen visar en text ur i18n per orsak
+ * (docs/moduler/validering.md). Meddelandet bär aldrig grundarens text.
+ */
+export class ValidationLogError extends Error {
+  constructor(readonly reason: "invalid" | "duplicate" | "backwards" | "limit" | "answered") {
+    super(`Valideringen: kunde inte spara (${reason}).`);
+    this.name = "ValidationLogError";
+  }
+}
+
 export function isPlaceholderError(error: unknown): boolean {
   return (
     error instanceof NotImplementedError ||
