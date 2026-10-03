@@ -14,6 +14,9 @@ import {
   cleanWatchTerm,
   classifyRisk,
   extractKeywords,
+  favoriteInsight,
+  learnPreferences,
+  preferenceScore,
   pickRelevant,
   pickThemed,
   themeFor,
@@ -586,5 +589,167 @@ describe("bevakningar", () => {
   it("cleanWatchTerm tar bort styrtecken, slår ihop blanksteg och kapar", () => {
     expect(cleanWatchTerm("  Byrå\u0007   Flöde\n ")).toBe("Byrå Flöde");
     expect(Array.from(cleanWatchTerm("x".repeat(100)))).toHaveLength(60);
+  });
+});
+
+/** Dagnumret som themeFor räknar med, för att välja en jämn eller udda dag. */
+const dayNumber = (date: string) => Math.floor(Date.parse(`${date}T00:00:00Z`) / (24 * 60 * 60 * 1000));
+const signalRow = (n: number, category: string, headline: string, hoursAgo = n) => ({
+  id: `00000000-0000-4000-8000-00000000000${n}`,
+  user_id: USER,
+  project_id: "p1",
+  category,
+  headline,
+  why_it_matters: "x",
+  signal_at: ago(HOUR * hoursAgo),
+  source_name: "nyheter.se",
+  source_url: `https://www.nyheter.se/l-${n}`,
+  fetched_at: TODAY,
+});
+const doneToday = () => [{ user_id: USER, fetch_date: TODAY, status: "done", claimed_at: ago(HOUR), fetched_at: ago(HOUR) }];
+const doneYesterday = () => [
+  { user_id: USER, fetch_date: "2026-09-24", status: "done", claimed_at: ago(30 * HOUR), fetched_at: ago(30 * HOUR) },
+];
+
+describe("inlärning ur Relevant", () => {
+  it("learnPreferences räknar sorter och tar bara ord som står i minst två gillade rubriker", () => {
+    const preferences = learnPreferences([
+      { category: "risk:costs", headline: "Elpriset pressar kaféer i Göteborg" },
+      { category: "risk:costs", headline: "Kaféer höjer priserna efter elpriset, 40 miljoner" },
+      { category: "Branschnyhet", headline: "Kafé i Malmö satsar 40 miljoner" },
+    ]);
+    expect(preferences.areaLikes.get("risk:costs")).toBe(2);
+    expect(preferences.areaLikes.get("news")).toBe(1);
+    // "elpriset" och "kaféer" står i två rubriker. Siffror och nyhetsord ("miljoner", "satsar") lärs aldrig.
+    expect(preferences.terms).toEqual(expect.arrayContaining(["elpris", "kafé"]));
+    expect(preferences.terms).not.toContain("miljon");
+    expect(preferences.terms.every((term) => !/\d/.test(term))).toBe(true);
+  });
+
+  it("learnPreferences hoppar över ord som redan söks och tar högst tre", () => {
+    const headlines = ["alfa beta gamma delta epsilon", "alfa beta gamma delta epsilon"].map((headline) => ({
+      category: "Branschnyhet",
+      headline,
+    }));
+    const preferences = learnPreferences(headlines, ["alfa"]);
+    expect(preferences.terms).not.toContain("alfa");
+    expect(preferences.terms).toHaveLength(3);
+  });
+
+  it("inga omdömen ger inga preferenser och poängen noll", () => {
+    const preferences = learnPreferences([]);
+    expect(preferences.terms).toEqual([]);
+    expect(favoriteInsight(preferences)).toBeNull();
+    expect(preferenceScore({ category: "risk:costs", headline: "Elpriset stiger" }, preferences)).toBe(0);
+  });
+
+  it("favoritområdet är risken eller möjligheten med flest gillade, aldrig en vanlig nyhet", () => {
+    const preferences = learnPreferences([
+      { category: "Branschnyhet", headline: "a" },
+      { category: "Branschnyhet", headline: "b" },
+      { category: "Branschnyhet", headline: "c" },
+      { category: "opportunity:funding", headline: "d" },
+    ]);
+    expect(favoriteInsight(preferences)).toEqual({ kind: "opportunity", area: "funding" });
+  });
+
+  it("med ett favoritområde blir varannan dag favoriten och de andra dagarna roterar genom alla åtta", () => {
+    const favorite = { kind: "risk" as const, area: "costs" as const };
+    const start = Date.parse("2026-09-01T00:00:00Z");
+    const days = Array.from({ length: 32 }, (_, i) => new Date(start + i * 24 * HOUR).toISOString().slice(0, 10));
+    const odd = days.filter((day) => dayNumber(day) % 2 !== 0);
+    const even = days.filter((day) => dayNumber(day) % 2 === 0);
+    expect(odd.every((day) => JSON.stringify(themeFor(day, favorite)) === JSON.stringify(favorite))).toBe(true);
+    expect(new Set(even.map((day) => JSON.stringify(themeFor(day, favorite)))).size).toBe(
+      PULSE_RISK_AREAS.length + PULSE_OPPORTUNITY_AREAS.length,
+    );
+  });
+
+  it("det som liknar en gillad signal visas först", async () => {
+    setup({
+      pulse_fetches: doneToday(),
+      pulse_signals: [
+        signalRow(1, "Branschnyhet", "Redovisningsbyråer växer"),
+        signalRow(2, "risk:finance", "Räntan höjs igen", 2),
+        signalRow(3, "risk:costs", "Elpriset stiger i vinter", 3),
+        signalRow(4, "risk:costs", "Dyrare frakt för småföretag", 4),
+      ],
+    });
+    expect((await pulse.getSignals("sv"))[0].headline).toBe("Redovisningsbyråer växer");
+    await pulse.setFeedback!(signalRow(3, "", "").id, "relevant");
+    const after = await pulse.getSignals("sv");
+    // Båda kostnadsriskerna före de andra, den gillade av dem först (lika poäng: nyast först).
+    expect(after.map((signal) => signal.headline).slice(0, 2)).toEqual([
+      "Elpriset stiger i vinter",
+      "Dyrare frakt för småföretag",
+    ]);
+    expect(after).toHaveLength(4);
+  });
+
+  it("nästa dags sökning tar med inlärda ord och, en udda dag, favoritområdet som tema", async () => {
+    setup({
+      pulse_fetches: doneYesterday(),
+      pulse_signals: [
+        signalRow(1, "risk:costs", "Elpriset slår mot kaféer"),
+        signalRow(2, "risk:costs", "Kaféer höjer priserna när elpriset stiger"),
+      ],
+    });
+    await pulse.setFeedback!(signalRow(1, "", "").id, "relevant");
+    await pulse.setFeedback!(signalRow(2, "", "").id, "relevant");
+    await pulse.getSignals("sv");
+    const [news, theme] = queries();
+    expect(news).toContain("elpris");
+    expect(news).toContain("kafé");
+    // Projektets egna ord står kvar först.
+    expect(news.startsWith("svenska näringslivsnyheter kvittojakten")).toBe(true);
+    // TODAY är en udda dag, så temat är favoriten: kostnader.
+    expect(dayNumber(TODAY) % 2).toBe(1);
+    expect(theme.startsWith(themeQueryStart({ kind: "risk", area: "costs" }))).toBe(true);
+  });
+
+  it("ett enda gillande lär inga sökord, bara ordningen", async () => {
+    setup({ pulse_fetches: doneYesterday(), pulse_signals: [signalRow(1, "Branschnyhet", "Kaféer i Malmö går bra")] });
+    await pulse.setFeedback!(signalRow(1, "", "").id, "relevant");
+    await pulse.getSignals("sv");
+    expect(queries()[0]).not.toContain("kafé");
+  });
+
+  it("gillade signaler i ett annat projekt räknas inte", async () => {
+    setup({
+      pulse_fetches: doneYesterday(),
+      pulse_signals: [
+        { ...signalRow(1, "risk:costs", "Elpriset slår mot kaféer"), project_id: "annat" },
+        { ...signalRow(2, "risk:costs", "Kaféer och elpriset"), project_id: "annat" },
+      ],
+      pulse_feedback: [1, 2].map((n) => ({ user_id: USER, signal_id: signalRow(n, "", "").id, verdict: "relevant" })),
+    });
+    await pulse.getSignals("sv");
+    expect(queries()[0]).not.toContain("elpris");
+  });
+
+  it("bara de 500 nyaste omdömena läses", async () => {
+    // 501 dolda signaler; den äldsta (skapad först) faller utanför taket och visas.
+    const rows = Array.from({ length: 501 }, (_, n) => ({
+      user_id: USER,
+      signal_id: `sig-${n}`,
+      verdict: "not_relevant",
+      created_at: new Date(NOW.getTime() - (501 - n) * 1000).toISOString(),
+    }));
+    setup({
+      pulse_fetches: doneToday(),
+      pulse_signals: [
+        { ...signalRow(1, "Branschnyhet", "Äldst dold"), id: "sig-0" },
+        { ...signalRow(2, "Branschnyhet", "Nyast dold"), id: "sig-500" },
+      ],
+      pulse_feedback: rows,
+    });
+    expect((await pulse.getSignals("sv")).map((signal) => signal.headline)).toEqual(["Äldst dold"]);
+  });
+
+  it("utan tabellen lärs ingenting och sidan fungerar som förut", async () => {
+    setup({ pulse_fetches: doneToday(), pulse_signals: [signalRow(1, "Branschnyhet", "Redovisningsbyråer växer")] }, [], [
+      "pulse_feedback",
+    ]);
+    expect(await pulse.getSignals("sv")).toHaveLength(1);
   });
 });

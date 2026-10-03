@@ -16,7 +16,7 @@ dokumentet är fel utgångspunkt — läs `docs/arkitektur.md` i stället.
 
 ## 2. Innan du börjar
 
-1. Läs `docs/status.md` för aktuellt läge.
+1. Läs de senaste filerna i `docs/status/` för aktuellt läge (regeln står i `docs/status.md`).
 2. Läs `docs/moduler/<modul>.md` — syfte, porten, datakällor, hur
    demoadaptern fungerar, acceptanskriterier, säkerhetskrav. Om dokumentet
    flaggar en olöst öppen fråga (t.ex. avtal saknas, en designfråga är
@@ -128,8 +128,9 @@ Innan sessionen avslutas:
 - `ports/stubStatus.test.ts`: ta bort modulens rad (steg 7).
 - `docs/arkitektur.md`s tabell i avsnitt 3, om sökvägar eller
   beroenden ändrats.
-- `docs/status.md`: vad som är klart, kända begränsningar, beslut nästa
-  session behöver känna till — samma rubriker som varje tidigare session.
+- En egen fil `docs/status/<datum>-<kort-namn>.md`: vad som är klart, kända
+  begränsningar, beslut nästa session behöver känna till — samma rubriker
+  som varje tidigare session. Redigera aldrig andras statusfiler.
 
 ## 11. Avsluta
 
@@ -153,8 +154,8 @@ Innan sessionen avslutas:
 - [ ] `screens/` och route-filerna är orörda.
 - [ ] code-reviewer och `/security-review` körda, fynd åtgärdade eller
       dokumenterade.
-- [ ] `docs/moduler/<modul>.md`, `ports/stubStatus.test.ts` och
-      `docs/status.md` uppdaterade.
+- [ ] `docs/moduler/<modul>.md` och `ports/stubStatus.test.ts` uppdaterade,
+      och en egen fil i `docs/status/` skapad.
 - [ ] `typecheck`/`lint`/`test`/`build` gröna.
 
 ## 13. Verkligt exempel: Juridisk koll

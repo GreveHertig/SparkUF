@@ -640,7 +640,7 @@ export const en = {
       question: "Is this relevant to you?",
       relevant: "Relevant",
       notRelevant: "Not relevant",
-      thanks: "Thanks!",
+      thanks: "Thanks! Pulsen will show more like this.",
       hidden: "Hidden. It won't be shown again.",
       failed: "Couldn't save. Please try again.",
     },
@@ -758,7 +758,7 @@ export const en = {
     },
     profile: {
       title: "Tell us about yourself",
-      subtitle: "Click the answer to move on — it builds the profile Spark works from.",
+      subtitle: "The conversation plays out on its own. The answers build the profile Spark works from.",
       buildingTitle: "Your profile so far",
       continueCta: "Continue",
       formSubtitle: "Answer in your own words. Your answers build the profile Spark starts from.",
