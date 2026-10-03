@@ -72,13 +72,22 @@ test("kärnfrågor, startkort, Till appen och Återstår i Minnet", async ({ pag
   const answers = page.getByRole("region", { name: "Dina svar" });
   await expect(answers).toContainText("Jobbar");
   await expect(answers).toContainText("3–6 timmar");
+  // De tre återstående frågorna i ingång A. Två är val (en grupp med
+  // knappar), frustration är fritext (en textruta), så de räknas på texten.
   const remaining = page.getByRole("region", { name: "Återstår" });
-  await expect(remaining.getByRole("group")).toHaveCount(3);
+  const archetype = "Vilken av de här tre låter mest som du?";
+  const knowsOwner = "Känner du någon som driver ett företag och som du kan ringa den här veckan?";
+  const frustration = "Vad krånglar i vardagen, skolan eller jobbet? Ett exempel räcker.";
+  await expect(remaining.getByRole("group", { name: archetype })).toBeVisible();
+  await expect(remaining.getByRole("group", { name: knowsOwner })).toBeVisible();
+  await expect(remaining.getByRole("textbox", { name: frustration })).toBeVisible();
 
   // Ett svar under Återstår flyttar frågan till Dina svar.
-  await remaining.getByRole("button", { name: "Ja" }).click();
-  await expect(remaining.getByRole("group")).toHaveCount(2);
-  await expect(answers).toContainText("Känner du någon som driver ett företag");
+  await remaining.getByRole("group", { name: knowsOwner }).getByRole("button", { name: "Ja" }).click();
+  await expect(remaining.getByRole("group", { name: knowsOwner })).toHaveCount(0);
+  await expect(remaining.getByRole("group", { name: archetype })).toBeVisible();
+  await expect(remaining.getByRole("textbox", { name: frustration })).toBeVisible();
+  await expect(answers).toContainText(knowsOwner);
 
   expect(errors).toEqual([]);
 });

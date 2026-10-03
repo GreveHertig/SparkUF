@@ -6,7 +6,12 @@ import { sv } from "@/i18n/sv";
 import { NotImplementedError } from "@/core/errors";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/app/resan" }));
+// unstable_rethrow används av optional() (app/(app)/app/_lib/optional.ts) och
+// är den riktiga, så att Nexts signaler kastas vidare även här.
+vi.mock("next/navigation", async (importOriginal) => ({
+  unstable_rethrow: (await importOriginal<typeof import("next/navigation")>()).unstable_rethrow,
+  usePathname: () => "/app/resan",
+}));
 
 const getStepsMock = vi.hoisted(() => vi.fn());
 vi.mock("@/adapters/live/JourneyRepository", () => ({
