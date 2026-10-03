@@ -77,6 +77,12 @@ const MAX_LIKED_SIGNALS = 20;
  * (moduldokumentet, "Kunden i sökningen").
  */
 const MAX_CUSTOMER_TERMS = 3;
+/**
+ * Högst så många omdömen läses per sidvisning, nyast först. pulse_feedback
+ * saknar project_id, så taket är det enda som begränsar läsningen
+ * (granskningen av #50, 2026-10-03).
+ */
+const MAX_FEEDBACK_ROWS = 500;
 const MAX_LEARNED_TERMS = 3;
 const MIN_TERM_LIKES = 2;
 /** Vanliga nyhetsord som inte säger något om vad grundaren bryr sig om. Bara för inlärningen. */
@@ -771,8 +777,9 @@ async function readFeedback(supabase: SupabaseClient, userId: string, projectId:
     .from("pulse_feedback")
     .select("signal_id, verdict")
     .eq("user_id", userId)
-    // Nyast först, så att de senaste gillandena väljs när de blir många.
-    .order("created_at", { ascending: false });
+    // Nyast först, så att de senaste omdömena väljs när de blir många.
+    .order("created_at", { ascending: false })
+    .limit(MAX_FEEDBACK_ROWS);
   if (error) {
     if (isMissingTable(error)) return { hidden: new Set(), liked: [] };
     throw new Error(`Pulsen: kunde inte läsa omdömena (${error.message}).`);
