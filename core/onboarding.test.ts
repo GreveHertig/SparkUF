@@ -36,8 +36,10 @@ describe("core/onboarding", () => {
     // (getHomeSummary i adapters/live/JourneyRepository.ts): Möjligheter för
     // ingång A och Genomlys din idé för B. Repliken får inte lova något annat.
     const { profileQuestions } = dict.onboarding;
-    expect(profileQuestions.noIdea.closingMessage).toMatch(new RegExp(` ${dict.journeySteps.step2.title}\\.$`));
-    expect(profileQuestions.hasIdea.closingMessage).toMatch(new RegExp(` ${dict.journeySteps.step2Idea.title}\\.$`));
+    // Jämförs som text, inte som reguljärt uttryck, så att tecken i en
+    // stegtitel aldrig tolkas som mönster.
+    expect(profileQuestions.noIdea.closingMessage.endsWith(` ${dict.journeySteps.step2.title}.`)).toBe(true);
+    expect(profileQuestions.hasIdea.closingMessage.endsWith(` ${dict.journeySteps.step2Idea.title}.`)).toBe(true);
   });
 
   it("isProfileQuestionFor avvisar frågor som ingången inte ställer och okända id:n", () => {

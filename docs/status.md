@@ -4079,6 +4079,7 @@ Rättar det kända problemet från "Onboarding live, PR 3": profilsamtalets avsl
 
 ### Beslut (Theo 2026-10-02)
 - Repliken står i formuläret före knappen (alternativ A), inte efter sparandet. Det senare skulle kräva att actionen slutar skicka vidare, och layoutspärren kan då skicka till `/app` innan repliken syns.
+
 ## Arbetsflöde för parallella sessioner (Theo, 2026-10-02)
 
 ### Klart
