@@ -5,8 +5,8 @@ import { useI18n } from "@/i18n/context";
 import { getBusinessPlan } from "@/adapters/demo/businessPlan";
 import { demoJourneyRepository } from "@/adapters/demo/JourneyRepository";
 import { useDemoStore } from "@/adapters/demo/demoStore";
-import type { BusinessPlan as BusinessPlanModel } from "@/core/businessPlan";
-import { BusinessPlan } from "@/screens/BusinessPlan";
+import { BusinessPlan, type BusinessPlanData } from "@/screens/BusinessPlan";
+import { DEMO_PATHS } from "../../_lib/paths";
 
 /**
  * Demots Affärsplan: sätter samman planen för det aktuella momentet ur
@@ -18,13 +18,20 @@ export default function DemoBusinessPlanPage() {
   const { locale } = useI18n();
   const beatIndex = useDemoStore((state) => state.beatIndex);
   const entry = useDemoStore((state) => state.entry);
-  const [data, setData] = useState<{ plan: BusinessPlanModel; completedStepNumbers: number[] } | null>(null);
+  const [data, setData] = useState<BusinessPlanData | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     Promise.all([getBusinessPlan(locale), demoJourneyRepository.getSteps(locale)]).then(([plan, steps]) => {
       const completedStepNumbers = steps.filter((step) => step.status === "done").map((step) => step.stepNumber);
-      if (!cancelled) setData({ plan, completedStepNumbers });
+      if (!cancelled) {
+        setData({
+          plan,
+          completedStepNumbers,
+          steps: steps.map(({ stepNumber, title, status }) => ({ stepNumber, title, status })),
+          stepBasePath: DEMO_PATHS.journey,
+        });
+      }
     });
     return () => {
       cancelled = true;

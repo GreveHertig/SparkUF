@@ -1308,6 +1308,23 @@ export const sv = {
     coverageValueTemplate: "tillväxt: {growth} av {total}, region: {region} av {total}",
     contradictionLabel: "Motsägelse — båda sidor visas",
     lockedPartsTitle: "Ännu inte bevisat",
+    overviewLabel: "Planen i korthet",
+    overviewLinkTemplate: "{title}: {status}",
+    nextStep: {
+      eyebrow: "Stärker planen mest nu",
+      titleTemplate: "Steg {step} · {title}",
+      feedsLabel: "Ger underlag till",
+      ctaTemplate: "Öppna steg {step}",
+    },
+    openStepTemplate: "Öppna steg {step}",
+    printCta: "Spara som PDF",
+    liveClaims: {
+      ideaTemplate: "{name}: {oneLiner}",
+      projectSource: "Ditt projekt",
+      targetCustomer: "Kunden du siktar på",
+      payer: "Vem som betalar",
+      problemSeen: "Problemet du ser",
+    },
     sections: {
       idea: {
         title: "Affärsidén",

@@ -1097,6 +1097,25 @@ export type Dictionary = {
     coverageValueTemplate: string;
     contradictionLabel: string;
     lockedPartsTitle: string;
+    /** Översikten överst: en rad per avsnitt med dess status. */
+    overviewLabel: string;
+    /** Skärmläsartext för en översiktslänk. Platshållare: {title}, {status}. */
+    overviewLinkTemplate: string;
+    /** Kortet med steget som stärker planen mest. Platshållare: {step}, {title}. */
+    nextStep: { eyebrow: string; titleTemplate: string; feedsLabel: string; ctaTemplate: string };
+    /** Länken i en lucka till steget den väntar på. Platshållare: {step}. */
+    openStepTemplate: string;
+    /** Knappen som öppnar webbläsarens utskrift, där planen kan sparas som PDF. */
+    printCta: string;
+    /** Påståendena i /app som inte kommer ur ett bevis: grundarens egna
+     * uppgifter. Platshållare i `ideaTemplate`: {name}, {oneLiner}. */
+    liveClaims: {
+      ideaTemplate: string;
+      projectSource: string;
+      targetCustomer: string;
+      payer: string;
+      problemSeen: string;
+    };
     sections: Record<
       "idea" | "customerAndProblem" | "market" | "competition" | "offerAndPrice" | "evidence" | "execution" | "economy" | "risks",
       { title: string; description: string }
