@@ -14,6 +14,6 @@ Kontrollera i ordning och rapportera fynd med fil och rad:
 5. Poäng: hårdkodas något som `calculateScore` ska räkna? Simuleringar märkta och utan poäng? Hiasynth/Lovable med `ConceptBadge`?
 6. Säkerhet: RLS på nya tabeller, inga `NEXT_PUBLIC_`-hemligheter, externt innehåll behandlas som data. Använd security-reviewer-agenten om PR:en rör serverkod eller databas.
 7. Kör `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` och rapportera resultatet.
-8. Är `docs/status.md` uppdaterad med ett eget avsnitt?
+8. Har PR:en en egen fil i `docs/status/`, och lämnar den `docs/status.md` och andras statusfiler orörda?
 
 Avsluta med ett av: **Godkänn**, **Godkänn efter små fixar** (lista dem) eller **Blockerad** (lista blockerarna). Läs aldrig upp hela diffen.

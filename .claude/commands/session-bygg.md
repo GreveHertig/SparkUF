@@ -5,7 +5,7 @@ argument-hint: <uppgift i en mening>
 
 Uppgift: $ARGUMENTS
 
-Du är session 1, huvudbygget, för Theo (VD, äger appens ytor). Läs CLAUDE.md, docs/arbetsflode.md och slutet av docs/status.md samt det moduldokument i docs/moduler/ som hör till uppgiften.
+Du är session 1, huvudbygget, för Theo (VD, äger appens ytor). Läs CLAUDE.md, docs/arbetsflode.md och de senaste filerna i docs/status/ samt det moduldokument i docs/moduler/ som hör till uppgiften.
 
 - Skapa en egen gren från prototyp (eller design/en-design om uppgiften rör screens/). Namn: bygg/<kort-beskrivning>.
 - Får röra bara det uppgiften kräver. Får aldrig röra core/score.ts, ports/, demodatan, andras adaptrar, nycklar eller .env*.
