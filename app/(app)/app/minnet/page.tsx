@@ -2,7 +2,6 @@ import { Memory, type MemoryData } from "@/screens/Memory";
 import { liveMemoryRepository } from "@/adapters/live/MemoryRepository";
 import { orNull } from "../_lib/orNull";
 import { liveEvidenceRecorder } from "@/adapters/live/EvidenceRecorder";
-import { stockholmToday } from "@/adapters/live/evidenceScore";
 import { saveBrainNotes, saveFitAnswer, saveRemainingAnswer } from "./actions";
 
 /**
@@ -31,7 +30,7 @@ export default async function LiveMemoryPage() {
       dataKind="live"
       onSaveBrainNotes={saveBrainNotes}
       fit={{ evidence: fitEvidence, onSave: saveFitAnswer, scoreHref: "/app/poang" }}
-      remaining={{ questions: remaining, onSave: saveRemainingAnswer, todayIso: stockholmToday() }}
+      remaining={{ questions: remaining, onSave: saveRemainingAnswer }}
     />
   );
 }

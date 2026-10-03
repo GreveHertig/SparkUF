@@ -5,9 +5,11 @@ import { cleanText } from "@/core/text";
 import { EmptyStateError } from "@/core/errors";
 import { requireSupabaseUser } from "@/lib/server/session";
 import {
+  answersOf,
   isOnboardingEntry,
-  parseOnboardingAnswers,
+  parseOnboardingAnswerRecords,
   remainingOnboardingQuestions,
+  type OnboardingAnswerRecords,
   type OnboardingAnswers,
 } from "@/core/onboarding";
 import { answerLabel, toAnswerViews, toOnboardingQuestion } from "@/adapters/live/onboardingQuestions";
@@ -63,11 +65,11 @@ async function getProfileRow(supabase: SupabaseClient, userId: string): Promise<
 
 /** En klar onboarding: ingången och v4-svaren. Annars tomt tillstånd
  * (docs/moduler/minnet.md). */
-function completedOnboarding(row: ProfileRow | null): { entry: OnboardingEntry; answers: OnboardingAnswers } {
+function completedOnboarding(row: ProfileRow | null): { entry: OnboardingEntry; records: OnboardingAnswerRecords } {
   if (!row || !row.onboarding_completed_at || !isOnboardingEntry(row.onboarding_entry)) {
     throw new EmptyStateError("Minnet", DOC);
   }
-  return { entry: row.onboarding_entry, answers: parseOnboardingAnswers(row.onboarding_answers) };
+  return { entry: row.onboarding_entry, records: parseOnboardingAnswerRecords(row.onboarding_answers) };
 }
 
 // Med de valfria metoderna i porten utskrivna, så att de valfria metoderna i porten (getKnownProfile,
@@ -80,10 +82,10 @@ export const liveMemoryRepository: MemoryRepository & Required<Pick<MemoryReposi
     // Efter den visas det som finns, aldrig ifyllt: fritextsvaren från före v4
     // i sina kolumner, och v4-svaren med frågan och valets etikett (spec v4).
     // De obesvarade v4-frågorna är luckorna (getPendingOnboardingQuestions).
-    const { entry, answers } = completedOnboarding(row);
+    const { entry, records } = completedOnboarding(row);
     return {
       entry,
-      answers: toAnswerViews(entry, answers, locale),
+      answers: toAnswerViews(entry, records, locale),
       name: answerOrNull(row!.name),
       role: answerOrNull(row!.role),
       bio: answerOrNull(row!.bio),
@@ -101,7 +103,8 @@ export const liveMemoryRepository: MemoryRepository & Required<Pick<MemoryReposi
     if (!row) return {};
     // Medgrundaren läser på svenska, som resten av /app. Ett fritextsvar från
     // före v4 går före v4-svaret för samma sak, så att inget skrivs över.
-    const answers = parseOnboardingAnswers(row.onboarding_answers);
+    const records = parseOnboardingAnswerRecords(row.onboarding_answers);
+    const answers = answersOf(records);
     const v4 = (id: keyof OnboardingAnswers) => (answers[id] ? answerLabel(id, answers[id], "sv") : null);
     const fields: [keyof ProfileSummary, string | null][] = [
       ["name", row.name],
@@ -118,7 +121,7 @@ export const liveMemoryRepository: MemoryRepository & Required<Pick<MemoryReposi
       fields.filter(([, value]) => value?.trim()).map(([key, value]) => [key, value!.trim()]),
     );
     if (isOnboardingEntry(row.onboarding_entry)) {
-      const views = toAnswerViews(row.onboarding_entry, answers, "sv");
+      const views = toAnswerViews(row.onboarding_entry, records, "sv");
       if (views.length > 0) known.answers = views;
     }
     return known;
@@ -126,9 +129,9 @@ export const liveMemoryRepository: MemoryRepository & Required<Pick<MemoryReposi
 
   async getPendingOnboardingQuestions(locale: Locale): Promise<OnboardingQuestion[]> {
     const { supabase, userId } = await requireSupabaseUser();
-    const { entry, answers } = completedOnboarding(await getProfileRow(supabase, userId));
+    const { entry, records } = completedOnboarding(await getProfileRow(supabase, userId));
     // Härlett, aldrig lagrat: ingångens frågor minus de besvarade (spec v4 §3.2).
-    return remainingOnboardingQuestions(entry, answers).map((id) => toOnboardingQuestion(entry, id, locale));
+    return remainingOnboardingQuestions(entry, answersOf(records)).map((id) => toOnboardingQuestion(entry, id, locale));
   },
 
   async getBrainNotes(): Promise<string> {

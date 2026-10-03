@@ -80,6 +80,13 @@ async function giveIdea(userId: string) {
   ]);
 }
 
+/** Bara svaren ur onboarding_answers ({id: {answer, answered_at}}). */
+function plain(answers: unknown): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries((answers ?? {}) as Record<string, { answer?: unknown }>).map(([id, saved]) => [id, saved?.answer]),
+  );
+}
+
 async function profile(userId: string) {
   const { rows } = await db.query<Record<string, unknown>>("select * from public.profiles where user_id = $1", [userId]);
   return rows[0];
@@ -190,19 +197,27 @@ describe("save_onboarding_answer", () => {
     expect((await saveAnswer(a, "situation", "employed")).code).toBeNull();
     expect((await saveAnswer(a, "time", "h3to6")).code).toBeNull();
     expect((await saveAnswer(a, "time", "over10")).code).toBeNull();
-    expect(await profile(a)).toMatchObject({
-      onboarding_answers: { situation: "employed", time: "over10" },
-      onboarding_completed_at: null,
-      onboarding_entry: null,
-      onboarding_version: null,
-    });
+    const row = await profile(a);
+    expect(plain(row.onboarding_answers)).toEqual({ situation: "employed", time: "over10" });
+    expect(row).toMatchObject({ onboarding_completed_at: null, onboarding_entry: null, onboarding_version: null });
+  });
+
+  it("varje svar får tiden det sparades (now()), som funktionen också ger tillbaka", async () => {
+    const a = await signUp();
+    const saved = await asUser(a, "select public.save_onboarding_answer('situation', 'employed') as answered_at");
+    expect(saved.code).toBeNull();
+    const returned = saved.rows![0].answered_at as Date;
+    const stored = (await profile(a)).onboarding_answers as Record<string, { answer: string; answered_at: string }>;
+    expect(stored.situation.answer).toBe("employed");
+    expect(new Date(stored.situation.answered_at).toISOString()).toBe(new Date(returned).toISOString());
+    expect(Math.abs(Date.now() - new Date(stored.situation.answered_at).getTime())).toBeLessThan(60_000);
   });
 
   it("trimmar fritext", async () => {
     const b = await signUp();
     await giveIdea(b);
     expect((await saveAnswer(b, "customer", "  Frisörsalonger i Malmö \n")).code).toBeNull();
-    expect((await profile(b)).onboarding_answers).toEqual({ customer: "Frisörsalonger i Malmö" });
+    expect(plain((await profile(b)).onboarding_answers)).toEqual({ customer: "Frisörsalonger i Malmö" });
   });
 
   it("ingången kommer ur databasen: utan projekt är en fråga som bara ingång B ställer okänd", async () => {
@@ -246,7 +261,7 @@ describe("save_onboarding_answer", () => {
     expect((await saveAnswer(a, "archetype", "seller")).code).toBeNull();
     expect((await saveAnswer(a, "archetype", "builder")).code).toBe("55000");
     expect((await saveAnswer(a, "situation", "between")).code).toBe("55000");
-    expect((await profile(a)).onboarding_answers).toMatchObject({ archetype: "seller", situation: "upperSecondary" });
+    expect(plain((await profile(a)).onboarding_answers)).toMatchObject({ archetype: "seller", situation: "upperSecondary" });
   });
 
   it("ett konto som blev klart med fritextfrågorna kan besvara v4-frågorna efteråt", async () => {
@@ -256,7 +271,9 @@ describe("save_onboarding_answer", () => {
       [a],
     );
     expect((await saveAnswer(a, "time", "h6to10")).code).toBeNull();
-    expect(await profile(a)).toMatchObject({ role: "Säljare", onboarding_version: 1, onboarding_answers: { time: "h6to10" } });
+    const row = await profile(a);
+    expect(row).toMatchObject({ role: "Säljare", onboarding_version: 1 });
+    expect(plain(row.onboarding_answers)).toEqual({ time: "h6to10" });
   });
 
   it("påverkar bara den inloggades rad", async () => {
@@ -274,8 +291,12 @@ describe("complete_onboarding", () => {
     const result = await completeOnboarding(a, "noIdea", { time: "h3to6", money: "none", soldB2b: "no" });
     expect(result.code).toBeNull();
     const row = await profile(a);
+    expect(plain(row.onboarding_answers)).toEqual({ situation: "university", time: "h3to6", money: "none", soldB2b: "no" });
+    // Också svaren som kom med anropet får en tid.
+    for (const saved of Object.values(row.onboarding_answers as Record<string, { answered_at?: string }>)) {
+      expect(saved.answered_at).toEqual(expect.any(String));
+    }
     expect(row).toMatchObject({
-      onboarding_answers: { situation: "university", time: "h3to6", money: "none", soldB2b: "no" },
       onboarding_entry: "noIdea",
       onboarding_version: 2,
       role: null,

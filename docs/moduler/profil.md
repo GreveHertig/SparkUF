@@ -18,13 +18,16 @@ getProfile(): Promise<Profile>
 getOnboardingScript(entry: OnboardingEntry, locale: Locale): Promise<OnboardingScript>
 getOnboardingStatus(): Promise<OnboardingStatus>          // { entry, completed }
 completeOnboarding(input: { entry; answers: OnboardingAnswer[] }): Promise<void>
-saveOnboardingAnswer?(answer: OnboardingAnswer): Promise<void>  // v4, bara plattformen
-getOnboardingAnswers?(): Promise<Record<string, string>>        // v4, bara plattformen
+saveOnboardingAnswer?(answer: OnboardingAnswer): Promise<SavedOnboardingAnswer>  // v4, bara plattformen
+getOnboardingAnswers?(): Promise<Record<string, SavedOnboardingAnswer>>         // v4, bara plattformen
+// SavedOnboardingAnswer = { answer: string; answeredOn: string | null }  (ÅÅÅÅ-MM-DD, Stockholm)
 ```
 
 **Onboarding v4 (2026-10-03, spec v4 §4).** Frågorna, valen och kärnfrågorna
 står i `core/onboarding.ts` (`ONBOARDING_CHOICES`,
-`ONBOARDING_QUESTIONS_BY_ENTRY`). `getOnboardingScript` ger kärnfrågorna med
+`ONBOARDING_QUESTIONS_BY_ENTRY`). Varje svar lagras som `{answer, answered_at}`,
+där `answered_at` sätts av databasen. Ett svar utan tid får `answeredOn: null`
+och visas utan datum. `getOnboardingScript` ger kärnfrågorna med
 `kind` och `choices` (etiketter ur `onboarding.v4Questions`). Varje svar sparas
 med `saveOnboardingAnswer` (`public.save_onboarding_answer`) i
 `profiles.onboarding_answers`. `completeOnboarding` kräver kärnfrågorna och

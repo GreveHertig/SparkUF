@@ -21,7 +21,7 @@ import { ChatLine } from "./ChatBlocks";
 export type SaveOnboardingAnswer = (
   questionId: string,
   answer: string,
-) => Promise<{ ok: true } | { ok: false; reason: "invalid" | "locked" }>;
+) => Promise<{ ok: true; answeredOn: string | null } | { ok: false; reason: "invalid" | "locked" }>;
 
 export function OnboardingQuestionCard({
   question,
@@ -33,7 +33,8 @@ export function OnboardingQuestionCard({
   /** Det sparade svaret, när frågan ändras. */
   selected?: string;
   onSave: SaveOnboardingAnswer;
-  onSaved: (answer: string) => void;
+  /** Svaret och dagen databasen sparade det (null om tiden saknas). */
+  onSaved: (answer: string, answeredOn: string | null) => void;
 }) {
   const { t } = useI18n();
   const copy = t.onboarding.profile;
@@ -48,7 +49,7 @@ export function OnboardingQuestionCard({
     const outcome = await onSave(question.id, answer).catch(() => null);
     if (outcome?.ok) {
       setState("idle");
-      onSaved(isChoice ? answer : answer.trim());
+      onSaved(isChoice ? answer : answer.trim(), outcome.answeredOn);
     } else {
       setState(outcome?.reason === "invalid" ? "invalid" : "failed");
     }
@@ -120,7 +121,8 @@ export function answerText(question: OnboardingQuestion, answer: string): string
 }
 
 /** Ett givet svar som grundarens rad i samtalet. En siffra i svaret får
- * källan "Din uppgift" (CLAUDE.md, "Källa på varje siffra"). */
+ * källan "Din uppgift" (CLAUDE.md, "Källa på varje siffra"), med dagen
+ * svaret gavs, eller utan datum när tiden saknas. */
 export function AnswerLine({ text, source }: { text: string; source: Källa }) {
   return <ChatLine role="founder" text={text} source={textHasFigure(text) ? { source, dataType: "user" } : undefined} />;
 }

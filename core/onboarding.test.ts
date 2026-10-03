@@ -11,6 +11,7 @@ import {
   parseOnboardingAnswers,
   remainingOnboardingQuestions,
   isOnboardingEntry,
+  parseOnboardingAnswerRecords,
   isProfileQuestionFor,
   isValidProfileAnswer,
   isValidProjectInput,
@@ -148,5 +149,23 @@ describe("core/onboarding, version 2 (spec v4 §4)", () => {
     expect(
       parseOnboardingAnswers({ situation: "employed", time: "10 timmar", role: "Säljare", money: 5, customer: "  Byråer " }),
     ).toEqual({ situation: "employed", customer: "Byråer" });
+  });
+
+  it("parseOnboardingAnswerRecords: svaret och tiden databasen satte, och null när tiden saknas eller är fel", () => {
+    expect(
+      parseOnboardingAnswerRecords({
+        situation: { answer: "employed", answered_at: "2026-10-02T08:00:00Z" },
+        time: { answer: "h3to6" },
+        money: { answer: "none", answered_at: "i går" },
+        soldB2b: { answer: "kanske", answered_at: "2026-10-02T08:00:00Z" },
+        role: { answer: "Säljare", answered_at: "2026-10-02T08:00:00Z" },
+        customer: { answer: "  Byråer ", answered_at: "2026-10-02T08:00:00Z" },
+      }),
+    ).toEqual({
+      situation: { answer: "employed", answeredAt: "2026-10-02T08:00:00Z" },
+      time: { answer: "h3to6", answeredAt: null },
+      money: { answer: "none", answeredAt: null },
+      customer: { answer: "Byråer", answeredAt: "2026-10-02T08:00:00Z" },
+    });
   });
 });

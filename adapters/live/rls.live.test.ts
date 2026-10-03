@@ -609,6 +609,10 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
         const answer = isChoiceQuestion(open) ? ONBOARDING_CHOICES[open][0] : marker;
         const saved = await clientA.rpc("save_onboarding_answer", { p_question: open, p_answer: answer });
         expect(saved.error, `save_onboarding_answer: A kunde inte besvara ${open}`).toBeNull();
+        // Svaret sparas med tiden databasen satte, och funktionen ger tillbaka den.
+        expect(typeof saved.data, "save_onboarding_answer: ingen tid tillbaka").toBe("string");
+        const stored = ((await read()).data!.onboarding_answers as Record<string, { answered_at?: string }>)[open];
+        expect(stored?.answered_at, "save_onboarding_answer: svaret saknar answered_at").toEqual(expect.any(String));
       }
       const after = parseOnboardingAnswers((await read()).data!.onboarding_answers);
       const answered = remainingOnboardingQuestions(entry, {}).find((id) => after[id]);

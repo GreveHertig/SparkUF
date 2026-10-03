@@ -46,7 +46,7 @@ beforeEach(() => {
   getProjectMock.mockResolvedValue(null);
   createProjectMock.mockResolvedValue({ id: "p1", name: "Padel", oneLiner: "Bokning." });
   completeOnboardingMock.mockResolvedValue(undefined);
-  saveOnboardingAnswerMock.mockResolvedValue(undefined);
+  saveOnboardingAnswerMock.mockResolvedValue({ answer: "x", answeredOn: "2026-10-03" });
   getOnboardingAnswersMock.mockResolvedValue({});
 });
 
@@ -93,14 +93,15 @@ describe("createProjectAction", () => {
 describe("saveOnboardingAnswerAction", () => {
   it("ingång A: sparar ett val på en kärnfråga", async () => {
     const { saveOnboardingAnswerAction } = await import("./actions");
-    expect(await saveOnboardingAnswerAction("time", "h3to6")).toEqual({ ok: true });
+    // Dagen svaret sparades följer med, för källans datum.
+    expect(await saveOnboardingAnswerAction("time", "h3to6")).toEqual({ ok: true, answeredOn: "2026-10-03" });
     expect(saveOnboardingAnswerMock).toHaveBeenCalledWith({ questionId: "time", answer: "h3to6" });
   });
 
   it("ingång B (aktivt projekt): fritext på kundfrågan sparas", async () => {
     getProjectMock.mockResolvedValue({ id: "p1", name: "Padel", oneLiner: "Bokning." });
     const { saveOnboardingAnswerAction } = await import("./actions");
-    expect(await saveOnboardingAnswerAction("customer", " Padelhallar ")).toEqual({ ok: true });
+    expect(await saveOnboardingAnswerAction("customer", " Padelhallar ")).toEqual({ ok: true, answeredOn: "2026-10-03" });
     expect(saveOnboardingAnswerMock).toHaveBeenCalledWith({ questionId: "customer", answer: " Padelhallar " });
   });
 
@@ -133,7 +134,11 @@ describe("saveOnboardingAnswerAction", () => {
 });
 
 describe("completeOnboardingAction", () => {
-  const CORE_A = { situation: "employed", time: "h3to6", money: "none", soldB2b: "no" };
+  /** Som getOnboardingAnswers ger dem: svaret och dagen det gavs. */
+  function saved(answers: Record<string, string>) {
+    return Object.fromEntries(Object.entries(answers).map(([id, answer]) => [id, { answer, answeredOn: "2026-10-03" }]));
+  }
+  const CORE_A = saved({ situation: "employed", time: "h3to6", money: "none", soldB2b: "no" });
 
   it("ingång A: med kärnfrågorna besvarade blir onboardingen klar, sedan /app", async () => {
     getOnboardingAnswersMock.mockResolvedValue(CORE_A);
@@ -144,14 +149,14 @@ describe("completeOnboardingAction", () => {
 
   it("ingång B: ingången härleds ur projektet, inte ur indata", async () => {
     getProjectMock.mockResolvedValue({ id: "p1", name: "Padel", oneLiner: "Bokning." });
-    getOnboardingAnswersMock.mockResolvedValue({ situation: "employed", payer: "business", customer: "Hallar", talkedTo: "none" });
+    getOnboardingAnswersMock.mockResolvedValue(saved({ situation: "employed", payer: "business", customer: "Hallar", talkedTo: "none" }));
     const { completeOnboardingAction } = await import("./actions");
     await expect(completeOnboardingAction()).rejects.toThrow("REDIRECT /app");
     expect(completeOnboardingMock).toHaveBeenCalledWith({ entry: "hasIdea", answers: [] });
   });
 
   it("en saknad kärnfråga ger invalid, och onboardingen blir inte klar", async () => {
-    getOnboardingAnswersMock.mockResolvedValue({ situation: "employed", time: "h3to6", money: "none" });
+    getOnboardingAnswersMock.mockResolvedValue(saved({ situation: "employed", time: "h3to6", money: "none" }));
     const { completeOnboardingAction } = await import("./actions");
     expect(await completeOnboardingAction()).toEqual({ invalid: true });
     // Ingång A:s svar räcker inte för ingång B.

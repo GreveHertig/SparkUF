@@ -44,9 +44,8 @@ type MemoryProps = {
    * platshållarfel (inget aktivt projekt) och ger "Kommer snart" i rutan. */
   fit?: { evidence: EvidenceView[] | null; onSave: SaveFitAnswer; scoreHref: string };
   /** Frågorna som återstår från profilsamtalet (spec v4 §3.2). Bara /app
-   * skickar den. `questions: null` är ett platshållarfel. `todayIso` är datumet
-   * i källan "Din uppgift" på ett svar med en siffra under Dina svar. */
-  remaining?: { questions: OnboardingQuestion[] | null; onSave: SaveOnboardingAnswer; todayIso: string };
+   * skickar den. `questions: null` är ett platshållarfel. */
+  remaining?: { questions: OnboardingQuestion[] | null; onSave: SaveOnboardingAnswer };
 };
 
 /**
@@ -160,9 +159,11 @@ export function Memory({ data, dataKind, onSaveBrainNotes, fit, remaining }: Mem
                     <p className="fdd-muted">{answer.question}</p>
                     <p className="fdd-inline">
                       {answer.answer}
-                      {remaining && textHasFigure(answer.answer) && (
+                      {/* Datumet är dagen svaret gavs. Saknas tiden visas
+                          källan utan datum, aldrig med ett påhittat. */}
+                      {textHasFigure(answer.answer) && (
                         <SourceTag
-                          source={{ namn: t.evidence.internalSources.profile, hämtad: remaining.todayIso }}
+                          source={{ namn: t.evidence.internalSources.profile, hämtad: answer.answeredOn ?? "" }}
                           dataType="user"
                         />
                       )}

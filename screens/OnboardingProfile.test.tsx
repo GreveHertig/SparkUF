@@ -79,9 +79,8 @@ describe("OnboardingProfile", () => {
     const live = {
       entry: "noIdea" as const,
       answers: {},
-      saveAnswer: vi.fn().mockResolvedValue({ ok: true }),
+      saveAnswer: vi.fn().mockResolvedValue({ ok: true, answeredOn: "2026-10-03" }),
       completeAction: vi.fn().mockResolvedValue({ invalid: false }),
-      todayIso: "2026-10-03",
     };
     const choiceScript: OnboardingScript = {
       questions: [

@@ -29,7 +29,10 @@ function cleanAnswer(entry: OnboardingEntry, questionId: string, answer: unknown
   return isChoiceQuestion(questionId) ? answer : answer.trim();
 }
 
-export function onboardingRpcFake(userId: string): FakeRpcHandlers {
+type StoredAnswer = { answer: string; answered_at: string };
+
+/** Fejkens klocka. Testerna kan sätta en egen tid. */
+export function onboardingRpcFake(userId: string, now: () => Date = () => new Date()): FakeRpcHandlers {
   function profileRow(store: FakeTables) {
     const row = (store.profiles ?? []).find((profile) => profile.user_id === userId);
     if (!row) fail("Profilraden saknas.", "P0002");
@@ -43,10 +46,11 @@ export function onboardingRpcFake(userId: string): FakeRpcHandlers {
       const entry = completed && isOnboardingEntry(row.onboarding_entry) ? row.onboarding_entry : derivedEntry(store, userId);
       const questionId = String(args.p_question);
       const answer = cleanAnswer(entry, questionId, args.p_answer);
-      const answers = { ...((row.onboarding_answers as Record<string, string> | undefined) ?? {}) };
+      const answers = { ...((row.onboarding_answers as Record<string, StoredAnswer> | undefined) ?? {}) };
       if (completed && questionId in answers) fail("Frågan är redan besvarad.", "55000");
-      row.onboarding_answers = { ...answers, [questionId]: answer };
-      return null;
+      const answeredAt = now().toISOString();
+      row.onboarding_answers = { ...answers, [questionId]: { answer, answered_at: answeredAt } };
+      return answeredAt;
     },
 
     complete_onboarding(args: Record<string, unknown>, store: FakeTables) {
@@ -57,9 +61,9 @@ export function onboardingRpcFake(userId: string): FakeRpcHandlers {
       if (args.p_entry !== entry) fail("Ingången stämmer inte.", "22023");
       const given = args.p_answers;
       if (!given || typeof given !== "object" || Array.isArray(given)) fail("Svaren saknas.", "22023");
-      const answers = { ...((row.onboarding_answers as Record<string, string> | undefined) ?? {}) };
+      const answers = { ...((row.onboarding_answers as Record<string, StoredAnswer> | undefined) ?? {}) };
       for (const [questionId, answer] of Object.entries(given as Record<string, unknown>)) {
-        answers[questionId] = cleanAnswer(entry, questionId, answer);
+        answers[questionId] = { answer: cleanAnswer(entry, questionId, answer), answered_at: now().toISOString() };
       }
       if (!ONBOARDING_QUESTIONS_BY_ENTRY[entry].core.every((id) => answers[id])) {
         fail("Alla kärnfrågor är inte besvarade.", "22023");

@@ -511,8 +511,14 @@ Uppdrag från Bruno (2026-10-03). Se `docs/moduler/medgrundaren.md`.
     (`ports/ProfileRepository.ts`).
   - `ProfileRepository.saveOnboardingAnswer?(answer)` och
     `ProfileRepository.getOnboardingAnswers?()`.
+  - `SavedOnboardingAnswer` (`{ answer, answeredOn }`): det
+    `saveOnboardingAnswer` och `getOnboardingAnswers` ger.
   - `ProfileSummary.answers?` (`ports/MemoryRepository.ts`): v4-svaren med
     frågan och valets etikett.
   - `MemoryRepository.getPendingOnboardingQuestions?(locale)`.
 - **Två nya kolumner i `profiles`**, stängda för klienten:
   `onboarding_answers` och `onboarding_version`. Inga nya RLS-policyer.
+- **Källans datum är dagen svaret gavs, aldrig dagens** (Erik, efter
+  granskningen av #70). Varje svar sparas som `{answer, answered_at}`, där
+  `answered_at` sätts av databasen. Ett svar utan tid visar källan "Din
+  uppgift" utan datum (`SourceTag` med tomt `hämtad`), aldrig ett påhittat.

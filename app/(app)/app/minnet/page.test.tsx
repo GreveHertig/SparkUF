@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
@@ -102,8 +102,9 @@ describe("/app/minnet (PR 5)", () => {
       frustrations: null,
       customer: null,
       answers: [
-        { questionId: "situation", question: "Vad gör du i dag?", answer: "Jobbar" },
-        { questionId: "time", question: "Hur många timmar?", answer: "3–6 timmar" },
+        { questionId: "situation", question: "Vad gör du i dag?", answer: "Jobbar", answeredOn: "2026-10-02" },
+        { questionId: "time", question: "Hur många timmar?", answer: "3–6 timmar", answeredOn: "2026-10-02" },
+        { questionId: "money", question: "Hur mycket pengar?", answer: "Under 1 000 kr", answeredOn: null },
       ],
     });
     getPendingOnboardingQuestionsMock.mockResolvedValue([
@@ -118,8 +119,13 @@ describe("/app/minnet (PR 5)", () => {
     const answers = screen.getByRole("region", { name: sv.memoryPage.answersLabel });
     expect(answers).toHaveTextContent("Vad gör du i dag?");
     expect(answers).toHaveTextContent("Jobbar");
-    // En siffra i svaret får källan "Din uppgift".
-    expect(answers).toHaveTextContent(sv.common.userSourceLabel);
+    // En siffra i svaret får källan "Din uppgift" med dagen svaret gavs, och
+    // ett svar utan sparad tid får källan utan datum, aldrig dagens.
+    const tags = within(answers).getAllByRole("button", { name: sv.common.sourceTag.openDetails });
+    expect(tags).toHaveLength(2);
+    expect(tags[0]).toHaveTextContent(sv.common.userSourceLabel);
+    expect(tags[0]).toHaveTextContent("2 oktober");
+    expect(tags[1].textContent).toBe(`${sv.common.userSourceLabel}·${sv.evidence.internalSources.profile}`);
     expect(screen.queryByText(sv.memoryPage.notAnswered)).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: sv.memoryPage.profileBackgroundLabel })).not.toBeInTheDocument();
     const remaining = screen.getByRole("region", { name: sv.memoryPage.remainingTitle });
@@ -132,7 +138,7 @@ describe("/app/minnet (PR 5)", () => {
       ...profile,
       frustrations: null,
       customer: "Små byråer",
-      answers: [{ questionId: "payer", question: "Vem betalar för idén?", answer: "Företag" }],
+      answers: [{ questionId: "payer", question: "Vem betalar för idén?", answer: "Företag", answeredOn: "2026-10-05" }],
     });
     getBrainNotesMock.mockResolvedValue("");
     getTraceEventsMock.mockResolvedValue([]);
@@ -274,8 +280,8 @@ describe("saveRemainingAnswer (Server Action)", () => {
   it("sparar ett svar på en återstående fråga via Profil och förnyar sidan", async () => {
     const { saveRemainingAnswer } = await import("./actions");
     const { revalidatePath } = await import("next/cache");
-    saveOnboardingAnswerMock.mockResolvedValue(undefined);
-    expect(await saveRemainingAnswer("knowsOwner", "yes")).toEqual({ ok: true });
+    saveOnboardingAnswerMock.mockResolvedValue({ answer: "yes", answeredOn: "2026-10-03" });
+    expect(await saveRemainingAnswer("knowsOwner", "yes")).toEqual({ ok: true, answeredOn: "2026-10-03" });
     expect(saveOnboardingAnswerMock).toHaveBeenCalledWith({ questionId: "knowsOwner", answer: "yes" });
     expect(revalidatePath).toHaveBeenCalledWith("/app/minnet");
   });

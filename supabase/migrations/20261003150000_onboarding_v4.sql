@@ -14,7 +14,9 @@
 --   som en egen lista, som skulle kunna hamna i otakt med svaren.
 --
 -- Nya kolumner i profiles:
--- * onboarding_answers: {frågans id: svar}. Bara de två funktionerna skriver
+-- * onboarding_answers: {frågans id: {"answer": svar, "answered_at": tid}}.
+--   answered_at sätts av databasen (now()) när svaret sparas, så att Minnet
+--   kan visa källans datum utan att hitta på ett. Bara de två funktionerna skriver
 --   den (ingen kolumnrättighet för klienten, migrations.test.ts).
 -- * onboarding_version: 1 = klar med fritextfrågorna före v4 (svaren står
 --   kvar i role, bio, time_available, money_available, risk_appetite,
@@ -41,8 +43,9 @@ alter table public.profiles
 
 alter table public.profiles
   add constraint profiles_onboarding_answers_objekt check (jsonb_typeof(onboarding_answers) = 'object'),
-  -- Tolv frågor, varav två fritext på högst 280 tecken: 4000 byte räcker gott.
-  add constraint profiles_onboarding_answers_storlek check (octet_length(onboarding_answers::text) <= 4000),
+  -- Högst tolv frågor (efter ett byte av ingång), varav två fritext på högst
+  -- 280 tecken, med en tid per svar: 8000 byte räcker gott.
+  add constraint profiles_onboarding_answers_storlek check (octet_length(onboarding_answers::text) <= 8000),
   add constraint profiles_onboarding_version_giltig check (onboarding_version in (1, 2)),
   -- En version betyder en klar onboarding, och en klar onboarding har en version.
   add constraint profiles_onboarding_version_klar check ((onboarding_version is null) = (onboarding_completed_at is null)) not valid;
@@ -135,11 +138,12 @@ revoke execute on function public.onboarding_v4_questions() from public, anon, a
 revoke execute on function public.onboarding_v4_clean_answer(text, text, jsonb) from public, anon, authenticated;
 revoke execute on function public.onboarding_v4_entry(uuid) from public, anon, authenticated;
 
--- Sparar ett svar. Före klar onboarding får ett svar ändras. Efter den gäller
+-- Sparar ett svar med tiden det gavs (now()) och ger tillbaka tiden. Före
+-- klar onboarding får ett svar ändras, och får då en ny tid. Efter den gäller
 -- ingången som sparades, och bara återstående frågor (utan svar) kan
 -- besvaras: 55000 annars.
 create function public.save_onboarding_answer(p_question text, p_answer text)
-returns void
+returns timestamptz
 language plpgsql
 security definer
 set search_path = ''
@@ -173,8 +177,10 @@ begin
   end if;
 
   update public.profiles
-    set onboarding_answers = onboarding_answers || jsonb_build_object(p_question, v_answer)
+    set onboarding_answers = onboarding_answers
+      || jsonb_build_object(p_question, jsonb_build_object('answer', v_answer, 'answered_at', now()))
     where user_id = v_user;
+  return now();
 end;
 $$;
 
@@ -227,7 +233,11 @@ begin
   v_answers := v_profile.onboarding_answers;
   for v_key in select jsonb_object_keys(p_answers) loop
     v_answers := v_answers || jsonb_build_object(
-      v_key, public.onboarding_v4_clean_answer(v_entry, v_key, p_answers -> v_key)
+      v_key,
+      jsonb_build_object(
+        'answer', public.onboarding_v4_clean_answer(v_entry, v_key, p_answers -> v_key),
+        'answered_at', now()
+      )
     );
   end loop;
 

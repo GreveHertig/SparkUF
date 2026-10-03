@@ -5,8 +5,9 @@ import { useI18n } from "@/i18n/context";
 import { fill } from "@/i18n/fill";
 import type { OnboardingEntry } from "@/core/domain";
 import { remainingOnboardingQuestions, type OnboardingAnswers } from "@/core/onboarding";
+import type { Källa } from "@/core/domain";
 import { buildStartFrame } from "@/core/startFrame";
-import type { OnboardingQuestion } from "@/ports/ProfileRepository";
+import type { OnboardingQuestion, SavedOnboardingAnswer } from "@/ports/ProfileRepository";
 import { ChatLine } from "./ChatBlocks";
 import type { OnboardingFormAction, OnboardingFormState } from "./OnboardingForms";
 import { AnswerLine, OnboardingQuestionCard, answerText, type SaveOnboardingAnswer } from "./OnboardingQuestion";
@@ -27,29 +28,35 @@ export function OnboardingQuestionFlow({
   initialAnswers,
   saveAnswer,
   completeAction,
-  todayIso,
 }: {
   entry: OnboardingEntry;
   /** Kärnfrågorna, i ordning. */
   questions: OnboardingQuestion[];
-  initialAnswers: Record<string, string>;
+  /** De sparade svaren, med dagen de gavs (källans datum). */
+  initialAnswers: Record<string, SavedOnboardingAnswer>;
   saveAnswer: SaveOnboardingAnswer;
   completeAction: OnboardingFormAction;
-  /** Dagens datum (ÅÅÅÅ-MM-DD), för källan "Din uppgift". */
-  todayIso: string;
 }) {
   const { t } = useI18n();
   const copy = t.onboarding.profile;
   const [answers, setAnswers] = useState(initialAnswers);
   const [editing, setEditing] = useState<string | null>(null);
   const [state, formAction, pending] = useActionState(completeAction, INITIAL_STATE);
-  const source = { namn: t.evidence.internalSources.profile, hämtad: todayIso };
+  // Källan "Din uppgift" med dagen svaret gavs. Saknas tiden visas inget
+  // datum (tomt `hämtad`), aldrig dagens.
+  const sourceFor = (questionId: string): Källa => ({
+    namn: t.evidence.internalSources.profile,
+    hämtad: answers[questionId]?.answeredOn ?? "",
+  });
+  const plainAnswers: OnboardingAnswers = Object.fromEntries(
+    Object.entries(answers).map(([id, saved]) => [id, saved.answer]),
+  );
 
   const active = questions.find((question) => question.id === editing) ?? (editing ? undefined : questions.find((question) => !answers[question.id]));
   const coreDone = questions.every((question) => answers[question.id]);
 
-  function saved(questionId: string, answer: string) {
-    setAnswers((current) => ({ ...current, [questionId]: answer }));
+  function saved(questionId: string, answer: string, answeredOn: string | null) {
+    setAnswers((current) => ({ ...current, [questionId]: { answer, answeredOn } }));
     setEditing(null);
   }
 
@@ -63,19 +70,19 @@ export function OnboardingQuestionFlow({
                 <p className="fdd-muted">{fill(copy.progressTemplate, { current: index + 1, total: questions.length })}</p>
                 <OnboardingQuestionCard
                   question={question}
-                  selected={answers[question.id]}
+                  selected={answers[question.id]?.answer}
                   onSave={saveAnswer}
-                  onSaved={(answer) => saved(question.id, answer)}
+                  onSaved={(answer, answeredOn) => saved(question.id, answer, answeredOn)}
                 />
               </div>
             );
           }
-          const answer = answers[question.id];
+          const answer = answers[question.id]?.answer;
           if (!answer) return null;
           return (
             <div key={question.id} className="fdd-conversation__pair">
               <ChatLine role="cofounder" text={question.cofounderText} />
-              <AnswerLine text={answerText(question, answer)} source={source} />
+              <AnswerLine text={answerText(question, answer)} source={sourceFor(question.id)} />
               <button type="button" className="fdd-link fdd-self-start" onClick={() => setEditing(question.id)}>
                 {copy.changeCta}
               </button>
@@ -86,9 +93,9 @@ export function OnboardingQuestionFlow({
 
       {coreDone && !active && (
         <StartFrameCard
-          frame={buildStartFrame(entry, answers as OnboardingAnswers)}
-          remainingCount={remainingOnboardingQuestions(entry, answers as OnboardingAnswers).length}
-          source={source}
+          frame={buildStartFrame(entry, plainAnswers)}
+          remainingCount={remainingOnboardingQuestions(entry, plainAnswers).length}
+          sourceFor={sourceFor}
         >
           <form action={formAction}>
             {state.invalid && (

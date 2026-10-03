@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ComingSoon } from "@/components/ui/ComingSoon";
 import { useI18n } from "@/i18n/context";
 import type { OnboardingEntry } from "@/core/domain";
-import type { OnboardingScript } from "@/ports/ProfileRepository";
+import type { OnboardingScript, SavedOnboardingAnswer } from "@/ports/ProfileRepository";
 import { ChatLine } from "./blocks/ChatBlocks";
 import type { OnboardingFormAction } from "./blocks/OnboardingForms";
 import type { SaveOnboardingAnswer } from "./blocks/OnboardingQuestion";
@@ -27,12 +27,12 @@ export type OnboardingProfileData = { script: OnboardingScript | null };
  * och actionerna sparar. Utan den visas demots samtal med färdiga svar. */
 export type OnboardingLiveFlow = {
   entry: OnboardingEntry;
-  /** De svar som redan är sparade, så att samtalet fortsätter där det slutade. */
-  answers: Record<string, string>;
+  /** De svar som redan är sparade, med dagen de gavs, så att samtalet
+   * fortsätter där det slutade. */
+  answers: Record<string, SavedOnboardingAnswer>;
   saveAnswer: SaveOnboardingAnswer;
   /** Gör onboardingen klar och skickar till /app ("Till appen" på startkortet). */
   completeAction: OnboardingFormAction;
-  todayIso: string;
 };
 
 export type OnboardingProfileProps = {
@@ -68,7 +68,6 @@ export function OnboardingProfile({ data, continueHref, onContinue, live }: Onbo
           initialAnswers={live.answers}
           saveAnswer={live.saveAnswer}
           completeAction={live.completeAction}
-          todayIso={live.todayIso}
         />
       ) : data.script ? (
         <Conversation script={data.script} continueHref={continueHref} onContinue={onContinue} />

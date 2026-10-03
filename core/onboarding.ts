@@ -147,14 +147,40 @@ export function coreQuestionsAnswered(entry: OnboardingEntry, answers: Onboardin
   return ONBOARDING_QUESTIONS_BY_ENTRY[entry].core.every((id) => Boolean(answers[id]));
 }
 
-/** De svar i ett okänt objekt (till exempel jsonb ur databasen) som är giltiga
- * för någon version 2-fråga. Allt annat tas bort, aldrig gissat. */
-export function parseOnboardingAnswers(value: unknown): OnboardingAnswers {
+/** Ett sparat svar och när det gavs. `answeredAt` (ISO-tid) sätts av
+ * databasen när svaret sparas och är `null` när tiden saknas: då visas inget
+ * datum, aldrig ett påhittat. */
+export type OnboardingAnswerRecord = { answer: string; answeredAt: string | null };
+export type OnboardingAnswerRecords = Partial<Record<OnboardingQuestionId, OnboardingAnswerRecord>>;
+
+/** De svar i ett okänt objekt (jsonb ur `profiles.onboarding_answers`, formen
+ * {frågans id: {answer, answered_at}}) som är giltiga för någon version
+ * 2-fråga. Allt annat tas bort, aldrig gissat. Ett svar utan giltig tid
+ * behålls, med `answeredAt: null`. */
+export function parseOnboardingAnswerRecords(value: unknown): OnboardingAnswerRecords {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const result: OnboardingAnswerRecords = {};
+  for (const [id, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (!isKnownOnboardingQuestion(id)) continue;
+    const raw = entry && typeof entry === "object" && !Array.isArray(entry) ? (entry as Record<string, unknown>) : null;
+    const answer = typeof entry === "string" ? entry : raw?.answer;
+    if (typeof answer !== "string" || !isValidOnboardingAnswer(id, answer)) continue;
+    const at = raw?.answered_at;
+    const answeredAt = typeof at === "string" && !Number.isNaN(Date.parse(at)) ? at : null;
+    result[id] = { answer: isChoiceQuestion(id) ? answer : answer.trim(), answeredAt };
+  }
+  return result;
+}
+
+/** Bara svaren, utan tid: det som logiken (startkortet, återstående frågor) behöver. */
+export function parseOnboardingAnswers(value: unknown): OnboardingAnswers {
+  return answersOf(parseOnboardingAnswerRecords(value));
+}
+
+export function answersOf(records: OnboardingAnswerRecords): OnboardingAnswers {
   const result: OnboardingAnswers = {};
-  for (const [id, answer] of Object.entries(value as Record<string, unknown>)) {
-    if (!isKnownOnboardingQuestion(id) || typeof answer !== "string") continue;
-    if (isValidOnboardingAnswer(id, answer)) result[id] = isChoiceQuestion(id) ? answer : answer.trim();
+  for (const [id, record] of Object.entries(records)) {
+    if (record) result[id as OnboardingQuestionId] = record.answer;
   }
   return result;
 }

@@ -3,6 +3,7 @@ import type {
   OnboardingScript,
   OnboardingStatus,
   ProfileRepository,
+  SavedOnboardingAnswer,
 } from "@/ports/ProfileRepository";
 import type { OnboardingEntry, Profile } from "@/core/domain";
 import type { Locale } from "@/i18n/context";
@@ -17,11 +18,11 @@ import {
   ONBOARDING_QUESTIONS_BY_ENTRY,
   isOnboardingQuestionFor,
   isValidOnboardingAnswer,
-  parseOnboardingAnswers,
+  parseOnboardingAnswerRecords,
 } from "@/core/onboarding";
 import { requireSupabaseUser } from "@/lib/server/session";
 import { readOnboardingStatus } from "@/lib/server/onboardingStatus";
-import { toOnboardingQuestion } from "@/adapters/live/onboardingQuestions";
+import { answeredOn, toOnboardingQuestion } from "@/adapters/live/onboardingQuestions";
 import { sv } from "@/i18n/sv";
 import { en } from "@/i18n/en";
 
@@ -116,7 +117,7 @@ export const liveProfileRepository: ProfileRepository & Required<Pick<ProfileRep
     throw new Error(`Profil: kunde inte spara onboardingen (${error.message}).`);
   },
 
-  async saveOnboardingAnswer({ questionId, answer }: OnboardingAnswer): Promise<void> {
+  async saveOnboardingAnswer({ questionId, answer }: OnboardingAnswer): Promise<SavedOnboardingAnswer> {
     // Ingången prövas i databasen (den härleds där, aldrig ur indata). Här
     // bara att frågan finns och att svaret har rätt form.
     const known = isOnboardingQuestionFor("noIdea", questionId) || isOnboardingQuestionFor("hasIdea", questionId);
@@ -124,22 +125,28 @@ export const liveProfileRepository: ProfileRepository & Required<Pick<ProfileRep
       throw new Error(`Profil: svaret på "${questionId}" är ogiltigt.`);
     }
     const { supabase } = await requireSupabaseUser();
-    const { error } = await supabase.rpc("save_onboarding_answer", { p_question: questionId, p_answer: answer.trim() });
-    if (!error) return;
+    const trimmed = answer.trim();
+    const { data, error } = await supabase.rpc("save_onboarding_answer", { p_question: questionId, p_answer: trimmed });
+    // Databasen ger tiden svaret sparades med (now()).
+    if (!error) return { answer: trimmed, answeredOn: answeredOn(typeof data === "string" ? data : null) };
     if (error.code === ALREADY_COMPLETED) throw new OnboardingAnswerLockedError();
     if (error.code === INVALID_INPUT) throw new OnboardingAnswerInvalidError();
     if (isMissingMigration(error)) throw new NotImplementedError("Profil (onboarding v4)", DOC);
     throw new Error(`Profil: kunde inte spara svaret (${error.message}).`);
   },
 
-  async getOnboardingAnswers(): Promise<Record<string, string>> {
+  async getOnboardingAnswers(): Promise<Record<string, SavedOnboardingAnswer>> {
     const { supabase, userId } = await requireSupabaseUser();
     const { data, error } = await supabase.from("profiles").select("onboarding_answers").eq("user_id", userId).maybeSingle();
     if (error) {
       if (isMissingMigration(error)) throw new NotImplementedError("Profil (onboarding v4)", DOC);
       throw new Error(`Profil: kunde inte läsa svaren (${error.message}).`);
     }
-    // Bara giltiga svar: ett okänt id eller val tas bort, aldrig gissat.
-    return parseOnboardingAnswers(data?.onboarding_answers) as Record<string, string>;
+    // Bara giltiga svar: ett okänt id eller val tas bort, aldrig gissat. Ett
+    // svar utan tid får `answeredOn: null`, aldrig dagens datum.
+    const records = parseOnboardingAnswerRecords(data?.onboarding_answers);
+    return Object.fromEntries(
+      Object.entries(records).map(([id, record]) => [id, { answer: record!.answer, answeredOn: answeredOn(record!.answeredAt) }]),
+    );
   },
 };

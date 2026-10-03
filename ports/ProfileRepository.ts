@@ -54,8 +54,13 @@ export interface ProfileRepository {
    * fortsätta). Före klar onboarding får svaret ändras, efter den kan bara
    * återstående frågor besvaras (`OnboardingAnswerLockedError` annars).
    * Valfri: demot sparar inget. Ändrad port, beslut Erik 2026-10-03. */
-  saveOnboardingAnswer?(answer: OnboardingAnswer): Promise<void>;
-  /** De v4-svar som redan är sparade, {frågans id: val-id eller text}, så att
-   * samtalet fortsätter vid första obesvarade fråga. Valfri, som ovan. */
-  getOnboardingAnswers?(): Promise<Record<string, string>>;
+  saveOnboardingAnswer?(answer: OnboardingAnswer): Promise<SavedOnboardingAnswer>;
+  /** De v4-svar som redan är sparade, {frågans id: svaret och dagen det gavs},
+   * så att samtalet fortsätter vid första obesvarade fråga. Valfri, som ovan. */
+  getOnboardingAnswers?(): Promise<Record<string, SavedOnboardingAnswer>>;
 }
+
+/** Ett sparat v4-svar: val-id eller text, och dagen (ÅÅÅÅ-MM-DD, Stockholm)
+ * då det gavs. `answeredOn` är `null` när tiden saknas; då visas inget datum,
+ * aldrig ett påhittat. Ändrad port, beslut Erik 2026-10-03. */
+export type SavedOnboardingAnswer = { answer: string; answeredOn: string | null };

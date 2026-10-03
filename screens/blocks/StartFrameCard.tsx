@@ -18,19 +18,19 @@ import type { Källa } from "@/core/domain";
 export function StartFrameCard({
   frame,
   remainingCount,
-  source,
+  sourceFor,
   children,
 }: {
   frame: StartFrame;
   remainingCount: number;
-  /** Profilsamtalet och dagens datum: svaren gavs nyss. */
-  source: Källa;
+  /** Källan för svaret på en fråga: profilsamtalet och dagen svaret gavs. */
+  sourceFor: (questionId: string) => Källa;
   /** Knappen vidare, som routen bestämmer. */
   children: ReactNode;
 }) {
   const { t } = useI18n();
   const copy = t.onboarding.startFrame;
-  const tag = <SourceTag source={source} dataType="user" />;
+  const tag = (questionId: string) => <SourceTag source={sourceFor(questionId)} dataType="user" />;
 
   let hours: string | null = null;
   if (frame.hours?.kind === "under") hours = fill(copy.hoursUnder, { max: frame.hours.max });
@@ -53,7 +53,7 @@ export function StartFrameCard({
           <p className="fdd-label">{copy.hoursLabel}</p>
           <p className="fdd-body">{hours}</p>
           <p className="fdd-muted fdd-inline">
-            {fill(copy.hoursNote, { weeks: START_FRAME_WEEKS })} {tag}
+            {fill(copy.hoursNote, { weeks: START_FRAME_WEEKS })} {tag("time")}
           </p>
         </div>
       )}
@@ -62,7 +62,7 @@ export function StartFrameCard({
         <div>
           <p className="fdd-label">{copy.moneyLabel}</p>
           <p className="fdd-body fdd-inline">
-            {money} {textHasFigure(money) && tag}
+            {money} {textHasFigure(money) && tag("money")}
           </p>
         </div>
       )}
@@ -71,7 +71,7 @@ export function StartFrameCard({
         <div>
           <p className="fdd-label">{copy.customerLabel}</p>
           <p className="fdd-body fdd-inline">
-            {frame.customer} {textHasFigure(frame.customer) && tag}
+            {frame.customer} {textHasFigure(frame.customer) && tag("customer")}
           </p>
         </div>
       )}

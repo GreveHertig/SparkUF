@@ -30,17 +30,26 @@ function coreQuestions(entry: OnboardingEntry): OnboardingQuestion[] {
   });
 }
 
-function renderFlow(entry: OnboardingEntry, initialAnswers: Record<string, string> = {}, saveAnswer = vi.fn().mockResolvedValue({ ok: true })) {
+/** Sparade svar med dagen de gavs. `null` = svaret saknar tid. */
+function savedOn(answers: Record<string, string>, answeredOn: string | null = "2026-10-01") {
+  return Object.fromEntries(Object.entries(answers).map(([id, answer]) => [id, { answer, answeredOn }]));
+}
+
+function renderFlow(
+  entry: OnboardingEntry,
+  initialAnswers: Record<string, string> = {},
+  saveAnswer = vi.fn().mockResolvedValue({ ok: true, answeredOn: "2026-10-03" }),
+  answeredOn: string | null = "2026-10-01",
+) {
   const completeAction = vi.fn().mockResolvedValue({ invalid: false });
   render(
     <LocaleProvider>
       <OnboardingQuestionFlow
         entry={entry}
         questions={coreQuestions(entry)}
-        initialAnswers={initialAnswers}
+        initialAnswers={savedOn(initialAnswers, answeredOn)}
         saveAnswer={saveAnswer}
         completeAction={completeAction}
-        todayIso="2026-10-03"
       />
     </LocaleProvider>,
   );
@@ -75,8 +84,10 @@ describe("OnboardingQuestionFlow", () => {
     expect(screen.getByText(sv.onboarding.startFrame.lines.soldB2bYes)).toBeInTheDocument();
     expect(screen.getByText(sv.onboarding.startFrame.tasks.callPastBuyer)).toBeInTheDocument();
     expect(screen.getByText("3 frågor återstår. Du hittar dem under Återstår i Minnet och kan svara när du vill.")).toBeInTheDocument();
-    // Siffrorna bär källan "Din uppgift".
-    expect(screen.getAllByText(sv.common.userSourceLabel).length).toBeGreaterThan(0);
+    // Siffrorna bär källan "Din uppgift", med dagen databasen sparade svaret.
+    const tags = screen.getAllByRole("button", { name: sv.common.sourceTag.openDetails });
+    expect(tags.length).toBeGreaterThan(0);
+    for (const tag of tags) expect(tag).toHaveTextContent(`${sv.common.userSourceLabel}·${sv.evidence.internalSources.profile}·3 oktober`);
     expect(screen.getByRole("button", { name: sv.onboarding.startFrame.continueCta })).toBeInTheDocument();
   });
 
@@ -102,6 +113,18 @@ describe("OnboardingQuestionFlow", () => {
     expect(saveAnswer).toHaveBeenLastCalledWith("time", "under3");
     expect(screen.getByText("Under 39 timmar")).toBeInTheDocument();
     expect(screen.getByText(sv.onboarding.startFrame.lines.timeSmall)).toBeInTheDocument();
+  });
+
+  it("källans datum är dagen svaret gavs, och ett svar utan tid får inget datum", () => {
+    renderFlow("noIdea", { situation: "employed", time: "h3to6", money: "under1000", soldB2b: "no" });
+    const dated = screen.getAllByRole("button", { name: sv.common.sourceTag.openDetails });
+    expect(dated[0]).toHaveTextContent("1 oktober");
+    cleanup();
+
+    renderFlow("noIdea", { situation: "employed", time: "h3to6", money: "under1000", soldB2b: "no" }, undefined, null);
+    for (const tag of screen.getAllByRole("button", { name: sv.common.sourceTag.openDetails })) {
+      expect(tag.textContent).toBe(`${sv.common.userSourceLabel}·${sv.evidence.internalSources.profile}`);
+    }
   });
 
   it("ingång B: kundgissningen är fritext, och startkortet återger den ordagrant i uppgiften", async () => {

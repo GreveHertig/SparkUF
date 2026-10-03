@@ -158,18 +158,25 @@ describe("liveProfileRepository.saveOnboardingAnswer och getOnboardingAnswers", 
         ],
         ...tables,
       },
-      onboardingRpcFake(USER_ID),
+      // 22:30 UTC är 00:30 nästa dag i Stockholm: dagen räknas i svensk tid.
+      onboardingRpcFake(USER_ID, () => new Date("2026-10-02T22:30:00Z")),
     );
   }
 
-  it("sparar ett svar i taget, trimmat, bara på den egna raden, och läser tillbaka dem", async () => {
+  it("sparar ett svar i taget, trimmat, bara på den egna raden, och läser tillbaka dem med dagen de gavs", async () => {
     const supabase = fake({}, { projects: [{ user_id: USER_ID, is_active: true }] });
     requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
 
-    await liveProfileRepository.saveOnboardingAnswer({ questionId: "situation", answer: "employed" });
+    expect(await liveProfileRepository.saveOnboardingAnswer({ questionId: "situation", answer: "employed" })).toEqual({
+      answer: "employed",
+      answeredOn: "2026-10-03",
+    });
     await liveProfileRepository.saveOnboardingAnswer({ questionId: "customer", answer: "  Padelhallar " });
-    expect(await liveProfileRepository.getOnboardingAnswers()).toEqual({ situation: "employed", customer: "Padelhallar" });
+    expect(await liveProfileRepository.getOnboardingAnswers()).toEqual({
+      situation: { answer: "employed", answeredOn: "2026-10-03" },
+      customer: { answer: "Padelhallar", answeredOn: "2026-10-03" },
+    });
     expect(supabase.tables.profiles.find((r) => r.user_id === "another-user")?.onboarding_answers).toEqual({});
   });
 
@@ -198,14 +205,29 @@ describe("liveProfileRepository.saveOnboardingAnswer och getOnboardingAnswers", 
       OnboardingAnswerLockedError,
     );
     await liveProfileRepository.saveOnboardingAnswer({ questionId: "knowsOwner", answer: "yes" });
-    expect(await liveProfileRepository.getOnboardingAnswers()).toEqual({ archetype: "seller", knowsOwner: "yes" });
+    // Ett svar utan tid (archetype) får inget datum, aldrig dagens.
+    expect(await liveProfileRepository.getOnboardingAnswers()).toEqual({
+      archetype: { answer: "seller", answeredOn: null },
+      knowsOwner: { answer: "yes", answeredOn: "2026-10-03" },
+    });
   });
 
   it("getOnboardingAnswers tar bort okända id:n och val, och gissar aldrig", async () => {
-    const supabase = fake({ onboarding_answers: { situation: "employed", time: "massor", role: "Säljare", money: 5 } });
+    const supabase = fake({
+      onboarding_answers: {
+        situation: { answer: "employed", answered_at: "2026-10-01T08:00:00Z" },
+        time: { answer: "massor", answered_at: "2026-10-01T08:00:00Z" },
+        role: { answer: "Säljare" },
+        money: { answer: 5 },
+        soldB2b: { answer: "no", answered_at: "inte en tid" },
+      },
+    });
     requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
-    expect(await liveProfileRepository.getOnboardingAnswers()).toEqual({ situation: "employed" });
+    expect(await liveProfileRepository.getOnboardingAnswers()).toEqual({
+      situation: { answer: "employed", answeredOn: "2026-10-01" },
+      soldB2b: { answer: "no", answeredOn: null },
+    });
   });
 
   it("utan körd migrering (kolumnen saknas) blir det ett platshållarfel, inte en krasch", async () => {
@@ -259,8 +281,15 @@ describe("liveProfileRepository.completeOnboarding", () => {
     await liveProfileRepository.completeOnboarding({ entry: "noIdea", answers: coreA });
 
     const row = supabase.tables.profiles.find((r) => r.user_id === USER_ID)!;
+    const stored = row.onboarding_answers as Record<string, { answer: string; answered_at: string }>;
+    expect(Object.fromEntries(Object.entries(stored).map(([id, saved]) => [id, saved.answer]))).toEqual({
+      situation: "employed",
+      time: "h3to6",
+      money: "none",
+      soldB2b: "no",
+    });
+    expect(stored.time.answered_at).toEqual(expect.any(String));
     expect(row).toMatchObject({
-      onboarding_answers: { situation: "employed", time: "h3to6", money: "none", soldB2b: "no" },
       onboarding_entry: "noIdea",
       onboarding_version: 2,
       name: "Sara",

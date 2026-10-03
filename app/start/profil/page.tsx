@@ -1,6 +1,5 @@
 import { OnboardingProfile } from "@/screens/OnboardingProfile";
 import { liveProfileRepository } from "@/adapters/live/ProfileRepository";
-import { stockholmToday } from "@/adapters/live/evidenceScore";
 import { orNull } from "@/app/(app)/app/_lib/orNull";
 import { completeOnboardingAction, saveOnboardingAnswerAction } from "../actions";
 import { resolveOnboardingEntry } from "../_lib/entry";
@@ -26,7 +25,6 @@ export default async function StartProfilePage() {
         answers: answers ?? {},
         saveAnswer: saveOnboardingAnswerAction,
         completeAction: completeOnboardingAction,
-        todayIso: stockholmToday(),
       }}
     />
   );

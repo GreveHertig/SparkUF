@@ -90,8 +90,12 @@ describeContract<ProfileRepository>(
       if (!profile.saveOnboardingAnswer || !profile.getOnboardingAnswers) return;
       const [question] = (await profile.getOnboardingScript("noIdea", "sv")).questions;
       const answer = question.choices?.[0]?.id ?? "Ett svar.";
-      await profile.saveOnboardingAnswer({ questionId: question.id, answer });
-      expect(await profile.getOnboardingAnswers()).toMatchObject({ [question.id]: answer });
+      const saved = await profile.saveOnboardingAnswer({ questionId: question.id, answer });
+      // Dagen svaret gavs kommer ur databasens tid, i formen ÅÅÅÅ-MM-DD.
+      expect(saved.answeredOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(await profile.getOnboardingAnswers()).toMatchObject({
+        [question.id]: { answer, answeredOn: saved.answeredOn },
+      });
     });
   },
 );

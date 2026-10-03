@@ -170,7 +170,12 @@ describe("/start (PR 11)", () => {
       "@/adapters/live/ProfileRepository",
     );
     getOnboardingScriptMock.mockImplementation((entry, locale) => real.getOnboardingScript(entry, locale));
-    getOnboardingAnswersMock.mockResolvedValue({ situation: "employed", time: "h3to6", money: "none", soldB2b: "no" });
+    getOnboardingAnswersMock.mockResolvedValue({
+      situation: { answer: "employed", answeredOn: "2026-10-02" },
+      time: { answer: "h3to6", answeredOn: "2026-10-02" },
+      money: { answer: "none", answeredOn: "2026-10-02" },
+      soldB2b: { answer: "no", answeredOn: null },
+    });
     const { default: StartProfilePage } = await import("./profil/page");
     renderTree(await StartProfilePage());
     expect(screen.getByRole("heading", { name: sv.onboarding.startFrame.titleNoIdea })).toBeInTheDocument();

@@ -36,7 +36,9 @@ const ProjectSchema = z
 
 const AnswerInputSchema = z.object({ questionId: z.string(), answer: z.string() });
 
-export type SaveOnboardingAnswerResult = { ok: true } | { ok: false; reason: "invalid" | "locked" };
+export type SaveOnboardingAnswerResult =
+  | { ok: true; answeredOn: string | null }
+  | { ok: false; reason: "invalid" | "locked" };
 
 /** Ingång B: idén blir grundarens aktiva projekt (`is_active: true` i adaptern). */
 export async function createProjectAction(
@@ -72,13 +74,13 @@ export async function saveOnboardingAnswerAction(questionId: unknown, answer: un
   }
 
   try {
-    await liveProfileRepository.saveOnboardingAnswer(input);
+    const saved = await liveProfileRepository.saveOnboardingAnswer(input);
+    return { ok: true, answeredOn: saved.answeredOn };
   } catch (error) {
     if (error instanceof OnboardingAnswerInvalidError) return { ok: false, reason: "invalid" };
     if (error instanceof OnboardingAnswerLockedError) return { ok: false, reason: "locked" };
     throw error;
   }
-  return { ok: true };
 }
 
 /**
@@ -89,7 +91,8 @@ export async function saveOnboardingAnswerAction(questionId: unknown, answer: un
  */
 export async function completeOnboardingAction(): Promise<OnboardingFormState> {
   const entry = await resolveOnboardingEntry();
-  const answers = await liveProfileRepository.getOnboardingAnswers();
+  const saved = await liveProfileRepository.getOnboardingAnswers();
+  const answers = Object.fromEntries(Object.entries(saved).map(([id, { answer }]) => [id, answer]));
   if (!coreQuestionsAnswered(entry, answers)) return { invalid: true };
 
   try {

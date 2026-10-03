@@ -54,12 +54,14 @@ function v4ProfileRow() {
     onboarding_entry: "noIdea",
     onboarding_completed_at: "2026-10-03T08:00:00Z",
     onboarding_version: 2,
+    // Som public.save_onboarding_answer sparar dem: svaret och tiden. 22:30
+    // UTC är nästa dag i Stockholm. frustration saknar tid med flit.
     onboarding_answers: {
-      frustration: "Kvitton som försvinner.",
-      money: "none",
-      situation: "employed",
-      time: "h3to6",
-      soldB2b: "no",
+      frustration: { answer: "Kvitton som försvinner." },
+      money: { answer: "none", answered_at: "2026-10-02T22:30:00Z" },
+      situation: { answer: "employed", answered_at: "2026-10-02T08:00:00Z" },
+      time: { answer: "h3to6", answered_at: "2026-10-02T08:00:00Z" },
+      soldB2b: { answer: "no", answered_at: "2026-10-02T08:00:00Z" },
     },
   };
 }
@@ -147,24 +149,35 @@ describe("liveMemoryRepository.getProfileSummary", () => {
     const summary = await liveMemoryRepository.getProfileSummary("sv");
     expect(summary).toMatchObject({ entry: "noIdea", role: null, time: null, money: null, risk: null });
     expect(summary.answers).toEqual([
-      { questionId: "situation", question: sv.onboarding.v4Questions.noIdea.situation, answer: "Jobbar" },
-      { questionId: "time", question: sv.onboarding.v4Questions.noIdea.time, answer: "3–6 timmar" },
-      { questionId: "money", question: sv.onboarding.v4Questions.noIdea.money, answer: "Inget" },
-      { questionId: "soldB2b", question: sv.onboarding.v4Questions.noIdea.soldB2b, answer: "Nej" },
-      { questionId: "frustration", question: sv.onboarding.v4Questions.noIdea.frustration, answer: "Kvitton som försvinner." },
+      { questionId: "situation", question: sv.onboarding.v4Questions.noIdea.situation, answer: "Jobbar", answeredOn: "2026-10-02" },
+      { questionId: "time", question: sv.onboarding.v4Questions.noIdea.time, answer: "3–6 timmar", answeredOn: "2026-10-02" },
+      { questionId: "money", question: sv.onboarding.v4Questions.noIdea.money, answer: "Inget", answeredOn: "2026-10-03" },
+      { questionId: "soldB2b", question: sv.onboarding.v4Questions.noIdea.soldB2b, answer: "Nej", answeredOn: "2026-10-02" },
+      // Utan sparad tid: inget datum, aldrig dagens.
+      {
+        questionId: "frustration",
+        question: sv.onboarding.v4Questions.noIdea.frustration,
+        answer: "Kvitton som försvinner.",
+        answeredOn: null,
+      },
     ]);
   });
 
   it("version 1: fritextsvaren står kvar, och v4-svar som getts efteråt syns bredvid, på engelska när locale är en", async () => {
     requireSupabaseUserMock.mockResolvedValue({
-      supabase: makeSupabaseFake({ profiles: [{ ...completeProfileRow(), onboarding_answers: { archetype: "seller", role: "Kapad" } }] }),
+      supabase: makeSupabaseFake({ profiles: [{ ...completeProfileRow(), onboarding_answers: { archetype: { answer: "seller", answered_at: "2026-10-05T09:00:00Z" }, role: { answer: "Kapad" } } }] }),
       userId: USER_ID,
     });
     const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
     const summary = await liveMemoryRepository.getProfileSummary("en");
     expect(summary).toMatchObject({ role: "Redovisningskonsult", time: "Kvällar och helger" });
     expect(summary.answers).toEqual([
-      { questionId: "archetype", question: "Which of these three sounds most like you?", answer: "I would rather talk to people than sit alone with a task" },
+      {
+        questionId: "archetype",
+        question: "Which of these three sounds most like you?",
+        answer: "I would rather talk to people than sit alone with a task",
+        answeredOn: "2026-10-05",
+      },
     ]);
   });
 
@@ -364,7 +377,7 @@ describe("liveMemoryRepository.getKnownProfile", () => {
 
   it("ett fritextsvar från före v4 går före v4-svaret för samma sak", async () => {
     requireSupabaseUserMock.mockResolvedValue({
-      supabase: makeSupabaseFake({ profiles: [{ ...completeProfileRow(), onboarding_answers: { time: "over10" } }] }),
+      supabase: makeSupabaseFake({ profiles: [{ ...completeProfileRow(), onboarding_answers: { time: { answer: "over10", answered_at: "2026-10-05T09:00:00Z" } } }] }),
       userId: USER_ID,
     });
     const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
@@ -395,7 +408,7 @@ describe("liveMemoryRepository.getPendingOnboardingQuestions", () => {
   it("allt besvarat ger en tom lista", async () => {
     const row = v4ProfileRow();
     requireSupabaseUserMock.mockResolvedValue({
-      supabase: makeSupabaseFake({ profiles: [{ ...row, onboarding_answers: { ...row.onboarding_answers, archetype: "builder", knowsOwner: "no" } }] }),
+      supabase: makeSupabaseFake({ profiles: [{ ...row, onboarding_answers: { ...row.onboarding_answers, archetype: { answer: "builder" }, knowsOwner: { answer: "no" } } }] }),
       userId: USER_ID,
     });
     const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");

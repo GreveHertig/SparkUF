@@ -42,11 +42,14 @@ export type ProfileSummary = {
   answers?: ProfileAnswerView[];
 };
 
-/** Ett givet svar, som Minnet visar det. */
+/** Ett givet svar, som Minnet visar det. `answeredOn` (ÅÅÅÅ-MM-DD) är dagen
+ * svaret gavs, datumet i källan "Din uppgift". `null` när tiden saknas: då
+ * visas källan utan datum, aldrig med ett påhittat. */
 export type ProfileAnswerView = {
   questionId: string;
   question: string;
   answer: string;
+  answeredOn: string | null;
 };
 
 /** En post som en annan modul vill spara i Spåret. Användaren tas alltid ur sessionen, aldrig ur indata. */

@@ -6,9 +6,10 @@ import {
   ONBOARDING_CHOICES,
   isChoiceQuestion,
   onboardingQuestionsFor,
-  type OnboardingAnswers,
+  type OnboardingAnswerRecords,
   type OnboardingQuestionId,
 } from "@/core/onboarding";
+import { stockholmToday } from "@/adapters/live/evidenceScore";
 import { sv } from "@/i18n/sv";
 import { en } from "@/i18n/en";
 
@@ -43,11 +44,25 @@ export function answerLabel(id: OnboardingQuestionId, answer: string, locale: Lo
   return labels[answer] ?? answer;
 }
 
-/** De givna svaren på ingångens frågor, i frågornas ordning. */
-export function toAnswerViews(entry: OnboardingEntry, answers: OnboardingAnswers, locale: Locale): ProfileAnswerView[] {
+/** Dagen (ÅÅÅÅ-MM-DD, Stockholm) då svaret gavs, ur tiden databasen satte.
+ * Saknas tiden blir det `null`, aldrig dagens datum. */
+export function answeredOn(answeredAt: string | null): string | null {
+  return answeredAt ? stockholmToday(new Date(answeredAt)) : null;
+}
+
+/** De givna svaren på ingångens frågor, i frågornas ordning, med dagen de gavs. */
+export function toAnswerViews(entry: OnboardingEntry, records: OnboardingAnswerRecords, locale: Locale): ProfileAnswerView[] {
   const texts: Partial<Record<OnboardingQuestionId, string>> = dictionaries[locale].onboarding.v4Questions[entry];
   return onboardingQuestionsFor(entry).flatMap((id) => {
-    const answer = answers[id];
-    return answer ? [{ questionId: id, question: texts[id] ?? "", answer: answerLabel(id, answer, locale) }] : [];
+    const record = records[id];
+    if (!record) return [];
+    return [
+      {
+        questionId: id,
+        question: texts[id] ?? "",
+        answer: answerLabel(id, record.answer, locale),
+        answeredOn: answeredOn(record.answeredAt),
+      },
+    ];
   });
 }

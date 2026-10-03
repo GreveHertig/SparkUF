@@ -40,7 +40,8 @@ getKnownProfile?(): Promise<Partial<ProfileSummary>>        // valfri, tillagd m
   aldrig automatiskt (se demoadaptern nedan).
 
 **Onboarding v4 (2026-10-03, spec v4 §3.2).** `ProfileSummary.answers?` ger
-v4-svaren med frågan och valets etikett, och
+v4-svaren med frågan, valets etikett och dagen svaret gavs (`answeredOn`, `null`
+när tiden saknas, och då visas inget datum), och
 `getPendingOnboardingQuestions?(locale)` ger frågorna som återstår (ingångens
 frågor minus de besvarade, härlett och aldrig lagrat). Profilen-fliken i /app
 visar Dina svar och Återstår, där grundaren kan svara med samma valknappar som

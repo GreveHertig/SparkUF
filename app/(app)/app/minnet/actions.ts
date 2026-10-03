@@ -60,7 +60,9 @@ export async function saveFitAnswer(questionId: unknown, answer: unknown): Promi
   }
 }
 
-export type SaveRemainingAnswerResult = { ok: true } | { ok: false; reason: "invalid" | "locked" };
+export type SaveRemainingAnswerResult =
+  | { ok: true; answeredOn: string | null }
+  | { ok: false; reason: "invalid" | "locked" };
 
 /**
  * Svar på en fråga som återstår från profilsamtalet (spec v4 §3.2), under
@@ -75,13 +77,14 @@ export async function saveRemainingAnswer(questionId: unknown, answer: unknown):
   const known = isOnboardingQuestionFor("noIdea", questionId) || isOnboardingQuestionFor("hasIdea", questionId);
   if (!known || !isValidOnboardingAnswer(questionId, answer)) return { ok: false, reason: "invalid" };
 
+  let saved;
   try {
-    await liveProfileRepository.saveOnboardingAnswer({ questionId, answer });
+    saved = await liveProfileRepository.saveOnboardingAnswer({ questionId, answer });
   } catch (error) {
     if (error instanceof OnboardingAnswerInvalidError) return { ok: false, reason: "invalid" };
     if (error instanceof OnboardingAnswerLockedError) return { ok: false, reason: "locked" };
     throw error;
   }
   revalidatePath("/app/minnet");
-  return { ok: true };
+  return { ok: true, answeredOn: saved.answeredOn };
 }
