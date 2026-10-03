@@ -8,7 +8,7 @@
 // handläggare som testet själv skickar in, se `FakeRpcHandlers`). Unika index
 // prövas bara vid `insert` och bara om testet deklarerar dem
 // (`FakeOptions.unique`), med PostgREST:s felkod 23505. Ingen join, inga
-// check-villkor, inga filter utöver `eq` och `is`.
+// check-villkor, inga filter utöver `eq`, `gte` och `is`.
 //
 // RISK, uttalad: en fejk kan glida semantiskt från riktig PostgREST. Håll
 // adapterfrågorna medvetet enkla (en tabell, `eq`/`order`, inga joins) och
@@ -29,6 +29,9 @@ export type FakeOptions = {
   /** Tabeller där en insert utan `id` får ett genererat, som en
    * `default gen_random_uuid()`-kolumn. */
   generatedIds?: string[];
+  /** Tabell -> kolumn som får ett stigande heltal vid insert, som en
+   * `generated always as identity`-kolumn (t.ex. cofounder_messages.seq). */
+  identity?: Record<string, string>;
 };
 
 type OrderSpec = { column: string; ascending: boolean };
@@ -37,6 +40,7 @@ class FakeQueryBuilder implements PromiseLike<FakeResult> {
   private readonly table: FakeRow[];
   private readonly uniqueIndexes: FakeUniqueIndex[];
   private readonly generateIds: boolean;
+  private readonly identityColumn: string | undefined;
   private readonly filters: Array<(row: FakeRow) => boolean> = [];
   private readonly orderSpecs: OrderSpec[] = [];
   private limitN: number | undefined;
@@ -49,6 +53,7 @@ class FakeQueryBuilder implements PromiseLike<FakeResult> {
     this.table = store[tableName] ?? (store[tableName] = []);
     this.uniqueIndexes = options.unique?.[tableName] ?? [];
     this.generateIds = options.generatedIds?.includes(tableName) ?? false;
+    this.identityColumn = options.identity?.[tableName];
   }
 
   select(): this {
@@ -57,6 +62,12 @@ class FakeQueryBuilder implements PromiseLike<FakeResult> {
 
   eq(column: string, value: unknown): this {
     this.filters.push((row) => row[column] === value);
+    return this;
+  }
+
+  /** `gte(kolumn, värde)`. Jämför som strängar eller tal, som ISO-tider. */
+  gte(column: string, value: string | number): this {
+    this.filters.push((row) => (row[column] as string | number) >= value);
     return this;
   }
 
@@ -137,9 +148,12 @@ class FakeQueryBuilder implements PromiseLike<FakeResult> {
 
   private execute(): FakeResult {
     if (this.mode === "insert") {
-      const rows = (Array.isArray(this.payload) ? this.payload : [this.payload as FakeRow]).map((row) =>
-        this.generateIds && row.id === undefined ? { id: this.ids(), ...row } : row,
-      );
+      const identity = this.identityColumn;
+      let nextIdentity =
+        identity === undefined ? 0 : Math.max(0, ...this.table.map((row) => Number(row[identity]) || 0));
+      const rows = (Array.isArray(this.payload) ? this.payload : [this.payload as FakeRow])
+        .map((row) => (this.generateIds && row.id === undefined ? { id: this.ids(), ...row } : row))
+        .map((row) => (identity === undefined ? row : { ...row, [identity]: ++nextIdentity }));
       for (const row of rows) {
         const index = this.violatedIndex(row);
         if (index) {

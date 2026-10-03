@@ -50,6 +50,22 @@ export const liveMemoryRepository: MemoryRepository = {
     };
   },
 
+  async getKnownProfile(): Promise<Partial<ProfileSummary>> {
+    const { supabase, userId } = await requireSupabaseUser();
+    const row = await getProfileRow(supabase, userId);
+    if (!row) return {};
+    const fields: [keyof ProfileSummary, string | null][] = [
+      ["name", row.name],
+      ["role", row.role],
+      ["bio", row.bio],
+      ["time", row.time_available],
+      ["money", row.money_available],
+      ["risk", row.risk_appetite],
+    ];
+    // Bara ifyllda fält, så att en tom sträng aldrig ser ut som ett svar.
+    return Object.fromEntries(fields.filter(([, value]) => value?.trim()).map(([key, value]) => [key, value!.trim()]));
+  },
+
   async getBrainNotes(): Promise<string> {
     const { supabase, userId } = await requireSupabaseUser();
     const { data, error } = await supabase.from("brain_notes").select("notes").eq("user_id", userId).maybeSingle();

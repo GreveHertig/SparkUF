@@ -19,6 +19,7 @@ getBrainNotes(): Promise<string>
 setBrainNotes(notes: string): Promise<void>
 getTraceEvents(locale: Locale): Promise<TraceEvent[]>
 recordTraceEvent(event: RecordTraceEventInput): Promise<void>   // tillagd med Domen
+getKnownProfile?(): Promise<Partial<ProfileSummary>>        // valfri, tillagd med Medgrundaren (docs/beslut.md 2026-10-03)
 ```
 
 - `ProfileSummary`: `{ name, role, bio, time, money, risk }` — Profilen-fliken.

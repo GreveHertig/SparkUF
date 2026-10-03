@@ -176,3 +176,31 @@ describe("liveMemoryRepository.recordTraceEvent", () => {
     expect(await liveMemoryRepository.getTraceEvents("sv")).toEqual([]);
   });
 });
+
+describe("liveMemoryRepository.getKnownProfile", () => {
+  beforeEach(() => {
+    requireSupabaseUserMock.mockReset();
+  });
+
+  it("ger en tom profil när raden saknas, utan att kasta", async () => {
+    requireSupabaseUserMock.mockResolvedValue({ supabase: makeSupabaseFake({}), userId: USER_ID });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    expect(await liveMemoryRepository.getKnownProfile!()).toEqual({});
+  });
+
+  it("ger bara de fält som är ifyllda (ingång B: tre svar)", async () => {
+    requireSupabaseUserMock.mockResolvedValue({
+      supabase: makeSupabaseFake({
+        profiles: [{ ...completeProfileRow(), bio: null, risk_appetite: "   " }],
+      }),
+      userId: USER_ID,
+    });
+    const { liveMemoryRepository } = await import("@/adapters/live/MemoryRepository");
+    expect(await liveMemoryRepository.getKnownProfile!()).toEqual({
+      name: "Sara Lindqvist",
+      role: "Redovisningskonsult",
+      time: "Kvällar och helger",
+      money: "20 000 kr",
+    });
+  });
+});

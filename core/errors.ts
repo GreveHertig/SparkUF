@@ -204,6 +204,40 @@ export class PulseWatchError extends Error {
   }
 }
 
+/**
+ * Kastas av Medgrundarens liveadapter (adapters/live/CofounderAgent.ts) när
+ * Gemini inte svarar eller svaret inte går att lita på. Meddelandet är alltid
+ * fast och innehåller aldrig modellens råtext (docs/moduler/medgrundaren.md,
+ * acceptanskriterierna). Ärver INTE NotImplementedError: en driftstörning ska
+ * synas som ett fel, inte som "Kommer snart".
+ */
+export class CofounderAgentError extends Error {
+  constructor(options?: { cause?: unknown }) {
+    super("Medgrundaren kunde inte svara just nu.", options);
+    this.name = "CofounderAgentError";
+  }
+}
+
+/**
+ * Kastas av Medgrundarens liveadapter när grundaren har skickat dagens högsta
+ * antal meddelanden (kostnadstaket, docs/beslut.md 2026-10-03). Server
+ * Action-lagret visar en text ur i18n.
+ */
+export class CofounderDailyLimitError extends Error {
+  constructor(readonly limit: number) {
+    super(`Medgrundaren: dagens tak på ${limit} meddelanden är nått.`);
+    this.name = "CofounderDailyLimitError";
+  }
+}
+
+/** Kastas av Medgrundarens liveadapter när meddelandet är tomt eller för långt. */
+export class CofounderInputError extends Error {
+  constructor() {
+    super("Medgrundaren: meddelandet är tomt eller för långt.");
+    this.name = "CofounderInputError";
+  }
+}
+
 export function isPlaceholderError(error: unknown): boolean {
   return (
     error instanceof NotImplementedError ||
