@@ -965,6 +965,8 @@ export type Dictionary = {
       passwordRequired: string;
       invalidCredentials: string;
       unexpected: string;
+      /** Supabase har nått gränsen för bekräftelsemejl (signUp, status 429). */
+      tooManyAttempts: string;
     };
     signOutCta: string;
   };

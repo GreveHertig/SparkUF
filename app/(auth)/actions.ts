@@ -24,7 +24,7 @@ export type SignUpFieldErrorCode =
   | "password_needs_letter"
   | "password_needs_number";
 
-export type AuthFormErrorCode = "invalid_credentials" | "unexpected";
+export type AuthFormErrorCode = "invalid_credentials" | "rate_limited" | "unexpected";
 
 export type SignInFieldErrors = Partial<Record<"email" | "password", SignInFieldErrorCode[]>>;
 export type SignUpFieldErrors = Partial<Record<"name" | "email" | "password", SignUpFieldErrorCode[]>>;
@@ -76,6 +76,11 @@ function mapAuthError(error: AuthError): AuthFormErrorCode {
   }
 }
 
+/** true när Supabase har nått gränsen för bekräftelsemejl (eller svarar 429). */
+function isRateLimitError(error: AuthError): boolean {
+  return error.code === "over_email_send_rate_limit" || error.status === 429;
+}
+
 /** true för Supabases "kontot finns redan"-koder. */
 function isAccountExistsError(error: AuthError): boolean {
   return error.code === "user_already_exists" || error.code === "email_exists";
@@ -110,6 +115,12 @@ export async function signUp(_prevState: SignUpFormState, formData: FormData): P
     // security-reviewer, Session P1.
     if (isAccountExistsError(error)) {
       return { checkEmail: true };
+    }
+    // Gränsen för bekräftelsemejl: en egen text i stället för "Något gick
+    // fel", så att grundaren vet att det går att försöka igen senare. Säger
+    // inget om huruvida adressen redan har ett konto.
+    if (isRateLimitError(error)) {
+      return { formError: "rate_limited" };
     }
     return { formError: mapAuthError(error) };
   }

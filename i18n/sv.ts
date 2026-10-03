@@ -1142,6 +1142,7 @@ export const sv = {
       passwordRequired: "Ange ditt lösenord.",
       invalidCredentials: "Fel e-post eller lösenord.",
       unexpected: "Något gick fel. Försök igen om en stund.",
+      tooManyAttempts: "För många försök just nu. Vänta en stund och försök igen.",
     },
     signOutCta: "Logga ut",
   },

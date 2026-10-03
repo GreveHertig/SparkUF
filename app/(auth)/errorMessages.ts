@@ -21,5 +21,6 @@ export const signUpFieldErrorKeys: Record<SignUpFieldErrorCode, ErrorKey> = {
 
 export const formErrorKeys: Record<AuthFormErrorCode, ErrorKey> = {
   invalid_credentials: "invalidCredentials",
+  rate_limited: "tooManyAttempts",
   unexpected: "unexpected",
 };

@@ -71,6 +71,36 @@ describe("app/(auth)/actions", () => {
       expect(state?.formError).toBeUndefined();
     });
 
+    it("ger rate_limited när Supabase når gränsen för bekräftelsemejl (kod eller status 429)", async () => {
+      const { signUp } = await import("./actions");
+      const input = formData({ name: "Sara Lindqvist", email: "sara@exempel.se", password: "abcdefg1" });
+
+      signUpMock.mockResolvedValue({
+        data: { user: null, session: null },
+        error: { message: "email rate limit exceeded", code: "over_email_send_rate_limit", status: 429 },
+      });
+      expect(await signUp(undefined, input)).toEqual({ formError: "rate_limited" });
+
+      signUpMock.mockResolvedValue({
+        data: { user: null, session: null },
+        error: { message: "Too Many Requests", status: 429 },
+      });
+      expect(await signUp(undefined, input)).toEqual({ formError: "rate_limited" });
+    });
+
+    it("övriga fel från signUp ger fortfarande unexpected", async () => {
+      signUpMock.mockResolvedValue({
+        data: { user: null, session: null },
+        error: { message: "Database error saving new user", code: "unexpected_failure", status: 500 },
+      });
+      const { signUp } = await import("./actions");
+      const state = await signUp(
+        undefined,
+        formData({ name: "Sara Lindqvist", email: "sara@exempel.se", password: "abcdefg1" }),
+      );
+      expect(state).toEqual({ formError: "unexpected" });
+    });
+
     it("visar 'kolla din mejl' när kontot skapas utan session (e-postbekräftelse påslagen)", async () => {
       signUpMock.mockResolvedValue({ data: { user: { id: "u1" }, session: null }, error: null });
       const { signUp } = await import("./actions");
