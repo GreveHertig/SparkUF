@@ -67,3 +67,11 @@ Eriks körning av felsökningsskriptet med betald nyckel: appens schema (efter t
 - Felsökningsskriptet: steg 1 är exakt det appen skickar nu (`legal-schema-gemini.json`, omgenererat med `toGeminiSchema`). Väntat utfall: steg 1, 2, 5 och 6 går, 3 och 4 ger 400.
 
 Återstår: Erik kör `pnpm test:live:gemini`.
+
+### Live-testerna gröna (2026-10-03)
+`pnpm test:live:gemini` mot riktiga Gemini (`gemini-3.8-flash`, Eriks betalda nyckel ur `.env.local`) på `0dd5b5f`: **7 av 7 gröna** på 81 s.
+- Juridisk koll (`LegalAdvisor.live.test.ts`): 5 av 5. Schemat utan `maxItems` godtas, och svaren håller zod-schemat.
+- Medgrundaren (`CofounderAgent.live.test.ts`): 2 av 2, också testet att den inte visar sin systemprompt på begäran.
+- Inga avvisade anrop och inga omförsök. Anropen gick i sekvens med 13 s mellanrum.
+
+Kvar efter merge: kontrollera i Vercel-loggen att Medgrundaren och Juridisk koll svarar utan fel i produktion, och att `GEMINI_MODEL` antingen är tom eller `gemini-3.8-flash` där.
