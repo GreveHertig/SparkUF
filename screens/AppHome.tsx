@@ -67,12 +67,20 @@ export function AppHome({
   data,
   dataKind,
   onNextStep,
+  nextStepHref,
   journeyBasePath,
   scoreHref,
 }: {
   data: AppHomeData;
   dataKind: DataKind;
   onNextStep?: () => void;
+  /**
+   * Handlingskortets knapp som länk (t.ex. `/app/resan/3`). En sträng av samma
+   * skäl som `journeyBasePath`: `/app`-rutten är en Server Component och kan
+   * inte skicka `onNextStep`. Satt: knappen blir en `<Link>`. Osatt: knappen
+   * som förut (demot).
+   */
+  nextStepHref?: string;
   /**
    * Resans bas-väg (t.ex. `/demo/resan`); stegets länk blir `<bas>/<nummer>`.
    * En sträng, inte en funktion: `/app`-rutten är en Server Component, och
@@ -123,14 +131,24 @@ export function AppHome({
                 </div>
               )}
               <div className="fd-nextstep__foot">
-                <button
-                  type="button"
-                  onClick={onNextStep}
-                  aria-describedby={dataKind === "example" ? "fdd-next-hint" : undefined}
-                  className="fd-btn fd-btn--primary"
-                >
-                  {data.homeSummary.nextStep.actionLabel}
-                </button>
+                {nextStepHref ? (
+                  <Link
+                    href={nextStepHref}
+                    aria-describedby={dataKind === "example" ? "fdd-next-hint" : undefined}
+                    className="fd-btn fd-btn--primary"
+                  >
+                    {data.homeSummary.nextStep.actionLabel}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onNextStep}
+                    aria-describedby={dataKind === "example" ? "fdd-next-hint" : undefined}
+                    className="fd-btn fd-btn--primary"
+                  >
+                    {data.homeSummary.nextStep.actionLabel}
+                  </button>
+                )}
                 {dataKind === "example" && (
                   <span id="fdd-next-hint" className="fd-sr-only">
                     {copy.demo.nextAction}

@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useSyncExternalStore,
   type ReactNode,
@@ -53,6 +54,14 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     // behöver ett eget event för att useSyncExternalStore ska läsa om värdet.
     window.dispatchEvent(new StorageEvent("storage"));
   }, []);
+
+  // Servern renderar alltid `<html lang="sv">` (app/layout.tsx), eftersom
+  // språket bara finns i webbläsarens localStorage. Efter hydreringen följer
+  // attributet det valda språket, så att skärmläsare och översättning vet
+  // vilket språk sidan är på.
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const value = useMemo<I18nContextValue>(
     () => ({ locale, setLocale, t: dictionaries[locale] }),

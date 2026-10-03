@@ -57,13 +57,14 @@ function baseData(overrides: Partial<AppHomeData> = {}): AppHomeData {
   };
 }
 
-function renderHome(data: AppHomeData, opts: { dataKind?: "example" | "live"; onNextStep?: () => void } = {}) {
+function renderHome(data: AppHomeData, opts: { dataKind?: "example" | "live"; onNextStep?: () => void; nextStepHref?: string } = {}) {
   return render(
     <LocaleProvider>
       <AppHome
         data={data}
         dataKind={opts.dataKind ?? "example"}
         onNextStep={opts.onNextStep}
+        nextStepHref={opts.nextStepHref}
         journeyBasePath="/demo/resan"
         scoreHref="/demo/poang"
       />
@@ -78,6 +79,12 @@ describe("AppHome (PR 3, Hem)", () => {
     expect(screen.getByRole("heading", { level: 2, name: nextStep.title })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: nextStep.actionLabel }));
     expect(onNextStep).toHaveBeenCalledTimes(1);
+  });
+
+  it("renderar handlingskortets knapp som länk till steget när nextStepHref är satt", () => {
+    renderHome(baseData(), { dataKind: "live", nextStepHref: "/app/resan/3" });
+    expect(screen.getByRole("link", { name: nextStep.actionLabel })).toHaveAttribute("href", "/app/resan/3");
+    expect(screen.queryByRole("button", { name: nextStep.actionLabel })).not.toBeInTheDocument();
   });
 
   it("visar den skärmläsar-dolda demoledtråden bara för dataKind='example'", () => {

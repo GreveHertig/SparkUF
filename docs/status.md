@@ -1,19 +1,17 @@
 # Status — Spark UF-prototypen
 
-Uppdateras i slutet av varje session: klart, återstår, kända problem, beslut nästa session behöver känna till.
+`docs/status/` är överlämningen mellan sessioner: en fil per session eller PR, med vad som är klart, vad som återstår, kända problem och beslut som nästa session behöver känna till.
 
-## Verkliga sökvägar (logiska `src/`-vägar i docs/uppdrag.md → faktiska vägar i repot)
-Repot har inget `src/`-prefix. Kartan:
+## Regeln
+- **Varje ny session skapar en egen fil** `docs/status/<datum>-<kort-namn>.md`, till exempel `docs/status/2026-10-03-minnet-onboardingsvar.md`. Datumet är dagens datum (ÅÅÅÅ-MM-DD), namnet några ord med små bokstäver och bindestreck, utan å, ä och ö.
+- Filen börjar med en `##`-rubrik som säger vad sessionen gjorde, gren och datum, och har avsnitten Klart, Återstår, Kända problem och Beslut.
+- **Redigera aldrig andras filer.** Ett beslut som ändrar något i en äldre fil skrivs i den nya filen, med en hänvisning till den äldre.
+- Skriv aldrig nya avsnitt i den här filen. Den är bara ett index, så att två grenar inte längre lägger till text på samma ställe och får merge-konflikt.
 
-| Logisk väg (uppdraget) | Verklig väg |
-|---|---|
-| `src/design/` | `design/` |
-| `src/components/ui/` | `components/ui/` |
-| `src/components/spark/` | `components/spark/` |
-| `src/demo/` | `adapters/demo/` (scenariodata) + `app/demo/` (routes) — se Session A |
-| `src/score/` | `score/` *(bara `levels.ts` hittills — se nedan)* |
-| `src/i18n/` | `i18n/` |
-| `core/`, `ports/`, `adapters/demo/`, `adapters/live/`, `screens/` | Matchar avsnitt 14.2 rakt av, inget `src/`-prefix. Se `docs/arkitektur.md`. |
+## Läsa
+- Filnamnen sorteras i tidsordning. Börja en session med att läsa de senaste filerna (`ls docs/status | tail`) och de som rör din uppgift.
+- Kartan över logiska `src/`-vägar i `docs/uppdrag.md` och de verkliga vägarna i repot: [2026-09-17-verkliga-sokvagar.md](status/2026-09-17-verkliga-sokvagar.md).
+- Äldre dokument och kodkommentarer hänvisar till "`docs/status.md`, avsnitt X". Avsnittet finns nu som en egen fil i `docs/status/` med samma rubrik (sök med `grep -l "## X" docs/status/*.md`).
 
 Sedan tidigare (fanns innan sessionerna startade, inte skapade av Session 1): `types/{evidence,legal,bygg}.ts`, `lib/schemas/evidence.ts`, `lib/demo-data/mock.ts`, platshållarsidorna `app/(marketing)/page.tsx`, `app/demo/page.tsx`, `app/(app)/app/page.tsx`.
 
@@ -4215,3 +4213,4 @@ Efter genomklickningen med Laddkollen på förhandsversionen av #50. Samma gren 
 ### Kända problem
 - En artikel utan publiceringsdatum får hämtdagen som datum. Kräver en kolumn att rätta.
 - Kortet som blir kvar med "Dold. Den visas inte igen." efter "Inte relevant" ligger i `screens/` (Theodors).
+Filerna flyttades hit ur den gamla `docs/status.md` 2026-10-03 utan att texten ändrades. Datumet i namnet är datumet i rubriken, eller annars dagen då avsnittet skrevs.

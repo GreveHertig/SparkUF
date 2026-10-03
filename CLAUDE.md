@@ -7,9 +7,9 @@ En kodbas med två lägen: **demon** (`/demo`, fiktiv data, ingen inloggning) oc
 Repot hade redan ett Next.js-projekt. Läs `AGENTS.md`, bygg i den befintliga strukturen och ta inte bort eller skriv om befintlig kod utan att fråga.
 
 ## Varje session
-- **Börja** med att läsa `docs/status.md`. Föreslå sedan en plan och vänta på godkännande innan du skriver kod.
+- **Börja** med att läsa `docs/status.md` (index) och de senaste filerna i `docs/status/`. Föreslå sedan en plan och vänta på godkännande innan du skriver kod.
 - **Håll dig till sessionens uppgift.**
-- **Avsluta** med att uppdatera `docs/status.md` (klart, återstår, kända problem, beslut), committa och pusha.
+- **Avsluta** med att skapa en egen fil `docs/status/<datum>-<kort-namn>.md` (klart, återstår, kända problem, beslut), committa och pusha. Redigera aldrig andras filer i `docs/status/`, och skriv inga avsnitt i `docs/status.md`.
 
 ## Git
 - Allt arbete sker på branchen `prototyp` (landningssidan på `prototyp-landning`). Pusha aldrig direkt till `main`.
@@ -50,3 +50,8 @@ Repot hade redan ett Next.js-projekt. Läs `AGENTS.md`, bygg i den befintliga st
 - **Koncept-etikett:** Hiasynth och Lovable får `ConceptBadge`.
 - **Fiktiva företag** i demot, och en ansvarsbegränsning på juridiska ytor.
 - **Återanvänd komponenter** innan du skapar nya. Designbeslut dokumenteras i `DESIGN.md`.
+
+## Verktyg och skydd
+- **Designskills** ligger i `.claude/skills/` (se `.claude/skills/KALLOR.md`). `DESIGN.md` och tokens i `design/` gäller alltid framför en skill. Skillsen används för att granska och finputsa, inte för att byta stil. Inga nya beroenden utan att fråga.
+- **Hookar** i `.claude/settings.json` gör reglerna mekaniska: `.env*` nekas, och ändringar i `core/score.ts`, `ports/` och demodata kräver mänsklig bekräftelse. Ber hooken om bekräftelse och du inte uttryckligen fått uppgiften att ändra filen: stoppa och rapportera. Före avslut körs `typecheck` och `lint` på ändrade filer.
+- **Arbetsflöde och kommandon:** `docs/arbetsflode.md`.

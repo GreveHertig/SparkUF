@@ -66,6 +66,43 @@ describe("/app Hem (PR 3)", () => {
     expect(functionProps).toEqual([]);
   });
 
+  it("handlingskortets knapp länkar till Resans aktuella steg", async () => {
+    getHomeSummaryMock.mockResolvedValue({
+      todayIso: "2026-09-16",
+      nextStep: {
+        eyebrow: "STEG 03",
+        title: "Marknaden",
+        why: "",
+        maxPoints: 12,
+        estimatedTime: "",
+        doneItems: [],
+        actionLabel: "Öppna steg 03",
+      },
+      sinceLastTime: null,
+    });
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getStepsMock.mockResolvedValue([
+      { ...steps[0], status: "done" },
+      { ...steps[0], stepNumber: 3, status: "current" },
+    ]);
+    getSignalsMock.mockResolvedValue(signals);
+    await renderPage();
+    expect(screen.getByRole("link", { name: "Öppna steg 03" })).toHaveAttribute("href", "/app/resan/3");
+  });
+
+  it("ingen länk på handlingskortet när inget steg är aktuellt", async () => {
+    getHomeSummaryMock.mockResolvedValue({
+      todayIso: "2026-09-16",
+      nextStep: { eyebrow: "", title: "T", why: "", maxPoints: 1, estimatedTime: "", doneItems: [], actionLabel: "Gå" },
+      sinceLastTime: null,
+    });
+    getScoreSnapshotMock.mockResolvedValue(snapshot);
+    getStepsMock.mockResolvedValue([{ ...steps[0], status: "done" }]);
+    getSignalsMock.mockResolvedValue(signals);
+    await renderPage();
+    expect(screen.queryByRole("link", { name: "Gå" })).not.toBeInTheDocument();
+  });
+
   it("visar Kommer snart bara i handlingskortets/'sedan sist'-rutan när Resan är en stub, men riktig poäng och Resan-raden", async () => {
     getHomeSummaryMock.mockRejectedValue(new NotImplementedError("Resan", "docs/moduler/resan.md"));
     getScoreSnapshotMock.mockResolvedValue(snapshot);
@@ -101,7 +138,7 @@ describe("/app Hem (PR 3)", () => {
     await renderPage();
 
     expect(screen.getByRole("heading", { level: 2, name: "Möjligheter" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Öppna steg 02" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Öppna steg 02" })).toBeInTheDocument();
     expect(screen.getAllByText(sv.comingSoon.title)).toHaveLength(1);
   });
 
