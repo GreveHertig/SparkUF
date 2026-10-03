@@ -11,7 +11,19 @@ import { GoogleGenAI } from "@google/genai";
  * anropande adaptern, t.ex. adapters/live/LegalAdvisor.ts.
  */
 
-export const GEMINI_MODEL = "gemini-2.5-flash";
+/** Standardmodellen när GEMINI_MODEL inte är satt. gemini-2.5-flash stängdes
+ * för nya användare 2026-10-03 (404 i Vercel-loggen). */
+export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
+
+/**
+ * Modellen för alla Gemini-anrop, på ett enda ställe. Läses ur den
+ * server-only-variabeln GEMINI_MODEL (se .env.example), så att modellen kan
+ * bytas i Vercel utan ny kod. Tom eller saknad variabel ger standardmodellen.
+ * Läses vid varje anrop, inte när modulen laddas.
+ */
+export function geminiModel(): string {
+  return process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
+}
 
 let client: GoogleGenAI | undefined;
 
@@ -48,7 +60,7 @@ export async function generateJson({
 }: GenerateJsonInput): Promise<string> {
   const genAI = getGeminiClient();
   const response = await genAI.models.generateContent({
-    model: GEMINI_MODEL,
+    model: geminiModel(),
     contents: [{ role: "user", parts: [{ text: userText }] }],
     config: {
       systemInstruction,
@@ -86,7 +98,7 @@ export type GenerateTextInput = {
 export async function generateText({ systemInstruction, turns, timeoutMs = 20_000 }: GenerateTextInput): Promise<string> {
   const genAI = getGeminiClient();
   const response = await genAI.models.generateContent({
-    model: GEMINI_MODEL,
+    model: geminiModel(),
     contents: turns.map((turn) => ({ role: turn.role, parts: [{ text: turn.text }] })),
     config: {
       systemInstruction,
