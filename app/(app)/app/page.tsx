@@ -4,6 +4,8 @@ import { liveEvidenceRepository } from "@/adapters/live/EvidenceRepository";
 import { livePulseProvider } from "@/adapters/live/PulseProvider";
 import { isPlaceholderError } from "@/core/errors";
 
+const JOURNEY_BASE_PATH = "/app/resan";
+
 /**
  * Resans `getHomeSummary` ger handlingskortet, och `sinceLastTime` är null
  * tills Utskick och svar är byggd (docs/moduler/resan.md); AppHome visar då
@@ -37,6 +39,11 @@ export default async function LiveAppHomePage() {
     liveJourneyRepository.getSteps("sv"),
   ]);
 
+  // Handlingskortet gäller Resans aktuella steg (samma som `getHomeSummary`
+  // bygger på). Utan kort eller aktuellt steg ingen länk, aldrig en gissning.
+  const currentStep = journeySteps.find((step) => step.status === "current");
+  const nextStepHref = homeSummary && currentStep ? `${JOURNEY_BASE_PATH}/${currentStep.stepNumber}` : undefined;
+
   // Pulsens källa är en artikel (domän och hämtdatum), inte ett register:
   // datatypen "media" (docs/beslut.md, 2026-10-01). "Sedan sist" är null
   // tills Utskick och svar finns; sätt då `sinceLastTime: "user"` eller
@@ -51,6 +58,12 @@ export default async function LiveAppHomePage() {
   };
 
   return (
-    <AppHome data={data} dataKind="live" journeyBasePath="/app/resan" scoreHref="/app/poang" />
+    <AppHome
+      data={data}
+      dataKind="live"
+      nextStepHref={nextStepHref}
+      journeyBasePath={JOURNEY_BASE_PATH}
+      scoreHref="/app/poang"
+    />
   );
 }
