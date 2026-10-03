@@ -640,7 +640,7 @@ export const en = {
       question: "Is this relevant to you?",
       relevant: "Relevant",
       notRelevant: "Not relevant",
-      thanks: "Thanks!",
+      thanks: "Thanks! Pulsen will show more like this.",
       hidden: "Hidden. It won't be shown again.",
       failed: "Couldn't save. Please try again.",
     },
