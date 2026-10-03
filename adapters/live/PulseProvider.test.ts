@@ -727,6 +727,25 @@ describe("inlärning ur Relevant", () => {
     expect(queries()[0]).not.toContain("elpris");
   });
 
+  it("bara de 500 nyaste omdömena läses", async () => {
+    // 501 dolda signaler; den äldsta (skapad först) faller utanför taket och visas.
+    const rows = Array.from({ length: 501 }, (_, n) => ({
+      user_id: USER,
+      signal_id: `sig-${n}`,
+      verdict: "not_relevant",
+      created_at: new Date(NOW.getTime() - (501 - n) * 1000).toISOString(),
+    }));
+    setup({
+      pulse_fetches: doneToday(),
+      pulse_signals: [
+        { ...signalRow(1, "Branschnyhet", "Äldst dold"), id: "sig-0" },
+        { ...signalRow(2, "Branschnyhet", "Nyast dold"), id: "sig-500" },
+      ],
+      pulse_feedback: rows,
+    });
+    expect((await pulse.getSignals("sv")).map((signal) => signal.headline)).toEqual(["Äldst dold"]);
+  });
+
   it("utan tabellen lärs ingenting och sidan fungerar som förut", async () => {
     setup({ pulse_fetches: doneToday(), pulse_signals: [signalRow(1, "Branschnyhet", "Redovisningsbyråer växer")] }, [], [
       "pulse_feedback",

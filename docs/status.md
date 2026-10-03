@@ -4077,6 +4077,7 @@ Rättar de två kända problemen från "Onboarding live, PR 2" och "PR 3": steg 
 ### Beslut
 - Ett ord kräver två gillade rubriker innan det blir sökord, så att ett enstaka gillande inte styr sökningen åt fel håll. Ett enda gillande påverkar bara ordningen.
 - Favoritområdet tar varannan dag, inte varje dag, så att alla risker och möjligheter fortfarande bevakas.
+- Omdömena läses med ett tak, de 500 nyaste per sidvisning (granskningen av #50, 2026-10-03). `pulse_feedback` saknar `project_id`, så taket är det enda som begränsar läsningen.
 
 ### Kända problem
 - **Grundare som valt ingång A i /start har inget projekt.** Då har Pulsen inget att söka på: listan är tom och bevakningar ger "Starta ett projekt först". Det finns ingen väg till ett projekt inifrån `/app`. Upptäckt 2026-10-02, till Erik och Theodor.

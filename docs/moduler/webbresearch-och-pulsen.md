@@ -280,6 +280,7 @@ migrering och ingen modell: allt räknas i liveadaptern ur `pulse_feedback`
 och de gillade signalernas kategori och rubrik.
 
 - **Läsningen:** omdömena läses en gång per sidvisning (`readFeedback`),
+  högst de 500 nyaste (`MAX_FEEDBACK_ROWS`, tabellen saknar `project_id`),
   och de senaste 20 gillade signalerna i projektet hämtas.
 - **Ordningen:** varje signal får poäng (`preferenceScore`): antalet
   gillade av samma sort (`risk:<område>`, `opportunity:<område>` eller
