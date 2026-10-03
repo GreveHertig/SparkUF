@@ -19,41 +19,32 @@ import { sv } from "@/i18n/sv";
 import { en } from "@/i18n/en";
 
 const DOC = "docs/moduler/profil.md";
+/** Felkoden från public.complete_onboarding när onboardingen redan är klar. */
+const ALREADY_COMPLETED = "55000";
 const dictionaries = { sv, en };
 
-/** Profilfrågan → profilradens befintliga kolumn, som Minnets Profilen-flik
- * redan läser (docs/moduler/profil.md). */
-const PROFILE_COLUMN: Record<ProfileQuestionId, string> = {
-  role: "role",
-  bio: "bio",
-  time: "time_available",
-  money: "money_available",
-  risk: "risk_appetite",
-};
-
-/** Svaren som kolumnvärden. Kastar om svaren inte är exakt ingångens frågor,
- * en gång var, med 1–1000 tecken efter trim. zod i server actions (PR 3) är
- * det första lagret och check-villkoren i databasen det sista. */
-function answerColumns(entry: OnboardingEntry, answers: OnboardingAnswer[]): Record<string, string> {
-  const columns: Record<string, string> = {};
-  const answered = new Set<string>();
+/** Svaren som ett objekt {frågans id: svar}, så som
+ * public.complete_onboarding tar emot dem. Kastar om svaren inte är exakt
+ * ingångens frågor, en gång var, med 1–1000 tecken efter trim. zod i server
+ * actions är det första lagret och databasfunktionen det bindande. */
+function answerObject(entry: OnboardingEntry, answers: OnboardingAnswer[]): Record<string, string> {
+  const result: Record<string, string> = {};
   for (const { questionId, answer } of answers) {
     if (!isProfileQuestionFor(entry, questionId)) {
       throw new Error(`Profil: frågan "${questionId}" hör inte till ingången ${entry}.`);
     }
-    if (answered.has(questionId)) {
+    if (questionId in result) {
       throw new Error(`Profil: frågan "${questionId}" är besvarad två gånger.`);
     }
     if (!isValidProfileAnswer(answer)) {
       throw new Error(`Profil: svaret på "${questionId}" är tomt eller för långt.`);
     }
-    answered.add(questionId);
-    columns[PROFILE_COLUMN[questionId]] = answer.trim();
+    result[questionId] = answer.trim();
   }
-  if (answered.size !== PROFILE_QUESTIONS_BY_ENTRY[entry].length) {
+  if (Object.keys(result).length !== PROFILE_QUESTIONS_BY_ENTRY[entry].length) {
     throw new Error(`Profil: alla frågor för ingången ${entry} är inte besvarade.`);
   }
-  return columns;
+  return result;
 }
 
 export const liveProfileRepository: ProfileRepository = {
@@ -100,27 +91,18 @@ export const liveProfileRepository: ProfileRepository = {
     return readOnboardingStatus(supabase, userId);
   },
 
-  // En enda update av profilraden: svaren, ingången och klar-tiden skrivs
-  // tillsammans eller inte alls. Villkoret på onboarding_completed_at gör att
-  // en klar onboarding aldrig skrivs över (ingen omgörning i v1).
+  // Klienten kan inte skriva onboarding_entry eller onboarding_completed_at
+  // själv (supabase/migrations/20261002150000_steg1_onboarding.sql). Bara
+  // public.complete_onboarding (security definer) gör det, och skriver
+  // svaren, ingången och klar-tiden i en enda uppdatering. En klar
+  // onboarding skrivs aldrig över (ingen omgörning i v1): funktionen ger
+  // felkod 55000.
   async completeOnboarding({ entry, answers }): Promise<void> {
-    const columns = answerColumns(entry, answers);
-    const { supabase, userId } = await requireSupabaseUser();
-    const { data, error } = await supabase
-      .from("profiles")
-      .update({ ...columns, onboarding_entry: entry, onboarding_completed_at: new Date().toISOString() })
-      .eq("user_id", userId)
-      .is("onboarding_completed_at", null)
-      .select("user_id");
-    if (error) {
-      throw new Error(`Profil: kunde inte spara onboardingen (${error.message}).`);
-    }
-    if (data && data.length === 1) return;
-
-    // Ingen rad ändrades: antingen är onboardingen redan klar, eller saknas
-    // profilraden (triggern handle_new_user ska alltid ha skapat den).
-    const status = await readOnboardingStatus(supabase, userId);
-    if (status.completed) throw new OnboardingAlreadyCompletedError();
-    throw new Error("Profil: profilraden saknas, onboardingen kunde inte sparas.");
+    const answersById = answerObject(entry, answers);
+    const { supabase } = await requireSupabaseUser();
+    const { error } = await supabase.rpc("complete_onboarding", { p_entry: entry, p_answers: answersById });
+    if (!error) return;
+    if (error.code === ALREADY_COMPLETED) throw new OnboardingAlreadyCompletedError();
+    throw new Error(`Profil: kunde inte spara onboardingen (${error.message}).`);
   },
 };

@@ -14,7 +14,10 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  * migreringarna är körda mot (`supabase link` + `supabase db push`, se
  * docs/status.md "Session P1" — inte körbart i den här sandboxen, ingen
  * Docker). Konto A ska inte ha något aktivt projekt: onboardingtesterna
- * skapar och raderar ett själva. Skippas i CI. Kör manuellt:
+ * skapar och raderar ett själva. Onboardingtestet klarar A:s onboarding via
+ * complete_onboarding, och det går inte att göra om: efter första körningen
+ * prövas bara att ett andra anrop nekas. Återställ A i SQL Editor vid behov
+ * (docs/status.md, "Steg 1 klart"). Skippas i CI. Kör manuellt:
  *   NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=... \
  *   SUPABASE_TEST_USER_A_EMAIL=... SUPABASE_TEST_USER_A_PASSWORD=... \
  *   SUPABASE_TEST_USER_B_EMAIL=... SUPABASE_TEST_USER_B_PASSWORD=... \
@@ -132,7 +135,13 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
       .select("user_id");
     expect(updated ?? []).toHaveLength(0);
 
-    const { data: deleted } = await clientB.from("profiles").delete().eq("user_id", userIdA).select("user_id");
+    // Ingen klient får radera profilrader (20261002150000_steg1_onboarding.sql).
+    const { data: deleted, error: deleteError } = await clientB
+      .from("profiles")
+      .delete()
+      .eq("user_id", userIdA)
+      .select("user_id");
+    expect(deleteError?.code).toBe("42501");
     expect(deleted ?? []).toHaveLength(0);
   });
 
@@ -390,7 +399,7 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
         .update({ onboarding_entry: "hasIdea", onboarding_completed_at: new Date().toISOString(), role: "kapad" })
         .eq("user_id", userIdA)
         .select("user_id");
-      expect(error).toBeNull();
+      expect(error?.code, "profiles: klienten fick skriva onboarding-kolumnerna").toBe("42501");
       expect(updated ?? [], "profiles: B kunde ändra A:s onboarding").toHaveLength(0);
 
       const after = await clientA
@@ -399,6 +408,92 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
         .eq("user_id", userIdA)
         .single();
       expect(after.data, "profiles: A:s onboardingstatus ändrades av B").toEqual(before.data);
+    });
+
+    // Bara public.complete_onboarding får sätta kolumnerna
+    // (20261002150000_steg1_onboarding.sql). Annars kunde A hoppa över
+    // spärren mot /app och låsa upp steg 1 och 2 själv.
+    it("profiles: A kan inte sätta sina egna onboarding-kolumner, varken med update eller insert", async () => {
+      const before = await clientA
+        .from("profiles")
+        .select("onboarding_entry, onboarding_completed_at")
+        .eq("user_id", userIdA)
+        .single();
+
+      for (const payload of [
+        { onboarding_completed_at: new Date().toISOString() },
+        { onboarding_entry: "hasIdea" },
+        { role: "r", onboarding_entry: "hasIdea", onboarding_completed_at: new Date().toISOString() },
+      ]) {
+        const { data, error } = await clientA.from("profiles").update(payload).eq("user_id", userIdA).select("user_id");
+        expect(error?.code, `profiles: A fick skriva ${Object.keys(payload).join(", ")}`).toBe("42501");
+        expect(data ?? []).toHaveLength(0);
+      }
+
+      const insert = await clientA
+        .from("profiles")
+        .insert({ user_id: userIdA, onboarding_entry: "hasIdea", onboarding_completed_at: new Date().toISOString() });
+      expect(insert.error, "profiles: A kunde skapa en profilrad").not.toBeNull();
+
+      const after = await clientA
+        .from("profiles")
+        .select("onboarding_entry, onboarding_completed_at")
+        .eq("user_id", userIdA)
+        .single();
+      expect(after.data).toEqual(before.data);
+    });
+
+    it("onboardingflödet fungerar via complete_onboarding, ett andra anrop ger 55000, och steg 2 kan markeras klart efteråt", async () => {
+      const answers = { role: "RLS-test", time: "1 timme", money: "Inget" };
+      const status = await clientA.from("profiles").select("onboarding_completed_at").eq("user_id", userIdA).single();
+      expect(status.error).toBeNull();
+      if (status.data!.onboarding_completed_at === null) {
+        const first = await clientA.rpc("complete_onboarding", { p_entry: "hasIdea", p_answers: answers });
+        expect(first.error, "complete_onboarding: A kunde inte klara onboardingen").toBeNull();
+      }
+      const done = await clientA.from("profiles").select("onboarding_entry, onboarding_completed_at").eq("user_id", userIdA).single();
+      expect(done.data!.onboarding_completed_at).not.toBeNull();
+
+      const second = await clientA.rpc("complete_onboarding", { p_entry: "hasIdea", p_answers: answers });
+      expect(second.error?.code, "complete_onboarding: ett andra anrop togs emot").toBe("55000");
+      const unchanged = await clientA.from("profiles").select("onboarding_entry, onboarding_completed_at").eq("user_id", userIdA).single();
+      expect(unchanged.data).toEqual(done.data);
+
+      // Steg 1 är klart av onboardingen, utan projekt och utan rad.
+      const stepOne = await clientA.rpc("complete_journey_step", { p_step_number: 1 });
+      expect(stepOne.error, "complete_journey_step(1) efter onboardingen").toBeNull();
+
+      // Steg 2 kräver ett aktivt projekt. Kontot ska inte ha något (se
+      // filhuvudet); har det ett används det och lämnas kvar.
+      const { data: existing } = await clientA
+        .from("projects")
+        .select("id")
+        .eq("user_id", userIdA)
+        .eq("is_active", true)
+        .maybeSingle();
+      let createdId: string | null = null;
+      try {
+        if (!existing) {
+          const created = await clientA
+            .from("projects")
+            .insert({ user_id: userIdA, name: `${marker}-steg2`, one_liner: marker, is_active: true })
+            .select("id")
+            .single();
+          expect(created.error, "projects: A kunde inte skapa ett aktivt projekt").toBeNull();
+          createdId = created.data!.id as string;
+        }
+        const stepTwo = await clientA.rpc("complete_journey_step", { p_step_number: 2 });
+        expect(stepTwo.error, "complete_journey_step(2) efter onboardingen").toBeNull();
+        const { data: rows } = await clientA
+          .from("journey_steps")
+          .select("step_number, completed_at")
+          .eq("project_id", createdId ?? existing!.id)
+          .eq("step_number", 2);
+        expect(rows?.[0]?.completed_at).toBeTruthy();
+      } finally {
+        // on delete cascade tar med sig raden i journey_steps.
+        if (createdId) await clientA.from("projects").delete().eq("id", createdId);
+      }
     });
 
     it("projects: B kan inte skapa ett projekt med user_id = A", async () => {
@@ -462,18 +557,18 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
       }
     });
 
-    it("profiles: databasen avvisar ett för långt svar och en okänd ingång på A:s egen rad", async () => {
+    it("profiles: databasen avvisar ett för långt svar på A:s egen rad, och complete_onboarding en okänd ingång", async () => {
       const tooLong = await clientA.from("profiles").update({ role: "a".repeat(1001) }).eq("user_id", userIdA).select("user_id");
       expect(tooLong.error, "profiles: databasen tog emot ett svar på 1001 tecken").not.toBeNull();
       expect(tooLong.error?.code).toBe("23514");
 
-      const unknownEntry = await clientA
-        .from("profiles")
-        .update({ onboarding_entry: "okänd" })
-        .eq("user_id", userIdA)
-        .select("user_id");
-      expect(unknownEntry.error, "profiles: databasen tog emot en okänd ingång").not.toBeNull();
-      expect(unknownEntry.error?.code).toBe("23514");
+      // Ingången prövas före raden, så felet är detsamma om A redan är klar.
+      const unknownEntry = await clientA.rpc("complete_onboarding", {
+        p_entry: "okänd",
+        p_answers: { role: "r", time: "t", money: "m" },
+      });
+      expect(unknownEntry.error, "complete_onboarding: databasen tog emot en okänd ingång").not.toBeNull();
+      expect(unknownEntry.error?.code).toBe("22023");
     });
   });
 

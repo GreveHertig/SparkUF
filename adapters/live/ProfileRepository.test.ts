@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { EmptyStateError, OnboardingAlreadyCompletedError } from "@/core/errors";
 import { makeSupabaseFake } from "@/test/stubs/supabaseFake";
+import { onboardingRpcFake } from "@/test/stubs/onboardingRpcFake";
 
 const requireSupabaseUserMock = vi.fn();
 vi.mock("@/lib/server/session", () => ({
@@ -127,7 +128,7 @@ describe("liveProfileRepository.completeOnboarding", () => {
         { user_id: "another-user", role: "Orörd", onboarding_entry: null, onboarding_completed_at: null },
         { user_id: USER_ID, name: "Sara", initials: "S", onboarding_entry: null, onboarding_completed_at: null },
       ],
-    });
+    }, onboardingRpcFake(USER_ID));
   }
 
   const answersA = [
@@ -138,7 +139,7 @@ describe("liveProfileRepository.completeOnboarding", () => {
     { questionId: "risk", answer: "Låg" },
   ];
 
-  it("skriver svaren till profilens kolumner, trimmade, och markerar onboardingen klar i samma rad", async () => {
+  it("skickar svaren till complete_onboarding, som skriver dem trimmade och markerar onboardingen klar", async () => {
     const supabase = freshProfiles();
     requireSupabaseUserMock.mockResolvedValue({ supabase, userId: USER_ID });
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
@@ -224,7 +225,7 @@ describe("liveProfileRepository.completeOnboarding", () => {
   });
 
   it("kastar ett vanligt fel, inte OnboardingAlreadyCompletedError, när profilraden saknas", async () => {
-    requireSupabaseUserMock.mockResolvedValue({ supabase: makeSupabaseFake({}), userId: USER_ID });
+    requireSupabaseUserMock.mockResolvedValue({ supabase: makeSupabaseFake({}, onboardingRpcFake(USER_ID)), userId: USER_ID });
     const { liveProfileRepository } = await import("@/adapters/live/ProfileRepository");
     const error = await liveProfileRepository
       .completeOnboarding({ entry: "noIdea", answers: answersA })

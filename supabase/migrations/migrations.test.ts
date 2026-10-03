@@ -136,3 +136,66 @@ describe("supabase/migrations: RLS-täckning (14.6)", () => {
     expect(sql).toMatch(pattern);
   });
 });
+
+/**
+ * profiles: klienten (authenticated) får uppdatera exakt de här kolumnerna,
+ * och inga andra (20261002150000_steg1_onboarding.sql). En ny kolumn i
+ * profiles fäller testet tills den står i en av listerna, med ett beslut:
+ * skrivbar för klienten, eller satt bara av servern eller en
+ * security definer-funktion.
+ */
+const PROFILES_CLIENT_WRITABLE = ["name", "initials", "role", "bio", "time_available", "money_available", "risk_appetite"];
+const PROFILES_CLIENT_CLOSED: Record<string, string> = {
+  user_id: "Nyckeln. Sätts av handle_new_user() vid signup.",
+  created_at: "Sätts av databasen.",
+  updated_at: "Sätts av triggern profiles_set_updated_at.",
+  onboarding_entry: "Sätts bara av public.complete_onboarding. Beslut Erik 2026-10-01 (säkerhetsgranskningen).",
+  onboarding_completed_at:
+    "Sätts bara av public.complete_onboarding. Låser upp steg 1 och 2 och spärren mot /app. Beslut Erik 2026-10-01.",
+};
+
+/** Kolumnerna i profiles: create table plus alter table ... add column. */
+function profilesColumns(sql: string): string[] {
+  const create = sql.match(/create table public\.profiles \(([\s\S]*?)\n\);/i);
+  if (!create) return [];
+  const created = create[1]
+    .split("\n")
+    .map((line) => line.match(/^\s*([a-z_]+)\s+[a-z]/i)?.[1])
+    .filter((name): name is string => !!name && !/^(constraint|primary|foreign|unique|check)$/i.test(name));
+  const added = [...sql.matchAll(/alter table public\.profiles\b[^;]*;/gi)].flatMap((statement) =>
+    [...statement[0].matchAll(/add column (?:if not exists )?(\w+)/gi)].map((match) => match[1]),
+  );
+  return [...new Set([...created, ...added])];
+}
+
+describe("supabase/migrations: profiles-kolumner som klienten får skriva", () => {
+  const sql = stripComments(readAllMigrationsSql());
+  const columns = profilesColumns(sql);
+  const grants = [...sql.matchAll(/grant update \(([^)]*)\)\s+on table public\.profiles to authenticated/gi)];
+
+  it("hittar profiles-kolumnerna", () => {
+    expect(columns).toContain("user_id");
+    expect(columns).toContain("onboarding_completed_at");
+  });
+
+  it("varje kolumn har ett beslut: skrivbar eller stängd, aldrig båda", () => {
+    const decided = [...PROFILES_CLIENT_WRITABLE, ...Object.keys(PROFILES_CLIENT_CLOSED)];
+    expect([...columns].sort()).toEqual([...decided].sort());
+    expect(PROFILES_CLIENT_WRITABLE.filter((column) => column in PROFILES_CLIENT_CLOSED)).toEqual([]);
+  });
+
+  it("insert, update och delete är indragna från anon och authenticated", () => {
+    expect(sql).toMatch(/revoke insert, update, delete on table public\.profiles from anon, authenticated/i);
+  });
+
+  it("den senaste update-rätten för authenticated gäller exakt de skrivbara kolumnerna", () => {
+    expect(grants.length).toBeGreaterThan(0);
+    const granted = grants.at(-1)![1].split(",").map((column) => column.trim());
+    expect([...granted].sort()).toEqual([...PROFILES_CLIENT_WRITABLE].sort());
+  });
+
+  it("ingen insert-, delete- eller all-policy finns kvar på profiles", () => {
+    const policies = finalPolicies(sql).filter((p) => p.table === "profiles");
+    expect(policies.map((p) => p.command).sort()).toEqual(["select", "update"]);
+  });
+});

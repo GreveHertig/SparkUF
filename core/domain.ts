@@ -84,10 +84,33 @@ export type SinceLastTime = {
   responsesSource: Källa;
 };
 
+/** Riskområdena i Pulsen (Hampus Hedelius tips 2026-10-02: yttre omständigheter). */
+export const PULSE_RISK_AREAS = ["costs", "finance", "regulation", "competition", "demand", "supply"] as const;
+export type PulseRiskArea = (typeof PULSE_RISK_AREAS)[number];
+/** Möjligheterna i Pulsen: stöd och bidrag, och offentliga upphandlingar. */
+export const PULSE_OPPORTUNITY_AREAS = ["funding", "procurement"] as const;
+export type PulseOpportunityArea = (typeof PULSE_OPPORTUNITY_AREAS)[number];
+
+/** Grundarens omdöme om en signal. "not_relevant" döljer den. */
+export type PulseFeedbackVerdict = "relevant" | "not_relevant";
+
+/** En egen bevakning i Pulsen: en konkurrent eller ett nyckelord. */
+export type PulseWatch = { id: string; kind: "competitor" | "keyword"; term: string };
+
 export type PulseSignal = {
+  /** Signalens id i databasen, för omdömet. Saknas i demot. */
+  id?: string;
   category: string;
   headline: string;
   whyItMatters: string;
   timestamp: string;
   source: Källa;
+  /**
+   * Satt när signalen är en risk att bevaka (yttre omständigheter). Valfri:
+   * en vanlig nyhet saknar den, och demots signaler har den inte.
+   * `actions` är allmänna förslag ur i18n, inga påståenden om nyheten.
+   */
+  risk?: { area: PulseRiskArea; actions: string[] };
+  /** Satt när signalen är en möjlighet (stöd, bidrag, upphandling). Aldrig samtidigt som `risk`. */
+  opportunity?: { area: PulseOpportunityArea; actions: string[] };
 };

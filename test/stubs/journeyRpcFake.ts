@@ -23,7 +23,16 @@ export function journeyRpcFake(userId: string, projectId: string, todayIso: stri
           ? [{ kind: row.kind, subjectRef: row.subject_ref as string }]
           : [],
       );
-      const result = stepCompletion({ stepNumber, completedStepNumbers: completed, countedEvidence, hasActiveProject: true });
+      const onboardingCompleted = (store.profiles ?? []).some(
+        (row) => row.user_id === userId && row.onboarding_completed_at != null,
+      );
+      const result = stepCompletion({
+        stepNumber,
+        completedStepNumbers: completed,
+        countedEvidence,
+        hasActiveProject: true,
+        onboardingCompleted,
+      });
       if (result.status === "done") return null;
       if (result.status !== "completable") throw new Error(`Stegets krav är inte uppfyllda (${result.status}).`);
       steps.push({ user_id: userId, project_id: projectId, step_number: stepNumber, completed_at: `${todayIso}T00:00:00Z` });

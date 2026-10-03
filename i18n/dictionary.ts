@@ -482,6 +482,65 @@ export type Dictionary = {
     liveCategory: string;
     /** Liveadapterns fasta "varför det spelar roll"-mening, `{project}` = projektets namn. */
     liveWhyItMatters: string;
+    /** Rubriken över risksignalerna på Pulsen-sidan. */
+    risksTitle: string;
+    /** Ingressen under rubriken: vad en risksignal är. */
+    risksIntro: string;
+    /** Rubriken över de vanliga nyheterna när det också finns risker. */
+    newsTitle: string;
+    /** Etiketten före riskområdet, t.ex. "Risk". */
+    riskLabel: string;
+    /** Rubriken över förslagen, t.ex. "Vad du kan göra". */
+    actionsTitle: string;
+    /** Per riskområde: namnet, "varför" (`{project}` = projektets namn), allmänna förslag och spelboken. */
+    riskAreas: Record<
+      "costs" | "finance" | "regulation" | "competition" | "demand" | "supply",
+      { name: string; whyItMatters: string; actions: string[]; playbook: { impact: string[]; solve: string[] } }
+    >;
+    /** Rubriken över möjligheterna. */
+    opportunitiesTitle: string;
+    opportunitiesIntro: string;
+    /** Etiketten före möjlighetens område, t.ex. "Möjlighet". */
+    opportunityLabel: string;
+    /** Per möjlighet: som riskAreas. Spelbokens `impact` = passar det dig, `solve` = så tar du vara på det. */
+    opportunityAreas: Record<
+      "funding" | "procurement",
+      { name: string; whyItMatters: string; actions: string[]; playbook: { impact: string[]; solve: string[] } }
+    >;
+    /** Spelboken under en risk eller möjlighet (utfällbar). */
+    playbook: {
+      toggle: string;
+      riskImpactTitle: string;
+      riskSolveTitle: string;
+      opportunityImpactTitle: string;
+      opportunitySolveTitle: string;
+      /** Ärlig märkning: allmän vägledning, inte granskad av en rådgivare. */
+      note: string;
+    };
+    /** Omdömet under en signal i /app (pulse_feedback). */
+    feedback: {
+      question: string;
+      relevant: string;
+      notRelevant: string;
+      thanks: string;
+      hidden: string;
+      failed: string;
+    };
+    /** Egna bevakningar i /app (pulse_watches). `{max}` = taket, `{term}` = ordet. */
+    watches: {
+      title: string;
+      intro: string;
+      kindLabel: string;
+      kindCompetitor: string;
+      kindKeyword: string;
+      termLabel: string;
+      termPlaceholder: string;
+      add: string;
+      remove: string;
+      empty: string;
+      limit: string;
+      errors: { too_short: string; too_many: string; no_project: string; failed: string };
+    };
   };
   memoryPage: {
     title: string;

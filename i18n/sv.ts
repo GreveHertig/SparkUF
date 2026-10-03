@@ -321,10 +321,7 @@ export const sv = {
     scoreAfter: "Steget är klart. Poängen är nu {total}.",
     trace: "Steg {step} markerat som klart",
     requirements: {
-      fit_skills: "Ett svar om din kompetens (Minnet, Profilen)",
-      fit_network: "Ett svar om ditt nätverk (Minnet, Profilen)",
-      fit_time: "Ett svar om din tid (Minnet, Profilen)",
-      fit_money: "Ett svar om dina pengar (Minnet, Profilen)",
+      onboardingCompleted: "Svaren i profilsamtalet (Om dig)",
       activeProject: "Ett aktivt projekt",
       marketCount: "Antal bolag ur registret",
       competitorSet: "Konkurrenter ur registret",
@@ -442,6 +439,230 @@ export const sv = {
     emptyState: "Inga signaler för det här scenariot.",
     liveCategory: "Branschnyhet",
     liveWhyItMatters: "Nyheten rör samma område som {project}. Fundera på hur den påverkar dina kunder.",
+    risksTitle: "Risker att bevaka",
+    risksIntro: "Saker som händer runt omkring dig och kan påverka ditt företag. Varje signal är en nyhet med källa. Förslagen är allmänna, inte råd för just ditt fall.",
+    newsTitle: "Nyheter i din bransch",
+    riskLabel: "Risk",
+    actionsTitle: "Vad du kan göra",
+    riskAreas: {
+      costs: {
+        name: "Kostnader och råvaror",
+        whyItMatters: "Stigande kostnader för det du köper in kan pressa marginalen i {project}.",
+        actions: [
+          "Se vilka kostnader i din kalkyl som påverkas.",
+          "Räkna på vad som händer med marginalen om kostnaden stiger.",
+          "Fråga leverantören om fast pris eller ett längre avtal.",
+        ],
+        playbook: {
+          impact: [
+            "Hur stor del av dina kostnader går till det som blir dyrare? Ju större andel, desto mer slår det.",
+            "Kan du höja ditt pris utan att tappa kunder, eller är dina kunder priskänsliga?",
+            "Har du avtal med fast pris, eller följer dina inköpspriser marknaden direkt?",
+          ],
+          solve: [
+            "Räkna om din kalkyl med det högre priset och se hur mycket marginalen sjunker.",
+            "Be om offert från en eller två andra leverantörer, så att du vet vad alternativet kostar.",
+            "Förhandla om fast pris eller ett längre avtal medan priset fortfarande är lägre.",
+            "Skriv in en prisjusteringsklausul i nya kundavtal, så att ditt pris kan följa kostnaderna.",
+            "Se om du kan använda mindre eller byta till något billigare utan att kvaliteten sjunker.",
+          ],
+        },
+      },
+      finance: {
+        name: "Räntor och finansiering",
+        whyItMatters: "Räntor och valuta påverkar vad det kostar att låna och vad kunderna har råd med i {project}.",
+        actions: [
+          "Kolla om du har lån eller krediter med rörlig ränta.",
+          "Fundera på om dina kunder blir mer priskänsliga.",
+          "Räkna med marginal om du planerar att låna eller ta in kapital.",
+        ],
+        playbook: {
+          impact: [
+            "Har du lån, kredit eller leasing med rörlig ränta?",
+            "Planerar du att låna eller ta in kapital det närmaste året?",
+            "Köper eller säljer du i en annan valuta än kronor?",
+          ],
+          solve: [
+            "Räkna på vad dina räntekostnader blir om räntan stiger ytterligare en procentenhet.",
+            "Jämför rörlig och bunden ränta med din bank innan du tar nya lån.",
+            "Bygg upp en buffert som täcker några månaders fasta kostnader.",
+            "Handlar du i utländsk valuta: fakturera i kronor där det går, eller prata med banken om valutarisken.",
+          ],
+        },
+      },
+      regulation: {
+        name: "Regler och krav",
+        whyItMatters: "Nya regler kan ge {project} nya krav, nya kostnader eller nya möjligheter.",
+        actions: [
+          "Läs vad regeln gäller och från när den börjar gälla.",
+          "Se efter i Juridik vad som rör din bolagsform.",
+          "Fråga en jurist eller revisor om du är osäker.",
+        ],
+        playbook: {
+          impact: [
+            "Gäller regeln din bransch, din bolagsform eller den typ av kunder du har?",
+            "Från när gäller den, och hinner du anpassa dig innan dess?",
+            "Kräver den ett tillstånd, en registrering eller en ny rutin hos dig?",
+          ],
+          solve: [
+            "Läs vad regeln faktiskt säger hos den myndighet som ansvarar för den, inte bara i artikeln.",
+            "Gör en lista över vad som måste ändras hos dig, och när.",
+            "Se efter i Juridik vad som rör din bolagsform.",
+            "Är du osäker: fråga en jurist, revisor eller branschorganisation innan regeln börjar gälla.",
+          ],
+        },
+      },
+      competition: {
+        name: "Konkurrens",
+        whyItMatters: "När konkurrenter rör sig ändras det kunderna jämför {project} med.",
+        actions: [
+          "Jämför deras erbjudande och pris med ditt.",
+          "Tänk igenom vad som gör dig svår att byta ut.",
+          "Fråga dina kunder om de har märkt något nytt.",
+        ],
+        playbook: {
+          impact: [
+            "Säljer konkurrenten till samma kunder som du?",
+            "Är deras erbjudande billigare, bättre eller bara annorlunda?",
+            "Vad skulle få dina kunder att byta till dem?",
+          ],
+          solve: [
+            "Testa konkurrentens tjänst själv om det går, och skriv ner skillnaderna.",
+            "Prata med två eller tre av dina kunder om vad de värdesätter mest hos dig.",
+            "Gör det som skiljer dig åt tydligt i hur du säljer och beskriver ditt erbjudande.",
+            "Konkurrera inte bara med pris: service, nisch och relationer är svårare att kopiera.",
+          ],
+        },
+      },
+      demand: {
+        name: "Efterfrågan och konjunktur",
+        whyItMatters: "Konjunktur och efterfrågan påverkar hur lätt det är att sälja {project}.",
+        actions: [
+          "Följ hur dina egna kunder svarar och köper.",
+          "Ha en plan för om försäljningen går långsammare än du räknat med.",
+          "Se över hur länge dina pengar räcker utan nya intäkter.",
+        ],
+        playbook: {
+          impact: [
+            "Säljer du något som kunderna kan vänta med när ekonomin är svag?",
+            "Hur stor del av försäljningen kommer från några få kunder?",
+            "Hur länge räcker dina pengar om försäljningen går långsammare?",
+          ],
+          solve: [
+            "Räkna på hur många månader du klarar dig med lägre försäljning än planerat.",
+            "Håll nere de fasta kostnaderna tills försäljningen är stabil.",
+            "Sprid risken på fler kunder, så att ett bortfall inte slår för hårt.",
+            "Följ dina egna försäljningssiffror varje vecka, så att du ser en nedgång tidigt.",
+          ],
+        },
+      },
+      supply: {
+        name: "Leveranser",
+        whyItMatters: "Problem hos leverantörer kan försena eller fördyra {project}.",
+        actions: [
+          "Har du mer än en leverantör för det viktigaste?",
+          "Planera med marginal i leveranstiderna.",
+          "Fråga leverantören hur de påverkas.",
+        ],
+        playbook: {
+          impact: [
+            "Är du beroende av en enda leverantör för något viktigt?",
+            "Hur länge klarar du dig om en leverans blir försenad?",
+            "Köper du från utlandet, där tullar eller frakt kan ändras?",
+          ],
+          solve: [
+            "Hitta minst en alternativ leverantör för det viktigaste, innan du behöver den.",
+            "Planera med längre leveranstider och lite mer i lager där det går.",
+            "Fråga din leverantör hur de påverkas och vilken plan de har.",
+            "Lova kunderna leveranstider med marginal.",
+          ],
+        },
+      },
+    },
+    opportunitiesTitle: "Möjligheter",
+    opportunitiesIntro: "Stöd, bidrag och upphandlingar som kan passa ditt företag. Varje signal är en nyhet med källa.",
+    opportunityLabel: "Möjlighet",
+    opportunityAreas: {
+      funding: {
+        name: "Stöd och bidrag",
+        whyItMatters: "Det kan finnas stöd eller finansiering som passar {project}.",
+        actions: [
+          "Läs vem stödet gäller och när ansökan stänger.",
+          "Kolla om ditt företag uppfyller kraven.",
+          "Fråga Almi eller kommunens näringslivskontor om du är osäker.",
+        ],
+        playbook: {
+          impact: [
+            "Gäller stödet din bransch, din fas och din bolagsform?",
+            "Kräver det att företaget redan är registrerat?",
+            "Måste du själv gå in med pengar eller tid?",
+          ],
+          solve: [
+            "Läs villkoren hos den som delar ut stödet, inte bara i artikeln.",
+            "Skriv in sista ansökningsdag i din kalender.",
+            "Förbered en kort beskrivning av idén, kunden och vad pengarna ska användas till.",
+            "Be någon som har sökt förut att läsa din ansökan.",
+          ],
+        },
+      },
+      procurement: {
+        name: "Offentlig upphandling",
+        whyItMatters: "En offentlig upphandling kan ge {project} en ny kund.",
+        actions: [
+          "Läs vad som upphandlas och sista dag för anbud.",
+          "Kolla om ditt företag uppfyller kraven.",
+          "Fundera på om du kan lämna anbud tillsammans med någon annan.",
+        ],
+        playbook: {
+          impact: [
+            "Säljer du det som upphandlas, eller något som ligger nära?",
+            "Uppfyller du kraven på till exempel omsättning, referenser eller försäkringar?",
+            "Hinner du lämna ett anbud innan tiden går ut?",
+          ],
+          solve: [
+            "Läs hela upphandlingsdokumentet, särskilt kraven och hur anbuden bedöms.",
+            "Ställ dina frågor till den som upphandlar, inom frågetiden.",
+            "Är kraven för höga: se om du kan bli underleverantör till någon som lämnar anbud.",
+            "Bevaka liknande upphandlingar framöver.",
+          ],
+        },
+      },
+    },
+    playbook: {
+      toggle: "Spelbok: så påverkar det dig och vad du gör",
+      riskImpactTitle: "Så påverkar det dig",
+      riskSolveTitle: "Så löser du det",
+      opportunityImpactTitle: "Passar det dig?",
+      opportunitySolveTitle: "Så tar du vara på det",
+      note: "Allmän vägledning, ännu inte granskad av en rådgivare. Ta hjälp av en rådgivare för just ditt fall.",
+    },
+    feedback: {
+      question: "Är det här relevant för dig?",
+      relevant: "Relevant",
+      notRelevant: "Inte relevant",
+      thanks: "Tack! Pulsen visar mer av sådant här.",
+      hidden: "Dold. Den visas inte igen.",
+      failed: "Det gick inte att spara. Försök igen.",
+    },
+    watches: {
+      title: "Dina bevakningar",
+      intro: "Lägg till konkurrenter eller ord som Pulsen ska leta efter. De gäller från nästa hämtning, oftast i morgon.",
+      kindLabel: "Sort",
+      kindCompetitor: "Konkurrent",
+      kindKeyword: "Nyckelord",
+      termLabel: "Vad ska Pulsen leta efter?",
+      termPlaceholder: "Till exempel ett företagsnamn",
+      add: "Bevaka",
+      remove: "Sluta bevaka {term}",
+      empty: "Inga bevakningar än.",
+      limit: "Högst {max} bevakningar.",
+      errors: {
+        too_short: "Skriv minst två tecken.",
+        too_many: "Du har redan så många bevakningar som går. Ta bort en först.",
+        no_project: "Starta ett projekt först, så vet Pulsen vad den ska bevaka åt.",
+        failed: "Det gick inte att spara. Försök igen.",
+      },
+    },
   },
   memoryPage: {
     title: "Minnet",
@@ -537,7 +758,7 @@ export const sv = {
     },
     profile: {
       title: "Berätta om dig",
-      subtitle: "Klicka på svaret för att gå vidare — det bygger profilen Spark utgår från.",
+      subtitle: "Samtalet spelar upp sig självt. Svaren bygger profilen Spark utgår från.",
       buildingTitle: "Din profil så här långt",
       continueCta: "Fortsätt",
       formSubtitle: "Svara med egna ord. Svaren bygger profilen Spark utgår från.",
@@ -563,7 +784,9 @@ export const sv = {
       submittingCta: "Sparar …",
       invalidTemplate: "Fyll i båda fälten. Namnet får vara högst {nameMax} tecken och beskrivningen högst {oneLinerMax}.",
     },
-    // Förslag, granskas av Theo (PR 1 av onboardingen).
+    // Förslag, granskas av Theo (PR 1 av onboardingen). closingMessage står i
+    // formuläret före knappen och slutar med steget som Hem visar efteråt
+    // (testat i core/onboarding.test.ts).
     profileQuestions: {
       noIdea: {
         role: "Innan vi börjar behöver jag veta vem du är. Vad gör du i dag?",
@@ -572,13 +795,13 @@ export const sv = {
         money: "Hur mycket pengar kan du lägga in själv, om något?",
         risk: "Hur mycket är du beredd att riskera, i tid och pengar, om det inte går som du tänkt?",
         closingMessage:
-          "Tack. Det här är profilen resten av resan utgår från. Nästa steg är att hitta möjligheter som passar dig.",
+          "När du sparar blir svaren profilen som resten av resan utgår från. Nästa steg i resan är Möjligheter.",
       },
       hasIdea: {
         role: "Du har redan en idé, så vi fokuserar på passform. Vad gör du i dag, och vad har du gjort som hör ihop med idén?",
         time: "Hur många timmar i veckan kan du lägga på idén?",
         money: "Hur mycket pengar kan du lägga in själv, om något?",
-        closingMessage: "Tack. Nästa steg är idégenomlysningen: vi bryter ner idén i antaganden och prövar dem.",
+        closingMessage: "När du sparar blir svaren din profil, bredvid idén du beskrev. Nästa steg i resan är Genomlys din idé.",
       },
     },
   },

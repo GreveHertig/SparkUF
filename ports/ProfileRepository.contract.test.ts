@@ -4,6 +4,7 @@ import { demoProfileRepository } from "@/adapters/demo/ProfileRepository";
 import { liveProfileRepository } from "@/adapters/live/ProfileRepository";
 import { describeContract, contractIt } from "./testContract";
 import { makeSupabaseFake } from "@/test/stubs/supabaseFake";
+import { onboardingRpcFake } from "@/test/stubs/onboardingRpcFake";
 import { useDemoStore } from "@/adapters/demo/demoStore";
 
 // Alla metoder är byggda i båda adaptrarna (docs/moduler/profil.md).
@@ -27,7 +28,7 @@ beforeEach(() => {
         onboarding_completed_at: null,
       },
     ],
-  });
+  }, onboardingRpcFake("contract-test-user"));
 });
 
 const ENTRIES = ["noIdea", "hasIdea"] as const;

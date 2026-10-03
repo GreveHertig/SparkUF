@@ -321,10 +321,7 @@ export const en = {
     scoreAfter: "The step is done. Your score is now {total}.",
     trace: "Step {step} marked as done",
     requirements: {
-      fit_skills: "An answer about your skills (Memory, Profile)",
-      fit_network: "An answer about your network (Memory, Profile)",
-      fit_time: "An answer about your time (Memory, Profile)",
-      fit_money: "An answer about your money (Memory, Profile)",
+      onboardingCompleted: "Your answers in the profile conversation (About you)",
       activeProject: "An active project",
       marketCount: "Number of companies from the register",
       competitorSet: "Competitors from the register",
@@ -442,6 +439,230 @@ export const en = {
     emptyState: "No signals for this scenario.",
     liveCategory: "Industry news",
     liveWhyItMatters: "This news touches the same area as {project}. Consider how it affects your customers.",
+    risksTitle: "Risks to watch",
+    risksIntro: "Things happening around you that could affect your business. Each signal is a news item with a source. The suggestions are general, not advice for your specific case.",
+    newsTitle: "News in your industry",
+    riskLabel: "Risk",
+    actionsTitle: "What you can do",
+    riskAreas: {
+      costs: {
+        name: "Costs and raw materials",
+        whyItMatters: "Rising costs for what you buy in can squeeze the margin of {project}.",
+        actions: [
+          "See which costs in your calculation are affected.",
+          "Work out what happens to your margin if the cost rises.",
+          "Ask your supplier about a fixed price or a longer contract.",
+        ],
+        playbook: {
+          impact: [
+            "How large a share of your costs goes to what is getting more expensive? The bigger the share, the harder it hits.",
+            "Can you raise your price without losing customers, or are your customers price-sensitive?",
+            "Do you have fixed-price contracts, or do your purchase prices follow the market directly?",
+          ],
+          solve: [
+            "Rerun your calculation with the higher price and see how much your margin drops.",
+            "Ask one or two other suppliers for a quote, so you know what the alternative costs.",
+            "Negotiate a fixed price or a longer contract while the price is still lower.",
+            "Add a price adjustment clause to new customer contracts, so your price can follow your costs.",
+            "See whether you can use less or switch to something cheaper without lowering quality.",
+          ],
+        },
+      },
+      finance: {
+        name: "Interest rates and financing",
+        whyItMatters: "Interest rates and currency affect what it costs to borrow and what customers can afford for {project}.",
+        actions: [
+          "Check whether you have loans or credit with a variable rate.",
+          "Consider whether your customers will become more price-sensitive.",
+          "Build in a margin if you plan to borrow or raise capital.",
+        ],
+        playbook: {
+          impact: [
+            "Do you have loans, credit or leasing with a variable rate?",
+            "Are you planning to borrow or raise capital in the coming year?",
+            "Do you buy or sell in a currency other than Swedish kronor?",
+          ],
+          solve: [
+            "Work out what your interest costs become if the rate rises another percentage point.",
+            "Compare variable and fixed rates with your bank before taking new loans.",
+            "Build a buffer that covers a few months of fixed costs.",
+            "If you trade in foreign currency: invoice in kronor where possible, or talk to your bank about currency risk.",
+          ],
+        },
+      },
+      regulation: {
+        name: "Rules and requirements",
+        whyItMatters: "New rules can bring {project} new requirements, new costs or new opportunities.",
+        actions: [
+          "Read what the rule covers and when it takes effect.",
+          "Check Legal for what applies to your company form.",
+          "Ask a lawyer or accountant if you are unsure.",
+        ],
+        playbook: {
+          impact: [
+            "Does the rule apply to your industry, your company form or the kind of customers you have?",
+            "When does it take effect, and do you have time to adapt before then?",
+            "Does it require a permit, a registration or a new routine on your side?",
+          ],
+          solve: [
+            "Read what the rule actually says at the authority responsible for it, not just in the article.",
+            "Make a list of what has to change on your side, and when.",
+            "Check Legal for what applies to your company form.",
+            "If you are unsure: ask a lawyer, accountant or trade association before the rule takes effect.",
+          ],
+        },
+      },
+      competition: {
+        name: "Competition",
+        whyItMatters: "When competitors move, it changes what customers compare {project} with.",
+        actions: [
+          "Compare their offer and price with yours.",
+          "Think about what makes you hard to replace.",
+          "Ask your customers whether they have noticed anything new.",
+        ],
+        playbook: {
+          impact: [
+            "Does the competitor sell to the same customers as you?",
+            "Is their offer cheaper, better or just different?",
+            "What would make your customers switch to them?",
+          ],
+          solve: [
+            "Try the competitor's service yourself if you can, and write down the differences.",
+            "Talk to two or three of your customers about what they value most about you.",
+            "Make what sets you apart clear in how you sell and describe your offer.",
+            "Don't compete on price alone: service, niche and relationships are harder to copy.",
+          ],
+        },
+      },
+      demand: {
+        name: "Demand and the economy",
+        whyItMatters: "The economy and demand affect how easy it is to sell {project}.",
+        actions: [
+          "Follow how your own customers respond and buy.",
+          "Have a plan for if sales come in slower than you expected.",
+          "Check how long your money lasts without new revenue.",
+        ],
+        playbook: {
+          impact: [
+            "Do you sell something customers can put off when the economy is weak?",
+            "How much of your sales come from just a few customers?",
+            "How long does your money last if sales come in slower?",
+          ],
+          solve: [
+            "Work out how many months you can manage with lower sales than planned.",
+            "Keep fixed costs down until sales are stable.",
+            "Spread the risk across more customers, so losing one doesn't hit too hard.",
+            "Follow your own sales figures every week, so you spot a downturn early.",
+          ],
+        },
+      },
+      supply: {
+        name: "Supply",
+        whyItMatters: "Problems at suppliers can delay {project} or make it more expensive.",
+        actions: [
+          "Do you have more than one supplier for what matters most?",
+          "Plan with a margin in delivery times.",
+          "Ask your supplier how they are affected.",
+        ],
+        playbook: {
+          impact: [
+            "Do you depend on a single supplier for something important?",
+            "How long can you manage if a delivery is delayed?",
+            "Do you buy from abroad, where tariffs or freight can change?",
+          ],
+          solve: [
+            "Find at least one alternative supplier for what matters most, before you need it.",
+            "Plan with longer delivery times and a little more stock where you can.",
+            "Ask your supplier how they are affected and what their plan is.",
+            "Promise customers delivery times with a margin.",
+          ],
+        },
+      },
+    },
+    opportunitiesTitle: "Opportunities",
+    opportunitiesIntro: "Support, grants and public tenders that could suit your business. Each signal is a news item with a source.",
+    opportunityLabel: "Opportunity",
+    opportunityAreas: {
+      funding: {
+        name: "Support and grants",
+        whyItMatters: "There may be support or funding that suits {project}.",
+        actions: [
+          "Read who the support is for and when applications close.",
+          "Check whether your business meets the requirements.",
+          "Ask Almi or your municipality's business office if you are unsure.",
+        ],
+        playbook: {
+          impact: [
+            "Does the support apply to your industry, your stage and your company form?",
+            "Does it require the company to be registered already?",
+            "Do you have to contribute money or time yourself?",
+          ],
+          solve: [
+            "Read the terms from whoever awards the support, not just the article.",
+            "Put the application deadline in your calendar.",
+            "Prepare a short description of the idea, the customer and what the money will be used for.",
+            "Ask someone who has applied before to read your application.",
+          ],
+        },
+      },
+      procurement: {
+        name: "Public procurement",
+        whyItMatters: "A public tender could give {project} a new customer.",
+        actions: [
+          "Read what is being procured and the deadline for bids.",
+          "Check whether your business meets the requirements.",
+          "Consider whether you could bid together with someone else.",
+        ],
+        playbook: {
+          impact: [
+            "Do you sell what is being procured, or something close to it?",
+            "Do you meet requirements such as revenue, references or insurance?",
+            "Do you have time to submit a bid before the deadline?",
+          ],
+          solve: [
+            "Read the whole tender document, especially the requirements and how bids are assessed.",
+            "Send your questions to the buyer within the question period.",
+            "If the requirements are too high: see whether you can be a subcontractor to someone who bids.",
+            "Keep an eye out for similar tenders.",
+          ],
+        },
+      },
+    },
+    playbook: {
+      toggle: "Playbook: how it affects you and what to do",
+      riskImpactTitle: "How it affects you",
+      riskSolveTitle: "How to handle it",
+      opportunityImpactTitle: "Does it suit you?",
+      opportunitySolveTitle: "How to make the most of it",
+      note: "General guidance, not yet reviewed by an advisor. Get an advisor's help for your specific case.",
+    },
+    feedback: {
+      question: "Is this relevant to you?",
+      relevant: "Relevant",
+      notRelevant: "Not relevant",
+      thanks: "Thanks! Pulsen will show more like this.",
+      hidden: "Hidden. It won't be shown again.",
+      failed: "Couldn't save. Please try again.",
+    },
+    watches: {
+      title: "Your watches",
+      intro: "Add competitors or words for Pulse to look for. They apply from the next fetch, usually tomorrow.",
+      kindLabel: "Type",
+      kindCompetitor: "Competitor",
+      kindKeyword: "Keyword",
+      termLabel: "What should Pulse look for?",
+      termPlaceholder: "For example a company name",
+      add: "Watch",
+      remove: "Stop watching {term}",
+      empty: "No watches yet.",
+      limit: "At most {max} watches.",
+      errors: {
+        too_short: "Enter at least two characters.",
+        too_many: "You already have as many watches as allowed. Remove one first.",
+        no_project: "Start a project first, so Pulse knows what to watch for.",
+        failed: "Couldn't save. Please try again.",
+      },
+    },
   },
   memoryPage: {
     title: "Memory",
@@ -537,7 +758,7 @@ export const en = {
     },
     profile: {
       title: "Tell us about yourself",
-      subtitle: "Click the answer to move on — it builds the profile Spark works from.",
+      subtitle: "The conversation plays out on its own. The answers build the profile Spark works from.",
       buildingTitle: "Your profile so far",
       continueCta: "Continue",
       formSubtitle: "Answer in your own words. Your answers build the profile Spark starts from.",
@@ -563,7 +784,9 @@ export const en = {
       submittingCta: "Saving …",
       invalidTemplate: "Fill in both fields. The name can be at most {nameMax} characters and the description at most {oneLinerMax}.",
     },
-    // Proposal, reviewed by Theo (onboarding PR 1).
+    // Proposal, reviewed by Theo (onboarding PR 1). closingMessage sits in the
+    // form before the button and ends with the step Home shows afterwards
+    // (tested in core/onboarding.test.ts).
     profileQuestions: {
       noIdea: {
         role: "Before we start, I need to know who you are. What do you do today?",
@@ -572,13 +795,13 @@ export const en = {
         money: "How much money can you put in yourself, if any?",
         risk: "How much are you prepared to risk, in time and money, if it doesn't go as planned?",
         closingMessage:
-          "Thanks. This is the profile the rest of the journey builds on. The next step is finding opportunities that fit you.",
+          "When you save, your answers become the profile the rest of the journey builds on. The next step in the journey is Opportunities.",
       },
       hasIdea: {
         role: "You already have an idea, so let's focus on fit. What do you do today, and what have you done that relates to the idea?",
         time: "How many hours a week can you put into the idea?",
         money: "How much money can you put in yourself, if any?",
-        closingMessage: "Thanks. The next step is the idea review: we break the idea down into assumptions and test them.",
+        closingMessage: "When you save, your answers become your profile, next to the idea you described. The next step in the journey is Screen your idea.",
       },
     },
   },
