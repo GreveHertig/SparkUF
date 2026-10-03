@@ -320,6 +320,35 @@ kommer nyheter om dem som ska köpa, inte bara om produkten.
 - **Ingen migrering.** Läses ur `profiles`, som grundaren redan får läsa
   (RLS: select egen).
 
+## Bättre signaler för alla idéer (Pulsen, 2026-10-03, gren `modul/pulsen-kund`)
+
+Efter den första riktiga genomklickningen (Laddkollen, 2026-10-03) kom
+konkurrenters produktsidor, en engelsk rubrik, sajtnamn i rubrikerna och två
+risker om samma sak. Rättat generellt, för alla idéer:
+
+- **Bara nyheter:** båda sökningarna ber Tavily om `topic: "news"` från de
+  senaste 30 dagarna (`NEWS_DAYS`). `lib/server/tavily.ts` fick två
+  valfria fält, `topic` och `days`. Utan dem skickas exakt samma anrop som
+  förut, så Utskick (`OutreachPrep`) påverkas inte.
+- **Reserv:** ger nyhetssökningen noll träffar (smal bransch) blir dagens
+  andra anrop en vanlig sökning på samma ord i stället för temat. Taket på
+  två anrop per dag håller.
+- **Rena rubriker:** sajtnamnet i slutet ("| Sveriges Riksbank", "- SBAB")
+  tas bort när det matchar källans domän (`stripSiteSuffix`). Ett led som
+  inte är källan står kvar.
+- **Bara svenska:** en rubrik utan å, ä och ö med minst två engelska småord,
+  och fler engelska än svenska, sparas inte och visas inte
+  (`isSwedishHeadline`).
+- **Samma nyhet en gång:** rubriker där minst 75 % av den kortares ord finns
+  i den andra visas en gång (`isNearDuplicate`, böjningar och
+  sammansättningar räknas).
+- **En per område:** högst en risk per riskområde och en möjlighet per sort.
+- **Äldre rader** rensas på samma sätt vid läsning, så inget behöver
+  migreras.
+- **Inte gjort:** en artikel utan publiceringsdatum får fortfarande
+  hämtdagen som datum. Att skilja dem åt kräver en kolumn (migrering).
+  Nyhetsläget ger datum på nästan alla träffar.
+
 ## Acceptanskriterier
 
 - `search(query)` returnerar en lista där varje resultat har `title`, `url`

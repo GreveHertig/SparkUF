@@ -19,7 +19,8 @@ vi.mock("@/lib/server/session", async () => {
 vi.mock("@/lib/server/tavily", () => ({
   search: async () =>
     [1, 2, 3, 4].map((n) => ({
-      title: `Redovisningsbyråer i nyheterna ${n}`,
+      // Olika nyheter, inte samma rubrik fyra gånger (liveadaptern visar samma nyhet en gång).
+      title: `Redovisningsbyråer ${["växer", "anställer", "digitaliserar", "investerar"][n - 1]} i nyheterna`,
       url: `https://www.nyheter.se/artikel-${n}`,
       content: "Svensk redovisning och kvittohantering.",
       publishedDate: `2026-09-2${n}T08:00:00Z`,
