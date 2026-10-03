@@ -45,6 +45,8 @@ export type CofounderData = {
 export type CofounderLive = {
   messages: CofounderMessage[];
   onSend: SendCofounderMessage;
+  /** Förifylld fråga, t.ex. från en signal i Pulsen. Skickas först när grundaren trycker Skicka. */
+  initialDraft?: string;
 };
 
 /**
@@ -69,7 +71,7 @@ export function Cofounder({ data, live }: { data: CofounderData; live?: Cofounde
             {moment ? moment.label : copy.title}
           </h2>
           {moment && live ? (
-            <CofounderChat initialMessages={live.messages} onSend={live.onSend} />
+            <CofounderChat initialMessages={live.messages} onSend={live.onSend} initialDraft={live.initialDraft} />
           ) : !moment ? (
             <ComingSoon />
           ) : moment.items.length === 0 ? (

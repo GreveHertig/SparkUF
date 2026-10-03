@@ -1,7 +1,12 @@
 import { Pulse } from "@/screens/Pulse";
 import { livePulseProvider, MAX_WATCHES } from "@/adapters/live/PulseProvider";
+import { liveMemoryRepository } from "@/adapters/live/MemoryRepository";
+import { liveProjectRepository } from "@/adapters/live/ProjectRepository";
+import { liveJourneyRepository } from "@/adapters/live/JourneyRepository";
+import { livePlanRepository } from "@/adapters/live/PlanRepository";
 import { orNull } from "../_lib/orNull";
-import { addWatch, giveFeedback, removeWatch } from "./actions";
+import { addPlaybookToPlan, addWatch, giveFeedback, removeWatch } from "./actions";
+import { toPulsePersonal } from "./personal";
 
 /**
  * Pulsen i /app (steg 6, docs/plan-en-design.md). Liveadaptern är byggd
@@ -21,11 +26,21 @@ import { addWatch, giveFeedback, removeWatch } from "./actions";
  * alltså null här, och då visas varken knapparna eller bevakningarna. Sidan
  * fungerar som förut. Server Actions är de enda funktionerna som skickas till
  * skärmen.
+ *
+ * Personlig spelbok ("Personlig spelbok" i moduldokumentet): grundarens egna
+ * svar ur Profilen, projektet och läget i Resan, utan modell. Spelboken får
+ * också en länk till Medgrundaren och, när plan_items finns, knappen
+ * "Lägg till stegen i min plan" (docs/moduler/min-plan.md). Saknas en del
+ * visas spelboken som förut.
  */
 export default async function LivePulsePage() {
-  const [signals, watchItems] = await Promise.all([
+  const [signals, watchItems, profile, project, steps, planItems] = await Promise.all([
     orNull(livePulseProvider.getSignals("sv")),
     orNull(livePulseProvider.getWatches!()),
+    liveMemoryRepository.getKnownProfile ? orNull(liveMemoryRepository.getKnownProfile()) : Promise.resolve(null),
+    orNull(liveProjectRepository.getProject()),
+    orNull(liveJourneyRepository.getSteps("sv")),
+    orNull(livePlanRepository.getItems()),
   ]);
   const available = watchItems !== null;
   return (
@@ -35,6 +50,10 @@ export default async function LivePulsePage() {
       watches={
         available ? { items: watchItems, max: MAX_WATCHES, onAdd: addWatch, onRemove: removeWatch } : null
       }
+      personal={toPulsePersonal({ profile, project, steps }, "sv")}
+      cofounderHref="/app/medgrundaren"
+      onAddToPlan={planItems !== null ? addPlaybookToPlan : undefined}
+      planHref="/app/resan"
     />
   );
 }

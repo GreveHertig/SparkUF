@@ -3,7 +3,7 @@
 // `vi.mock("@/lib/server/gemini", ...)` i ports/LegalAdvisor.contract.test.ts.
 // Håller BARA den delmängd av PostgREST-kedjan adaptrarna faktiskt
 // använder: `from().select().eq().is().order().limit().maybeSingle()/.single()`,
-// `insert`, `update` (på raderna som filtren träffar), `upsert` (matchar mot
+// `insert`, `update` och `delete` (på raderna som filtren träffar), `upsert` (matchar mot
 // `onConflict`-kolumnerna, en eller flera kommaseparerade) och `rpc` (bara mot
 // handläggare som testet själv skickar in, se `FakeRpcHandlers`). Unika index
 // prövas bara vid `insert` och bara om testet deklarerar dem
@@ -44,7 +44,7 @@ class FakeQueryBuilder implements PromiseLike<FakeResult> {
   private readonly filters: Array<(row: FakeRow) => boolean> = [];
   private readonly orderSpecs: OrderSpec[] = [];
   private limitN: number | undefined;
-  private mode: "select" | "insert" | "update" | "upsert" = "select";
+  private mode: "select" | "insert" | "update" | "delete" | "upsert" = "select";
   private payload: FakeRow | FakeRow[] | undefined;
   private upsertKey: string | undefined;
   private singleMode: "maybe" | "one" | null = null;
@@ -107,6 +107,12 @@ class FakeQueryBuilder implements PromiseLike<FakeResult> {
   update(payload: FakeRow): this {
     this.mode = "update";
     this.payload = payload;
+    return this;
+  }
+
+  /** `delete()` tar bort raderna som filtren träffar (Min plan). */
+  delete(): this {
+    this.mode = "delete";
     return this;
   }
 
@@ -175,6 +181,16 @@ class FakeQueryBuilder implements PromiseLike<FakeResult> {
         updated.push(this.table[index]);
       });
       return this.shape(updated);
+    }
+
+    if (this.mode === "delete") {
+      const removed: FakeRow[] = [];
+      for (let index = this.table.length - 1; index >= 0; index -= 1) {
+        if (!this.filters.every((filter) => filter(this.table[index]))) continue;
+        removed.unshift(this.table[index]);
+        this.table.splice(index, 1);
+      }
+      return this.shape(removed);
     }
 
     if (this.mode === "upsert") {

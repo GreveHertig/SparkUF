@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { ComingSoon } from "@/components/ui/ComingSoon";
 import { cn } from "@/design/cn";
 import { useI18n } from "@/i18n/context";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
+import type { PlanItem } from "@/ports/PlanRepository";
 import { JourneyStepper } from "./blocks/JourneyStepper";
 import { PageHead } from "./blocks/PageBlocks";
 
@@ -15,6 +17,19 @@ import { PageHead } from "./blocks/PageBlocks";
  */
 export type JourneyData = {
   steps: JourneyStepView[] | null;
+};
+
+/**
+ * Min plan (bara /app, docs/moduler/min-plan.md): uppgifter som grundaren
+ * lagt till från en spelbok i Pulsen. Utelämnad (tabellen saknas, eller demot)
+ * ger ingen del alls. Funktionerna är Server Actions.
+ */
+export type JourneyPlan = {
+  items: PlanItem[];
+  onToggle: (id: string, done: boolean) => Promise<void>;
+  onRemove: (id: string) => Promise<void>;
+  /** Pulsen, där spelböckerna finns. */
+  pulseHref: string;
 };
 
 const PHASE_ORDER = ["discover", "tryPhase", "launch", "grow"] as const;
@@ -29,9 +44,12 @@ export function Journey({
   data,
   basePath,
   profileAnswersHref,
+  plan,
 }: {
   data: JourneyData;
   basePath: string;
+  /** Min plan (bara /app). */
+  plan?: JourneyPlan | null;
   /** Minnets Profilen-flik (svaren från onboardingen). Visas under steg 1:s
    * kort när routen skickar den, det vill säga när onboardingen är klar. */
   profileAnswersHref?: string | null;
@@ -118,6 +136,88 @@ export function Journey({
       ) : (
         <ComingSoon />
       )}
+
+      {plan && <PlanSection plan={plan} />}
     </div>
+  );
+}
+
+/**
+ * Min plan: öppna uppgifter först, sedan de avbockade. Bocka av och ta bort
+ * visas direkt; misslyckas sparandet går raden tillbaka och ett fel visas.
+ * Texten och sammanhanget är ren text, aldrig HTML.
+ */
+function PlanSection({ plan }: { plan: JourneyPlan }) {
+  const { t } = useI18n();
+  const copy = t.journeyPage.plan;
+  const [items, setItems] = useState(plan.items);
+  const [failed, setFailed] = useState(false);
+
+  function toggle(id: string, done: boolean) {
+    const before = items;
+    setFailed(false);
+    setItems(items.map((item) => (item.id === id ? { ...item, done } : item)));
+    plan.onToggle(id, done).catch(() => {
+      setItems(before);
+      setFailed(true);
+    });
+  }
+
+  function remove(id: string) {
+    const before = items;
+    setFailed(false);
+    setItems(items.filter((item) => item.id !== id));
+    plan.onRemove(id).catch(() => {
+      setItems(before);
+      setFailed(true);
+    });
+  }
+
+  const ordered = [...items.filter((item) => !item.done), ...items.filter((item) => item.done)];
+
+  return (
+    <section className="fdd-block" aria-labelledby="fdd-journey-plan">
+      <h2 id="fdd-journey-plan" className="fdd-block__title">
+        {copy.title}
+      </h2>
+      <p className="fdd-muted">{copy.intro}</p>
+      {ordered.length === 0 ? (
+        <p className="fdd-muted">
+          {copy.empty}{" "}
+          <Link href={plan.pulseHref} className="fdd-link">
+            {copy.openPulse}
+          </Link>
+        </p>
+      ) : (
+        <ul className="fdd-plan">
+          {ordered.map((item) => (
+            <li key={item.id} className={cn("fdd-plan__item", item.done && "fdd-plan__item--done")}>
+              <label className="fdd-plan__check">
+                <input
+                  type="checkbox"
+                  checked={item.done}
+                  onChange={(event) => toggle(item.id, event.target.checked)}
+                  aria-label={item.done ? copy.markOpen : copy.markDone}
+                />
+                <span className="fdd-plan__text">{item.text}</span>
+              </label>
+              {item.context && (
+                <span className="fdd-plan__context fdd-muted">
+                  {copy.from}: {item.context}
+                </span>
+              )}
+              <button type="button" className="fd-btn fd-btn--secondary fd-btn--sm" onClick={() => remove(item.id)}>
+                {copy.remove}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {failed && (
+        <p className="fdd-muted" role="alert">
+          {copy.failed}
+        </p>
+      )}
+    </section>
   );
 }

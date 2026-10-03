@@ -25,14 +25,17 @@ export type SendCofounderMessage = (text: string) => Promise<SendCofounderMessag
 export function CofounderChat({
   initialMessages,
   onSend,
+  initialDraft,
 }: {
   initialMessages: CofounderMessage[];
   onSend: SendCofounderMessage;
+  /** Förifylld text i fältet (en signal från Pulsen). Inget skickas förrän grundaren trycker Skicka. */
+  initialDraft?: string;
 }) {
   const { t } = useI18n();
   const copy = t.cofounderPage;
   const [messages, setMessages] = useState(initialMessages);
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialDraft ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLTextAreaElement>(null);

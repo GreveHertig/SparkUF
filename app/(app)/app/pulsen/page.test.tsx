@@ -14,9 +14,28 @@ vi.mock("@/adapters/live/PulseProvider", () => ({
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
+// Personlig spelbok och Min plan: Profilen, projektet, Resan och planen.
+const getKnownProfileMock = vi.hoisted(() => vi.fn());
+const getProjectMock = vi.hoisted(() => vi.fn());
+const getStepsMock = vi.hoisted(() => vi.fn());
+const getPlanItemsMock = vi.hoisted(() => vi.fn());
+vi.mock("@/adapters/live/MemoryRepository", () => ({
+  liveMemoryRepository: { getKnownProfile: getKnownProfileMock },
+}));
+vi.mock("@/adapters/live/ProjectRepository", () => ({ liveProjectRepository: { getProject: getProjectMock } }));
+vi.mock("@/adapters/live/JourneyRepository", () => ({ liveJourneyRepository: { getSteps: getStepsMock } }));
+vi.mock("@/adapters/live/PlanRepository", () => ({
+  livePlanRepository: { getItems: getPlanItemsMock, addItems: vi.fn() },
+}));
+
 beforeEach(() => {
   // Som när migreringen inte är körd: inga knappar, inga bevakningar.
   getWatchesMock.mockRejectedValue(new NotImplementedError("Pulsen: omdöme och bevakningar", "docs"));
+  // Ett tomt konto och ingen plan: spelboken ser ut som förut.
+  getKnownProfileMock.mockRejectedValue(new EmptyStateError("Profilen", "docs"));
+  getProjectMock.mockResolvedValue(null);
+  getStepsMock.mockRejectedValue(new NotImplementedError("Resan", "docs"));
+  getPlanItemsMock.mockRejectedValue(new NotImplementedError("Min plan", "docs"));
 });
 
 afterEach(() => {
@@ -95,6 +114,40 @@ describe("/app/pulsen (steg 6)", () => {
     expect(screen.getByRole("button", { name: sv.pulsePage.feedback.notRelevant })).toBeInTheDocument();
     expect(screen.getByText(sv.pulsePage.watches.title)).toBeInTheDocument();
     expect(screen.getByText("ByråFlöde")).toBeInTheDocument();
+  });
+
+  it("personlig spelbok: grundarens svar, länken till Medgrundaren och knappen till Min plan", async () => {
+    const id = "00000000-0000-4000-8000-000000000002";
+    getSignalsMock.mockResolvedValue([
+      { ...signal, id, opportunity: { area: "funding", actions: [] } },
+    ]);
+    getKnownProfileMock.mockResolvedValue({ time: "10 timmar i veckan", money: "Ungefär 5 000 kr" });
+    getProjectMock.mockResolvedValue({ id: "p", name: "Laddkollen", oneLiner: "Laddning för BRF:er." });
+    getStepsMock.mockResolvedValue([
+      { stepNumber: 9, journeyPhase: "launch", title: "Det formella", oneLiner: "", maxPoints: 8, status: "locked" },
+    ]);
+    getPlanItemsMock.mockResolvedValue([]);
+    await renderPage();
+
+    expect(screen.getByText(sv.pulsePage.playbook.personalTitle)).toBeInTheDocument();
+    expect(screen.getByText(/Laddkollen\. Laddning för BRF:er\./)).toBeInTheDocument();
+    expect(screen.getByText(/10 timmar i veckan/)).toBeInTheDocument();
+    expect(screen.getByText(sv.pulsePage.playbook.formalOpen.replace("{step}", "Det formella"))).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: sv.pulsePage.playbook.askCofounder })).toHaveAttribute(
+      "href",
+      `/app/medgrundaren?signal=${id}`,
+    );
+    expect(screen.getByRole("button", { name: sv.pulsePage.playbook.addToPlan })).toBeInTheDocument();
+  });
+
+  it("utan plan_items: ingen planknapp, men länken till Medgrundaren finns", async () => {
+    getSignalsMock.mockResolvedValue([
+      { ...signal, id: "00000000-0000-4000-8000-000000000003", risk: { area: "finance", actions: [] } },
+    ]);
+    await renderPage();
+    expect(screen.queryByRole("button", { name: sv.pulsePage.playbook.addToPlan })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: sv.pulsePage.playbook.askCofounder })).toBeInTheDocument();
+    expect(screen.queryByText(sv.pulsePage.playbook.personalTitle)).not.toBeInTheDocument();
   });
 
   it("ett riktigt fel i bevakningarna sväljs inte", async () => {

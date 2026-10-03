@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
@@ -13,11 +13,22 @@ vi.mock("@/adapters/live/JourneyRepository", () => ({
   liveJourneyRepository: { getSteps: getStepsMock },
 }));
 
+const getPlanItemsMock = vi.hoisted(() => vi.fn());
+vi.mock("@/adapters/live/PlanRepository", () => ({
+  livePlanRepository: { getItems: getPlanItemsMock, setDone: vi.fn(), removeItem: vi.fn() },
+}));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+
 const steps: JourneyStepView[] = [
   { stepNumber: 1, journeyPhase: "discover", title: "Om dig", oneLiner: "Vem du är.", maxPoints: 8, status: "done" },
   { stepNumber: 2, journeyPhase: "discover", title: "Idén", oneLiner: "Vad du bygger.", maxPoints: 8, status: "current" },
   { stepNumber: 3, journeyPhase: "tryPhase", title: "Marknaden", oneLiner: "Hur stor.", maxPoints: 10, status: "locked" },
 ];
+
+beforeEach(() => {
+  // Som när migreringen för plan_items inte är körd: ingen plan visas.
+  getPlanItemsMock.mockRejectedValue(new NotImplementedError("Min plan", "docs/moduler/min-plan.md"));
+});
 
 afterEach(() => {
   cleanup();
@@ -62,5 +73,30 @@ describe("/app/resan (PR 9)", () => {
       ([, value]) => typeof value === "function",
     );
     expect(functionProps).toEqual([]);
+  });
+  it("utan plan_items visas ingen plan", async () => {
+    getStepsMock.mockResolvedValue(steps);
+    await renderPage();
+    expect(screen.queryByRole("heading", { name: sv.journeyPage.plan.title })).not.toBeInTheDocument();
+  });
+
+  it("Min plan: öppna uppgifter först, med sammanhang, och ett tomläge med länk till Pulsen", async () => {
+    getStepsMock.mockResolvedValue(steps);
+    getPlanItemsMock.mockResolvedValue([
+      { id: "a", text: "Läs villkoren", context: "Bidrag till laddboxar", done: false, createdAtIso: "2026-10-03T10:00:00Z" },
+      { id: "b", text: "Skriv in sista ansökningsdag", context: null, done: true, createdAtIso: "2026-10-03T10:00:00Z" },
+    ]);
+    await renderPage();
+    expect(screen.getByRole("heading", { name: sv.journeyPage.plan.title })).toBeInTheDocument();
+    const boxes = screen.getAllByRole("checkbox");
+    expect(boxes[0]).not.toBeChecked();
+    expect(boxes[1]).toBeChecked();
+    expect(screen.getByText(`${sv.journeyPage.plan.from}: Bidrag till laddboxar`)).toBeInTheDocument();
+
+    cleanup();
+    getPlanItemsMock.mockResolvedValue([]);
+    await renderPage();
+    expect(screen.getByText(sv.journeyPage.plan.empty, { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: sv.journeyPage.plan.openPulse })).toHaveAttribute("href", "/app/pulsen");
   });
 });

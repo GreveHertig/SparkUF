@@ -256,6 +256,18 @@ export type Dictionary = {
     unlockedTitle: string;
     /** Simuleringsytan på stegets arbetsyta (uppdrag 2.2, steg 03/04/06). */
     simulationTitle: string;
+    /** Min plan i Resan (docs/moduler/min-plan.md). */
+    plan: {
+      title: string;
+      intro: string;
+      empty: string;
+      openPulse: string;
+      from: string;
+      markDone: string;
+      markOpen: string;
+      remove: string;
+      failed: string;
+    };
   };
   cofounderPage: {
     title: string;
@@ -280,6 +292,10 @@ export type Dictionary = {
       invalidMessage: string;
       /** {max} = längsta meddelande. */
       tooLong: string;
+      /** Förifylld fråga från en signal i Pulsen. `{headline}`, `{source}`, `{date}`, `{project}`. */
+      signalDraft: string;
+      /** Som signalDraft, utan aktivt projekt. */
+      signalDraftNoProject: string;
     };
     /** Etiketter för raderna i "Sedan tidigare" på /app, före grundarens egen text. */
     known: {
@@ -540,6 +556,22 @@ export type Dictionary = {
       opportunitySolveTitle: string;
       /** Ärlig märkning: allmän vägledning, inte granskad av en rådgivare. */
       note: string;
+      /** Det grundaren redan har berättat, överst i spelboken (app/(app)/app/pulsen/personal.ts). */
+      personalTitle: string;
+      personal: { idea: string; time: string; money: string; risk: string };
+      /** Läget i steget "Det formella". `{step}` = stegets namn. */
+      formalOpen: string;
+      formalDone: string;
+      /** Länken till Medgrundaren med signalen som förifylld fråga. */
+      askCofounder: string;
+      /** Min plan: spelbokens steg som uppgifter i Resan. */
+      addToPlan: string;
+      adding: string;
+      addedToPlan: string;
+      alreadyInPlan: string;
+      planFull: string;
+      planFailed: string;
+      seePlan: string;
     };
     /** Omdömet under en signal i /app (pulse_feedback). */
     feedback: {
