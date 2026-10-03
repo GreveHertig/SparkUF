@@ -8,6 +8,8 @@ import type { FakeRpcHandlers, FakeTables } from "./supabaseFake";
 const COLUMN: Record<ProfileQuestionId, string> = {
   role: "role",
   bio: "bio",
+  frustrations: "frustrations",
+  customer: "customer_guess",
   time: "time_available",
   money: "money_available",
   risk: "risk_appetite",
