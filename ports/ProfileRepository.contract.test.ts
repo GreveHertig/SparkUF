@@ -33,6 +33,12 @@ beforeEach(() => {
 
 const ENTRIES = ["noIdea", "hasIdea"] as const;
 
+function withActiveProject() {
+  (fake.current as { tables: Record<string, unknown[]> }).tables.projects = [
+    { user_id: "contract-test-user", is_active: true },
+  ];
+}
+
 // Demoadaptern skriver onboardingstatusen till demoStore.
 afterEach(() => {
   useDemoStore.getState().reset();
@@ -58,13 +64,38 @@ describeContract<ProfileRepository>(
       });
 
       contractIt(`completeOnboarding (${entry}) med svar på samtalets frågor markerar onboardingen klar`, async () => {
+        // Ingång B har alltid ett aktivt projekt före profilsamtalet
+        // (/start/ide). Plattformen härleder ingången ur det.
+        if (entry === "hasIdea") withActiveProject();
         const script = await profile.getOnboardingScript(entry, "sv");
         await profile.completeOnboarding({
           entry,
-          answers: script.questions.map((q) => ({ questionId: q.id, answer: "Ett svar." })),
+          // Ett val besvaras med sitt id (spec v4), fritext med text.
+          answers: script.questions.map((q) => ({ questionId: q.id, answer: q.choices?.[0]?.id ?? "Ett svar." })),
         });
         expect(await profile.getOnboardingStatus()).toEqual({ entry, completed: true });
       });
+
+      contractIt(`getOnboardingScript (${entry}): en valfråga har val med unika id:n och etiketter`, async () => {
+        const script = await profile.getOnboardingScript(entry, "sv");
+        for (const question of script.questions.filter((q) => q.kind === "choice")) {
+          expect(question.choices?.length).toBeGreaterThan(1);
+          expect(new Set(question.choices!.map((c) => c.id)).size).toBe(question.choices!.length);
+          for (const choice of question.choices!) expect(choice.label).toBeTruthy();
+        }
+      });
     }
+
+    contractIt("saveOnboardingAnswer (valfri) sparar ett svar som getOnboardingAnswers sedan ger", async () => {
+      if (!profile.saveOnboardingAnswer || !profile.getOnboardingAnswers) return;
+      const [question] = (await profile.getOnboardingScript("noIdea", "sv")).questions;
+      const answer = question.choices?.[0]?.id ?? "Ett svar.";
+      const saved = await profile.saveOnboardingAnswer({ questionId: question.id, answer });
+      // Dagen svaret gavs kommer ur databasens tid, i formen ÅÅÅÅ-MM-DD.
+      expect(saved.answeredOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(await profile.getOnboardingAnswers()).toMatchObject({
+        [question.id]: { answer, answeredOn: saved.answeredOn },
+      });
+    });
   },
 );

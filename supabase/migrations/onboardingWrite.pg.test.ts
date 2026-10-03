@@ -2,14 +2,23 @@
 // Onboardingens skrivväg mot en riktig Postgres (PGlite, se test/pgMigrations.ts).
 // Bevisar att klienten inte kan sätta onboarding_entry eller
 // onboarding_completed_at själv, varken med update, insert eller delete och
-// insert igen, och att public.complete_onboarding är den enda vägen. Frågorna
-// som funktionen tar emot prövas mot PROFILE_QUESTIONS_BY_ENTRY i
-// core/onboarding.ts, så att formuläret och databasen aldrig säger olika saker.
-// Migreringen: 20261002150000_steg1_onboarding.sql.
+// insert igen, och att public.save_onboarding_answer och
+// public.complete_onboarding är de enda vägarna. Frågorna och valen som
+// funktionerna tar emot prövas mot core/onboarding.ts, så att formuläret och
+// databasen aldrig säger olika saker.
+// Migreringarna: 20261002150000_steg1_onboarding.sql, 20261003150000_onboarding_v4.sql.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
 import { createMigratedDb } from "@/test/pgMigrations";
-import { PROFILE_QUESTIONS_BY_ENTRY, PROFILE_ANSWER_MAX_LENGTH } from "@/core/onboarding";
+import {
+  ONBOARDING_CHOICES,
+  ONBOARDING_QUESTIONS_BY_ENTRY,
+  ONBOARDING_TEXT_MAX_LENGTH,
+  ONBOARDING_TEXT_QUESTION_IDS,
+  isChoiceQuestion,
+  onboardingQuestionsFor,
+  type OnboardingQuestionId,
+} from "@/core/onboarding";
 import type { OnboardingEntry } from "@/core/domain";
 
 let db: PGlite;
@@ -49,8 +58,33 @@ function completeOnboarding(userId: string, entry: string, answers: unknown) {
   return asUser(userId, "select public.complete_onboarding($1, $2::jsonb) as completed_at", [entry, JSON.stringify(answers)]);
 }
 
-function answersFor(entry: OnboardingEntry, value = "Ett svar"): Record<string, string> {
-  return Object.fromEntries(PROFILE_QUESTIONS_BY_ENTRY[entry].map((id) => [id, value]));
+function saveAnswer(userId: string, question: string, answer: unknown) {
+  return asUser(userId, "select public.save_onboarding_answer($1, $2)", [question, answer]);
+}
+
+/** Ett giltigt svar: det första valet, eller en text. */
+function validAnswer(id: OnboardingQuestionId, text = "Ett svar"): string {
+  return isChoiceQuestion(id) ? ONBOARDING_CHOICES[id][0] : text;
+}
+
+/** Svar på ingångens kärnfrågor (eller alla frågor). */
+function answersFor(entry: OnboardingEntry, which: "core" | "all" = "core"): Record<string, string> {
+  const ids = which === "core" ? ONBOARDING_QUESTIONS_BY_ENTRY[entry].core : onboardingQuestionsFor(entry);
+  return Object.fromEntries(ids.map((id) => [id, validAnswer(id)]));
+}
+
+/** Ingång B: ett aktivt projekt, skapat som /start/ide gör. */
+async function giveIdea(userId: string) {
+  await db.query("insert into public.projects (user_id, name, one_liner, is_active) values ($1, 'Idé', 'En idé', true)", [
+    userId,
+  ]);
+}
+
+/** Bara svaren ur onboarding_answers ({id: {answer, answered_at}}). */
+function plain(answers: unknown): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries((answers ?? {}) as Record<string, { answer?: unknown }>).map(([id, saved]) => [id, saved?.answer]),
+  );
 }
 
 async function profile(userId: string) {
@@ -93,11 +127,19 @@ describe("profiles: klienten kan inte sätta onboarding-kolumnerna", () => {
       "onboarding_entry = 'hasIdea'",
       "onboarding_entry = 'hasIdea', onboarding_completed_at = now()",
       "role = 'x', onboarding_completed_at = now()",
+      `onboarding_answers = '{"situation":"employed"}'::jsonb`,
+      "onboarding_version = 2",
     ]) {
       const result = await asUser(a, `update public.profiles set ${set} where user_id = $1`, [a]);
       expect(result.code, set).toBe("42501");
     }
-    expect(await profile(a)).toMatchObject({ role: null, onboarding_entry: null, onboarding_completed_at: null });
+    expect(await profile(a)).toMatchObject({
+      role: null,
+      onboarding_entry: null,
+      onboarding_completed_at: null,
+      onboarding_answers: {},
+      onboarding_version: null,
+    });
   });
 
   it("insert och delete nekas, så raden kan inte raderas och skapas igen med flaggan satt", async () => {
@@ -128,113 +170,253 @@ describe("profiles: klienten kan inte sätta onboarding-kolumnerna", () => {
     expect(await profile(b)).toMatchObject({ role: null });
   });
 
-  it("anon kan varken skriva profiler eller anropa complete_onboarding", async () => {
+  it("anon kan varken skriva profiler eller anropa onboardingens funktioner", async () => {
     const a = await signUp();
     expect((await run("anon", null, "update public.profiles set role = 'x' where user_id = $1", [a])).code).toBe("42501");
     const call = await run("anon", null, "select public.complete_onboarding('hasIdea', '{}'::jsonb)");
     expect(call.code).toBe("42501");
+    const save = await run("anon", null, "select public.save_onboarding_answer('situation', 'employed')");
+    expect(save.code).toBe("42501");
+  });
+
+  it("hjälpfunktionerna går inte att anropa direkt", async () => {
+    const a = await signUp();
+    for (const sql of [
+      "select * from public.onboarding_v4_questions()",
+      "select public.onboarding_v4_clean_answer('noIdea', 'situation', '\"employed\"'::jsonb)",
+      `select public.onboarding_v4_entry('${a}')`,
+    ]) {
+      expect((await asUser(a, sql)).code, sql).toBe("42501");
+    }
+  });
+});
+
+describe("save_onboarding_answer", () => {
+  it("sparar ett svar i taget, och ett svar får ändras innan onboardingen är klar", async () => {
+    const a = await signUp();
+    expect((await saveAnswer(a, "situation", "employed")).code).toBeNull();
+    expect((await saveAnswer(a, "time", "h3to6")).code).toBeNull();
+    expect((await saveAnswer(a, "time", "over10")).code).toBeNull();
+    const row = await profile(a);
+    expect(plain(row.onboarding_answers)).toEqual({ situation: "employed", time: "over10" });
+    expect(row).toMatchObject({ onboarding_completed_at: null, onboarding_entry: null, onboarding_version: null });
+  });
+
+  it("varje svar får tiden det sparades (now()), som funktionen också ger tillbaka", async () => {
+    const a = await signUp();
+    const saved = await asUser(a, "select public.save_onboarding_answer('situation', 'employed') as answered_at");
+    expect(saved.code).toBeNull();
+    const returned = saved.rows![0].answered_at as Date;
+    const stored = (await profile(a)).onboarding_answers as Record<string, { answer: string; answered_at: string }>;
+    expect(stored.situation.answer).toBe("employed");
+    expect(new Date(stored.situation.answered_at).toISOString()).toBe(new Date(returned).toISOString());
+    expect(Math.abs(Date.now() - new Date(stored.situation.answered_at).getTime())).toBeLessThan(60_000);
+  });
+
+  it("trimmar fritext", async () => {
+    const b = await signUp();
+    await giveIdea(b);
+    expect((await saveAnswer(b, "customer", "  Frisörsalonger i Malmö \n")).code).toBeNull();
+    expect(plain((await profile(b)).onboarding_answers)).toEqual({ customer: "Frisörsalonger i Malmö" });
+  });
+
+  it("ingången kommer ur databasen: utan projekt är en fråga som bara ingång B ställer okänd", async () => {
+    const a = await signUp();
+    expect((await saveAnswer(a, "payer", "business")).code).toBe("22023");
+    await giveIdea(a);
+    expect((await saveAnswer(a, "payer", "business")).code).toBeNull();
+  });
+
+  it.each([
+    ["ett okänt val", "situation", "astronaut"],
+    ["ett val med fel skiftläge", "soldB2b", "Yes"],
+    ["en okänd fråga", "role", "Säljare"],
+    ["en tom fritext", "frustration", "   "],
+    ["en för lång fritext", "frustration", "a".repeat(ONBOARDING_TEXT_MAX_LENGTH + 1)],
+    ["ett saknat svar", "situation", null],
+  ])("avvisar %s med 22023 utan att skriva något", async (_, question, answer) => {
+    const a = await signUp();
+    expect((await saveAnswer(a, question, answer)).code).toBe("22023");
+    expect((await profile(a)).onboarding_answers).toEqual({});
+  });
+
+  it("en fritext på exakt maxlängden tas emot", async () => {
+    const a = await signUp();
+    expect((await saveAnswer(a, "frustration", "a".repeat(ONBOARDING_TEXT_MAX_LENGTH))).code).toBeNull();
+  });
+
+  it("en okänd ingång ger 22023 även när onboardingen redan är klar", async () => {
+    const a = await signUp();
+    expect((await completeOnboarding(a, "noIdea", answersFor("noIdea"))).code).toBeNull();
+    expect((await completeOnboarding(a, "okänd", {})).code).toBe("22023");
+    expect((await completeOnboarding(a, "noIdea", {})).code).toBe("55000");
+  });
+
+  it("efter klar onboarding kan bara återstående frågor besvaras, med den sparade ingången", async () => {
+    const a = await signUp();
+    expect((await completeOnboarding(a, "noIdea", answersFor("noIdea"))).code).toBeNull();
+    // Ett projekt efteråt byter inte ingång: payer hör fortfarande inte dit.
+    await giveIdea(a);
+    expect((await saveAnswer(a, "payer", "business")).code).toBe("22023");
+    expect((await saveAnswer(a, "archetype", "seller")).code).toBeNull();
+    expect((await saveAnswer(a, "archetype", "builder")).code).toBe("55000");
+    expect((await saveAnswer(a, "situation", "between")).code).toBe("55000");
+    expect(plain((await profile(a)).onboarding_answers)).toMatchObject({ archetype: "seller", situation: "upperSecondary" });
+  });
+
+  it("ett konto som blev klart med fritextfrågorna kan besvara v4-frågorna efteråt", async () => {
+    const a = await signUp();
+    await db.query(
+      "update public.profiles set role = 'Säljare', onboarding_entry = 'noIdea', onboarding_completed_at = now(), onboarding_version = 1 where user_id = $1",
+      [a],
+    );
+    expect((await saveAnswer(a, "time", "h6to10")).code).toBeNull();
+    const row = await profile(a);
+    expect(row).toMatchObject({ role: "Säljare", onboarding_version: 1 });
+    expect(plain(row.onboarding_answers)).toEqual({ time: "h6to10" });
+  });
+
+  it("påverkar bara den inloggades rad", async () => {
+    const a = await signUp();
+    const b = await signUp();
+    expect((await saveAnswer(a, "situation", "employed")).code).toBeNull();
+    expect((await profile(b)).onboarding_answers).toEqual({});
   });
 });
 
 describe("complete_onboarding", () => {
-  it("ingång A: skriver de sex svaren trimmade, ingången och klar-tiden i en uppdatering", async () => {
+  it("ingång A: kärnfrågorna räcker, och svaren, ingången, versionen och klar-tiden skrivs", async () => {
     const a = await signUp();
-    const result = await completeOnboarding(a, "noIdea", {
-      role: "  Redovisningskonsult \n",
-      bio: "Tio år på byrå.",
-      frustrations: "  Kvitton som försvinner. ",
-      time: "10 timmar",
-      money: "20 000 kr",
-      risk: "Låg",
-    });
+    expect((await saveAnswer(a, "situation", "university")).code).toBeNull();
+    const result = await completeOnboarding(a, "noIdea", { time: "h3to6", money: "none", soldB2b: "no" });
     expect(result.code).toBeNull();
     const row = await profile(a);
+    expect(plain(row.onboarding_answers)).toEqual({ situation: "university", time: "h3to6", money: "none", soldB2b: "no" });
+    // Också svaren som kom med anropet får en tid.
+    for (const saved of Object.values(row.onboarding_answers as Record<string, { answered_at?: string }>)) {
+      expect(saved.answered_at).toEqual(expect.any(String));
+    }
     expect(row).toMatchObject({
-      role: "Redovisningskonsult",
-      bio: "Tio år på byrå.",
-      frustrations: "Kvitton som försvinner.",
-      customer_guess: null,
-      time_available: "10 timmar",
-      money_available: "20 000 kr",
-      risk_appetite: "Låg",
       onboarding_entry: "noIdea",
+      onboarding_version: 2,
+      role: null,
+      time_available: null,
       name: "Test Person",
     });
     expect(row.onboarding_completed_at).not.toBeNull();
   });
 
-  it("ingång B: skriver sina fyra svar och lämnar bio, frustrationer och risk orörda", async () => {
+  it("ingång B: med svaren redan sparade räcker ett tomt objekt", async () => {
     const b = await signUp();
-    await db.query("update public.profiles set bio = 'Tidigare' where user_id = $1", [b]);
-    expect(
-      (await completeOnboarding(b, "hasIdea", { role: "Säljare", customer: " Små byråer ", time: "5 timmar", money: "Inget" })).code,
-    ).toBeNull();
-    expect(await profile(b)).toMatchObject({
-      role: "Säljare",
-      customer_guess: "Små byråer",
-      bio: "Tidigare",
-      frustrations: null,
-      risk_appetite: null,
-      onboarding_entry: "hasIdea",
-    });
+    await giveIdea(b);
+    for (const [id, answer] of Object.entries(answersFor("hasIdea"))) {
+      expect((await saveAnswer(b, id, answer)).code, id).toBeNull();
+    }
+    expect((await completeOnboarding(b, "hasIdea", {})).code).toBeNull();
+    expect(await profile(b)).toMatchObject({ onboarding_entry: "hasIdea", onboarding_version: 2 });
   });
 
   it("ett andra anrop ger 55000 och skriver inte över något", async () => {
     const a = await signUp();
-    expect((await completeOnboarding(a, "hasIdea", answersFor("hasIdea", "Först"))).code).toBeNull();
+    expect((await completeOnboarding(a, "noIdea", answersFor("noIdea"))).code).toBeNull();
     const before = await profile(a);
-    expect((await completeOnboarding(a, "noIdea", answersFor("noIdea", "Igen"))).code).toBe("55000");
+    expect((await completeOnboarding(a, "noIdea", answersFor("noIdea"))).code).toBe("55000");
     expect(await profile(a)).toEqual(before);
   });
 
   it("påverkar bara den inloggades rad", async () => {
     const a = await signUp();
     const b = await signUp();
-    expect((await completeOnboarding(a, "hasIdea", answersFor("hasIdea"))).code).toBeNull();
-    expect(await profile(b)).toMatchObject({ role: null, onboarding_completed_at: null });
+    expect((await completeOnboarding(a, "noIdea", answersFor("noIdea"))).code).toBeNull();
+    expect(await profile(b)).toMatchObject({ onboarding_answers: {}, onboarding_completed_at: null });
   });
 
   it.each([
-    ["en okänd ingång", "okänd", answersFor("hasIdea")],
-    ["en saknad ingång", null, answersFor("hasIdea")],
-    ["svar som inte är ett objekt", "hasIdea", ["Säljare", "5 timmar", "Inget"]],
-    ["ett tomt svar", "hasIdea", { ...answersFor("hasIdea"), role: "   " }],
-    ["ett för långt svar", "hasIdea", { ...answersFor("hasIdea"), role: "a".repeat(PROFILE_ANSWER_MAX_LENGTH + 1) }],
-    ["ett svar som inte är text", "hasIdea", { ...answersFor("hasIdea"), role: 5 }],
-    ["ett okänt fält", "hasIdea", { ...answersFor("hasIdea"), onboarding_completed_at: "2026-01-01" }],
+    ["en okänd ingång", "okänd", answersFor("noIdea")],
+    ["en saknad ingång", null, answersFor("noIdea")],
+    ["en ingång som inte stämmer med databasen", "hasIdea", answersFor("hasIdea")],
+    ["svar som inte är ett objekt", "noIdea", ["employed", "h3to6"]],
+    ["en saknad kärnfråga", "noIdea", { ...answersFor("noIdea"), soldB2b: undefined }],
+    ["ett okänt val", "noIdea", { ...answersFor("noIdea"), money: "miljoner" }],
+    ["ett svar som inte är text", "noIdea", { ...answersFor("noIdea"), time: 5 }],
+    ["ett okänt fält", "noIdea", { ...answersFor("noIdea"), onboarding_completed_at: "2026-01-01" }],
+    ["ett gammalt fritextsvar", "noIdea", { ...answersFor("noIdea"), role: "Säljare" }],
   ])("avvisar %s med 22023 utan att skriva något", async (_, entry, answers) => {
     const a = await signUp();
     expect((await completeOnboarding(a, entry as string, answers)).code).toBe("22023");
-    expect(await profile(a)).toMatchObject({ role: null, onboarding_entry: null, onboarding_completed_at: null });
+    expect(await profile(a)).toMatchObject({
+      onboarding_answers: {},
+      onboarding_entry: null,
+      onboarding_version: null,
+      onboarding_completed_at: null,
+    });
   });
 
-  it("ett svar på exakt maxlängden tas emot", async () => {
+  it("de återstående frågorna krävs inte, men tas emot om de skickas", async () => {
     const a = await signUp();
-    const answers = { ...answersFor("hasIdea"), role: "a".repeat(PROFILE_ANSWER_MAX_LENGTH) };
-    expect((await completeOnboarding(a, "hasIdea", answers)).code).toBeNull();
+    expect((await completeOnboarding(a, "noIdea", answersFor("noIdea", "all"))).code).toBeNull();
+    expect(Object.keys((await profile(a)).onboarding_answers as object).sort()).toEqual(
+      [...onboardingQuestionsFor("noIdea")].sort(),
+    );
+  });
+});
+
+describe("migreringen: konton som redan var klara", () => {
+  it("version och klar-tid hänger ihop: en version utan klar-tid nekas", async () => {
+    const a = await signUp();
+    await expect(db.query("update public.profiles set onboarding_version = 1 where user_id = $1", [a])).rejects.toThrow();
   });
 });
 
 // Samma roll som synktestet för stegkraven (journeyStepCompletion.pg.test.ts):
-// frågorna finns i SQL (complete_onboarding) och i TS
-// (PROFILE_QUESTIONS_BY_ENTRY). Ändras den ena utan den andra fallerar det här.
-describe("complete_onboarding stämmer med PROFILE_QUESTIONS_BY_ENTRY", () => {
-  const entries = Object.keys(PROFILE_QUESTIONS_BY_ENTRY) as OnboardingEntry[];
-  const allQuestions = [...new Set(entries.flatMap((entry) => PROFILE_QUESTIONS_BY_ENTRY[entry]))];
-
-  it.each(entries)("%s: exakt TS-frågorna tas emot, en fråga för lite eller för mycket avvisas", async (entry) => {
-    const questions = PROFILE_QUESTIONS_BY_ENTRY[entry];
-    const user = await signUp();
-
-    for (const missing of questions) {
-      const answers = answersFor(entry);
-      delete answers[missing];
-      expect((await completeOnboarding(user, entry, answers)).code, `${entry} utan ${missing}`).toBe("22023");
+// frågorna och valen finns i SQL (onboarding_v4_questions) och i TS
+// (core/onboarding.ts). Ändras den ena utan den andra fallerar det här.
+describe("onboarding_v4_questions stämmer med core/onboarding.ts", () => {
+  it("samma frågor, ordning, kärnfrågor och val per ingång", async () => {
+    const { rows } = await db.query<{ entry: string; question_id: string; position: number; is_core: boolean; choices: string[] | null }>(
+      'select entry, question_id, "position", is_core, choices from public.onboarding_v4_questions() order by entry, "position"',
+    );
+    for (const entry of Object.keys(ONBOARDING_QUESTIONS_BY_ENTRY) as OnboardingEntry[]) {
+      const sql = rows.filter((row) => row.entry === entry);
+      const ts = onboardingQuestionsFor(entry);
+      expect(sql.map((row) => row.question_id), entry).toEqual([...ts]);
+      expect(sql.filter((row) => row.is_core).map((row) => row.question_id), entry).toEqual([
+        ...ONBOARDING_QUESTIONS_BY_ENTRY[entry].core,
+      ]);
+      for (const row of sql) {
+        const id = row.question_id as OnboardingQuestionId;
+        expect(row.choices, `${entry}.${id}`).toEqual(isChoiceQuestion(id) ? [...ONBOARDING_CHOICES[id]] : null);
+      }
     }
-    for (const extra of allQuestions.filter((id) => !questions.includes(id))) {
-      const answers = { ...answersFor(entry), [extra]: "Svar" };
-      expect((await completeOnboarding(user, entry, answers)).code, `${entry} med ${extra}`).toBe("22023");
-    }
-    expect((await completeOnboarding(user, entry, answersFor(entry))).code).toBeNull();
   });
+
+  it("högst en fritext per ingång (spec v4 §4)", () => {
+    for (const entry of Object.keys(ONBOARDING_QUESTIONS_BY_ENTRY) as OnboardingEntry[]) {
+      const text = onboardingQuestionsFor(entry).filter((id) => !isChoiceQuestion(id));
+      expect(text.length, entry).toBeLessThanOrEqual(1);
+      for (const id of text) expect(ONBOARDING_TEXT_QUESTION_IDS).toContain(id);
+    }
+  });
+
+  it.each(Object.keys(ONBOARDING_QUESTIONS_BY_ENTRY) as OnboardingEntry[])(
+    "%s: varje val i TS tas emot, och utan en kärnfråga blir onboardingen inte klar",
+    async (entry) => {
+      for (const missing of ONBOARDING_QUESTIONS_BY_ENTRY[entry].core) {
+        const user = await signUp();
+        if (entry === "hasIdea") await giveIdea(user);
+        const answers = answersFor(entry);
+        delete answers[missing];
+        expect((await completeOnboarding(user, entry, answers)).code, `${entry} utan ${missing}`).toBe("22023");
+      }
+      const user = await signUp();
+      if (entry === "hasIdea") await giveIdea(user);
+      for (const id of onboardingQuestionsFor(entry)) {
+        const answers = isChoiceQuestion(id) ? ONBOARDING_CHOICES[id] : ["Ett svar"];
+        for (const answer of answers) {
+          expect((await saveAnswer(user, id, answer)).code, `${entry}.${id}=${answer}`).toBeNull();
+        }
+      }
+      expect((await completeOnboarding(user, entry, {})).code).toBeNull();
+    },
+  );
 });

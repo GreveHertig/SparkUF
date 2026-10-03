@@ -75,19 +75,30 @@ describe("OnboardingProfile", () => {
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
-  it("formuläret visar avslutningsrepliken direkt, efter sista frågan och före knappen", () => {
-    const answerAction = vi.fn().mockResolvedValue({ invalid: false });
+  it("plattformen: frågorna ställs en i taget med val, utan färdiga svar ur skriptet", () => {
+    const live = {
+      entry: "noIdea" as const,
+      answers: {},
+      saveAnswer: vi.fn().mockResolvedValue({ ok: true, answeredOn: "2026-10-03" }),
+      completeAction: vi.fn().mockResolvedValue({ invalid: false }),
+    };
+    const choiceScript: OnboardingScript = {
+      questions: [
+        { id: "soldB2b", cofounderText: "Har du sålt?", suggestedAnswer: null, kind: "choice", choices: [{ id: "yes", label: "Ja" }, { id: "no", label: "Nej" }] },
+        { id: "time", cofounderText: "Hur mycket tid har du?", suggestedAnswer: null, kind: "choice", choices: [{ id: "under3", label: "Under 3 timmar" }] },
+      ],
+      closingMessage: "Bra att veta.",
+    };
     render(
       <LocaleProvider>
-        <OnboardingProfile data={{ script }} continueHref="/app" answerAction={answerAction} />
+        <OnboardingProfile data={{ script: choiceScript }} continueHref="/app" live={live} />
       </LocaleProvider>,
     );
-    const closing = screen.getByText("Bra att veta.");
-    const lastQuestion = screen.getByText("Hur mycket tid har du?");
-    const submit = screen.getByRole("button", { name: "Spara och gå vidare" });
-    expect(lastQuestion.compareDocumentPosition(closing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(closing.compareDocumentPosition(submit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // Inga färdiga svar ur skriptet i formuläret.
+    expect(screen.getByText("Har du sålt?")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Har du sålt?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ja" })).toBeInTheDocument();
+    // Nästa fråga visas först när den här är besvarad.
+    expect(screen.queryByText("Hur mycket tid har du?")).not.toBeInTheDocument();
     expect(screen.queryByText("Jag jobbar med redovisning.")).not.toBeInTheDocument();
   });
 

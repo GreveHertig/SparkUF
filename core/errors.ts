@@ -185,6 +185,31 @@ export class OnboardingAlreadyCompletedError extends Error {
 }
 
 /**
+ * Kastas av liveProfileRepository.saveOnboardingAnswer när frågan redan har
+ * ett svar och onboardingen är klar (felkod 55000 från
+ * public.save_onboarding_answer). Ett givet svar skrivs inte över efteråt.
+ * Inte ett platshållarfel.
+ */
+export class OnboardingAnswerLockedError extends Error {
+  constructor() {
+    super("Profil: frågan är redan besvarad.");
+    this.name = "OnboardingAnswerLockedError";
+  }
+}
+
+/**
+ * Kastas av liveProfileRepository.saveOnboardingAnswer när databasen avvisar
+ * svaret (felkod 22023 från public.save_onboarding_answer), till exempel en
+ * fråga som grundarens ingång inte ställer. Inte ett platshållarfel.
+ */
+export class OnboardingAnswerInvalidError extends Error {
+  constructor() {
+    super("Profil: svaret avvisades.");
+    this.name = "OnboardingAnswerInvalidError";
+  }
+}
+
+/**
  * Route-filer fångar "det finns inget att visa än"-felen i samma
  * catch och visar `<ComingSoon />` för båda (uppdrag 14.4) — den ena för att
  * modulen inte är byggd, den andra för att kontot är nytt. Ett fel som INTE

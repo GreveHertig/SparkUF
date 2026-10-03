@@ -3,6 +3,8 @@
 import type { EvidenceKind } from "@/core/evidenceKinds";
 import type { FitQuestionId } from "@/core/fitQuestions";
 import type { RequirementGroup } from "@/core/journeyRequirements";
+import type { OnboardingChoiceId, OnboardingChoiceQuestionId } from "@/core/onboarding";
+import type { StartFrameLine, StartFrameTask } from "@/core/startFrame";
 
 export type Dictionary = {
   /** Sidtitel och förhandsvisning när länken delas (app/layout.tsx). */
@@ -615,6 +617,12 @@ export type Dictionary = {
     traceEmpty: string;
     /** En profilfråga som inte är besvarad. Luckan fylls aldrig i. */
     notAnswered: string;
+    /** Svaren på onboardingens v4-frågor (spec v4). */
+    answersLabel: string;
+    /** Frågorna som återstår (spec v4 §3.2). */
+    remainingTitle: string;
+    remainingLede: string;
+    remainingDone: string;
   };
   legalPage: {
     title: string;
@@ -704,12 +712,18 @@ export type Dictionary = {
       subtitle: string;
       buildingTitle: string;
       continueCta: string;
-      /** Plattformens svarsformulär (/start/profil). Demot visar färdiga svar. */
+      /** Plattformens samtal (/start/profil, spec v4). Demot visar färdiga svar. */
       formSubtitle: string;
-      submitCta: string;
-      submittingCta: string;
-      /** `{max}` = PROFILE_ANSWER_MAX_LENGTH (core/onboarding.ts). */
+      /** `{current}` och `{total}` = frågans nummer och antalet kärnfrågor. */
+      progressTemplate: string;
+      textSubmitCta: string;
+      savingCta: string;
+      /** Ändra ett givet svar innan onboardingen är klar. */
+      changeCta: string;
+      /** `{max}` = ONBOARDING_TEXT_MAX_LENGTH (core/onboarding.ts). */
       invalidTemplate: string;
+      /** Ett riktigt fel när svaret skulle sparas. */
+      saveFailed: string;
     };
     idea: {
       title: string;
@@ -745,6 +759,38 @@ export type Dictionary = {
         closingMessage: string;
       };
       hasIdea: { role: string; customer: string; time: string; money: string; closingMessage: string };
+    };
+    /** Onboardingens frågor enligt spec v4 §4 (core/onboarding.ts,
+     * ONBOARDING_QUESTIONS_BY_ENTRY). Valen har stabila id:n; här står bara
+     * etiketterna. `profileQuestions` ovan står kvar för svaren från före v4. */
+    v4Questions: {
+      noIdea: Record<"situation" | "time" | "money" | "soldB2b" | "archetype" | "knowsOwner" | "frustration", string>;
+      hasIdea: Record<"situation" | "payer" | "customer" | "talkedTo" | "soldB2b" | "time" | "money", string>;
+      choices: { [Q in OnboardingChoiceQuestionId]: Record<OnboardingChoiceId<Q>, string> };
+    };
+    /** Startkortet efter kärnfrågorna (core/startFrame.ts). */
+    startFrame: {
+      titleNoIdea: string;
+      titleHasIdea: string;
+      lede: string;
+      hoursLabel: string;
+      /** `{max}`, `{min}` = timmar på tre månader. */
+      hoursUnder: string;
+      hoursRange: string;
+      hoursOver: string;
+      /** `{weeks}` = START_FRAME_WEEKS. */
+      hoursNote: string;
+      moneyLabel: string;
+      customerLabel: string;
+      assessmentLabel: string;
+      lines: Record<StartFrameLine, string>;
+      taskLabel: string;
+      /** `{customer}` = grundarens egen kundgissning, ordagrant. */
+      tasks: Record<StartFrameTask, string>;
+      /** `{count}` = antalet återstående frågor. */
+      remainingNote: string;
+      continueCta: string;
+      continuingCta: string;
     };
   };
   /** De 12 officiella stegens titel/ingress (uppdrag 1.5) — produktkonstanter,

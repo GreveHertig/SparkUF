@@ -25,7 +25,9 @@ const toneClasses: Record<DataType, string> = {
 };
 
 /**
- * Källa + datum, i variant efter datatyp. Klick visar detaljer.
+ * Källa + datum, i variant efter datatyp. Ett tomt `hämtad` betyder att
+ * datumet inte är känt (till exempel ett onboardingsvar som sparades utan
+ * tid): då visas källan utan datum, aldrig ett påhittat. Klick visar detaljer.
  * Simuleringar (uppdrag 2.2) bär alltid den synliga etiketten "Simulering",
  * utöver den egna färgen — aldrig bara en färgskillnad. Påhittad exempeldata
  * i demot (`"example"`, PR 11) bär på samma sätt etiketten "Exempel" och
@@ -70,8 +72,12 @@ export function SourceTag({
             </>
           )}
           <span>{source.namn}</span>
-          <span aria-hidden="true">·</span>
-          <span>{formatDate(source.hämtad, locale)}</span>
+          {source.hämtad && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>{formatDate(source.hämtad, locale)}</span>
+            </>
+          )}
         </button>
       </Popover.Trigger>
       <Popover.Portal>
@@ -80,7 +86,7 @@ export function SourceTag({
           className="z-50 max-w-xs rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-lg"
         >
           <p className="font-semibold text-slate-900">{source.namn}</p>
-          <p className="mt-0.5 text-slate-600">{formatDate(source.hämtad, locale)}</p>
+          {source.hämtad && <p className="mt-0.5 text-slate-600">{formatDate(source.hämtad, locale)}</p>}
           {quote && (
             <p className="mt-2 border-l-2 border-slate-200 pl-2 italic text-slate-600">
               <span className="not-italic font-medium text-slate-600">

@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ComingSoon } from "@/components/ui/ComingSoon";
 import { useI18n } from "@/i18n/context";
-import type { OnboardingScript } from "@/ports/ProfileRepository";
+import type { OnboardingEntry } from "@/core/domain";
+import type { OnboardingScript, SavedOnboardingAnswer } from "@/ports/ProfileRepository";
 import { ChatLine } from "./blocks/ChatBlocks";
-import { ProfileAnswerForm, type OnboardingFormAction } from "./blocks/OnboardingForms";
+import type { OnboardingFormAction } from "./blocks/OnboardingForms";
+import type { SaveOnboardingAnswer } from "./blocks/OnboardingQuestion";
+import { OnboardingQuestionFlow } from "./blocks/OnboardingQuestionFlow";
 
 // Frågan står ensam en stund, svaret kommer, och samtalet går vidare av sig
 // självt (avsnitt 9.1): ingen ska behöva klicka på pratbubblorna.
@@ -20,15 +23,25 @@ const ADVANCE_DELAY_MS = 1400;
  */
 export type OnboardingProfileData = { script: OnboardingScript | null };
 
+/** Bara plattformen (spec v4 §4): grundaren svarar själv, ett svar i taget,
+ * och actionerna sparar. Utan den visas demots samtal med färdiga svar. */
+export type OnboardingLiveFlow = {
+  entry: OnboardingEntry;
+  /** De svar som redan är sparade, med dagen de gavs, så att samtalet
+   * fortsätter där det slutade. */
+  answers: Record<string, SavedOnboardingAnswer>;
+  saveAnswer: SaveOnboardingAnswer;
+  /** Gör onboardingen klar och skickar till /app ("Till appen" på startkortet). */
+  completeAction: OnboardingFormAction;
+};
+
 export type OnboardingProfileProps = {
   data: OnboardingProfileData;
   /** Vart "Fortsätt" länkar när alla frågor är besvarade. */
   continueHref: string;
   /** Bara demot behöver en sidoeffekt (markera onboardingen klar). */
   onContinue?: () => void;
-  /** Bara plattformen: grundaren skriver egna svar, och actionen sparar dem.
-   * Utan den visas demots samtal med färdiga svar, som förut. */
-  answerAction?: OnboardingFormAction;
+  live?: OnboardingLiveFlow;
 };
 
 /**
@@ -37,7 +50,7 @@ export type OnboardingProfileProps = {
  * `/start/profil`. Ett byte av ingång (annat samtal) monteras om via `key`
  * av anroparen, så skärmen behöver inte nollställa sig själv.
  */
-export function OnboardingProfile({ data, continueHref, onContinue, answerAction }: OnboardingProfileProps) {
+export function OnboardingProfile({ data, continueHref, onContinue, live }: OnboardingProfileProps) {
   const { t } = useI18n();
   const copy = t.onboarding.profile;
 
@@ -45,14 +58,16 @@ export function OnboardingProfile({ data, continueHref, onContinue, answerAction
     <div className="fdd-page fdd-onboarding">
       <header className="fdd-head">
         <h1 className="fd-h2">{copy.title}</h1>
-        <p className="fd-lede">{answerAction ? copy.formSubtitle : copy.subtitle}</p>
+        <p className="fd-lede">{live ? copy.formSubtitle : copy.subtitle}</p>
       </header>
 
-      {data.script && answerAction ? (
-        <ProfileAnswerForm
+      {data.script && live ? (
+        <OnboardingQuestionFlow
+          entry={live.entry}
           questions={data.script.questions}
-          closingMessage={data.script.closingMessage}
-          action={answerAction}
+          initialAnswers={live.answers}
+          saveAnswer={live.saveAnswer}
+          completeAction={live.completeAction}
         />
       ) : data.script ? (
         <Conversation script={data.script} continueHref={continueHref} onContinue={onContinue} />

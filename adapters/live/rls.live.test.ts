@@ -1,6 +1,13 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  ONBOARDING_CHOICES,
+  isChoiceQuestion,
+  isOnboardingEntry,
+  parseOnboardingAnswers,
+  remainingOnboardingQuestions,
+} from "@/core/onboarding";
 
 /**
  * Bevisar uppgift 6 (docs/status.md, Session P1): en inloggad användare kan
@@ -502,6 +509,9 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
         { onboarding_completed_at: new Date().toISOString() },
         { onboarding_entry: "hasIdea" },
         { role: "r", onboarding_entry: "hasIdea", onboarding_completed_at: new Date().toISOString() },
+        // 20261003150000_onboarding_v4.sql: svaren och versionen skrivs bara av funktionerna.
+        { onboarding_answers: { situation: "employed" } },
+        { onboarding_version: 2 },
       ]) {
         const { data, error } = await clientA.from("profiles").update(payload).eq("user_id", userIdA).select("user_id");
         expect(error?.code, `profiles: A fick skriva ${Object.keys(payload).join(", ")}`).toBe("42501");
@@ -522,17 +532,19 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
     });
 
     it("onboardingflödet fungerar via complete_onboarding, ett andra anrop ger 55000, och steg 2 kan markeras klart efteråt", async () => {
-      const answers = { role: "RLS-test", customer: "RLS-test", time: "1 timme", money: "Inget" };
+      // Konto A har inget aktivt projekt (filhuvudet), så databasen härleder
+      // ingång A, och kärnfrågorna är de fyra nedan (spec v4).
+      const answers = { situation: "employed", time: "under3", money: "none", soldB2b: "no" };
       const status = await clientA.from("profiles").select("onboarding_completed_at").eq("user_id", userIdA).single();
       expect(status.error).toBeNull();
       if (status.data!.onboarding_completed_at === null) {
-        const first = await clientA.rpc("complete_onboarding", { p_entry: "hasIdea", p_answers: answers });
+        const first = await clientA.rpc("complete_onboarding", { p_entry: "noIdea", p_answers: answers });
         expect(first.error, "complete_onboarding: A kunde inte klara onboardingen").toBeNull();
       }
       const done = await clientA.from("profiles").select("onboarding_entry, onboarding_completed_at").eq("user_id", userIdA).single();
       expect(done.data!.onboarding_completed_at).not.toBeNull();
 
-      const second = await clientA.rpc("complete_onboarding", { p_entry: "hasIdea", p_answers: answers });
+      const second = await clientA.rpc("complete_onboarding", { p_entry: "noIdea", p_answers: answers });
       expect(second.error?.code, "complete_onboarding: ett andra anrop togs emot").toBe("55000");
       const unchanged = await clientA.from("profiles").select("onboarding_entry, onboarding_completed_at").eq("user_id", userIdA).single();
       expect(unchanged.data).toEqual(done.data);
@@ -572,6 +584,46 @@ describe.skipIf(!CAN_RUN)("RLS-isolering (riktig databas)", () => {
         // on delete cascade tar med sig raden i journey_steps.
         if (createdId) await clientA.from("projects").delete().eq("id", createdId);
       }
+    });
+
+    // 20261003150000_onboarding_v4.sql: save_onboarding_answer skriver bara den
+    // inloggades rad. Efter klar onboarding tas bara återstående frågor emot,
+    // och en besvarad fråga skrivs inte över (55000). Konto A är klart (testet
+    // ovan), så ett svar som sparas här står kvar: körningen efter den första
+    // prövar bara att en besvarad fråga nekas.
+    it("save_onboarding_answer: B kan inte röra A:s svar, och A kan bara besvara en återstående fråga en gång", async () => {
+      const read = () =>
+        clientA.from("profiles").select("onboarding_entry, onboarding_answers").eq("user_id", userIdA).single();
+      const before = await read();
+      expect(before.error, "profiles: A kunde inte läsa sina svar").toBeNull();
+      const entry = before.data!.onboarding_entry;
+      expect(isOnboardingEntry(entry), "profiles: A saknar ingång efter onboardingen").toBe(true);
+
+      const fromB = await clientB.rpc("save_onboarding_answer", { p_question: "situation", p_answer: "between" });
+      expect(fromB.error?.code ?? null, "save_onboarding_answer: B:s anrop gav ett oväntat fel").not.toBe("42501");
+      expect((await read()).data, "save_onboarding_answer: B ändrade A:s svar").toEqual(before.data);
+
+      const answers = parseOnboardingAnswers(before.data!.onboarding_answers);
+      const [open] = remainingOnboardingQuestions(entry, answers);
+      if (open) {
+        const answer = isChoiceQuestion(open) ? ONBOARDING_CHOICES[open][0] : marker;
+        const saved = await clientA.rpc("save_onboarding_answer", { p_question: open, p_answer: answer });
+        expect(saved.error, `save_onboarding_answer: A kunde inte besvara ${open}`).toBeNull();
+        // Svaret sparas med tiden databasen satte, och funktionen ger tillbaka den.
+        expect(typeof saved.data, "save_onboarding_answer: ingen tid tillbaka").toBe("string");
+        const stored = ((await read()).data!.onboarding_answers as Record<string, { answered_at?: string }>)[open];
+        expect(stored?.answered_at, "save_onboarding_answer: svaret saknar answered_at").toEqual(expect.any(String));
+      }
+      const after = parseOnboardingAnswers((await read()).data!.onboarding_answers);
+      const answered = remainingOnboardingQuestions(entry, {}).find((id) => after[id]);
+      expect(answered, "save_onboarding_answer: A har inget sparat svar").toBeDefined();
+      // Ett giltigt svar, så att det är spärren och inte formen som nekar.
+      const valid = isChoiceQuestion(answered!) ? ONBOARDING_CHOICES[answered!][0] : marker;
+      const again = await clientA.rpc("save_onboarding_answer", { p_question: answered, p_answer: valid });
+      expect(again.error?.code, "save_onboarding_answer: en besvarad fråga skrevs över").toBe("55000");
+
+      const unknown = await clientA.rpc("save_onboarding_answer", { p_question: "role", p_answer: "kapad" });
+      expect(unknown.error?.code, "save_onboarding_answer: en fråga från före v4 togs emot").toBe("22023");
     });
 
     it("projects: B kan inte skapa ett projekt med user_id = A", async () => {

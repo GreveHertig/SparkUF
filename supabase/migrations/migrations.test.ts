@@ -162,6 +162,10 @@ const PROFILES_CLIENT_CLOSED: Record<string, string> = {
   onboarding_entry: "Sätts bara av public.complete_onboarding. Beslut Erik 2026-10-01 (säkerhetsgranskningen).",
   onboarding_completed_at:
     "Sätts bara av public.complete_onboarding. Låser upp steg 1 och 2 och spärren mot /app. Beslut Erik 2026-10-01.",
+  onboarding_answers:
+    "Svaren på onboardingens v4-frågor. Skrivs bara av public.save_onboarding_answer och public.complete_onboarding, som prövar varje val. Beslut Erik 2026-10-03.",
+  onboarding_version:
+    "1 = klar med fritextfrågorna, 2 = klar med v4. Sätts bara av migreringen och public.complete_onboarding. Beslut Erik 2026-10-03.",
 };
 
 /** Kolumnerna i profiles: create table plus alter table ... add column. */

@@ -9,6 +9,12 @@ export type OnboardingQuestion = {
   id: string;
   cofounderText: string;
   suggestedAnswer: string | null;
+  /** Spec v4 §4 (plattformen): `choice` visas som knappar med `choices`,
+   * `text` som ett fritextfält. Saknas i demot, som har färdiga svar.
+   * Ändrad port, beslut Erik 2026-10-03 (docs/beslut.md). */
+  kind?: "choice" | "text";
+  /** Valen med stabila id:n (core/onboarding.ts) och etikett ur i18n. */
+  choices?: { id: string; label: string }[];
 };
 
 /** Grundarens svar på en fråga i `OnboardingScript.questions`. */
@@ -40,6 +46,21 @@ export interface ProfileRepository {
    * när `completed` är sant (docs/moduler/resan.md). */
   getOnboardingStatus(): Promise<OnboardingStatus>;
   /** Sparar svaren och markerar onboardingen klar i ett enda anrop. Svar på
-   * frågor som ingången inte ställer avvisas. */
+   * frågor som ingången inte ställer avvisas. På plattformen (spec v4) slås
+   * `answers` ihop med de svar som redan sparats, och alla kärnfrågor måste
+   * då ha svar; `answers` får vara tom. */
   completeOnboarding(input: { entry: OnboardingEntry; answers: OnboardingAnswer[] }): Promise<void>;
+  /** Sparar ett svar på en v4-fråga (spec v4 §4: samtalet kan avbrytas och
+   * fortsätta). Före klar onboarding får svaret ändras, efter den kan bara
+   * återstående frågor besvaras (`OnboardingAnswerLockedError` annars).
+   * Valfri: demot sparar inget. Ändrad port, beslut Erik 2026-10-03. */
+  saveOnboardingAnswer?(answer: OnboardingAnswer): Promise<SavedOnboardingAnswer>;
+  /** De v4-svar som redan är sparade, {frågans id: svaret och dagen det gavs},
+   * så att samtalet fortsätter vid första obesvarade fråga. Valfri, som ovan. */
+  getOnboardingAnswers?(): Promise<Record<string, SavedOnboardingAnswer>>;
 }
+
+/** Ett sparat v4-svar: val-id eller text, och dagen (ÅÅÅÅ-MM-DD, Stockholm)
+ * då det gavs. `answeredOn` är `null` när tiden saknas; då visas inget datum,
+ * aldrig ett påhittat. Ändrad port, beslut Erik 2026-10-03. */
+export type SavedOnboardingAnswer = { answer: string; answeredOn: string | null };

@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  ONBOARDING_CHOICES,
+  ONBOARDING_QUESTIONS_BY_ENTRY,
+  ONBOARDING_TEXT_MAX_LENGTH,
+  coreQuestionsAnswered,
+  isChoiceQuestion,
+  isOnboardingQuestionFor,
+  isValidOnboardingAnswer,
+  onboardingQuestionsFor,
+  parseOnboardingAnswers,
+  remainingOnboardingQuestions,
   isOnboardingEntry,
+  parseOnboardingAnswerRecords,
   isProfileQuestionFor,
   isValidProfileAnswer,
   isValidProjectInput,
@@ -74,5 +85,87 @@ describe("core/onboarding", () => {
     expect(isOnboardingEntry("hasIdea")).toBe(true);
     expect(isOnboardingEntry("annat")).toBe(false);
     expect(isOnboardingEntry(null)).toBe(false);
+  });
+});
+
+describe("core/onboarding, version 2 (spec v4 §4)", () => {
+  it("varje ingång har fyra kärnfrågor före startkortet och högst en fritext", () => {
+    for (const entry of ["noIdea", "hasIdea"] as const) {
+      expect(ONBOARDING_QUESTIONS_BY_ENTRY[entry].core).toHaveLength(4);
+      expect(onboardingQuestionsFor(entry).filter((id) => !isChoiceQuestion(id)).length).toBeLessThanOrEqual(1);
+      expect(new Set(onboardingQuestionsFor(entry)).size).toBe(onboardingQuestionsFor(entry).length);
+    }
+  });
+
+  it.each([
+    ["sv", sv],
+    ["en", en],
+  ] as const)("i18n (%s) har text för varje fråga och etikett för varje val", (_, dict) => {
+    const copy = dict.onboarding.v4Questions;
+    for (const entry of ["noIdea", "hasIdea"] as const) {
+      expect(Object.keys(copy[entry]).sort()).toEqual([...onboardingQuestionsFor(entry)].sort());
+    }
+    for (const [id, choices] of Object.entries(ONBOARDING_CHOICES)) {
+      expect(Object.keys(copy.choices[id as keyof typeof copy.choices]).sort(), id).toEqual([...choices].sort());
+    }
+  });
+
+  it("ingen självskattning: de gamla frågorna om förmåga och risk ställs inte längre", () => {
+    for (const entry of ["noIdea", "hasIdea"] as const) {
+      for (const old of ["bio", "risk", "role"]) expect(isOnboardingQuestionFor(entry, old)).toBe(false);
+    }
+  });
+
+  it("isValidOnboardingAnswer: ett val måste vara ett av frågans id:n, fritext 1–280 tecken efter trim", () => {
+    expect(isValidOnboardingAnswer("time", "h3to6")).toBe(true);
+    expect(isValidOnboardingAnswer("time", "yes")).toBe(false);
+    expect(isValidOnboardingAnswer("time", " h3to6")).toBe(false);
+    expect(isValidOnboardingAnswer("frustration", "  Köer  ")).toBe(true);
+    expect(isValidOnboardingAnswer("frustration", "   ")).toBe(false);
+    expect(isValidOnboardingAnswer("customer", "a".repeat(ONBOARDING_TEXT_MAX_LENGTH))).toBe(true);
+    expect(isValidOnboardingAnswer("customer", "a".repeat(ONBOARDING_TEXT_MAX_LENGTH + 1))).toBe(false);
+    expect(isValidOnboardingAnswer("customer", "😀".repeat(ONBOARDING_TEXT_MAX_LENGTH))).toBe(true);
+  });
+
+  it("återstående frågor härleds: ingångens frågor minus de besvarade, i ordning", () => {
+    expect(remainingOnboardingQuestions("noIdea", {})).toEqual([...onboardingQuestionsFor("noIdea")]);
+    expect(remainingOnboardingQuestions("noIdea", { situation: "employed", time: "h3to6", money: "none", soldB2b: "no" })).toEqual([
+      "archetype",
+      "knowsOwner",
+      "frustration",
+    ]);
+    // Ett svar som ingången inte ställer räknas inte.
+    expect(remainingOnboardingQuestions("hasIdea", { archetype: "seller" })).toHaveLength(7);
+  });
+
+  it("kärnfrågorna avgör om onboardingen kan bli klar, oavsett de återstående", () => {
+    expect(coreQuestionsAnswered("hasIdea", { situation: "employed", payer: "unsure", customer: "Byråer", talkedTo: "none" })).toBe(true);
+    expect(coreQuestionsAnswered("hasIdea", { situation: "employed", payer: "unsure", talkedTo: "none", time: "h3to6" })).toBe(false);
+  });
+
+  it("parseOnboardingAnswers behåller bara giltiga svar och gissar aldrig", () => {
+    expect(parseOnboardingAnswers(null)).toEqual({});
+    expect(parseOnboardingAnswers(["employed"])).toEqual({});
+    expect(
+      parseOnboardingAnswers({ situation: "employed", time: "10 timmar", role: "Säljare", money: 5, customer: "  Byråer " }),
+    ).toEqual({ situation: "employed", customer: "Byråer" });
+  });
+
+  it("parseOnboardingAnswerRecords: svaret och tiden databasen satte, och null när tiden saknas eller är fel", () => {
+    expect(
+      parseOnboardingAnswerRecords({
+        situation: { answer: "employed", answered_at: "2026-10-02T08:00:00Z" },
+        time: { answer: "h3to6" },
+        money: { answer: "none", answered_at: "i går" },
+        soldB2b: { answer: "kanske", answered_at: "2026-10-02T08:00:00Z" },
+        role: { answer: "Säljare", answered_at: "2026-10-02T08:00:00Z" },
+        customer: { answer: "  Byråer ", answered_at: "2026-10-02T08:00:00Z" },
+      }),
+    ).toEqual({
+      situation: { answer: "employed", answeredAt: "2026-10-02T08:00:00Z" },
+      time: { answer: "h3to6", answeredAt: null },
+      money: { answer: "none", answeredAt: null },
+      customer: { answer: "Byråer", answeredAt: "2026-10-02T08:00:00Z" },
+    });
   });
 });

@@ -8,7 +8,12 @@ import { formatDate } from "@/i18n/format";
 import type { DataKind } from "@/core/domain";
 import type { ProfileQuestionId } from "@/core/onboarding";
 import type { ProfileSummary, TraceEvent } from "@/ports/MemoryRepository";
+import type { OnboardingQuestion } from "@/ports/ProfileRepository";
+import { SourceTag } from "@/components/ui/SourceTag";
+import { textHasFigure } from "@/core/figures";
 import { PageHead } from "./blocks/PageBlocks";
+import type { SaveOnboardingAnswer } from "./blocks/OnboardingQuestion";
+import { RemainingQuestions } from "./blocks/RemainingQuestions";
 import { FitPanel, type SaveFitAnswer } from "./blocks/FitPanel";
 import type { EvidenceView } from "@/ports/EvidenceRecorder";
 
@@ -38,6 +43,9 @@ type MemoryProps = {
    * demots poäng är manusstyrd och sparar inga bevis. `evidence: null` är ett
    * platshållarfel (inget aktivt projekt) och ger "Kommer snart" i rutan. */
   fit?: { evidence: EvidenceView[] | null; onSave: SaveFitAnswer; scoreHref: string };
+  /** Frågorna som återstår från profilsamtalet (spec v4 §3.2). Bara /app
+   * skickar den. `questions: null` är ett platshållarfel. */
+  remaining?: { questions: OnboardingQuestion[] | null; onSave: SaveOnboardingAnswer };
 };
 
 /**
@@ -45,7 +53,10 @@ type MemoryProps = {
  * Spåret. Markup flyttad rakt av från demots `app/demo/(app)/minnet/page.tsx`
  * (PR 5, docs/plan-en-design.md).
  */
-export function Memory({ data, dataKind, onSaveBrainNotes, fit }: MemoryProps) {
+/** Fritextfrågorna från före v4, i den ordning panelerna visar dem. */
+const LEGACY_IDS: readonly ProfileQuestionId[] = ["role", "bio", "frustrations", "customer", "time", "money", "risk"];
+
+export function Memory({ data, dataKind, onSaveBrainNotes, fit, remaining }: MemoryProps) {
   const { t, locale } = useI18n();
   const copy = t.memoryPage;
   const { profile, trace } = data;
@@ -62,12 +73,19 @@ export function Memory({ data, dataKind, onSaveBrainNotes, fit }: MemoryProps) {
   }
 
   // Svaret som det sparades, eller en lucka. Fylls aldrig i. Ett fält som
-  // källan inte skickar alls (undefined, demots nyare frågor) visas inte.
+  // källan inte skickar alls (undefined, demots nyare frågor) visas inte. När
+  // v4-svaren finns (`answers`, plattformen) är fälten fritextsvar från före
+  // v4: bara de som har ett svar visas, och luckorna står under Återstår.
+  function shownIds(ids: readonly ProfileQuestionId[]): ProfileQuestionId[] {
+    if (!profile) return [];
+    return ids.filter((id) => profile[id] !== undefined && (profile.answers === undefined || profile[id] !== null));
+  }
+
   function renderAnswers(ids: readonly ProfileQuestionId[]) {
     if (!profile) return null;
     return (
       <ul className="fdd-layers">
-        {ids.filter((id) => profile[id] !== undefined).map((id) => {
+        {shownIds(ids).map((id) => {
           const answer = profile[id];
           return (
             <li key={id}>
@@ -113,7 +131,7 @@ export function Memory({ data, dataKind, onSaveBrainNotes, fit }: MemoryProps) {
         </Tabs.List>
 
         <Tabs.Content value="profile" className="fdd-memory__panel">
-          {profile ? (
+          {profile && (profile.answers === undefined || shownIds(LEGACY_IDS).length > 0) && (
             <div className="fdd-two">
               <section className="fd-panel" aria-labelledby="fdd-mem-bg">
                 <h2 id="fdd-mem-bg" className="fdd-label">
@@ -129,9 +147,34 @@ export function Memory({ data, dataKind, onSaveBrainNotes, fit }: MemoryProps) {
                 {renderAnswers(["time", "money", "risk"])}
               </section>
             </div>
-          ) : (
-            <ComingSoon />
           )}
+          {profile?.answers && profile.answers.length > 0 && (
+            <section className="fd-panel" aria-labelledby="fdd-mem-answers">
+              <h2 id="fdd-mem-answers" className="fdd-label">
+                {copy.answersLabel}
+              </h2>
+              <ul className="fdd-layers">
+                {profile.answers.map((answer) => (
+                  <li key={answer.questionId}>
+                    <p className="fdd-muted">{answer.question}</p>
+                    <p className="fdd-inline">
+                      {answer.answer}
+                      {/* Datumet är dagen svaret gavs. Saknas tiden visas
+                          källan utan datum, aldrig med ett påhittat. */}
+                      {textHasFigure(answer.answer) && (
+                        <SourceTag
+                          source={{ namn: t.evidence.internalSources.profile, hämtad: answer.answeredOn ?? "" }}
+                          dataType="user"
+                        />
+                      )}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {!profile && <ComingSoon />}
+          {profile && remaining && <RemainingQuestions questions={remaining.questions} onSave={remaining.onSave} />}
           {fit &&
             (fit.evidence ? (
               <FitPanel evidence={fit.evidence} onSave={fit.onSave} scoreHref={fit.scoreHref} />

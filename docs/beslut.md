@@ -505,3 +505,46 @@ Uppdrag från Bruno (2026-10-03). Se `docs/moduler/webbresearch-och-pulsen.md`
   `blocks/CofounderChat.tsx`) och `design/site.css` har nya klasser
   (`fdd-playbook__personal`, `fdd-playbook__actions`, `fdd-plan`). Stäm av
   med den som har `screens/` innan merge.
+
+**Onboarding v4 (gren `plattform/onboarding-v4`, PR 1 av 2).** Erik
+2026-10-03, enligt systemspecifikationen v4 §4 och §3.2. Plan och status:
+`docs/status/2026-10-03-onboarding-v4.md`.
+- **Nya frågor, val i stället för fritext.** Sju frågor per ingång, sex val
+  med stabila id:n och en fritext (`frustration` i A, `customer` i B). Ingen
+  självskattning: `bio` och `risk` ställs inte längre. Frågorna och valen står
+  i `core/onboarding.ts` och speglas av `public.onboarding_v4_questions()`,
+  vaktat av `onboardingWrite.pg.test.ts`. Ett id byts aldrig, eftersom det
+  står i databasen.
+- **Steg 1 är klart efter startkortet.** De fyra första frågorna är
+  kärnfrågor. När de är besvarade visas startkortet, och "Till appen" anropar
+  `complete_onboarding`, som kräver kärnfrågorna. Spärren mot /app öppnas då.
+- **Resten är återstående frågor.** De härleds (ingångens frågor minus de
+  besvarade) och lagras inte som en egen lista. De visas under Återstår i
+  Minnet, där grundaren kan svara. Medgrundaren ställer dem i PR 2.
+- **Varje svar sparas för sig** (`public.save_onboarding_answer`), så att
+  samtalet kan avbrytas. Före klar onboarding får ett svar ändras. Efteråt tas
+  bara obesvarade frågor emot (55000 annars).
+- **Startkortet bygger bara på svaren** (`core/startFrame.ts`): tid på tre
+  månader, pengar, en regelbaserad bedömning märkt som Medgrundarens och en
+  första uppgift i verkligheten. Ingen modell, inget register, inga bevis,
+  ingen poäng. Siffrorna bär källan "Din uppgift".
+- **Gamla fritextsvar räknas inte om.** Konton som redan var klara får
+  `onboarding_version = 1`, och svaren står kvar i sina kolumner och visas i
+  Minnet som förut. Alla v4-frågor för ingången räknas som återstående för
+  dem. Att gissa ett val ur en fritext vore att hitta på data.
+- **Ändrade portar** (alla valfria, så att demoadaptrarna inte ändras):
+  - `OnboardingQuestion.kind?` och `OnboardingQuestion.choices?`
+    (`ports/ProfileRepository.ts`).
+  - `ProfileRepository.saveOnboardingAnswer?(answer)` och
+    `ProfileRepository.getOnboardingAnswers?()`.
+  - `SavedOnboardingAnswer` (`{ answer, answeredOn }`): det
+    `saveOnboardingAnswer` och `getOnboardingAnswers` ger.
+  - `ProfileSummary.answers?` (`ports/MemoryRepository.ts`): v4-svaren med
+    frågan och valets etikett.
+  - `MemoryRepository.getPendingOnboardingQuestions?(locale)`.
+- **Två nya kolumner i `profiles`**, stängda för klienten:
+  `onboarding_answers` och `onboarding_version`. Inga nya RLS-policyer.
+- **Källans datum är dagen svaret gavs, aldrig dagens** (Erik, efter
+  granskningen av #70). Varje svar sparas som `{answer, answered_at}`, där
+  `answered_at` sätts av databasen. Ett svar utan tid visar källan "Din
+  uppgift" utan datum (`SourceTag` med tomt `hämtad`), aldrig ett påhittat.

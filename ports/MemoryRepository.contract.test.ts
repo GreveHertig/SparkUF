@@ -50,6 +50,18 @@ describeContract<MemoryRepository>(
       expect(summary.role).toBeTruthy();
       expect(summary.time).toBeTruthy();
       expect(summary.money).toBeTruthy();
+      // v4-svaren (bara plattformen): fråga och svar som text, aldrig tomma.
+      for (const answer of summary.answers ?? []) {
+        expect(answer.question.trim()).not.toBe("");
+        expect(answer.answer.trim()).not.toBe("");
+      }
+    });
+
+    contractIt("getPendingOnboardingQuestions (valfri) ger frågor med text och unika id:n", async () => {
+      if (!memory.getPendingOnboardingQuestions) return;
+      const pending = await memory.getPendingOnboardingQuestions("sv");
+      expect(new Set(pending.map((q) => q.id)).size).toBe(pending.length);
+      for (const question of pending) expect(question.cofounderText).toBeTruthy();
     });
 
     contractIt("getBrainNotes returnerar en sträng (kan vara tom)", async () => {

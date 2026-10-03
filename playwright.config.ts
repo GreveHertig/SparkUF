@@ -7,6 +7,8 @@ import { defineConfig, devices } from "@playwright/test";
 // - e2e/app.spec.ts: /app inloggad. Testkontot läses ur .env.local
 //   (APP_TEST_USER_*, se .env.example) och finns aldrig i koden. Saknas det
 //   hoppas de testerna över.
+// - e2e/onboarding.spec.ts: onboardingen från kärnfrågorna till Minnet, med
+//   ett eget testkonto (APP_ONBOARDING_USER_*) som återställs före varje körning.
 try {
   process.loadEnvFile(".env.local");
 } catch {
