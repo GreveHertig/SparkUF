@@ -270,6 +270,7 @@ export const sv = {
       sendFailed: "Medgrundaren kunde inte svara just nu. Försök igen om en stund.",
       invalidMessage: "Meddelandet är tomt eller för långt.",
       tooLong: "Högst {max} tecken.",
+      taskTitle: "Din uppgift",
       signalDraft: 'Jag läste nyheten "{headline}" ({source}, {date}). Vad betyder den för {project}, och vad borde jag göra först?',
       signalDraftNoProject: 'Jag läste nyheten "{headline}" ({source}, {date}). Vad betyder den för min idé, och vad borde jag göra först?',
       taskDraft: 'Hjälp mig med uppgiften "{task}" i min plan. Hur gör jag den konkret för {project}, och vad gör jag först?',

@@ -73,6 +73,12 @@ Från PR 1 i `docs/plan-en-design.md`, som teamet har godkänt.
   räkenskapsåren i `core/fiscalYear.ts` (PR 8). Samma portregel
   som skärmarna. Demots `app/demo/_components/DemoBlocks.tsx` importerar
   därifrån i stället för att ha egna kopior.
+- **"Din uppgift" i Medgrundarens chatt** (spec v4 §3.1, 2026-10-03):
+  `TaskCard` i `screens/blocks/ChatBlocks.tsx`, klassen `.fdd-task`. Ett vitt
+  kort under Medgrundarens bubbla, lika brett som bubblan, med en navy kant
+  till vänster och rubriken "Din uppgift" (`h3`). Det är något grundaren ska
+  göra, så det ser inte ut som en verktygskörning (`.fdd-tool` är streckad och
+  sänkt). Bara tokens, inga nya färger.
 - **Overifierade källor på Juridik** (PR 5): varje krav visar sin källa och
   sitt datum (`SourceTag`) och bredvid den en streckad märkning,
   "Overifierad" (`.fdd-unverified`, samma streckade uttryck som

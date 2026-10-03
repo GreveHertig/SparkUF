@@ -19,7 +19,15 @@ Medgrundaren, redan byggd — se `docs/moduler/juridisk-koll.md`).
 sendMessage(message: string, history: CofounderMessage[], locale: Locale): Promise<CofounderMessage>
 ```
 
-`CofounderMessage`: `{ role: "founder" | "cofounder"; text: string }`.
+`CofounderMessage`: `{ role: "founder" | "cofounder"; text: string; nextTask?: string }`.
+
+`nextTask` (spec v4 §3.1, Erik 2026-10-03) är den konkreta uppgift i
+verkligheten som Medgrundarens svar slutar med. Den är valfri i porten:
+liveadaptern ger den alltid, demon aldrig.
+
+`ports/CofounderConversation.ts` (samtalet):
+`appendCofounderReply(text, nextTask?)` sparar svaret med uppgiften.
+`COFOUNDER_TASK_MAX = 500` är uppgiftens längsta längd, samma som i databasen.
 
 ## Datakällor och vad som krävs
 
@@ -63,8 +71,13 @@ via den här porten alls — demot är förskrivet, inte en levande chatt.
 - Svarstexten innehåller aldrig ett bokstavligt fragment av en rå,
   ovaliderad modell-output vid fel (samma varning som i Juridisk koll:
   `z.prettifyError` eller motsvarande kan läcka modellens råtext).
-- Klarar kontraktstestet i `ports/CofounderAgent.contract.test.ts`.
-- Version 1 (2026-10-03): uppfyllt, se "Hur liveadaptern fungerar i dag".
+- Liveadaptern ger alltid `nextTask`: inte tom, högst 500 tecken och aldrig
+  en fråga (spec v4 §3.1). Ett ogiltigt svar försöks om en gång, sedan kastas
+  `CofounderAgentError`. Koden hittar aldrig på en uppgift.
+- Klarar kontraktstestet i `ports/CofounderAgent.contract.test.ts`, med det
+  extra testet för `nextTask` som bara körs mot live.
+- Version 1 (2026-10-03): uppfyllt. Uppgiften (v4, 2026-10-03): uppfyllt. Se
+  "Hur liveadaptern fungerar i dag".
 
 ## Säkerhet
 
@@ -78,8 +91,9 @@ längd-/kostnadstak på historiken som skickas till Gemini per anrop.
 
 ## Hur liveadaptern fungerar i dag
 
-Version 1, byggd 2026-10-03 på `modul/medgrundaren`. Besluten står i
-`docs/beslut.md` (2026-10-03). Bara text, inga verktyg.
+Version 1, byggd 2026-10-03 på `modul/medgrundaren`, och den konkreta
+uppgiften (spec v4 §3.1), byggd 2026-10-03 på `modul/medgrundaren-uppgift`.
+Besluten står i `docs/beslut.md` (2026-10-03). Bara text, inga verktyg.
 
 **Flödet** (`adapters/live/CofounderAgent.ts`):
 1. Meddelandet rensas och får vara 1–2000 tecken, annars `CofounderInputError`.
@@ -110,48 +124,95 @@ Version 1, byggd 2026-10-03 på `modul/medgrundaren`. Besluten står i
 5. **Historiken:** högst 20 tidigare meddelanden, rensade och kortade, går till
    `generateText` (`lib/server/gemini.ts`) som turer (grundaren `user`,
    Medgrundaren `model`). Turerna börjar alltid med grundaren, och samma roll
-   i följd slås ihop.
-6. **Svaret** rensas och valideras med zod (icke-tomt, högst 4000 tecken).
-   Varje fel blir `CofounderAgentError` med ett fast meddelande, aldrig
-   modellens råtext.
+   i följd slås ihop. En tidigare uppgift följer med i Medgrundarens tur
+   ("Din uppgift: …"), så att modellen vet vad den redan har gett grundaren.
+6. **Strukturerad output:** `generateText` får `responseJsonSchema`, och
+   modellen svarar med JSON `{ svar, nastaUppgift }`.
+7. **Svaret** tolkas och valideras med zod. `svar` rensas och får vara 1–4000
+   tecken. `nastaUppgift` rensas till en rad, får vara 1–500 tecken och får
+   inte sluta med frågetecken. Inte JSON, avklippt JSON (eller
+   `GeminiResponseError`, t.ex. MAX_TOKENS), en saknad, tom eller frågande
+   uppgift ger ett nytt försök, en gång. Fallerar det också kastas
+   `CofounderAgentError` utan orsak, så att modellens råtext aldrig hamnar i
+   ett fel eller en logg (felet från `JSON.parse` innehåller delar av texten).
+   Nätverks- och API-fel försöks inte om här, eftersom `generateText` har egna
+   omförsök för tillfälliga fel.
+
+**Systemprompten** (efter v4): svensk, rak och kort, ingen peppning och inga
+utropstecken. Den säger emot en svag idé och förklarar varför. Uppgiften ska
+vara en handling ute i verkligheten inom sju dagar, aldrig en fråga och
+aldrig att svara på något i chatten. Steg 01 frågar inte efter risk (spec v4:
+ingen självskattning). Det kända (`<kand_data>`) har `profil.svar` (v4-svaren
+med frågan och valets etikett, aldrig valets id), `frustration`, `kund` och
+`aterstaendeFragor` (frågan och svarsalternativen, ur
+`MemoryRepository.getPendingOnboardingQuestions`). Är listan inte tom ställer
+modellen den första frågan och skriver ut alternativen.
 
 **Svaret sparas** av server action `app/(app)/app/medgrundaren/actions.ts`.
 Den läser historiken ur databasen (aldrig från klienten) innan meddelandet
-reserveras, anropar `sendMessage` och sparar svaret i
-`public.cofounder_messages` (`adapters/live/CofounderConversation.ts`).
+reserveras, anropar `sendMessage` och sparar svaret och uppgiften
+(`next_task`) i `public.cofounder_messages` (`adapters/live/CofounderConversation.ts`).
+
+**Bara servern skriver Medgrundarens rader** (migrering
+`20261003230000_cofounder_next_task.sql`, beslut 2026-10-03, en ändring av
+beslutet från #63). Klienten har ingen insert-, update- eller delete-rätt på
+tabellen. Grundarens meddelande sparas av `reserve_cofounder_message`
+(`security definer`, rollen alltid `founder`). Medgrundarens svar sparas av
+`lib/server/cofounderReplies.ts` med service role, och bara
+`adapters/live/CofounderConversation.ts` får importera den filen (lint-regel).
 Ordningen i samtalet kommer ur kolumnen `seq`, som databasen sätter. Kända fel
 blir en orsak som skärmen visar som text ur i18n.
 
 **Skärmen:** `screens/Cofounder.tsx` har en valfri prop `live` som visar
 `screens/blocks/CofounderChat.tsx`. Bara `/app` skickar den, så demot är
-förskrivet som förut. "Sedan tidigare" byggs av
-`app/(app)/app/medgrundaren/knownItems.ts` ur samma läsning som prompten. En
-rad med en siffra får källan "Din uppgift".
+förskrivet som förut. Uppgiften visas som ett eget kort under svaret, med
+rubriken "Din uppgift" (`TaskCard` i `screens/blocks/ChatBlocks.tsx`). Ett
+svar från före v4 har ingen uppgift och visas utan kort. "Sedan tidigare"
+byggs av `app/(app)/app/medgrundaren/knownItems.ts` ur samma läsning som
+prompten. En rad med en siffra får källan "Din uppgift" med dagen svaret
+gavs (`answeredOn`) för ett v4-svar, och utan datum när tiden saknas
+(fritextsvar från före v4, idén och Hjärnan). Dagens datum visas aldrig.
 
-**Utan körd migrering** ger en saknad tabell `NotImplementedError`. Sidan visar
-då "Kommer snart" och ett avstängt fält, och inget anrop går till Gemini
-(taket kan inte räknas).
+**Utan körd migrering** ger en saknad tabell, funktion eller kolumn
+(`next_task`) `NotImplementedError`. Sidan visar då "Kommer snart" och ett
+avstängt fält, och inget anrop går till Gemini (taket kan inte räknas).
 
 **Att köra det riktiga Gemini-anropet manuellt** (kostar riktiga anrop, körs
 inte i CI): `GEMINI_API_KEY=... pnpm test adapters/live/CofounderAgent.live.test.ts`.
-Annars skippas filen.
+Annars skippas filen. Testet skickar tre meddelanden (ett öppet, en svag idé
+och ett svar på en tidigare uppgift) och ett injektionsförsök, och kräver en
+uppgift som inte är en fråga och inga utropstecken.
 
 **Kända begränsningar:**
 - Function calling mot de andra portarna återstår. Medgrundaren kör inga verktyg.
-- Det finns ingen kodspärr mot siffror i modellens svar, bara regeln i prompten.
-- En grundare kan med ett eget PostgREST-anrop lägga in rader i sin egen
-  historik, även med rollen `cofounder`. Det påverkar bara den egna sessionen
-  och kan inte sänka den egna räkningen.
+- Det finns ingen kodspärr mot siffror i modellens svar eller uppgift, bara
+  regeln i prompten. I opt-in-testet 2026-10-03 skrev modellen till exempel
+  "bolag med miljarder i budget".
+- Att uppgiften går att göra inom sju dagar och sker i verkligheten styrs bara
+  av prompten. Koden prövar att den finns, är kort och inte är en fråga.
+- Före migreringen `20261003230000_cofounder_next_task.sql` kan en grundare
+  med ett eget PostgREST-anrop lägga in rader i sin egen historik, även med
+  rollen `cofounder`. Efter migreringen kan ingen klient skriva i tabellen.
 - Taket gäller per konto. Det finns inget tak för hela plattformens Gemini-kostnad,
   så sätt en kvot på nyckeln i Google AI Studio.
 - Meddelanden räknas i tecken (kodpunkter), som databasens `char_length`.
 - Samtalet går inte att rensa (ingen delete-policy, se beslutet).
 - `/app` läser alltid på svenska (`"sv"`), som de andra sidorna i `/app`.
 
+## Efter lansering (spec v4 §3.6)
+
+Byggs inte nu. Var och en kräver ett eget beslut och troligen verktyg
+(function calling) i Medgrundaren:
+- **Styrelsemöte:** Medgrundaren samlar läget (poäng, bevis, plan) till ett
+  möte med en riktig eller tänkt styrelse.
+- **Pitchträning:** grundaren övar sin pitch och får rak återkoppling.
+- **Säljstöd:** hjälp att förbereda och följa upp säljsamtal.
+
 ## Status
 
-påbörjad (v1, bara text). Liveadaptern klarar kontraktstestet med mockad
-Gemini. Migreringen `20261003120000_cofounder_messages.sql` måste köras
-manuellt i SQL Editor innan chatten syns på `/app`. Demoadaptern för
-`CofounderAgent` är oförändrad, och demots chatt går fortfarande via
-`cofounderScript.ts`.
+påbörjad (bara text, med konkret uppgift enligt spec v4 §3.1). Liveadaptern
+klarar kontraktstestet med mockad Gemini, och opt-in-testet mot riktiga Gemini
+gick igenom 2026-10-03. Migreringarna `20261003120000_cofounder_messages.sql`
+och `20261003230000_cofounder_next_task.sql` måste köras manuellt i SQL Editor
+innan chatten syns på `/app`. Demoadaptern för `CofounderAgent` är oförändrad,
+och demots chatt går fortfarande via `cofounderScript.ts`.

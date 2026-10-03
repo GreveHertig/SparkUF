@@ -45,9 +45,18 @@ const scoreSnapshotsPattern = {
   message:
     "Poänghistoriken (service role) importeras bara av adapters/live/EvidenceRecorder.ts. Se docs/beslut.md 2026-10-01.",
 };
+// Medgrundarens svar (lib/server/cofounderReplies.ts) bär också service
+// role-nyckeln. Bara samtalets liveadapter och tester får importera den
+// (docs/beslut.md 2026-10-03, "Medgrundarens rader skrivs bara av servern").
+const cofounderRepliesPattern = {
+  group: ["**/lib/server/cofounderReplies", "./cofounderReplies"],
+  message:
+    "Medgrundarens svar (service role) importeras bara av adapters/live/CofounderConversation.ts. Se docs/beslut.md 2026-10-03.",
+};
 // Transporterna och cachen har samma tillåtna importörer.
 const registryAdapter = ["adapters/live/RegistryProvider.ts"];
 const snapshotImporters = ["adapters/live/EvidenceRecorder.ts"];
+const cofounderReplyImporters = ["adapters/live/CofounderConversation.ts"];
 const testFiles = ["**/*.test.ts"];
 const registryImporters = [...registryAdapter, ...testFiles];
 
@@ -68,6 +77,7 @@ const eslintConfig = defineConfig([
             registryTransportPattern,
             registryCachePattern,
             scoreSnapshotsPattern,
+            cofounderRepliesPattern,
             {
               group: [
                 "@/adapters/live",
@@ -83,30 +93,56 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Sändspärr, registergrinden, registercachen och poänghistoriken: se
-  // mailPattern, registryTransportPattern, registryCachePattern och
-  // scoreSnapshotsPattern ovan. Gäller alla filer
+  // Sändspärr, registergrinden, registercachen, poänghistoriken och
+  // Medgrundarens svar: se mailPattern, registryTransportPattern,
+  // registryCachePattern, scoreSnapshotsPattern och cofounderRepliesPattern ovan. Gäller alla filer
   // utom demofilerna, som har egen regel (flat config ersätter regelns
   // inställningar, slår inte ihop dem).
   {
-    ignores: ["app/demo/**", "adapters/demo/**", ...registryImporters, ...snapshotImporters],
+    ignores: [
+      "app/demo/**",
+      "adapters/demo/**",
+      ...registryImporters,
+      ...snapshotImporters,
+      ...cofounderReplyImporters,
+    ],
     rules: {
       "no-restricted-imports": [
         "error",
-        { patterns: [mailPattern, registryTransportPattern, registryCachePattern, scoreSnapshotsPattern] },
+        {
+          patterns: [
+            mailPattern,
+            registryTransportPattern,
+            registryCachePattern,
+            scoreSnapshotsPattern,
+            cofounderRepliesPattern,
+          ],
+        },
       ],
     },
   },
   {
     files: registryAdapter,
     rules: {
-      "no-restricted-imports": ["error", { patterns: [mailPattern, scoreSnapshotsPattern] }],
+      "no-restricted-imports": ["error", { patterns: [mailPattern, scoreSnapshotsPattern, cofounderRepliesPattern] }],
     },
   },
   {
     files: snapshotImporters,
     rules: {
-      "no-restricted-imports": ["error", { patterns: [mailPattern, registryTransportPattern, registryCachePattern] }],
+      "no-restricted-imports": [
+        "error",
+        { patterns: [mailPattern, registryTransportPattern, registryCachePattern, cofounderRepliesPattern] },
+      ],
+    },
+  },
+  {
+    files: cofounderReplyImporters,
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [mailPattern, registryTransportPattern, registryCachePattern, scoreSnapshotsPattern] },
+      ],
     },
   },
   {

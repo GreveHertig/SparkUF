@@ -268,17 +268,34 @@ export type GenerateTextInput = {
   systemInstruction: string;
   /** Samtalet i ordning, äldst först. Sista turen är den som ska besvaras. */
   turns: GeminiTurn[];
+  /**
+   * Valfritt JSON-schema för strukturerad output i samtalet (t.ex. från zods
+   * `z.toJSONSchema`). Med schemat svarar modellen med JSON i stället för
+   * fri text, och svaret är fortfarande rå text som adaptern tolkar och
+   * validerar. Utan schemat är anropet oförändrat.
+   */
+  responseJsonSchema?: unknown;
   timeoutMs?: number;
 };
 
 /**
- * Anropar Gemini för ett fritt textsvar i ett samtal och returnerar den råa
- * texten. Validering (längd, form) är den anropande adapterns ansvar, t.ex.
+ * Anropar Gemini för ett svar i ett samtal och returnerar den råa texten
+ * (fri text, eller JSON med `responseJsonSchema`). Validering (längd, form,
+ * schema) är den anropande adapterns ansvar, t.ex.
  * adapters/live/CofounderAgent.ts. Tänkandet hålls lågt (THINKING ovan) så att
  * det inte äter upp svarets tokens.
  */
-export async function generateText({ systemInstruction, turns, timeoutMs = 20_000 }: GenerateTextInput): Promise<string> {
+export async function generateText({
+  systemInstruction,
+  turns,
+  responseJsonSchema,
+  timeoutMs = 20_000,
+}: GenerateTextInput): Promise<string> {
   const genAI = getGeminiClient();
+  const structured =
+    responseJsonSchema === undefined
+      ? {}
+      : { responseMimeType: "application/json", responseJsonSchema: toGeminiSchema(responseJsonSchema) };
   const response = await withRetry("generateText", () =>
     genAI.models.generateContent({
       model: geminiModel(),
@@ -287,6 +304,7 @@ export async function generateText({ systemInstruction, turns, timeoutMs = 20_00
         systemInstruction,
         maxOutputTokens: TEXT_MAX_OUTPUT_TOKENS,
         thinkingConfig: THINKING,
+        ...structured,
         abortSignal: AbortSignal.timeout(timeoutMs),
       },
     }),

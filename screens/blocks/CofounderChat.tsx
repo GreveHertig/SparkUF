@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type FormEvent, type KeyboardEvent } from "react";
+import { Fragment, useEffect, useRef, useState, useTransition, type FormEvent, type KeyboardEvent } from "react";
 import { useI18n } from "@/i18n/context";
 import { fill } from "@/i18n/fill";
 import type { CofounderMessage } from "@/ports/CofounderAgent";
 import { charLength, COFOUNDER_DAILY_LIMIT, COFOUNDER_INPUT_MAX } from "@/core/cofounder";
-import { ChatLine } from "./ChatBlocks";
+import { ChatLine, TaskCard } from "./ChatBlocks";
 
 export type SendCofounderMessageResult =
   | { ok: true; reply: CofounderMessage }
@@ -20,7 +20,8 @@ export type SendCofounderMessage = (text: string) => Promise<SendCofounderMessag
  * Vid taket eller ogiltig text sparas inget, så meddelandet tas bort ur listan
  * och läggs tillbaka i fältet. Svarar modellen inte är meddelandet redan
  * sparat (och räknat mot taket), så det står kvar utan svar, som efter en
- * omladdning. Texterna är ren text, aldrig HTML.
+ * omladdning. Texterna är ren text, aldrig HTML. Medgrundarens konkreta
+ * uppgift (spec v4 §3.1) visas som ett eget kort, "Din uppgift", under svaret.
  */
 export function CofounderChat({
   initialMessages,
@@ -103,7 +104,10 @@ export function CofounderChat({
       ) : (
         <div className="fdd-conversation" aria-live="polite">
           {messages.map((message, index) => (
-            <ChatLine key={index} role={message.role} text={message.text} />
+            <Fragment key={index}>
+              <ChatLine role={message.role} text={message.text} />
+              {message.role === "cofounder" && message.nextTask && <TaskCard text={message.nextTask} />}
+            </Fragment>
           ))}
           {pending && <p className="fdd-muted">{copy.live.sending}</p>}
         </div>

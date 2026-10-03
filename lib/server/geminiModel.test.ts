@@ -82,6 +82,30 @@ describe("modellen och anropsformen som skickas till SDK:n", () => {
     const [params] = generateContentMock.mock.calls[0];
     expect(params.model).toBe("gemini-3.8-flash");
     expect(params.contents.map((c: { role: string }) => c.role)).toEqual(["user", "model", "user"]);
+    expect(params.config).not.toHaveProperty("responseMimeType");
+    expect(params.config).not.toHaveProperty("responseJsonSchema");
+  });
+
+  it("generateText med schema ber om JSON och skickar schemat utan nyckelord som Gemini inte tar emot", async () => {
+    const { generateText } = await import("./gemini");
+    generateContentMock.mockResolvedValue(response('{"svar":"Hej","nastaUppgift":"Ring"}'));
+    await generateText({
+      systemInstruction: "s",
+      turns: [{ role: "user", text: "Hej" }],
+      responseJsonSchema: {
+        $schema: "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        properties: { svar: { type: "string", minLength: 1, maxLength: 4000 } },
+        required: ["svar"],
+      },
+    });
+    const [params] = generateContentMock.mock.calls[0];
+    expect(params.config.responseMimeType).toBe("application/json");
+    expect(params.config.responseJsonSchema).toEqual({
+      type: "object",
+      properties: { svar: { type: "string" } },
+      required: ["svar"],
+    });
   });
 });
 

@@ -29,6 +29,22 @@ export function ChatLine({ role, text, source }: { role: "founder" | "cofounder"
   );
 }
 
+/**
+ * Medgrundarens konkreta uppgift i verkligheten, som ett eget kort under
+ * svaret (spec v4 §3.1). Texten är modellens, visad som ren text. Ett koncept
+ * får sin etikett, som i en rad.
+ */
+export function TaskCard({ text }: { text: string }) {
+  const { t } = useI18n();
+  return (
+    <div className="fdd-task">
+      <h3 className="fdd-task__title">{t.cofounderPage.live.taskTitle}</h3>
+      <p className="fdd-task__text">{text}</p>
+      {mentionsConcept(text) && <ConceptBadge />}
+    </div>
+  );
+}
+
 /** Ett verktyg som körts: delmomenten, alla klara. */
 export function ToolRun({ label, steps, source }: { label: string; steps: string[]; source?: ChatSource }) {
   const { t } = useI18n();

@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EmptyStateError, NotImplementedError } from "@/core/errors";
 
 const journey = vi.hoisted(() => ({ getSteps: vi.fn(), getStepDetail: vi.fn() }));
-const memory = vi.hoisted(() => ({ getKnownProfile: vi.fn(), getBrainNotes: vi.fn(), getTraceEvents: vi.fn() }));
+const memory = vi.hoisted(() => ({
+  getKnownProfile: vi.fn(),
+  getBrainNotes: vi.fn(),
+  getTraceEvents: vi.fn(),
+  getPendingOnboardingQuestions: vi.fn(),
+}));
 const project = vi.hoisted(() => ({ getProject: vi.fn() }));
 vi.mock("@/adapters/live/JourneyRepository", () => ({ liveJourneyRepository: journey }));
 vi.mock("@/adapters/live/MemoryRepository", () => ({ liveMemoryRepository: memory }));
@@ -23,6 +28,7 @@ beforeEach(() => {
     Array.from({ length: 15 }, (_, i) => ({ id: `${i}`, timestampIso: "2026-10-01", description: `Post ${i}` })),
   );
   project.getProject.mockReset().mockResolvedValue(null);
+  memory.getPendingOnboardingQuestions.mockReset().mockResolvedValue([]);
 });
 
 describe("loadCofounderContext", () => {
@@ -43,6 +49,7 @@ describe("loadCofounderContext", () => {
     memory.getKnownProfile.mockResolvedValue({});
     memory.getBrainNotes.mockResolvedValue("");
     memory.getTraceEvents.mockRejectedValue(new NotImplementedError("Minnet", "x"));
+    memory.getPendingOnboardingQuestions.mockRejectedValue(new EmptyStateError("Minnet", "x"));
     project.getProject.mockResolvedValue({ id: "p", name: "Idé", oneLiner: "En idé" });
     expect(await loadCofounderContext("sv")).toEqual({
       step: null,
@@ -50,7 +57,23 @@ describe("loadCofounderContext", () => {
       brainNotes: null,
       trace: null,
       project: { id: "p", name: "Idé", oneLiner: "En idé" },
+      pendingQuestions: null,
     });
+  });
+
+  it("läser de återstående frågorna på samma språk, och en tom lista blir null", async () => {
+    const question = {
+      id: "stage",
+      cofounderText: "Hur långt har du kommit?",
+      suggestedAnswer: null,
+      kind: "choice" as const,
+      choices: [{ id: "idea", label: "Bara en idé" }],
+    };
+    memory.getPendingOnboardingQuestions.mockResolvedValue([question]);
+    expect((await loadCofounderContext("sv")).pendingQuestions).toEqual([question]);
+    expect(memory.getPendingOnboardingQuestions).toHaveBeenCalledWith("sv");
+    memory.getPendingOnboardingQuestions.mockResolvedValue([]);
+    expect((await loadCofounderContext("sv")).pendingQuestions).toBeNull();
   });
 
   it("är alla steg klara gäller det sista", async () => {

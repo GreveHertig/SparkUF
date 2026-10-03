@@ -270,6 +270,7 @@ export const en = {
       sendFailed: "Your co-founder could not answer right now. Try again in a moment.",
       invalidMessage: "The message is empty or too long.",
       tooLong: "At most {max} characters.",
+      taskTitle: "Your task",
       signalDraft: 'I read the news "{headline}" ({source}, {date}). What does it mean for {project}, and what should I do first?',
       signalDraftNoProject: 'I read the news "{headline}" ({source}, {date}). What does it mean for my idea, and what should I do first?',
       taskDraft: 'Help me with the task "{task}" in my plan. How do I make it concrete for {project}, and what do I do first?',

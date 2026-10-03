@@ -12,6 +12,13 @@ export type TranscriptItem =
 export type CofounderMessage = {
   role: "founder" | "cofounder";
   text: string;
+  /**
+   * Spec v4 §3.1: den konkreta uppgift i verkligheten som Medgrundarens svar
+   * slutar med, en handling inom sju dagar och aldrig en fråga. Bara på
+   * Medgrundarens svar. Valfri i porten: liveadaptern ger den alltid, demon
+   * aldrig. Ändrad port, beslut Erik 2026-10-03 (docs/beslut.md).
+   */
+  nextTask?: string;
 };
 
 /** Modul: Medgrundaren (avsnitt 14.3). Liveadapter bygger på Gemini. */

@@ -570,3 +570,64 @@ Uppdrag från Bruno (2026-10-03). Se `docs/moduler/min-plan.md`.
   nu `.fdd-myplan`.
 - **Ingen poäng för avbockade uppgifter.** Poängen kommer bara från bevis med
   källa; en ikryssad ruta är inget bevis.
+
+**Medgrundaren v4: en konkret uppgift i varje svar (gren `modul/medgrundaren-uppgift`, PR 2 av 2 för onboarding v4).**
+Erik 2026-10-03, enligt systemspecifikationen v4 §3.1. Plan och status:
+`docs/status/2026-10-03-medgrundaren-uppgift.md`.
+- **Ändring av beslutet från #63 (Medgrundaren, version 1, ovan): Medgrundarens
+  rader skrivs bara av servern, med service role.** Version 1 sparade
+  samtalet "med RLS och utan service role", med en insert-policy för egna
+  rader. Prövat mot SparkUF2 2026-10-03: en inloggad grundare kunde med
+  anon-nyckeln och sin egen session lägga in rader med `role = 'cofounder'`,
+  alltså lägga egna ord (och, med den nya kolumnen, egna uppgifter) i
+  Medgrundarens mun. En security definer-funktion som `authenticated` får
+  anropa hjälper inte: allt servern gör med grundarens session kan klienten
+  också göra. Därför, samma mönster som `score_snapshots` (beslut 2026-10-01):
+  - Migrering `20261003230000_cofounder_next_task.sql`: insert-policyn tas
+    bort och `insert, update, delete` dras in från `anon` och `authenticated`.
+    Tabellen står i `WRITE_CLOSED_TABLES` (`supabase/migrations/migrations.test.ts`).
+    Select-policyn för egna rader står kvar.
+  - Grundarens meddelande sparas bara via `public.reserve_cofounder_message`,
+    nu `security definer` (samma signatur, samma tak och lås). Den tar inte
+    emot användare, roll eller uppgift: rollen är alltid `founder`,
+    `next_task` alltid `null` och användaren alltid `auth.uid()`.
+  - Medgrundarens svar skrivs bara av `lib/server/cofounderReplies.ts`
+    (`server-only`) med `SUPABASE_SERVICE_ROLE_KEY`, bara insert av
+    `role = 'cofounder'` i `cofounder_messages`. `user_id` kommer ur sessionen
+    (`requireSupabaseUser`), aldrig ur indata. En lint-regel
+    (`cofounderRepliesPattern` i `eslint.config.mjs`) låter bara
+    `adapters/live/CofounderConversation.ts` och tester importera filen, och
+    vakttestet i `lib/server/registryCache.test.ts` listar filen bland de tre
+    som får läsa nyckeln. Nyckeln har aldrig `NEXT_PUBLIC_`-prefix, och
+    klientbunten är kontrollerad efter build.
+  - Säkerhetshålet finns i produktion tills migreringen är körd.
+- **Strukturerad output.** `generateText` (`lib/server/gemini.ts`) får ett
+  valfritt `responseJsonSchema`. Medgrundaren svarar med JSON
+  `{ svar, nastaUppgift }`, som valideras med zod. `nastaUppgift` är en
+  handling i verkligheten inom sju dagar, högst 500 tecken, och får inte sluta
+  med frågetecken. Ett ogiltigt svar (inte JSON, avklippt, uppgift som saknas,
+  är tom eller är en fråga) försöks om en gång. Sedan `CofounderAgentError`
+  utan orsak, så att modellens råtext aldrig hamnar i ett fel eller en logg.
+  Koden hittar aldrig på en uppgift. Kostnadstaket (40 per dag) räknar
+  meddelanden, så ett meddelande kan ge högst två Gemini-anrop.
+- **Ändrade portar** (valfria, så att demoadaptrarna inte ändras och inget
+  under `adapters/demo` eller `app/demo` rörs):
+  - `CofounderMessage.nextTask?` (`ports/CofounderAgent.ts`). Kravet att den
+    alltid finns gäller bara liveadaptern, prövat i ett kontraktstest som bara
+    körs mot live.
+  - `CofounderConversationRepository.appendCofounderReply(text, nextTask?)`
+    och konstanten `COFOUNDER_TASK_MAX = 500` (`ports/CofounderConversation.ts`).
+- **Ny kolumn `cofounder_messages.next_task`**, med ett check-villkor: bara på
+  Medgrundarens rader och då 1–500 tecken.
+- **Systemprompten:** rak ton, inga utropstecken, säg emot en svag idé och
+  förklara varför. Riskformuleringen i steg 01 är struken (spec v4: ingen
+  självskattning). Det kända får v4-svaren med etiketter, frustrationen,
+  kunden och de återstående frågorna med svarsalternativ. Modellen ställer
+  nästa återstående fråga.
+- **"Din uppgift"** visas som ett eget kort under svaret i `CofounderChat`
+  (`TaskCard` i `screens/blocks/ChatBlocks.tsx`, `.fdd-task` i `design/site.css`).
+- **"Sedan tidigare" visar aldrig dagens datum som källdatum.** Ett v4-svar får
+  dagen svaret gavs (`answeredOn`). Fritextsvar från före v4, idén och Hjärnan
+  har ingen tid och visas med källan utan datum. Samma regel som i #70.
+- **Efter lansering (spec v4 §3.6):** styrelsemöte, pitchträning och säljstöd
+  byggs inte nu. De står i `docs/moduler/medgrundaren.md`.

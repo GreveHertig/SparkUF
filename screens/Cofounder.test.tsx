@@ -106,6 +106,36 @@ describe("Cofounder, den levande chatten (/app)", () => {
     expect(screen.getByRole("textbox")).toHaveValue("");
   });
 
+  it("visar Medgrundarens uppgift som ett eget kort med rubriken Din uppgift (spec v4 §3.1)", async () => {
+    const onSend = vi.fn().mockResolvedValue({
+      ok: true,
+      reply: { role: "cofounder", text: "Idén är svag: ingen har bett om den.", nextTask: "Fråga fem elever i veckan om de skulle betala." },
+    });
+    renderCofounder(
+      { moment: liveMoment, context: [] },
+      {
+        messages: [
+          { role: "founder", text: "Hej" },
+          { role: "cofounder", text: "Vad gör du i dag?", nextTask: "Skriv ner tre saker du gör varje vecka." },
+        ],
+        onSend,
+      },
+    );
+    const first = screen.getByRole("heading", { name: sv.cofounderPage.live.taskTitle });
+    expect(first.parentElement).toHaveTextContent("Skriv ner tre saker du gör varje vecka.");
+    type("Jag vill sälja läxhjälp.");
+    fireEvent.click(screen.getByRole("button", { name: sv.cofounderPage.promptSendLabel }));
+    expect(await screen.findByText("Fråga fem elever i veckan om de skulle betala.")).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: sv.cofounderPage.live.taskTitle })).toHaveLength(2);
+    // Uppgiften är ett eget kort, inte en del av bubblan.
+    expect(screen.getByText("Idén är svag: ingen har bett om den.")).not.toHaveTextContent("Fråga fem elever");
+  });
+
+  it("ett svar utan uppgift (från före v4) visas utan kort", () => {
+    renderCofounder({ moment: liveMoment, context: [] }, { messages: [{ role: "cofounder", text: "Gammalt svar" }], onSend: vi.fn() });
+    expect(screen.queryByRole("heading", { name: sv.cofounderPage.live.taskTitle })).not.toBeInTheDocument();
+  });
+
   it("Enter skickar, Skift+Enter gör det inte", async () => {
     const onSend = vi.fn().mockResolvedValue({ ok: true, reply: { role: "cofounder", text: "Svar" } });
     renderCofounder({ moment: liveMoment, context: [] }, { messages: [], onSend });

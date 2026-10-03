@@ -2475,6 +2475,35 @@
   }
 }
 
+/* Medgrundarens konkreta uppgift under svaret (spec v4 §3.1). Samma bredd som
+ * bubblan, ett vitt kort med en navy kant till vänster: något att göra, inte
+ * ett verktyg som körts (.fdd-tool är streckad och sänkt). */
+.fdd-task {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  align-self: flex-start;
+  max-width: min(36rem, 88%);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--fd-line);
+  border-left: 3px solid var(--navy);
+  border-radius: var(--r-md);
+  background: white;
+}
+
+.fdd-task__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.fdd-task__text {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink-900);
+}
+
 .fdd-tool {
   display: flex;
   flex-direction: column;
