@@ -7,7 +7,12 @@ import { NotImplementedError, EmptyStateError } from "@/core/errors";
 import type { JourneyStepView } from "@/ports/JourneyRepository";
 import type { PulseSignal, ScoreSnapshot } from "@/core/domain";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/app" }));
+// unstable_rethrow används av optional() (app/(app)/app/_lib/optional.ts) och
+// måste vara den riktiga, som i resan/page.test.tsx.
+vi.mock("next/navigation", async (importOriginal) => ({
+  unstable_rethrow: (await importOriginal<typeof import("next/navigation")>()).unstable_rethrow,
+  usePathname: () => "/app",
+}));
 
 const getScoreSnapshotMock = vi.hoisted(() => vi.fn());
 vi.mock("@/adapters/live/EvidenceRepository", () => ({
