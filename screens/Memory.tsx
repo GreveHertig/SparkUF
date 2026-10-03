@@ -51,20 +51,23 @@ export function Memory({ data, dataKind, onSaveBrainNotes, fit }: MemoryProps) {
   const { profile, trace } = data;
   const profileQuestions = t.onboarding.profileQuestions;
 
-  // Frågan som den ställdes i grundarens ingång. Ingång B ställer inte bio och
-  // risk; de visas ändå (som luckor) med ingång A:s formulering.
+  // Frågan som den ställdes i grundarens ingång. En fråga som ingången inte
+  // ställer visas ändå (som en lucka) med den andra ingångens formulering.
   function questionText(id: ProfileQuestionId): string {
     if (!profile) return "";
     const asked: Partial<Record<ProfileQuestionId, string>> = profileQuestions[profile.entry];
-    return asked[id] ?? profileQuestions.noIdea[id];
+    const noIdea: Partial<Record<ProfileQuestionId, string>> = profileQuestions.noIdea;
+    const hasIdea: Partial<Record<ProfileQuestionId, string>> = profileQuestions.hasIdea;
+    return asked[id] ?? noIdea[id] ?? hasIdea[id] ?? "";
   }
 
-  // Svaret som det sparades, eller en lucka. Fylls aldrig i.
+  // Svaret som det sparades, eller en lucka. Fylls aldrig i. Ett fält som
+  // källan inte skickar alls (undefined, demots nyare frågor) visas inte.
   function renderAnswers(ids: readonly ProfileQuestionId[]) {
     if (!profile) return null;
     return (
       <ul className="fdd-layers">
-        {ids.map((id) => {
+        {ids.filter((id) => profile[id] !== undefined).map((id) => {
           const answer = profile[id];
           return (
             <li key={id}>
@@ -117,7 +120,7 @@ export function Memory({ data, dataKind, onSaveBrainNotes, fit }: MemoryProps) {
                   {copy.profileBackgroundLabel}
                 </h2>
                 {profile.name && <p className="fdd-panel__title">{profile.name}</p>}
-                {renderAnswers(["role", "bio"])}
+                {renderAnswers(["role", "bio", "frustrations", "customer"])}
               </section>
               <section className="fd-panel" aria-labelledby="fdd-mem-res">
                 <h2 id="fdd-mem-res" className="fdd-label">

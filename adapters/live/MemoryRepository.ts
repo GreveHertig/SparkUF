@@ -19,6 +19,8 @@ type ProfileRow = {
   time_available: string | null;
   money_available: string | null;
   risk_appetite: string | null;
+  frustrations: string | null;
+  customer_guess: string | null;
   onboarding_entry: string | null;
   onboarding_completed_at: string | null;
 };
@@ -31,7 +33,9 @@ function answerOrNull(value: string | null): string | null {
 async function getProfileRow(supabase: SupabaseClient, userId: string): Promise<ProfileRow | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("name, role, bio, time_available, money_available, risk_appetite, onboarding_entry, onboarding_completed_at")
+    .select(
+      "name, role, bio, time_available, money_available, risk_appetite, frustrations, customer_guess, onboarding_entry, onboarding_completed_at",
+    )
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error(`Minnet: kunde inte läsa profilen (${error.message}).`);
@@ -56,6 +60,8 @@ export const liveMemoryRepository: MemoryRepository = {
       time: answerOrNull(row.time_available),
       money: answerOrNull(row.money_available),
       risk: answerOrNull(row.risk_appetite),
+      frustrations: answerOrNull(row.frustrations),
+      customer: answerOrNull(row.customer_guess),
     };
   },
 

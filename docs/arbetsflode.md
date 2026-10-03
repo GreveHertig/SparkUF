@@ -50,3 +50,12 @@ Stoppa och fråga om: du behöver ändra något utanför "får röra"
 - `/granska-pr <nummer eller gren>`: granskning enligt teamets regler.
 
 Skriv uppgiften direkt i Code, till exempel `/session-bygg koppla onboardingen mot ProfileRepository`. Kopiera inte prompter från chatten.
+
+## Verktyg och skydd (2026-10-03)
+
+- **Hookar** (`.claude/settings.json`, skripten i `.claude/hooks/`):
+  - `skydda-filer.mjs`: `.env*` nekas (utom `.env.example`). `core/score.ts`, `ports/`, `adapters/demo/` och `lib/demo-data/` kräver att en människa bekräftar. I en session utan människa betyder det att den stannar, vilket är avsikten.
+  - `kontrollera-vid-stopp.mjs`: före avslut körs `pnpm typecheck` och eslint på ändrade filer. Misslyckas de får sessionen felen tillbaka och fortsätter. Hoppar över om beroenden saknas eller inget kodrelevant ändrats, och loopar inte. Tar ca 20 sekunder.
+- **Skills:** fyra från Emil Kowalski (`emil-design-eng`, `animate`, `review-animations`, `animation-vocabulary`) i `.claude/skills/`. Källa och version i `KALLOR.md`.
+- **Modell:** bygg-sessioner kan använda Opus, bakgrund och granskning klarar sig med Sonnet och sparar veckokvot.
+- **Schemalagt:** en morgonkontroll varje vardag (se status.md för vad den gör).

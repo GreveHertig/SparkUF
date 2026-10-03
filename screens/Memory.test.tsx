@@ -78,6 +78,25 @@ describe("Memory (skärmen, PR 5)", () => {
     expect(screen.queryByText(profile.bio!)).not.toBeInTheDocument();
   });
 
+  it("de nyare frågorna: visas när källan skickar fältet, med svar eller lucka", () => {
+    const a = sv.onboarding.profileQuestions.noIdea;
+    const b = sv.onboarding.profileQuestions.hasIdea;
+    renderMemory({ profile: { ...profile, frustrations: "Kvitton som försvinner.", customer: null } });
+    expect(screen.getByText(a.frustrations).closest("li")).toHaveTextContent("Kvitton som försvinner.");
+    // Ingång A ställer inte kundfrågan: B:s formulering, som en lucka.
+    expect(screen.getByText(b.customer).closest("li")).toHaveTextContent(sv.memoryPage.notAnswered);
+    cleanup();
+    renderMemory({ profile: { ...profile, entry: "hasIdea", customer: "Små redovisningsbyråer", frustrations: null } });
+    expect(screen.getByText(b.customer).closest("li")).toHaveTextContent("Små redovisningsbyråer");
+  });
+
+  it("de nyare frågorna visas inte alls när källan inte skickar fälten (demot)", () => {
+    renderMemory();
+    expect(screen.queryByText(sv.onboarding.profileQuestions.noIdea.frustrations)).not.toBeInTheDocument();
+    expect(screen.queryByText(sv.onboarding.profileQuestions.hasIdea.customer)).not.toBeInTheDocument();
+    expect(screen.queryByText(sv.memoryPage.notAnswered)).not.toBeInTheDocument();
+  });
+
   it("utan namn: rollen ensam i rubriken, utan ett ensamt kommatecken", () => {
     renderMemory({ profile: { ...profile, name: null } });
     expect(screen.getByRole("heading", { level: 1, name: "22 år, Umeå" })).toBeInTheDocument();

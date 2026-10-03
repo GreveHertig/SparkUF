@@ -14,6 +14,12 @@ export type TraceEvent = {
  * role, time och money. Skärmen visar då en lucka och fyller aldrig i något.
  * `name` kommer från signup och är `null` om den saknas. `entry` är ingången
  * grundaren valde, så att skärmen kan visa frågorna som de ställdes.
+ *
+ * `frustrations` (ingång A) och `customer` (ingång B) är de två frågor som kom
+ * till senare (supabase/migrations/20261002190000_onboarding_nya_fragor.sql).
+ * Liveadaptern skickar dem alltid, som text eller `null`. Demoadaptern skickar
+ * dem inte: demot är fryst och har inga svar på dem, och skärmen visar en
+ * sådan fråga bara när fältet finns.
  */
 export type ProfileSummary = {
   entry: OnboardingEntry;
@@ -23,6 +29,8 @@ export type ProfileSummary = {
   time: string | null;
   money: string | null;
   risk: string | null;
+  frustrations?: string | null;
+  customer?: string | null;
 };
 
 /** En post som en annan modul vill spara i Spåret. Användaren tas alltid ur sessionen, aldrig ur indata. */

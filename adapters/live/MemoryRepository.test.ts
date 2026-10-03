@@ -19,6 +19,8 @@ function completeProfileRow() {
     time_available: "Kvällar och helger",
     money_available: "20 000 kr",
     risk_appetite: "Låg",
+    frustrations: "Kvitton som försvinner.",
+    customer_guess: null,
     onboarding_entry: "noIdea",
     onboarding_completed_at: "2026-10-01T08:00:00Z",
   };
@@ -30,6 +32,8 @@ function entryBProfileRow() {
     ...completeProfileRow(),
     bio: null,
     risk_appetite: null,
+    frustrations: null,
+    customer_guess: "Små redovisningsbyråer",
     onboarding_entry: "hasIdea",
   };
 }
@@ -56,7 +60,7 @@ describe("liveMemoryRepository.getProfileSummary", () => {
     await expect(liveMemoryRepository.getProfileSummary("sv")).rejects.toBeInstanceOf(EmptyStateError);
   });
 
-  it("ingång B: returnerar de besvarade fälten och null för bio och risk", async () => {
+  it("ingång B: returnerar de besvarade fälten, kundgissningen, och null för bio, frustrationer och risk", async () => {
     requireSupabaseUserMock.mockResolvedValue({
       supabase: makeSupabaseFake({ profiles: [entryBProfileRow()] }),
       userId: USER_ID,
@@ -70,6 +74,8 @@ describe("liveMemoryRepository.getProfileSummary", () => {
       time: "Kvällar och helger",
       money: "20 000 kr",
       risk: null,
+      frustrations: null,
+      customer: "Små redovisningsbyråer",
     });
   });
 
@@ -98,6 +104,8 @@ describe("liveMemoryRepository.getProfileSummary", () => {
       time: "Kvällar och helger",
       money: "20 000 kr",
       risk: "Låg",
+      frustrations: "Kvitton som försvinner.",
+      customer: null,
     });
   });
 });

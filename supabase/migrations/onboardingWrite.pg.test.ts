@@ -137,11 +137,12 @@ describe("profiles: klienten kan inte sätta onboarding-kolumnerna", () => {
 });
 
 describe("complete_onboarding", () => {
-  it("ingång A: skriver de fem svaren trimmade, ingången och klar-tiden i en uppdatering", async () => {
+  it("ingång A: skriver de sex svaren trimmade, ingången och klar-tiden i en uppdatering", async () => {
     const a = await signUp();
     const result = await completeOnboarding(a, "noIdea", {
       role: "  Redovisningskonsult \n",
       bio: "Tio år på byrå.",
+      frustrations: "  Kvitton som försvinner. ",
       time: "10 timmar",
       money: "20 000 kr",
       risk: "Låg",
@@ -151,6 +152,8 @@ describe("complete_onboarding", () => {
     expect(row).toMatchObject({
       role: "Redovisningskonsult",
       bio: "Tio år på byrå.",
+      frustrations: "Kvitton som försvinner.",
+      customer_guess: null,
       time_available: "10 timmar",
       money_available: "20 000 kr",
       risk_appetite: "Låg",
@@ -160,11 +163,20 @@ describe("complete_onboarding", () => {
     expect(row.onboarding_completed_at).not.toBeNull();
   });
 
-  it("ingång B: skriver sina tre svar och lämnar bio och risk orörda", async () => {
+  it("ingång B: skriver sina fyra svar och lämnar bio, frustrationer och risk orörda", async () => {
     const b = await signUp();
     await db.query("update public.profiles set bio = 'Tidigare' where user_id = $1", [b]);
-    expect((await completeOnboarding(b, "hasIdea", { role: "Säljare", time: "5 timmar", money: "Inget" })).code).toBeNull();
-    expect(await profile(b)).toMatchObject({ role: "Säljare", bio: "Tidigare", risk_appetite: null, onboarding_entry: "hasIdea" });
+    expect(
+      (await completeOnboarding(b, "hasIdea", { role: "Säljare", customer: " Små byråer ", time: "5 timmar", money: "Inget" })).code,
+    ).toBeNull();
+    expect(await profile(b)).toMatchObject({
+      role: "Säljare",
+      customer_guess: "Små byråer",
+      bio: "Tidigare",
+      frustrations: null,
+      risk_appetite: null,
+      onboarding_entry: "hasIdea",
+    });
   });
 
   it("ett andra anrop ger 55000 och skriver inte över något", async () => {

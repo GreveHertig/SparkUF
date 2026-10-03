@@ -23,3 +23,7 @@ Grundaren ska kunna se vad hen svarade i onboardingen. Tidigare kastade `liveMem
 - Demot ändras inte för Jonas: bara liveadaptern ger null-fält.
 - Länken "Se dina svar" finns bara i `/app`, inte i demot.
 - Profilfliken får ändras i demot eftersom skärmen är delad. Den visar nu fråga och svar för Sara och Jonas. Theo måste godkänna det (står i PR-beskrivningen).
+
+### Tillägg efter merge av #54 och #58 (2026-10-03)
+- `prototyp` fick #54 (frågorna `frustrations` för ingång A och `customer` för B) och #58 (Hems knapp länkar till steget). Konflikterna i `app/(app)/app/page.tsx` och `screens/AppHome.test.tsx` löstes genom att behålla båda sidor (`nextStepHref` och `profileAnswersHref`).
+- `ProfileSummary` får de valfria fälten `frustrations` och `customer`. Liveadaptern läser `frustrations` och `customer_guess`. Demoadaptern skickar dem inte, så demot som Theo godkände ser likadant ut. Skärmen visar en fråga bara om fältet finns. En fråga som ingången inte ställer får den andra ingångens formulering, som en lucka. Beslut Erik 2026-10-03.

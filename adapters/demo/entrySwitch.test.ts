@@ -72,6 +72,10 @@ describe("Ingångsmedvetna demoadaptrar (avsnitt 2.1)", () => {
     // ingång B inte ställer de frågorna (bara liveadaptern ger null).
     expect(summary.bio).toBeTruthy();
     expect(summary.risk).toBeTruthy();
+    // De nyare frågorna (frustrations, customer) skickas inte av demot, så
+    // profilfliken visar dem inte där.
+    expect(summary).not.toHaveProperty("frustrations");
+    expect(summary).not.toHaveProperty("customer");
   });
 
   // Session: fem moduler (Pulsen, Kunder, Marknad — se app/demo/app/marknad/

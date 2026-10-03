@@ -27,6 +27,11 @@ recordTraceEvent(event: RecordTraceEventInput): Promise<void>   // tillagd med D
   profilfrågor, och `null` betyder obesvarad. Ingång B ställer bara `role`,
   `time` och `money`. Skärmen visar en obesvarad fråga som en lucka och
   fyller aldrig i den.
+  Två valfria fält kom till med de nya frågorna (2026-10-03):
+  `frustrations` (ingång A) och `customer` (ingång B, kolumnen
+  `customer_guess`). Liveadaptern skickar dem alltid som text eller `null`.
+  Demoadaptern skickar dem inte, och skärmen visar bara en fråga vars fält
+  finns.
 - `TraceEvent`: `{ id, timestampIso, description }` — en rad i Spåret.
 - `RecordTraceEventInput`: `{ module, description, occurredAtIso }` — vad en annan modul skriver till Spåret. Användaren tas alltid ur sessionen, aldrig ur indata.
 - `getBrainNotes`/`setBrainNotes` har medvetet ingen `locale` — Hjärnan är

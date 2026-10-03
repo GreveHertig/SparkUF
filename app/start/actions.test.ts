@@ -78,9 +78,16 @@ describe("createProjectAction", () => {
 });
 
 describe("completeOnboardingAction", () => {
-  const ALL_A = { role: "Studerar.", bio: "Kan Excel.", time: "10 timmar.", money: "Inget.", risk: "Lite." };
+  const ALL_A = {
+    role: "Studerar.",
+    bio: "Kan Excel.",
+    frustrations: "Köer.",
+    time: "10 timmar.",
+    money: "Inget.",
+    risk: "Lite.",
+  };
 
-  it("ingång A: sparar de fem svaren och går till /app", async () => {
+  it("ingång A: sparar de sex svaren och går till /app", async () => {
     const { completeOnboardingAction } = await import("./actions");
     await expect(completeOnboardingAction(IDLE, form(ALL_A))).rejects.toThrow("REDIRECT /app");
     expect(completeOnboardingMock).toHaveBeenCalledWith({
@@ -89,16 +96,17 @@ describe("completeOnboardingAction", () => {
     });
   });
 
-  it("ingång B (aktivt projekt): bara de tre frågorna, extra fält ignoreras", async () => {
+  it("ingång B (aktivt projekt): bara de fyra frågorna, extra fält ignoreras", async () => {
     getProjectMock.mockResolvedValue({ id: "p1", name: "Padel", oneLiner: "Bokning." });
     const { completeOnboardingAction } = await import("./actions");
-    await expect(completeOnboardingAction(IDLE, form({ ...ALL_A, entry: "noIdea" }))).rejects.toThrow(
+    await expect(completeOnboardingAction(IDLE, form({ ...ALL_A, customer: "Byråer.", entry: "noIdea" }))).rejects.toThrow(
       "REDIRECT /app",
     );
     expect(completeOnboardingMock).toHaveBeenCalledWith({
       entry: "hasIdea",
       answers: [
         { questionId: "role", answer: "Studerar." },
+        { questionId: "customer", answer: "Byråer." },
         { questionId: "time", answer: "10 timmar." },
         { questionId: "money", answer: "Inget." },
       ],
