@@ -1339,6 +1339,7 @@ export const sv = {
       titleTemplate: "Steg {step} · {title}",
       feedsLabel: "Ger underlag till",
       ctaTemplate: "Öppna steg {step}",
+      lockedTemplate: "Öppnas när steg {step} · {title} är klart.",
     },
     openStepTemplate: "Öppna steg {step}",
     printCta: "Spara som PDF",

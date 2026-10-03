@@ -1335,6 +1335,7 @@ export const en = {
       titleTemplate: "Step {step} · {title}",
       feedsLabel: "Gives evidence to",
       ctaTemplate: "Open step {step}",
+      lockedTemplate: "Opens when step {step} · {title} is done.",
     },
     openStepTemplate: "Open step {step}",
     printCta: "Save as PDF",

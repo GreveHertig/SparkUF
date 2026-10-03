@@ -94,6 +94,22 @@ describe("getLiveBusinessPlan", () => {
     });
   });
 
+  it("svaren från onboardingen före v4 går före v4-svaren, utan datum", async () => {
+    getOnboardingAnswersMock.mockResolvedValue({ customer: { answer: "Nyare svar", answeredOn: "2026-10-03" } });
+    const plan = await planFor({
+      projects: [project],
+      profiles: [{ user_id: USER_ID, customer_guess: "Bostadsrättsföreningar", frustrations: "  " }],
+    });
+    expect(section(plan, "customerAndProblem").claims).toEqual([
+      {
+        text: "Bostadsrättsföreningar",
+        value: sv.businessPlanPage.liveClaims.targetCustomer,
+        source: { namn: sv.evidence.internalSources.profile, hämtad: "" },
+        dataType: "user",
+      },
+    ]);
+  });
+
   it("onboardingen utan kolumnen än (NotImplementedError) ger inga svar, inget fel", async () => {
     getOnboardingAnswersMock.mockRejectedValue(new NotImplementedError("Profil", "docs/moduler/profil.md"));
     const plan = await planFor({ projects: [project] });
