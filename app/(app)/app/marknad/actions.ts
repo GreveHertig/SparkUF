@@ -55,7 +55,7 @@ export async function saveMarketEvidence(sniCode: unknown): Promise<SaveMarketEv
     items.push({
       kind: "registerCompetitorSet",
       subjectRef: `${subject}:konkurrenter`,
-      source: overview.source,
+      source: overview.competitorsSource ?? overview.source,
       quote: fill(copy.competitorsQuote, { count: overview.competitors.length, sni }),
       stepNumber: 4,
     });

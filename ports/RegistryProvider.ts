@@ -34,6 +34,17 @@ export type MarketOverview = {
   source: Källa;
   competitors: Competitor[];
   /**
+   * Konkurrenternas källa, när den skiljer sig från siffrornas (liveadaptern:
+   * namnen ur SCB, beskrivningarna ur Bolagsverket). Valfri: demot sätter den inte.
+   */
+  competitorsSource?: Källa;
+  /**
+   * Alla juridiska enheter med branschen som huvudbransch, även enskilda
+   * firmor och de som inte längre är verksamma. Bara ett antal, aldrig namn
+   * (beslut 2026-10-04, dataspiken §6 fråga 4). Valfri: demot sätter den inte.
+   */
+  registeredTotal?: number;
+  /**
    * Underlaget bakom siffrorna (Datalöftet, docs/dataspiken.md §3): medianen
    * och tillväxtandelen kan bara räknas på bolag med digital årsredovisning,
    * regionandelen bara på bolag där län går att härleda. Ett antal på 0 betyder

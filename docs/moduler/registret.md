@@ -127,6 +127,8 @@ bara de två). Licensen räcker inte ensam för att öppna den.
    Bolagsverkets.
 3. **§6 fråga 4 är avgjord med handledare**: enskilda firmor, reklamspärr och
    GDPR, beslutet dokumenterat i `docs/dataspiken.md`.
+   - **Theodor avgjorde den 2026-10-04** ("Beslut om §6 fråga 4" i
+     `docs/dataspiken.md`). Handledarens bekräftelse återstår.
 
 Först när alla tre är klara får `REGISTRY_ALLOWED_USER_IDS` utökas eller
 grinden tas bort, i en commit som också uppdaterar det här avsnittet.

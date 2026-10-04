@@ -51,7 +51,14 @@ const MAX_COMPETITOR_LOOKUPS = 10;
 const MAX_NAME_LENGTH = 100;
 const MAX_DESCRIPTION_LENGTH = 200;
 
+/** Källorna med länk till respektive myndighets sida (beslut 2026-10-04, dataspiken §6 fråga 4). */
+const SCB_URL = "https://www.scb.se/vara-tjanster/bestall-data-och-statistik/foretagsregistret/avgiftsfria-uppgifter-i-foretagsregistret/";
+const BOLAGSVERKET_URL = "https://bolagsverket.se/apierochoppnadata/hamtaforetagsinformation/vardefulladatamangder.5294.html";
 const SOURCE_NAME: Record<Locale, string> = {
+  sv: "SCB:s företagsregister",
+  en: "Statistics Sweden business register",
+};
+const COMPETITORS_SOURCE_NAME: Record<Locale, string> = {
   sv: "SCB:s företagsregister och Bolagsverket",
   en: "Statistics Sweden business register and Bolagsverket",
 };
@@ -198,8 +205,11 @@ export const liveRegistryProvider: RegistryProvider = {
       growthSharePercent: 0,
       regionSharePercent,
       // Hämtningsdatum är anropsdagen, aldrig hårdkodat.
-      source: { namn: SOURCE_NAME[locale], hämtad: listing.fetchedAt },
+      source: { namn: SOURCE_NAME[locale], hämtad: listing.fetchedAt, url: SCB_URL },
       competitors: await findCompetitors(listing.units),
+      competitorsSource: { namn: COMPETITORS_SOURCE_NAME[locale], hämtad: listing.fetchedAt, url: BOLAGSVERKET_URL },
+      // Bara antalet; enskilda firmor hämtas aldrig en och en.
+      registeredTotal: listing.registeredTotal,
       basis: {
         // Omsättning och tillväxt kräver årsredovisningar (iXBRL), som inte är byggda: okänt.
         medianRevenueCompanies: 0,

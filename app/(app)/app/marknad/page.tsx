@@ -64,7 +64,9 @@ export default async function LiveMarketPage({
     // nyckeltalen, så de bär samma källa (källgenomgången 2026-10-01). Bara
     // när registret faktiskt svarat: en stängd grind ger ingen källa och
     // inga konkurrenter.
-    ...(overview && { competitorsSource: { source: overview.source, dataType: "register" as const } }),
+    ...(overview && {
+      competitorsSource: { source: overview.competitorsSource ?? overview.source, dataType: "register" as const },
+    }),
   };
 
   return (

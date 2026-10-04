@@ -290,3 +290,16 @@ describe("Market: spara registerbilden som underlag", () => {
     expect(screen.queryByRole("link", { name: /Poängen är nu/ })).not.toBeInTheDocument();
   });
 });
+
+describe("Market: registrerade totalt", () => {
+  it("visas i /app med källa och förklaring, aldrig i demot", () => {
+    const live = { ...registry, overview: { ...overview, registeredTotal: 25791 } };
+    const { unmount } = renderMarket(baseData([], { registry: live }), { dataKind: "live" });
+    const label = screen.getByText(m.registeredTotalLabel);
+    expect(label.parentElement).toHaveTextContent(/25\s791/);
+    expect(screen.getByText(m.registeredTotalDescription)).toBeInTheDocument();
+    unmount();
+    renderMarket(baseData([], { registry: live }));
+    expect(screen.queryByText(m.registeredTotalLabel)).not.toBeInTheDocument();
+  });
+});

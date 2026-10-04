@@ -417,6 +417,8 @@ export const sv = {
     companiesUnit: "bolag",
     companyCountLabelLive: "Verksamma aktiebolag",
     companyCountDescriptionLive: "Aktiebolag som är verksamma och har den valda SNI-koden som huvudbransch i SCB:s företagsregister, oavsett storlek.",
+    registeredTotalLabel: "Registrerade totalt",
+    registeredTotalDescription: "Alla med SNI-koden som huvudbransch, även enskilda firmor och de som inte längre är verksamma. Bara antalet, aldrig namn.",
     basisMissing: "Underlaget saknas, så siffran visas inte.",
     registryClosed: "Registret är inte öppet än.",
     registryLoadFailed: "Registerdatan kunde inte hämtas just nu. Försök igen om en stund.",

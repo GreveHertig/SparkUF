@@ -334,6 +334,18 @@ function kpiFigures(
       source: tag?.source,
       dataType: tag?.dataType,
     },
+    ...(overview.registeredTotal !== undefined && dataKind !== "example"
+      ? [
+          {
+            label: m.registeredTotalLabel,
+            value: formatCount(overview.registeredTotal, locale),
+            unit: m.companyCountUnit,
+            description: m.registeredTotalDescription,
+            source: tag?.source,
+            dataType: tag?.dataType,
+          },
+        ]
+      : []),
     median,
     share(m.growthShareLabel, overview.growthSharePercent, basis?.growthCompanies),
     share(m.regionShareLabel, overview.regionSharePercent, basis?.regionCompanies),

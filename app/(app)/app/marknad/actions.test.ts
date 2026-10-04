@@ -16,7 +16,8 @@ const overview = {
   medianRevenueKsek: 0,
   growthSharePercent: 0,
   regionSharePercent: 31,
-  source: { namn: "SCB:s företagsregister och Bolagsverket", hämtad: "2026-10-04" },
+  source: { namn: "SCB:s företagsregister", hämtad: "2026-10-04", url: "https://www.scb.se/x" },
+  competitorsSource: { namn: "SCB:s företagsregister och Bolagsverket", hämtad: "2026-10-04", url: "https://bolagsverket.se/x" },
   competitors: [
     { name: "Ett AB", description: "Redovisning." },
     { name: "Två AB", description: "Bokföring." },
@@ -48,7 +49,7 @@ describe("saveMarketEvidence (Server Action)", () => {
       {
         kind: "registerCompetitorSet",
         subjectRef: "sni:69201:konkurrenter",
-        source: overview.source,
+        source: overview.competitorsSource,
         quote: "2 konkurrenter med SNI 69.201 som huvudbransch, med beskrivning från Bolagsverket",
         stepNumber: 4,
       },

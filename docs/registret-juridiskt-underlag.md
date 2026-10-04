@@ -4,6 +4,9 @@ Till Theodor och er handledare. Skrivet 2026-10-04 när SCB-kopplingen byggdes.
 Det här är ett underlag, inte juridisk rådgivning. Beslutet tas av er och
 skrivs in i `docs/dataspiken.md`, §6 fråga 4.
 
+> **Avgjort av Theodor 2026-10-04.** Svaren står i `docs/dataspiken.md`,
+> "Beslut om §6 fråga 4". Handledarens bekräftelse återstår.
+
 ## Frågan
 
 Får Spark visa namngivna aktiebolag ur SCB:s och Bolagsverkets register, och

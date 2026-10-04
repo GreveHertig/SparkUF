@@ -14,15 +14,17 @@ Uppdrag från Bruno: få Marknaden att fungera. `/app/marknad` visade ingen rikt
 - **Juridiskt underlag** för §6 fråga 4: `docs/registret-juridiskt-underlag.md`.
 - **Säkerhetsgranskning** (agent): inga kritiska eller höga fynd. Rättat: omdirigering nekas, okänd juridisk form filtreras bort, `Content-Length` kontrolleras, en tidsgräns för hela genomgången, striktare SNI-form, samtidig återkallelse hanteras, och en vakt för vem som får anropa `recordRegistryEvidence`.
 - `CLAUDE.md`: den nya poängen efter en sparad registerbild, och efter ett loggat kundsvar i Valideringen (från #78), står nu i listan över uträknade sammanfattningar.
+- **Theodors beslut om §6 fråga 4** inskrivet i `docs/dataspiken.md`. Följder byggda: "Registrerade totalt" som eget antal (inga namn), och länkar till SCB:s och Bolagsverkets sidor i källorna (porten får `registeredTotal?` och `competitorsSource?`).
 - typecheck, lint, tester och build gröna lokalt.
 
 ### Återstår (inte kod)
 1. **Erik:** provkör SCB med kommandot i `docs/moduler/registret.md` och lägg utskriften i en statusfil.
 2. **Erik:** läs och citera SCB:s användarvillkor i `docs/dataspiken.md`.
-3. **Theodor och handledare:** ta ställning till frågorna i `docs/registret-juridiskt-underlag.md` och skriv beslutet i `docs/dataspiken.md`, §6 fråga 4.
+3. **Handledaren:** bekräfta Theodors beslut om §6 fråga 4 (taget 2026-10-04, står i `docs/dataspiken.md`, "Beslut om §6 fråga 4") och skriv in namn och datum där.
 4. **Erik:** öppna grinden när 1–3 är klara.
 
 ### Återstår (kod, senare)
+- En väg för bolag att bli borttagna ur Spark (beslutet punkt 1), och informationstexten till mottagare i Utskick (punkt 4).
 - Cache i `registry_cache` när villkoren är citerade, så att sidan inte går igenom hela branschen vid varje besök.
 - Årsredovisningarna (iXBRL) för omsättning och tillväxt.
 - SNI-formen `69201` i porten och demot (beslutet om SNI 2025).

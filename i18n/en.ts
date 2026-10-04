@@ -417,6 +417,8 @@ export const en = {
     companiesUnit: "companies",
     companyCountLabelLive: "Active limited companies",
     companyCountDescriptionLive: "Limited companies that are active and have the chosen SNI code as their main industry in the Statistics Sweden business register, any size.",
+    registeredTotalLabel: "Registered in total",
+    registeredTotalDescription: "Everyone with the SNI code as their main industry, including sole traders and those no longer active. Only the number, never names.",
     basisMissing: "No basis in the data, so the figure is not shown.",
     registryClosed: "The registry is not open yet.",
     registryLoadFailed: "The registry data could not be loaded right now. Try again in a while.",

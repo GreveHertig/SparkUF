@@ -161,7 +161,17 @@ describe("getMarketOverview", () => {
     expect(overview.companyCount).toBe(4);
     expect(overview.regionSharePercent).toBe(67);
     expect(overview.basis).toEqual({ medianRevenueCompanies: 0, growthCompanies: 0, regionCompanies: 3 });
-    expect(overview.source).toEqual({ namn: "SCB:s företagsregister och Bolagsverket", hämtad: "2026-10-04" });
+    expect(overview.source).toEqual({
+      namn: "SCB:s företagsregister",
+      hämtad: "2026-10-04",
+      url: expect.stringMatching(/^https:\/\/www\.scb\.se\//),
+    });
+    expect(overview.competitorsSource).toMatchObject({
+      namn: "SCB:s företagsregister och Bolagsverket",
+      url: expect.stringMatching(/^https:\/\/bolagsverket\.se\//),
+    });
+    // Alla juridiska enheter enligt /count, bara som antal.
+    expect(overview.registeredTotal).toBe(16);
   });
 
   it("omsättning och tillväxt är okända (underlag 0), aldrig en påhittad siffra", async () => {

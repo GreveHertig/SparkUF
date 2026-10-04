@@ -708,3 +708,14 @@ Uppdrag från Bruno (2026-10-04). Se `docs/moduler/registret.md`, "SCB AFR" och
 - **SNI-formen `12.345` står kvar** i porten och på sidan. Adaptern gör om
   till fem siffror mot AFR. Bytet i porten och demot (beslutet om SNI 2025)
   görs i en egen PR.
+
+**§6 fråga 4 avgjord av Theodor (2026-10-04).** Svaren och vad som är byggt
+står i `docs/dataspiken.md`, "Beslut om §6 fråga 4". Följder i koden
+(gren `plattform/registret-scb-koppling`):
+- Marknaden visar "Registrerade totalt" (alla juridiska enheter i branschen
+  enligt SCB:s `/count`, bara som antal). Porten får `registeredTotal?`.
+- Siffrornas källa är "SCB:s företagsregister" med länk till SCB:s sida;
+  konkurrenternas källa är "SCB:s företagsregister och Bolagsverket" med länk
+  till Bolagsverkets sida. Porten får `competitorsSource?`. Registerbevisen
+  bär samma källor.
+- Handledarens bekräftelse återstår innan grinden öppnas.
