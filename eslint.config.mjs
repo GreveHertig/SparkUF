@@ -40,10 +40,12 @@ const registryCachePattern = {
 };
 // Poänghistoriken (lib/server/scoreSnapshots.ts) bär också service role-nyckeln.
 // Bara bevisens skrivadapter och tester får importera den (docs/beslut.md 2026-10-01).
+// Systembevisen (lib/server/systemEvidence.ts) bär samma nyckel och har samma
+// enda importör (docs/beslut.md 2026-10-04).
 const scoreSnapshotsPattern = {
-  group: ["**/lib/server/scoreSnapshots", "./scoreSnapshots"],
+  group: ["**/lib/server/scoreSnapshots", "./scoreSnapshots", "**/lib/server/systemEvidence", "./systemEvidence"],
   message:
-    "Poänghistoriken (service role) importeras bara av adapters/live/EvidenceRecorder.ts. Se docs/beslut.md 2026-10-01.",
+    "Poänghistoriken och systembevisen (service role) importeras bara av adapters/live/EvidenceRecorder.ts. Se docs/beslut.md 2026-10-01 och 2026-10-04.",
 };
 // Medgrundarens svar (lib/server/cofounderReplies.ts) bär också service
 // role-nyckeln. Bara samtalets liveadapter och tester får importera den

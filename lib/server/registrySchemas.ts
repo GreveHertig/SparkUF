@@ -1,58 +1,107 @@
 import { z } from "zod";
 
 /**
- * ANTAGANDEN — allt i den här filen är en OVERIFIERAD gissning om hur
- * Bolagsverkets och SCB:s API:er svarar. Vi har varken nycklar eller
- * API-specifikation (docs/dataspiken.md §6 rad 2–3; portalen gav 403).
- * Fälten är härledda ur vad dataspiken säger att registret innehåller (SCB:s
- * lista över 15 variabler, iXBRL-nyckeltal), inte ur ett faktiskt svar.
+ * Svarsformen från SCB:s allmänna företagsregister-API, AFR
+ * (https://apiafr.scb.se/swagger/v1/swagger.json). Verifierad mot riktiga
+ * anrop 2026-09-30, se docs/dataspiken.md, "SCB AFR, provkörning 2026-09-30".
+ * Ersätter de tidigare antagandena om en `{ companies: [...] }`-lista.
  *
- * När spiken är gjord (docs/dataspiken.md §3, "Föreslagen ordning") ska DEN
- * HÄR FILEN och lib/server/scb.ts + bolagsverket.ts skrivas om mot det
- * verkliga svaret. Adapterns domänlogik (filtrering, källstämpling, ärlighet
- * kring luckor) ska då inte behöva röras. Kontraktstestet grönt mot dessa
- * scheman bevisar vår mappning, inte att Bolagsverket/SCB ser ut så här.
+ * Bara fälten vi läser valideras. Övriga fält (postAdress, kommunSate,
+ * telefon- och e-postspärr med flera) släpps igenom av schemat men läses
+ * aldrig och lämnar aldrig transporten. Allt är DATA, aldrig instruktion.
  *
- * Uppdatering 2026-09-23: Bolagsverkets /organisationer och /dokumentlista är
- * verifierade mot riktiga anrop och ligger i lib/server/bolagsverketSchemas.ts.
- * Det som står här gäller fortfarande SCB:s bolagslista (RegistryRow) och
- * iXBRL-nyckeltalen (AnnualFigures), och båda är fortfarande gissningar.
- * AKTIEBOLAG_FORM = "AB" stämmer med Bolagsverkets organisationsform.kod.
+ * Kodtabellerna (samma källa):
+ * - anstKl: 0 uppgift saknas, 1 = 0, 2 = 1–4, 3 = 5–9, 4 = 10–19, 5 = 20–49,
+ *   6 = 50–99, 7 = 100–199, 8 = 200–499, 9 = 500–999, 10 = 1000–1499,
+ *   11 = 1500–1999, 12 = 2000–2999, 13 = 3000–3999, 14 = 4000–4999,
+ *   15 = 5000–9999, 16 = 10000–
+ * - jurform: 41, 42, 43, 49 aktiebolag; 10 fysiska personer; 91 dödsbon
+ * - ftgStat: 0 aldrig verksam, 1 verksam, 9 inte längre verksam
+ * - reklamSparrTyp: 1 tar emot reklam, 2 har frånsagt sig reklam
+ * - lanSate: 01–25, 00 län okänt, 99 ej svenskt län
  */
 
-/** ANTAGANDE: bolagsformskoden för aktiebolag i registret. */
-export const AKTIEBOLAG_FORM = "AB";
+/** SCB:s koder för aktiebolag (jurformkoder). */
+export const AKTIEBOLAG_JURFORM = new Set(["41", "42", "43", "49"]);
+/** Fysiska personer och dödsbon: lämnar aldrig transporten (dataspiken §6 fråga 4). */
+export const PERSON_JURFORM = new Set(["10", "91"]);
 
-/** ANTAGANDE: en rad ur bolagsregistret (SCB/Bolagsverket). */
-export const RegistryRowSchema = z
-  .object({
-    orgNr: z.string().regex(/^\d{10}$/),
-    name: z.string().min(1),
-    legalForm: z.string().min(1),
-    sniCode: z.string().min(1),
-    /** Null = okänt (SCB ger bara storleksklass; se dataspiken §2). */
-    employees: z.number().int().nonnegative().nullable(),
-    /** Null = går inte att härleda. Län är inget eget fält i registret. */
-    county: z.string().nullable(),
-    /** Verksamhetsbeskrivning: extern text, alltid DATA aldrig instruktion. */
-    description: z.string().nullable(),
-    deregistered: z.boolean(),
-    /** Reklamspärr (SCB-variabel, dataspiken §2). */
-    advertisingBlock: z.boolean(),
-  })
-  .strict();
-export type RegistryRow = z.infer<typeof RegistryRowSchema>;
+/** Kod som sträng; API:t ger strängar, men ett tal godtas och görs om. */
+const code = z.union([z.string(), z.number()]).transform((value) => String(value).trim());
 
-export const RegistryRowsResponseSchema = z.object({ companies: z.array(RegistryRowSchema) }).strict();
+export const AfrLegalUnitSchema = z.object({
+  orgNr: z.string().regex(/^\d{10}$/),
+  namn: z.string(),
+  primarNaringsgren: z
+    .object({
+      naringsgren: code,
+      rangordning: z.number().optional(),
+    })
+    .nullable()
+    .optional(),
+  lanSate: code.nullable().optional(),
+  anstKl: code.nullable().optional(),
+  ftgStat: code.nullable().optional(),
+  jurform: code.nullable().optional(),
+  reklamSparrTyp: z.union([z.number(), z.string()]).nullable().optional(),
+});
+export type AfrLegalUnit = z.infer<typeof AfrLegalUnitSchema>;
 
-/** ANTAGANDE: nyckeltal ur senaste och föregående årsredovisning (iXBRL). Null = saknas. */
-export const AnnualFiguresSchema = z
-  .object({
-    orgNr: z.string().regex(/^\d{10}$/),
-    revenueKsek: z.number().nullable(),
-    previousRevenueKsek: z.number().nullable(),
-  })
-  .strict();
-export type AnnualFigures = z.infer<typeof AnnualFiguresSchema>;
+export const AfrPageSchema = z.object({
+  jes: z.array(z.unknown()),
+  pagination: z.object({
+    nextCursorId: z.union([z.number(), z.string()]).nullable().optional(),
+    limit: z.number().optional(),
+    hasMore: z.boolean(),
+  }),
+});
 
-export const AnnualFiguresResponseSchema = z.object({ reports: z.array(AnnualFiguresSchema) }).strict();
+export const AfrCountSchema = z.object({ count: z.number().int().nonnegative() });
+
+/** Storleksklasserna i AFR som antal anställda. `null` = uppgift saknas. */
+export const EMPLOYEE_CLASSES: Readonly<Record<string, { min: number; max: number }>> = {
+  "1": { min: 0, max: 0 },
+  "2": { min: 1, max: 4 },
+  "3": { min: 5, max: 9 },
+  "4": { min: 10, max: 19 },
+  "5": { min: 20, max: 49 },
+  "6": { min: 50, max: 99 },
+  "7": { min: 100, max: 199 },
+  "8": { min: 200, max: 499 },
+  "9": { min: 500, max: 999 },
+  "10": { min: 1000, max: 1499 },
+  "11": { min: 1500, max: 1999 },
+  "12": { min: 2000, max: 2999 },
+  "13": { min: 3000, max: 3999 },
+  "14": { min: 4000, max: 4999 },
+  "15": { min: 5000, max: 9999 },
+  "16": { min: 10000, max: Number.POSITIVE_INFINITY },
+};
+
+/** Länskoderna (SCB:s lankoder). 00 och 99 finns inte här: de betyder okänt. */
+export const COUNTY_NAMES: Readonly<Record<string, string>> = {
+  "01": "Stockholms län",
+  "03": "Uppsala län",
+  "04": "Södermanlands län",
+  "05": "Östergötlands län",
+  "06": "Jönköpings län",
+  "07": "Kronobergs län",
+  "08": "Kalmar län",
+  "09": "Gotlands län",
+  "10": "Blekinge län",
+  "12": "Skåne län",
+  "13": "Hallands län",
+  "14": "Västra Götalands län",
+  "17": "Värmlands län",
+  "18": "Örebro län",
+  "19": "Västmanlands län",
+  "20": "Dalarnas län",
+  "21": "Gävleborgs län",
+  "22": "Västernorrlands län",
+  "23": "Jämtlands län",
+  "24": "Västerbottens län",
+  "25": "Norrbottens län",
+};
+
+/** Stockholms län, som etiketten "Finns i Stockholms län" lovar. */
+export const STOCKHOLM_COUNTY_CODE = "01";

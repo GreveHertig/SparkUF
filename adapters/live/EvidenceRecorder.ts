@@ -3,12 +3,13 @@ import type { EvidenceRecorder, EvidenceView, RecordEvidenceInput, RecordEvidenc
 import type { Locale } from "@/i18n/context";
 import type { ScoreSnapshot } from "@/core/domain";
 import { ALL_PART_IDS, type ScorePartId } from "@/core/score";
-import { EVIDENCE_KINDS, founderMayRecord, isEvidenceKind, isSelfReported } from "@/core/evidenceKinds";
+import { EVIDENCE_KINDS, founderMayRecord, isEvidenceKind, isSelfReported, type EvidenceKind } from "@/core/evidenceKinds";
 import { cleanText } from "@/core/text";
 import { EmptyStateError } from "@/core/errors";
 import { requireSupabaseUser } from "@/lib/server/session";
 import { getActiveProjectId } from "@/lib/server/activeProject";
 import { writeScoreSnapshot } from "@/lib/server/scoreSnapshots";
+import { recordSystemEvidence, SYSTEM_KINDS } from "@/lib/server/systemEvidence";
 import { liveMemoryRepository } from "@/adapters/live/MemoryRepository";
 import { fill } from "@/i18n/fill";
 import { sv } from "@/i18n/sv";
@@ -162,6 +163,57 @@ export async function settleScore(
     });
   }
   return withPrevious(after, { total: before.snapshot.total, deltaReason: reasonText });
+}
+
+/** Ett registerbevis som servern själv hämtat (Marknaden, steg 03 och 04). */
+export type RegistryEvidenceItem = {
+  kind: EvidenceKind;
+  subjectRef: string;
+  source: { namn: string; hämtad: string; url?: string };
+  quote: string;
+  stepNumber: number;
+};
+
+/**
+ * Sparar registerbevis som systembevis (entered_by 'system', beslut i
+ * docs/beslut.md 2026-10-04) för den inloggade användarens aktiva projekt,
+ * räknar om poängen och returnerar den. Inte en del av porten: bara
+ * liveadaptern hämtar registerdata, och demots poäng är manusstyrd.
+ *
+ * Anroparen (Server Action på /app/marknad) hämtar siffrorna själv på
+ * servern; ingenting här kommer från klienten. Användare och projekt tas ur
+ * sessionen. Varje bevis loggas i Spåret.
+ */
+export async function recordRegistryEvidence(items: RegistryEvidenceItem[], locale: Locale): Promise<ScoreSnapshot> {
+  if (items.length === 0 || items.length > SYSTEM_KINDS.length) throw new EvidenceInputError("Inga registerbevis att spara.");
+  const context = await requireProject();
+  const before = await computeScore(context.supabase, context.userId, context.projectId, locale);
+  const copy = dictionaries[locale].evidence;
+  let reason: string | null = null;
+
+  for (const item of items) {
+    const status = await recordSystemEvidence({
+      userId: context.userId,
+      projectId: context.projectId,
+      kind: item.kind,
+      subjectRef: item.subjectRef,
+      sourceName: item.source.namn,
+      sourceUrl: item.source.url ?? null,
+      fetchedAt: item.source.hämtad,
+      quote: cleanText(item.quote, MAX_QUOTE),
+      stepNumber: item.stepNumber,
+    });
+    if (status === "duplicate") continue;
+    reason ??= `${status}:${item.kind}`;
+    await liveMemoryRepository.recordTraceEvent({
+      module: MODULE,
+      description: fill(copy.trace.recorded, { kind: copy.kinds[item.kind], source: item.source.namn }),
+      occurredAtIso: new Date().toISOString(),
+    });
+  }
+
+  if (reason === null) return withPrevious(before, { total: before.snapshot.total });
+  return settleScore(context, before, locale, reason);
 }
 
 export const liveEvidenceRecorder: EvidenceRecorder = {

@@ -12,11 +12,11 @@ import type { JourneyStepView } from "@/ports/JourneyRepository";
  * data om de anropas, så ett läckage skulle synas på sidan.
  */
 const getCurrentUserMock = vi.hoisted(() => vi.fn());
-const fetchCompaniesMock = vi.hoisted(() => vi.fn());
-const fetchAnnualFiguresMock = vi.hoisted(() => vi.fn());
+const fetchLegalUnitsMock = vi.hoisted(() => vi.fn());
+const lookupOrganisationMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/server/session", () => ({ getCurrentUser: () => getCurrentUserMock() }));
-vi.mock("@/lib/server/scb", () => ({ fetchCompanies: fetchCompaniesMock }));
-vi.mock("@/lib/server/bolagsverket", () => ({ fetchAnnualFigures: fetchAnnualFiguresMock }));
+vi.mock("@/lib/server/scb", () => ({ fetchLegalUnitsBySni: fetchLegalUnitsMock }));
+vi.mock("@/lib/server/bolagsverket", () => ({ lookupOrganisation: lookupOrganisationMock }));
 vi.mock("@/adapters/live/JourneyRepository", () => ({
   liveJourneyRepository: {
     getSteps: async (): Promise<JourneyStepView[]> =>
@@ -36,21 +36,35 @@ const ERIK = "00000000-0000-4000-8000-00000000000b";
 const OUTSIDER = "00000000-0000-4000-8000-00000000000c";
 const saved = { ...process.env };
 
-const row = {
+const unit = {
+  orgNr: "5560000001",
+  name: "Läckt Bolag AB",
+  sniCode: "62100",
+  legalFormCode: "49",
+  employeeClass: "4",
+  active: true,
+  receivesAdvertising: true,
+  countyCode: "01",
+};
+const organisation = {
   orgNr: "5560000001",
   name: "Läckt Bolag AB",
   legalForm: "AB",
-  sniCode: "62.010",
-  employees: 12,
-  county: "Stockholms län",
+  registrationDate: null,
+  sniCodes: ["62100"],
+  active: true,
   deregistered: false,
-  advertisingBlock: false,
+  inLiquidationOrRestructuring: false,
+  advertisingBlock: null,
+  postalCode: null,
+  postTown: null,
   description: "Syns bara om grinden läcker.",
+  fetchedAt: "2026-10-04",
 };
 
 async function renderPage() {
   const { default: LiveMarketPage } = await import("./page");
-  const ui = await LiveMarketPage({ searchParams: Promise.resolve({ sni: "62.010" }) });
+  const ui = await LiveMarketPage({ searchParams: Promise.resolve({ sni: "62.100" }) });
   return render(<LocaleProvider>{ui}</LocaleProvider>);
 }
 
@@ -58,8 +72,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   process.env.REGISTRY_LIVE_ENABLED = "true";
   process.env.REGISTRY_ALLOWED_USER_IDS = `${THEO},${ERIK}`;
-  fetchCompaniesMock.mockResolvedValue({ companies: [row] });
-  fetchAnnualFiguresMock.mockResolvedValue({ reports: [] });
+  fetchLegalUnitsMock.mockResolvedValue({ units: [unit], registeredTotal: 1, fetchedAt: "2026-10-04" });
+  lookupOrganisationMock.mockResolvedValue([organisation]);
 });
 
 afterEach(() => {
@@ -92,8 +106,8 @@ describe("/app/marknad bakom den riktiga licensgrinden", () => {
       arrange();
       const { container } = await renderPage();
 
-      expect(fetchCompaniesMock).not.toHaveBeenCalled();
-      expect(fetchAnnualFiguresMock).not.toHaveBeenCalled();
+      expect(fetchLegalUnitsMock).not.toHaveBeenCalled();
+      expect(lookupOrganisationMock).not.toHaveBeenCalled();
       expect(screen.getAllByText(sv.marketPage.registryClosed)).toHaveLength(3);
       expect(container.textContent).not.toMatch(/Läckt|Syns bara|anställda|SNI 62/);
       expect(container.querySelector(".fdd-figures, .fdd-bars")).toBeNull();
@@ -107,7 +121,7 @@ describe("/app/marknad bakom den riktiga licensgrinden", () => {
     getCurrentUserMock.mockResolvedValue({ id, email: null });
     await renderPage();
 
-    expect(fetchCompaniesMock).toHaveBeenCalled();
+    expect(fetchLegalUnitsMock).toHaveBeenCalled();
     expect(screen.queryByText(sv.marketPage.registryClosed)).not.toBeInTheDocument();
     expect(screen.getByText(sv.marketPage.companyCountLabelLive).parentElement).toHaveTextContent("1");
   });

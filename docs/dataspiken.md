@@ -564,11 +564,38 @@ sannolikt inget.
 | 1 | ~~Bolagsverkets faktiska användarvillkor (lagring, vidareutnyttjande)~~ **Avgjort, Verifierat 2026-09-23** (Erik läste och citerade ordagrant stycket "Användning av värdefulla data", sidans datum 2025-11-21, se avsnitt 2): fri kommersiell användning, får modifieras, bearbetas och kombineras, inom personuppgifts- och sekretesslag; källhänvisning kan krävas. Ingen namngiven licens. (Märkt Verifierat 2026-09-20 utan citat, nedgraderat och åter verifierat 2026-09-23.) | Klart. Om en uttrycklig licens hittas: citera den | **Inte längre ett hinder på licensgrunden.** Licensgrinden (`docs/moduler/registret.md`) ligger kvar i koden tills Erik själv öppnar den. Fråga 4 nedan gäller fortfarande |
 | 2 | ~~Kan Bolagsverkets API söka på SNI, eller krävs SCB/filer?~~ **Avgjort, bekräftat 2026-09-21:** nej. Bara fyra endpoints, ingen sökning eller listning. **Besvarat 2026-09-30 (Verifierat, riktiga anrop):** SCB:s företagsregister-API (AFR) listar juridiska enheter per SNI-kod, `GET /v1/juridiskaenheter/naringsgren/{kod}`, med cursor-paginering. Bara huvudbranschen (`rangordning=1`), ett filter per anrop. Se "SCB AFR, provkörning 2026-09-30" | Klart | Inget. `searchCompanies` byggs på AFR |
 | 3 | Vilka iXBRL-taggar finns för små bolag, och täckning | Spik med nycklar | `revenueKsek`, `growthSharePercent`, median |
-| 4 | Får namngivna aktiebolag lagras/visas, och hur hanteras enskilda firmor och reklamspärr? | Juridisk koll + vuxen/handledare | Steg 04–05 i live |
+| 4 | ~~Får namngivna aktiebolag lagras/visas, och hur hanteras enskilda firmor och reklamspärr?~~ **Avgjort av Theodor 2026-10-04**, se "Beslut om §6 fråga 4" nedan. Handledarens bekräftelse noteras där | Theodor (klart), handledare (bekräftelse) | Inget, när handledaren bekräftat |
 | 5 | ~~Var får Utskick och svar mottagarnas e-post från?~~ **Avgjort:** egen mejlsökning med Tavily + Gemini, grundaren bekräftar alltid adressen. Hunter.io valdes bort (50 krediter per konto/månad) | Beslutat | Fas 2 (`OutreachProvider`), byggs inte nu |
 | 6 | Allabolag/UC: kontakt, villkor, pris, vem som är rättighetshavare (UC eller Proff AS) | Grundaren + partner + vuxen/handledare | Inget i MVP |
 | 7 | SCB:s statistikdatabas som källa till branschaggregat | Undersök vid spiken | `medianRevenueKsek` utan iXBRL-urval |
 | 8 | ~~SCB:s byte från certifikat till API-nycklar~~ Gemensamma API:et använder OAuth 2 client credentials (**Verifierat** 2026-09-21). **Besvarat 2026-09-30 (Verifierat, swagger.json och riktiga anrop):** SCB:s företagsregister-API (AFR) använder en personlig API-nyckel i headern `X-API-Key`, ingen OAuth och inget certifikat. Utan nyckel svarar API:t 401. Nyckeln ligger i `.env.local` som `SCB_AFR_API_KEY` | Klart | Inget |
+
+### Beslut om §6 fråga 4 (Theodor, 2026-10-04)
+
+Underlaget står i `docs/registret-juridiskt-underlag.md`. Theodor svarade på
+de fem frågorna där:
+
+1. **Bolagsnamn med personnamn** visas som de står i registret. Spark hämtar
+   inga telefonnummer eller e-postadresser till dem. Ett bolag som vill tas
+   bort ur Spark ska kunna mejla och bli borttaget.
+2. **Reklamspärr:** bolag med spärr namnges aldrig men räknas i antal och
+   andelar (statistik är inte marknadsföring).
+3. **Enskilda firmor** hämtas aldrig en och en och namnges aldrig. Branschens
+   totala antal enheter, där de ingår, visas som en egen siffra
+   ("Registrerade totalt") ur SCB:s `/count`, bara som antal.
+4. **Kundlistan i steg 04** får visa aktiebolag utan reklamspärr. Utkastet
+   säger var Spark hittade bolaget och hur man avregistrerar sig. Grundaren
+   skickar själv; Spark skickar aldrig. Om ett mejl går till en namngiven
+   person gäller GDPR:s informationskrav (artikel 14).
+5. **Källhänvisning:** varje registersiffra visar källan med datum och länk
+   till SCB:s respektive Bolagsverkets sida.
+
+Punkt 3 och 5 är byggda (gren `plattform/registret-scb-koppling`). Punkt 1:s
+borttagningsväg och punkt 4:s informationstext för mottagare finns inte i
+appen än.
+
+**Handledarens bekräftelse:** inte noterad än. Erik krävde 2026-09-23 att
+frågan avgörs med handledare; skriv in namn och datum här när det är gjort.
 
 ## Förslag: SCB-spåret (UTKAST, väntar på godkännande)
 

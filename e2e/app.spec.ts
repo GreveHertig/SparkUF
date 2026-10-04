@@ -90,7 +90,7 @@ test.describe("/app/marknad och licensgrinden", () => {
     // Antingen låst till steg 02 eller stängd grind; båda saknar registerdata.
     await expect(main).toContainText(/Låses upp efter steg 02|Registret är inte öppet än/);
     await expect(main.locator(".fdd-figures, .fdd-bars")).toHaveCount(0);
-    await expect(main).not.toContainText(/Baserat på|Mkr|Bolag i registret/);
+    await expect(main).not.toContainText(/Baserat på|Mkr|Verksamma aktiebolag/);
   });
 });
 

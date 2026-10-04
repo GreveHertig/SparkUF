@@ -197,8 +197,9 @@ describe("vakt: service role-nyckeln", () => {
   // Varje ny läsare kräver ett beslut i docs/beslut.md. lib/server/scoreSnapshots.ts:
   // beslut 2026-10-01 (poänghistoriken skrivs bara av servern).
   // lib/server/cofounderReplies.ts: beslut 2026-10-03 (Medgrundarens rader
-  // skrivs bara av servern).
-  it("läses bara av registryCache.ts, scoreSnapshots.ts och cofounderReplies.ts i lib/server (och tester)", () => {
+  // skrivs bara av servern). lib/server/systemEvidence.ts: beslut 2026-10-04
+  // (registerbevisen är systembevis, sparas bara på grundarens knapptryck).
+  it("läses bara av registryCache.ts, scoreSnapshots.ts, cofounderReplies.ts och systemEvidence.ts i lib/server (och tester)", () => {
     const readers = files
       .filter((f) => !/\.test\.tsx?$/.test(f.path))
       .filter((f) => f.text.includes("SUPABASE_SERVICE_ROLE_KEY"))
@@ -208,6 +209,7 @@ describe("vakt: service role-nyckeln", () => {
       "lib/server/cofounderReplies.ts",
       "lib/server/registryCache.ts",
       "lib/server/scoreSnapshots.ts",
+      "lib/server/systemEvidence.ts",
     ]);
   });
 });

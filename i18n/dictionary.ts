@@ -464,6 +464,9 @@ export type Dictionary = {
     /** /app: antalet utan Saras bransch ("Byråer", "SNI 69.201" gäller bara demot). */
     companyCountLabelLive: string;
     companyCountDescriptionLive: string;
+    /** Alla juridiska enheter i branschen, bara i /app (beslut 2026-10-04). */
+    registeredTotalLabel: string;
+    registeredTotalDescription: string;
     /** Luckan när underlaget är 0 bolag (porten: siffran är okänd och får inte visas). */
     basisMissing: string;
     /** Licensgrinden stängd (RegistryLockedError): inga registersiffror. */
@@ -475,6 +478,20 @@ export type Dictionary = {
     sniPickerSubmit: string;
     sniPrompt: string;
     sniInvalid: string;
+    /** Spara registerbilden som underlag för steg 03 och 04 (systembevis, beslut 2026-10-04). */
+    evidence: {
+      title: string;
+      lede: string;
+      save: string;
+      saving: string;
+      /** {total} är den nya poängen, {delta} förändringen med tecken. */
+      scoreAfter: string;
+      saved: string;
+      failed: string;
+      /** Bevisets citat. {count} antal, {sni} SNI-koden. */
+      countQuote: string;
+      competitorsQuote: string;
+    };
     sniChooseFirst: string;
     dataLayers: {
       title: string;

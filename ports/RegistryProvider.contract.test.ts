@@ -4,37 +4,50 @@ import { demoRegistryProvider } from "@/adapters/demo/RegistryProvider";
 import { liveRegistryProvider } from "@/adapters/live/RegistryProvider";
 import { describeContract, contractIt } from "./testContract";
 
-// Kontraktstestet ska köra utan nätverk/nycklar i CI. Transporten är dessutom
-// oskriven (lib/server/scb.ts, bolagsverket.ts), så den mockas med ett litet,
-// syntetiskt urval ("Testbolag", aldrig verkliga eller demons bolagsnamn) i
-// den ANTAGNA svarsformen (lib/server/registrySchemas.ts). Grön live-svit här
-// bevisar vår mappning/filtrering, INTE att Bolagsverket/SCB ser ut så här.
-// Licensgrinden mockas som öppen — dess riktiga beteende (nekat som standard)
-// bevisas i lib/server/registryAccess.test.ts och ports/stubStatus.test.ts.
-// vi.mock hoisas: factorierna refererar bara literaler, inga importer.
+// Kontraktstestet ska köra utan nätverk och nycklar i CI, så transporterna
+// mockas med ett litet, syntetiskt urval ("Testbolag", aldrig verkliga eller
+// demots bolagsnamn) i den form transporterna ger (lib/server/scb.ts,
+// lib/server/bolagsverket.ts). Svarsformen från SCB och Bolagsverket prövas i
+// transporternas egna tester. Licensgrinden mockas som öppen; dess riktiga
+// beteende (nekat som standard) bevisas i lib/server/registryAccess.test.ts och
+// ports/stubStatus.test.ts. vi.mock hoisas: factorierna refererar bara literaler.
 vi.mock("@/lib/server/registryAccess", () => ({
   assertRegistryAccessAllowed: vi.fn(async () => undefined),
 }));
 vi.mock("@/lib/server/scb", () => ({
-  fetchCompanies: vi.fn(async () => ({
-    companies: [
-      { orgNr: "5560000001", name: "Testbolag Ett AB", legalForm: "AB", sniCode: "69.201", employees: 12, county: "Stockholms län", description: "Bokföring för småföretag.", deregistered: false, advertisingBlock: false },
-      { orgNr: "5560000002", name: "Testbolag Två AB", legalForm: "AB", sniCode: "69.201", employees: 6, county: "Skåne län", description: "Redovisning.", deregistered: false, advertisingBlock: false },
-      { orgNr: "5560000003", name: "Testbolag Tre AB", legalForm: "AB", sniCode: "69.201", employees: 14, county: null, description: null, deregistered: false, advertisingBlock: false },
-      { orgNr: "5560000004", name: "Spärrat AB", legalForm: "AB", sniCode: "69.201", employees: 12, county: "Skåne län", description: "x", deregistered: false, advertisingBlock: true },
-      { orgNr: "5560000005", name: "Enskild Firma", legalForm: "EF", sniCode: "69.201", employees: 12, county: "Skåne län", description: "x", deregistered: false, advertisingBlock: false },
-      { orgNr: "5560000006", name: "Annan Bransch AB", legalForm: "AB", sniCode: "10.000", employees: 12, county: "Skåne län", description: "x", deregistered: false, advertisingBlock: false },
-    ],
+  fetchLegalUnitsBySni: vi.fn(async (sni: string) => ({
+    fetchedAt: "2026-10-04",
+    registeredTotal: 9,
+    units:
+      sni.replace(".", "") !== "69201"
+        ? []
+        : [
+            { orgNr: "5560000001", name: "Testbolag Ett AB", sniCode: "69201", legalFormCode: "49", employeeClass: "4", active: true, receivesAdvertising: true, countyCode: "01" },
+            { orgNr: "5560000002", name: "Testbolag Två AB", sniCode: "69201", legalFormCode: "49", employeeClass: "3", active: true, receivesAdvertising: true, countyCode: "12" },
+            { orgNr: "5560000003", name: "Testbolag Tre AB", sniCode: "69201", legalFormCode: "49", employeeClass: "5", active: true, receivesAdvertising: true, countyCode: null },
+            { orgNr: "5560000004", name: "Spärrat AB", sniCode: "69201", legalFormCode: "49", employeeClass: "4", active: true, receivesAdvertising: false, countyCode: "12" },
+            { orgNr: "5560000005", name: "Handelsbolaget", sniCode: "69201", legalFormCode: "31", employeeClass: "4", active: true, receivesAdvertising: true, countyCode: "12" },
+          ],
   })),
 }));
 vi.mock("@/lib/server/bolagsverket", () => ({
-  fetchAnnualFigures: vi.fn(async () => ({
-    reports: [
-      { orgNr: "5560000001", revenueKsek: 5000, previousRevenueKsek: 4000 },
-      { orgNr: "5560000002", revenueKsek: 3000, previousRevenueKsek: 3500 },
-      { orgNr: "5560000003", revenueKsek: 4200, previousRevenueKsek: null },
-    ],
-  })),
+  lookupOrganisation: vi.fn(async (orgNr: string) => [
+    {
+      orgNr,
+      name: `Testbolag ${orgNr} AB`,
+      legalForm: "AB",
+      registrationDate: "2015-01-01",
+      sniCodes: ["69201"],
+      active: true,
+      deregistered: false,
+      inLiquidationOrRestructuring: false,
+      advertisingBlock: null,
+      postalCode: "11122",
+      postTown: "STOCKHOLM",
+      description: "Redovisning för småföretag.",
+      fetchedAt: "2026-10-04",
+    },
+  ]),
 }));
 
 describeContract<RegistryProvider>(
@@ -66,16 +79,17 @@ describeContract<RegistryProvider>(
       expect(result).toEqual([]);
     });
 
+    // Med SNI-kod: liveadaptern går aldrig igenom hela registret (porten).
     contractIt("getMarketOverview har alltid en ifylld källa (Datalöftet)", async () => {
-      const overview = await registry.getMarketOverview("sv");
+      const overview = await registry.getMarketOverview("sv", "69.201");
       expect(overview.source.namn).toBeTruthy();
       expect(overview.source.hämtad).toBeTruthy();
       expect(Array.isArray(overview.competitors)).toBe(true);
     });
 
     contractIt("getMarketOverview svarar på båda språken", async () => {
-      const sv = await registry.getMarketOverview("sv");
-      const en = await registry.getMarketOverview("en");
+      const sv = await registry.getMarketOverview("sv", "69.201");
+      const en = await registry.getMarketOverview("en", "69.201");
       expect(sv.source.namn).toBeTruthy();
       expect(en.source.namn).toBeTruthy();
     });
