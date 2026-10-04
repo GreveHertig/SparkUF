@@ -45,7 +45,7 @@ visar då "Kommer snart".
 
 ## Tabellen
 
-`supabase/migrations/20261004090000_validation_contacts.sql`. **Körs manuellt
+`supabase/migrations/20261004100000_validation_contacts.sql`. **Körs manuellt
 i SQL Editor efter granskning**, som de andra.
 
 - En rad per bolag och projekt (unikt index på normaliserat namn), så att
@@ -125,4 +125,4 @@ som förut.
 ## Status
 
 **Byggd (2026-10-04).** Port, demo- och liveadapter, migrering, Server
-Actions, skärm och Domens liveadapter. Migreringen är inte körd i Supabase.
+Actions, skärm och Domens liveadapter. Migreringen är körd i Supabase (2026-10-04).
