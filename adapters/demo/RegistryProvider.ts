@@ -5,7 +5,8 @@ import type { Källa } from "@/core/domain";
 
 /** De 40 snabbast växande byråerna (9.3 steg 04) — ett representativt urval
  * på 20 visas här, resten summeras i registerstatistiken. SNI 69.201. */
-export const saraCompanies: RegistryCompany[] = [
+// Demots bolag har alltid en (påhittad) omsättning: Kunder-tabellen i demot visar den.
+export const saraCompanies: (RegistryCompany & { revenueKsek: number })[] = [
   { name: "Ekbacka Redovisning AB", sniCode: "69.201", employees: 8, revenueKsek: 4200, county: "Stockholms län" },
   { name: "Nordkonsult Ekonomi AB", sniCode: "69.201", employees: 12, revenueKsek: 6100, county: "Stockholms län" },
   { name: "Backafors Bokföringsbyrå AB", sniCode: "69.201", employees: 6, revenueKsek: 3400, county: "Västra Götalands län" },

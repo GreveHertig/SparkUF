@@ -682,3 +682,29 @@ Uppdrag från Bruno (2026-10-04). Se `docs/moduler/validering.md`.
   steg 03 går inte att nå i live så länge Registret är grindat.
 - **Domen i `/app/validering` visas utan poäng.** `VerdictBlock` tar nu
   poängen som valfri; demot och Resans steg visar den som förut.
+
+**Registret kopplat till SCB och Bolagsverket (gren `plattform/registret-scb-koppling`).**
+Uppdrag från Bruno (2026-10-04). Se `docs/moduler/registret.md`, "SCB AFR" och
+"Hur liveadaptern fungerar i dag". Grinden är orörd.
+- **Namngivna bolag:** aktiebolag (jurform 41, 42, 43, 49), verksamma, som tar
+  emot reklam enligt SCB (`reklamSparrTyp` 1) och har känd storleksklass.
+  Bolagsverkets `reklamsparr` är `null` för alla bolag vi sett, så den används
+  bara för att utesluta: en satt spärr där utesluter en konkurrent, ett okänt
+  värde gör det inte, eftersom SCB:s uppgift redan är känd. Ersätter
+  formuleringen i "Bolagsverket-transporten" om att `null` ska behandlas som
+  spärr, som skrevs innan SCB:s fält fanns.
+- **`RegistryCompany.revenueKsek` blir `number | null`** (porten). AFR har
+  ingen omsättning, och att utelämna varje bolag gav en tom lista.
+- **`getMarketOverview` utan SNI-kod nekas i live** (`RegistryInputError`),
+  så att hela registret aldrig gås igenom. Kontraktstestet skickar en kod.
+- **Antalet bolag i live är verksamma aktiebolag** med branschen som
+  huvudbransch, med och utan reklamspärr. Etiketten ändrad till "Verksamma
+  aktiebolag".
+- **Registerbevis är systembevis** och sparas bara när grundaren trycker
+  "Spara som underlag" på Marknaden (en läsning skriver aldrig, B10).
+  Servern hämtar siffrorna själv och skriver med service role via
+  `lib/server/systemEvidence.ts`, bara sorterna `registerMarketCount` och
+  `registerCompetitorSet`. Citaten bär antal, aldrig bolagsnamn.
+- **SNI-formen `12.345` står kvar** i porten och på sidan. Adaptern gör om
+  till fem siffror mot AFR. Bytet i porten och demot (beslutet om SNI 2025)
+  görs i en egen PR.

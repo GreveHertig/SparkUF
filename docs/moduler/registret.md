@@ -118,7 +118,10 @@ bara de två). Licensen räcker inte ensam för att öppna den.
      `lookupOrganisation` och `fetchDocumentList` från sin dator mot Volvo,
      Ericsson och H&M. Alla sex anropen lyckades, och grinden gällde som i
      appen. Se "Provkörning 2026-09-24" nedan.
-   - **SCB: inte uppfyllt.** `lib/server/scb.ts` kastar fortfarande.
+   - **SCB: skriven 2026-10-04, inte provkörd.** `lib/server/scb.ts` gör
+     riktiga anrop (testad mot mockad fetch). Provkörningen görs av Erik med
+     `adapters/live/RegistryProvider.live.test.ts`, se "Provkörning av SCB"
+     nedan.
 2. **SCB:s villkor är lästa** för företagsregister-API:t, efter 30 september
    2026, och citerade ordagrant i `docs/dataspiken.md` på samma sätt som
    Bolagsverkets.
@@ -159,19 +162,29 @@ policies och är stängd för alla klienter.
 
 ## Status
 
-**påbörjad — grindad, Bolagsverket-transporten delvis skriven (2026-09-23).**
-`adapters/live/RegistryProvider.ts` är byggd: grind, indatavalidering,
-aktiebolag utan reklamspärr, källstämpling och ärlighet kring luckor.
-`lib/server/bolagsverket.ts` gör nu riktiga anrop mot `/organisationer` och
-`/dokumentlista` (se "Bolagsverket-transporten" nedan). Svarsformen är
-verifierad mot Eriks körning i steg A (`docs/dataspiken.md`). Transporten är
-**inte kopplad till adaptern än**, och det finns tre skäl: `searchCompanies`
-och `getMarketOverview` börjar i SCB:s lista, `lib/server/scb.ts` kastar
-fortfarande, och `fetchAnnualFigures` (/dokument, iXBRL) är uppskjuten.
-Kontraktstestet är fortfarande grönt **mot mockad transport i en ANTAGEN
-svarsform** (`lib/server/registrySchemas.ts`). **Exponering är spärrad**, se
-"Licensgrind". Demoadaptern är klar och används av `/demo/marknad` och
-`/demo/validering` (via Utskick och svar).
+**byggd, grindad, väntar på provkörning (2026-10-04).** SCB-transporten
+(`lib/server/scb.ts`) är skriven och inkopplad i liveadaptern tillsammans med
+Bolagsverkets `lookupOrganisation`. Marknadsbilden och bolagslistan bygger på
+riktiga svarsformer (`lib/server/registrySchemas.ts`, verifierade i spiken
+2026-09-30). Kvar innan grinden öppnas: provkörning av SCB-delen (Erik), SCB:s
+villkor citerade (Erik) och §6 fråga 4 avgjord (Theodor och handledare, se
+`docs/registret-juridiskt-underlag.md`). Årsredovisningarna (omsättning och
+tillväxt) är fortfarande inte byggda. Demoadaptern är oförändrad.
+
+### Provkörning av SCB (för Erik)
+
+Från din dator, med nycklarna i `.env.local` och grinden öppen för ditt
+user.id:
+
+```
+REGISTRY_LIVE_SMOKE=1 REGISTRY_SMOKE_USER_ID=<ditt user.id> \
+  node --env-file=.env.local node_modules/vitest/vitest.mjs run \
+  adapters/live/RegistryProvider.live.test.ts
+```
+
+Valfritt `REGISTRY_SMOKE_SNI=62.100` för en annan bransch. Utskriften visar
+bara antal, andelar, källa och tid, inga namn eller org.nr. Klistra in
+utskriften i en statusfil; då är grindkrav 1 uppfyllt för SCB.
 
 ## Bolagsverket-transporten (`lib/server/bolagsverket.ts`)
 
@@ -216,11 +229,12 @@ svarsform** (`lib/server/registrySchemas.ts`). **Exponering är spärrad**, se
   att prova med mindre aktiebolag** som har lämnat årsredovisningen
   digitalt. Det behövs innan `/dokument` och iXBRL byggs.
 
-## SCB AFR (`lib/server/scb.ts`, inte skriven)
+## SCB AFR (`lib/server/scb.ts`, skriven 2026-10-04)
 
 Spiken mot SCB:s allmänna företagsregister-API gjordes 2026-09-30, se
 `docs/dataspiken.md`, "SCB AFR, provkörning 2026-09-30". Det här avsnittet
-är förslaget för transporten och adaptern. Ingen kod är ändrad.
+var förslaget för transporten och adaptern. **Det är byggt 2026-10-04**, med
+avvikelserna under "Så byggdes det" längst ned i avsnittet.
 
 ### Adress, nyckel och gränser
 - **Kontrakt:** `https://apiafr.scb.se/swagger/v1/swagger.json` är
@@ -356,41 +370,61 @@ Omsättningsklassen (`omsKl`) skulle kunna fylla en del av
 `medianRevenueKsek`, men det kräver ett eget beslut om personuppgifter
 först.
 
-### Att göra när transporten skrivs
-- Skriv om `lib/server/registrySchemas.ts` enligt tabellen ovan.
-- Byt felmeddelandet i `fetchCompanies` ("saknar nycklar och API-spec").
-  Kommentaren i `lib/server/scb.ts` är redan uppdaterad (docs-commit
-  2026-09-30).
-- Låt varje exporterad funktion i `scb.ts` anropa
-  `assertRegistryAccessAllowed()` först, som i `bolagsverket.ts`. Lint-regeln
-  `registryTransportPattern` täcker redan `scb`.
+### Så byggdes det (2026-10-04)
+- **`fetchLegalUnitsBySni(sni)`** ersätter `fetchCompanies`. Grinden först.
+  `/count` först, sedan alla sidor med `limit=1000` och `cursorId` tills
+  `hasMore` är false. Tak: 80 000 enheter (80 sidor), 1,5 MB per svar,
+  4 anrop/s inom processen, 15 s timeout per anrop, en ny chans vid 429 med
+  `Retry-After` på högst 5 s, och ett eget felmeddelande vid 503 under
+  nattfönstret. En paginering som inte går framåt ger ett fel.
+- **Fysiska personer och dödsbon** filtreras bort i transporten. Bara de fält
+  adaptern behöver lämnar transporten.
+- **`lib/server/registrySchemas.ts`** är omskriven efter AFR:s svar och
+  kodtabeller (storleksklasser, länskoder, aktiebolagens jurform).
+- **Ingen cache** (villkoren är inte citerade). Samtidiga anrop för samma
+  bransch delar på samma genomgång, så att en sidladdning bara går igenom
+  listan en gång. `/app/marknad` har `maxDuration = 60`.
+- **SNI-formen är oförändrad i porten och på sidan** (`69.201`). Adaptern och
+  transporten godtar också `69201` och gör om till fem siffror mot AFR.
+  Bytet av form i porten och demot (avsnittet "SNI 2025") är inte gjort.
+- **`RegistryCompany.revenueKsek` är nullbar** (porten ändrad). AFR har ingen
+  omsättning; liveadaptern ger `null`. Demots bolag har kvar sina tal.
 
 ## Hur liveadaptern fungerar i dag
 
 - **Första satsen** i båda metoderna: `assertRegistryAccessAllowed()`.
-- **`searchCompanies`:** validerar SNI (`12.345`-form) och anställdagränser före
-  allt annat. Hämtar rader, behåller bara aktiebolag, aktiva, utan reklamspärr,
-  med exakt SNI-match och känt antal anställda inom intervallet (max 50), hämtar
-  omsättning per bolag och **utelämnar** bolag utan känd omsättning (aldrig 0).
-  Okänt län ger `""`. Inga träffar ger `[]`.
-- **`getMarketOverview(locale, sniCode?)`:** `companyCount` över aktiva bolag,
-  `regionSharePercent` = andel bolag i Stockholms län (som UI-etiketten lovar) av
-  bolag med känt län, `growthSharePercent` = andel med omsättning >10 % över
-  föregående år, median och tillväxt över ett deterministiskt urval (sorterat på
-  orgNr, max 100) aktiebolag med digital årsredovisning, konkurrenter (bara när
-  `sniCode` anges, annars `[]`) = de fem största namngivbara bolagen med verksamhetsbeskrivning
-  (rensad, kortad till 200 tecken, aldrig instruktion). `source.hämtad` är
-  anropsdagen. **`basis`** anger antal bolag bakom varje siffra; `0` betyder
-  okänt och siffran får inte visas.
-- **Porten ändrades i två avseenden** (beslutat 2026-09-19): valfritt `basis`
-  på `MarketOverview` (D3) och valfri andra parameter `sniCode` på
-  `getMarketOverview` (nytt beslut: porten saknade branschangivelse, så
-  liveadaptern visste inte vad den skulle sammanfatta; utan `sniCode` gäller
-  sammanfattningen hela registret). Båda valfria, så demo, skärmar och
-  kontraktstest är oförändrade.
-- Fel: `RegistryLockedError` (grind, visas som `ComingSoon`),
-  `RegistryInputError` (ogiltig indata), `RegistryTransportError` (transport
-  eller oväntat svar). Ingen ärver `NotImplementedError`.
+- **`searchCompanies`:** validerar SNI (`12.345` eller fem siffror) och
+  anställdagränser före allt annat. Hämtar branschen ur SCB och namnger bara
+  aktiebolag som är verksamma, tar emot reklam enligt SCB och har känd
+  storleksklass. En klass tas med bara om hela intervallet ligger inom
+  gränserna. Högst 50, i ett deterministiskt men spritt urval (hash av
+  org.nr, inte de äldsta bolagen). `employees` är klassens nedre gräns,
+  `revenueKsek` är `null` och okänt län ger `""`.
+- **`getMarketOverview(locale, sniCode)`:** kräver `sniCode` (hela registret
+  gås aldrig igenom). `companyCount` = verksamma aktiebolag med branschen som
+  huvudbransch, också de med reklamspärr (de räknas men namnges inte).
+  `regionSharePercent` = andelen i Stockholms län av dem med känt län.
+  Median och tillväxt har underlaget 0 (okända). Konkurrenterna är de största
+  namngivbara bolagen, berikade med Bolagsverkets beskrivning: en spärr,
+  avregistrering eller saknad beskrivning hos Bolagsverket utesluter. Högst
+  tio uppslag för fem konkurrenter. Går Bolagsverket inte att nå blir listan
+  tom och resten visas. Källan är "SCB:s företagsregister och Bolagsverket"
+  med anropsdagen.
+- Fel: `RegistryLockedError` (grind), `RegistryInputError` (ogiltig indata),
+  `RegistryTransportError` (transport eller oväntat svar). Ingen ärver
+  `NotImplementedError`.
+
+### Registerbevis (steg 03 och 04)
+
+På `/app/marknad` kan grundaren trycka "Spara som underlag"
+(`app/(app)/app/marknad/actions.ts`). Servern hämtar marknadsbilden på nytt
+bakom grinden och sparar två systembevis (`entered_by = 'system'`) via
+`lib/server/systemEvidence.ts` (service role, bara `adapters/live/EvidenceRecorder.ts`
+får importera den): `registerMarketCount` (steg 03) och
+`registerCompetitorSet` (steg 04), med antal och SNI-kod i citatet, aldrig
+bolagsnamn. En nyare hämtning ersätter den äldre. Det gör att steg 03 och 04
+går att klara i live när grinden är öppen. Beslut i `docs/beslut.md`
+2026-10-04.
 
 ## Öppna frågor (avgörs före vecka 2)
 
@@ -410,12 +444,12 @@ först.
 1. Spik med riktiga nycklar (`docs/dataspiken.md` §3): kan man söka på SNI, vilka
    iXBRL-taggar finns, går län att härleda, vad säger villkoren om lagring.
 2. Skriv transporten och skriv om `lib/server/registrySchemas.ts` mot det
-   verkliga svaret (**Bolagsverket `/organisationer` och `/dokumentlista`
-   klart 2026-09-23**; kvar är SCB, `/dokument`/iXBRL och att koppla in
-   `lookupOrganisation` i adaptern); byt `RegistryProvider.live.test.ts` mot riktiga anrop.
+   verkliga svaret (**Bolagsverket klart 2026-09-23, SCB och inkopplingen
+   av `lookupOrganisation` klart 2026-10-04**; kvar är `/dokument`/iXBRL).
+   `RegistryProvider.live.test.ts` kör nu riktiga anrop (opt-in).
    Respektera SCB:s gränser: cursor-paginering med limit 1 000 och högst 5 anrop/s (rättat 2026-09-30, de gamla uppgifterna 2 000 rader/anrop och 10 anrop/10 s gällde det gamla API:t). Se "SCB AFR" ovan.
 3. ~~Läs Bolagsverkets villkor (Verifierat)~~ klart 2026-09-23. Grinden lyfts först när de tre kraven under "Licensgrind" är uppfyllda.
-4. Portens `employees`/`revenueKsek` är icke-nullbara, så bolag med okänt värde
-   utelämnas i dag. Överväg nullbara fält när en skärm ska visa dem.
+4. ~~Portens `revenueKsek` är icke-nullbar~~ nullbar sedan 2026-10-04.
+   `employees` är klassens nedre gräns; bolag med okänd klass namnges inte.
 5. Enskilda firmor/reklamspärr med Juridisk koll + vuxen/handledare
    (`docs/dataspiken.md` §6 fråga 4).

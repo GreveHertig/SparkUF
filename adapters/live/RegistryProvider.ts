@@ -9,47 +9,58 @@ import type {
 import { RegistryInputError, RegistryTransportError } from "@/core/errors";
 import { cleanText } from "@/core/text";
 import { assertRegistryAccessAllowed } from "@/lib/server/registryAccess";
-import { fetchCompanies } from "@/lib/server/scb";
-import { fetchAnnualFigures } from "@/lib/server/bolagsverket";
+import { fetchLegalUnitsBySni, type ScbLegalUnit } from "@/lib/server/scb";
+import { lookupOrganisation } from "@/lib/server/bolagsverket";
 import {
-  AKTIEBOLAG_FORM,
-  AnnualFiguresResponseSchema,
-  RegistryRowsResponseSchema,
-  type AnnualFigures,
-  type RegistryRow,
+  AKTIEBOLAG_JURFORM,
+  COUNTY_NAMES,
+  EMPLOYEE_CLASSES,
+  STOCKHOLM_COUNTY_CODE,
 } from "@/lib/server/registrySchemas";
 
 /**
- * Liveadapter för Registret (docs/moduler/registret.md). Domänlogiken är vår
- * (grind, indatavalidering, aktiebolag utan reklamspärr, källstämpling,
- * ärlighet kring luckor); transporten (lib/server/scb.ts, bolagsverket.ts) är
- * ännu oskriven och svarsformerna är ANTAGANDEN (lib/server/registrySchemas.ts).
+ * Liveadapter för Registret (docs/moduler/registret.md). Listan kommer ur
+ * SCB:s företagsregister (lib/server/scb.ts), verksamhetsbeskrivningen och
+ * Bolagsverkets reklamspärr för konkurrenterna ur Bolagsverket
+ * (lib/server/bolagsverket.ts). Domänlogiken är vår: grind, indatavalidering,
+ * vilka bolag som får namnges, källstämpling och ärlighet kring luckor.
  *
- * Extern data är DATA: allt valideras med .strict()-scheman, texter från
- * registret rensas och kortas och används aldrig som instruktion. Ingenting
- * hittas på: saknas en siffra utelämnas bolaget eller basis anger 0.
+ * Namngivna bolag (dataspiken §2 och §6 fråga 4): bara aktiebolag (jurform
+ * 41, 42, 43, 49) som är verksamma, tar emot reklam enligt SCB
+ * (reklamSparrTyp 1) och har en känd storleksklass. Konkurrenterna måste
+ * dessutom sakna reklamspärr hos Bolagsverket: en satt spärr där utesluter,
+ * ett okänt värde (null) gör det inte, eftersom SCB:s uppgift redan är känd.
+ * Beslut i docs/beslut.md 2026-10-04.
+ *
+ * Luckor (Datalöftet): AFR har ingen omsättning och ingen historik, så
+ * medianen och tillväxtandelen har underlaget 0 och visas inte, och
+ * `revenueKsek` är null. Antal anställda är storleksklassens nedre gräns,
+ * som skärmen visar som klass, aldrig som ett exakt tal.
+ *
+ * Extern data är DATA: namn och beskrivningar rensas och kortas och används
+ * aldrig som instruktion.
  */
 
-const SNI_PATTERN = /^\d{2}\.\d{3}$/;
-/** SCB:s dokumenterade radtak per anrop (Sekundärt, dataspiken §2). Nås det är listan troligen avkortad. */
-const SCB_ROW_CAP = 2000;
-/** Etiketterna i UI:t (i18n marknad) lovar exakt detta: tillväxt över 10 % och Stockholmsregionen. */
-const GROWTH_THRESHOLD = 1.1;
-/** ANTAGANDE: länsnamnet så som registret skriver det (registrySchemas.ts). */
-const REGION_COUNTY = "Stockholms län";
-/** Tak på namngivna träffar (varje träff kostar ett årsredovisningsanrop). */
+/** Porten och sidan använder formen 12.345; fem siffror i följd godtas också. */
+const SNI_PATTERN = /^(\d{2}\.\d{3}|\d{5})$/;
+/** Tak på namngivna träffar. */
 const MAX_NAMED_RESULTS = 50;
-/** Tak på urvalet som medianen/tillväxten räknas på. */
-const MAX_SAMPLE = 100;
 const MAX_COMPETITORS = 5;
+/** Så många kandidater slås upp hos Bolagsverket för att hitta fem konkurrenter. */
+const MAX_COMPETITOR_LOOKUPS = 10;
 const MAX_NAME_LENGTH = 100;
 const MAX_DESCRIPTION_LENGTH = 200;
 
-function requireSni(sniCode: string): string {
-  if (typeof sniCode !== "string" || !SNI_PATTERN.test(sniCode)) {
+const SOURCE_NAME: Record<Locale, string> = {
+  sv: "SCB:s företagsregister och Bolagsverket",
+  en: "Statistics Sweden business register and Bolagsverket",
+};
+
+function requireSni(sniCode: unknown): string {
+  if (typeof sniCode !== "string" || !SNI_PATTERN.test(sniCode.trim())) {
     throw new RegistryInputError("Ogiltig SNI-kod (förväntar formen 12.345).");
   }
-  return sniCode;
+  return sniCode.trim();
 }
 
 function requireCount(value: number | undefined, label: string): number | undefined {
@@ -60,45 +71,68 @@ function requireCount(value: number | undefined, label: string): number | undefi
   return value;
 }
 
-function parseRows(raw: unknown): RegistryRow[] {
-  const parsed = RegistryRowsResponseSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new RegistryTransportError("Oväntat svar från bolagsregistret (validering misslyckades).", {
-      cause: parsed.error,
-    });
+const isAktiebolag = (unit: ScbLegalUnit) => unit.legalFormCode !== null && AKTIEBOLAG_JURFORM.has(unit.legalFormCode);
+
+/** Får visas med namn: aktiebolag, verksamt, tar emot reklam enligt SCB, känd storlek. */
+function isNameable(unit: ScbLegalUnit): boolean {
+  return isAktiebolag(unit) && unit.active && unit.receivesAdvertising && classOf(unit) !== null;
+}
+
+function classOf(unit: ScbLegalUnit): { min: number; max: number } | null {
+  return unit.employeeClass ? (EMPLOYEE_CLASSES[unit.employeeClass] ?? null) : null;
+}
+
+/**
+ * Ett spritt, deterministiskt urval: sortering på en hash av org.nr i stället
+ * för på org.nr, som skulle ge de äldsta bolagen. Samma bransch ger alltid
+ * samma urval.
+ */
+function spreadKey(orgNr: string): number {
+  let hash = 0x811c9dc5;
+  for (const char of orgNr) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
   }
-  if (parsed.data.companies.length >= SCB_ROW_CAP) {
-    // Avkortad lista skulle ge felaktiga antal: hellre ett fel än ett tyst för lågt tal.
-    throw new RegistryTransportError("Registersvaret nådde radtaket och kan vara avkortat (kräver paginering).");
+  return hash;
+}
+
+const bySpread = (a: ScbLegalUnit, b: ScbLegalUnit) =>
+  spreadKey(a.orgNr) - spreadKey(b.orgNr) || a.orgNr.localeCompare(b.orgNr);
+
+/**
+ * Konkurrenterna: de största namngivbara bolagen, med beskrivning från
+ * Bolagsverket. Ett bolag med spärr, avregistrering eller utan beskrivning hos
+ * Bolagsverket hoppas över. Går Bolagsverket inte att nå blir listan tom, och
+ * resten av marknadsbilden visas ändå.
+ */
+async function findCompetitors(units: ScbLegalUnit[]): Promise<Competitor[]> {
+  const candidates = units
+    .filter(isNameable)
+    .sort((a, b) => (classOf(b)?.min ?? -1) - (classOf(a)?.min ?? -1) || a.orgNr.localeCompare(b.orgNr))
+    .slice(0, MAX_COMPETITOR_LOOKUPS);
+
+  const competitors: Competitor[] = [];
+  for (const unit of candidates) {
+    if (competitors.length >= MAX_COMPETITORS) break;
+    let found;
+    try {
+      [found] = await lookupOrganisation(unit.orgNr);
+    } catch (error) {
+      if (error instanceof RegistryInputError) continue;
+      if (error instanceof RegistryTransportError) {
+        // Bara våra egna texter, aldrig `cause`.
+        console.error(`Registret: konkurrenterna kunde inte berikas (${error.name}: ${error.message}).`);
+        return [];
+      }
+      throw error;
+    }
+    if (!found || found.advertisingBlock === true || found.deregistered || found.active === false) continue;
+    const name = cleanText(found.name ?? unit.name, MAX_NAME_LENGTH);
+    const description = cleanText(found.description ?? "", MAX_DESCRIPTION_LENGTH);
+    if (name && description) competitors.push({ name, description });
   }
-  return parsed.data.companies;
+  return competitors;
 }
-
-function parseFigures(raw: unknown): Map<string, AnnualFigures> {
-  const parsed = AnnualFiguresResponseSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new RegistryTransportError("Oväntat svar från årsredovisningsregistret (validering misslyckades).", {
-      cause: parsed.error,
-    });
-  }
-  return new Map(parsed.data.reports.map((r) => [r.orgNr, r]));
-}
-
-/** Bara aktiebolag utan reklamspärr som är aktiva får visas med namn (dataspiken §2). */
-function isNameable(row: RegistryRow): boolean {
-  return row.legalForm === AKTIEBOLAG_FORM && !row.deregistered && !row.advertisingBlock;
-}
-
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
-}
-
-const SOURCE_NAME: Record<Locale, string> = {
-  sv: "Bolagsverket och SCB",
-  en: "Bolagsverket and Statistics Sweden (SCB)",
-};
 
 export const liveRegistryProvider: RegistryProvider = {
   async searchCompanies(query: RegistryQuery): Promise<RegistryCompany[]> {
@@ -110,101 +144,66 @@ export const liveRegistryProvider: RegistryProvider = {
       throw new RegistryInputError("minEmployees får inte vara större än maxEmployees.");
     }
 
-    const rows = parseRows(await fetchCompanies({ sniCode }));
-    // Okänt antal anställda kan inte uppfylla ett intervall, och porten kräver
-    // ett tal: en rad utan känt antal utelämnas hellre än får ett påhittat.
-    const hits = rows
-      .filter(
-        (r) =>
-          r.sniCode === sniCode &&
-          isNameable(r) &&
-          r.employees !== null &&
-          (min === undefined || r.employees >= min) &&
-          (max === undefined || r.employees <= max),
-      )
-      .sort((a, b) => a.orgNr.localeCompare(b.orgNr))
-      .slice(0, MAX_NAMED_RESULTS);
-    if (hits.length === 0) return [];
-
-    const figures = parseFigures(await fetchAnnualFigures(hits.map((r) => r.orgNr)));
-    const companies: RegistryCompany[] = [];
-    for (const r of hits) {
-      const name = cleanText(r.name, MAX_NAME_LENGTH);
-      if (!name) continue;
-      const revenue = figures.get(r.orgNr)?.revenueKsek;
-      // Ingen omsättning i en digital årsredovisning => utelämnas, aldrig 0.
-      if (revenue === null || revenue === undefined || r.employees === null) continue;
-      companies.push({
-        name,
-        sniCode: r.sniCode,
-        employees: r.employees,
-        revenueKsek: revenue,
-        // Län saknas => tom sträng (porten kräver string), aldrig en gissning.
-        county: r.county ? cleanText(r.county, MAX_NAME_LENGTH) : "",
+    const { units } = await fetchLegalUnitsBySni(sniCode);
+    // En storleksklass tas med bara om hela intervallet ligger inom gränserna.
+    return units
+      .filter((unit) => {
+        if (!isNameable(unit)) return false;
+        const size = classOf(unit)!;
+        return (min === undefined || size.min >= min) && (max === undefined || size.max <= max);
+      })
+      .sort(bySpread)
+      .slice(0, MAX_NAMED_RESULTS)
+      .flatMap((unit): RegistryCompany[] => {
+        const name = cleanText(unit.name, MAX_NAME_LENGTH);
+        if (!name) return [];
+        return [
+          {
+            name,
+            // Samma form som frågan, så att sidan visar koden som grundaren skrev den.
+            sniCode,
+            employees: classOf(unit)!.min,
+            // AFR har ingen omsättning; årsredovisningarna (iXBRL) är inte byggda.
+            revenueKsek: null,
+            // Okänt län ger tom sträng, aldrig en gissning.
+            county: unit.countyCode ? (COUNTY_NAMES[unit.countyCode] ?? "") : "",
+          },
+        ];
       });
-    }
-    return companies;
   },
 
   async getMarketOverview(locale: Locale, sniCode?: string): Promise<MarketOverview> {
     await assertRegistryAccessAllowed();
-    const sni = sniCode === undefined ? undefined : requireSni(sniCode);
+    // Hela registret (över en miljon rader) gås aldrig igenom (registret.md, "SCB AFR").
+    if (sniCode === undefined) {
+      throw new RegistryInputError("Marknadsbilden kräver en SNI-kod.");
+    }
+    const sni = requireSni(sniCode);
 
-    const all = parseRows(await fetchCompanies({ sniCode: sni }));
-    const active = all.filter((r) => !r.deregistered && (sni === undefined || r.sniCode === sni));
+    const listing = await fetchLegalUnitsBySni(sni);
+    const activeAktiebolag = listing.units.filter((unit) => isAktiebolag(unit) && unit.active);
 
-    // Regionandel: andelen bolag i Stockholmsregionen av de bolag där län är känt.
-    const withCounty = active.filter((r) => r.county);
+    // Regionandel: andelen i Stockholms län av de verksamma aktiebolag där sätets län är känt.
+    const withCounty = activeAktiebolag.filter((unit) => unit.countyCode !== null);
     const regionCompanies = withCounty.length;
     const regionSharePercent = regionCompanies
-      ? Math.round((withCounty.filter((r) => r.county === REGION_COUNTY).length / regionCompanies) * 100)
+      ? Math.round(
+          (withCounty.filter((unit) => unit.countyCode === STOCKHOLM_COUNTY_CODE).length / regionCompanies) * 100,
+        )
       : 0;
 
-    // Årsredovisningar finns bara för aktiebolag: ett urval, aldrig hela marknaden.
-    // Deterministiskt urval (sorterat på orgNr), inte transportens ordning.
-    const sample = active
-      .filter((r) => r.legalForm === AKTIEBOLAG_FORM)
-      .sort((a, b) => a.orgNr.localeCompare(b.orgNr))
-      .slice(0, MAX_SAMPLE);
-    const figures = sample.length
-      ? parseFigures(await fetchAnnualFigures(sample.map((r) => r.orgNr)))
-      : new Map<string, AnnualFigures>();
-    const revenues: number[] = [];
-    let grew = 0;
-    let comparable = 0;
-    for (const r of sample) {
-      const f = figures.get(r.orgNr);
-      if (!f || f.revenueKsek === null) continue;
-      revenues.push(f.revenueKsek);
-      if (f.previousRevenueKsek !== null && f.previousRevenueKsek > 0) {
-        comparable += 1;
-        if (f.revenueKsek > f.previousRevenueKsek * GROWTH_THRESHOLD) grew += 1;
-      }
-    }
-
-    // Konkurrenter är bara meningsfulla inom en bransch: utan sniCode inga.
-    const competitors: Competitor[] = (sni === undefined ? [] : active)
-      .filter(isNameable)
-      .sort((a, b) => (b.employees ?? -1) - (a.employees ?? -1))
-      .map((r) => ({
-        name: cleanText(r.name, MAX_NAME_LENGTH),
-        description: cleanText(r.description ?? "", MAX_DESCRIPTION_LENGTH),
-      }))
-      // Filtrera efter rensning: en tom rensad text räknas som saknad.
-      .filter((c) => c.name && c.description)
-      .slice(0, MAX_COMPETITORS);
-
     return {
-      companyCount: active.length,
-      medianRevenueKsek: revenues.length ? median(revenues) : 0,
-      growthSharePercent: comparable ? Math.round((grew / comparable) * 100) : 0,
+      companyCount: activeAktiebolag.length,
+      medianRevenueKsek: 0,
+      growthSharePercent: 0,
       regionSharePercent,
-      // Hämtningsdatum är det faktiska anropsdatumet, aldrig hårdkodat.
-      source: { namn: SOURCE_NAME[locale], hämtad: new Date().toISOString().slice(0, 10) },
-      competitors,
+      // Hämtningsdatum är anropsdagen, aldrig hårdkodat.
+      source: { namn: SOURCE_NAME[locale], hämtad: listing.fetchedAt },
+      competitors: await findCompetitors(listing.units),
       basis: {
-        medianRevenueCompanies: revenues.length,
-        growthCompanies: comparable,
+        // Omsättning och tillväxt kräver årsredovisningar (iXBRL), som inte är byggda: okänt.
+        medianRevenueCompanies: 0,
+        growthCompanies: 0,
         regionCompanies,
       },
     };

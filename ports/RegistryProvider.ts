@@ -10,8 +10,13 @@ export type RegistryQuery = {
 export type RegistryCompany = {
   name: string;
   sniCode: string;
+  /** Antal anställda. Liveadaptern ger storleksklassens nedre gräns (SCB ger klasser, aldrig exakta tal). */
   employees: number;
-  revenueKsek: number;
+  /**
+   * Senaste omsättning i tusentals kronor. `null` = okänd: SCB:s register har
+   * ingen omsättning, och årsredovisningarna (iXBRL) är inte byggda än.
+   */
+  revenueKsek: number | null;
   county: string;
 };
 
@@ -45,16 +50,17 @@ export type MarketOverview = {
 };
 
 /**
- * Modul: Registret (avsnitt 14.3). Liveadapter bygger på Bolagsverket och SCB.
- * Grindad tills licensen är Verifierat (docs/moduler/registret.md,
- * "Licensgrind"); transporten är oskriven tills spiken är gjord.
+ * Modul: Registret (avsnitt 14.3). Liveadapter bygger på SCB:s
+ * företagsregister (AFR) och Bolagsverket. Grindad tills de tre kraven under
+ * "Licensgrind" i docs/moduler/registret.md är uppfyllda.
  */
 export interface RegistryProvider {
   searchCompanies(query: RegistryQuery): Promise<RegistryCompany[]>;
   /**
-   * `sniCode` avgränsar sammanfattningen till en bransch. Utan den gäller
-   * den hela registret. Valfri så att demot (fast Sara-bransch) och
-   * kontraktstestet är oförändrade.
+   * `sniCode` avgränsar sammanfattningen till en bransch. Valfri så att demot
+   * (fast Sara-bransch) fungerar utan den. Liveadaptern kräver den och kastar
+   * `RegistryInputError` utan: hela registret gås aldrig igenom
+   * (docs/moduler/registret.md, "SCB AFR").
    */
   getMarketOverview(locale: Locale, sniCode?: string): Promise<MarketOverview>;
 }

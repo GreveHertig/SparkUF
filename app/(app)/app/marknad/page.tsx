@@ -4,12 +4,20 @@ import { liveRegistryProvider } from "@/adapters/live/RegistryProvider";
 import { isPlaceholderError, RegistryLockedError, RegistryTransportError } from "@/core/errors";
 import { assertRegistryAccessAllowed } from "@/lib/server/registryAccess";
 import { orNull } from "../_lib/orNull";
+import { saveMarketEvidence } from "./actions";
 
 /** Samma gräns som demot: marknadsbilden öppnas när steg 02 är klart. */
 const UNLOCKS_AFTER_STEP = 2;
 /** Samma form som Registret-adaptern kräver (adapters/live/RegistryProvider.ts). */
 const SNI_PATTERN = /^\d{2}\.\d{3}$/;
 const BASE_PATH = "/app/marknad";
+
+/**
+ * SCB:s lista för en bransch gås igenom sida för sida (20–40 sekunder för en
+ * stor bransch, docs/dataspiken.md, "Vad en kundlista kostar") så länge inget
+ * cachas. Gränsen på plattformen höjs därför för just den här sidan.
+ */
+export const maxDuration = 60;
 
 /**
  * Marknad i /app (PR 8, docs/plan-en-design.md). Låst och olåst kommer ur
@@ -65,6 +73,7 @@ export default async function LiveMarketPage({
       dataKind="live"
       locked={locked}
       sniPicker={{ basePath: BASE_PATH, current: sni, invalid: raw !== "" && sni === null }}
+      evidence={{ onSave: saveMarketEvidence, scoreHref: "/app/poang" }}
     />
   );
 }

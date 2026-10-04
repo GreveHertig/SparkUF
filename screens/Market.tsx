@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { ComingSoon } from "@/components/ui/ComingSoon";
 import { ConceptBadge } from "@/components/ui/ConceptBadge";
 import { SourceTag } from "@/components/ui/SourceTag";
 import { useI18n, type Locale } from "@/i18n/context";
 import type { Dictionary } from "@/i18n/dictionary";
+import { fill } from "@/i18n/fill";
 import { formatCount, formatSek } from "@/i18n/format";
 import type { DataKind, Källa } from "@/core/domain";
 import type { DataType } from "@/design/tokens";
@@ -16,6 +19,7 @@ import type { MarketOverview, RegistryCompany } from "@/ports/RegistryProvider";
 import type { Simulation } from "@/ports/SimulationProvider";
 import { ExampleLabel, Figures, SimulationBlock, type Figure } from "./blocks/DataBlocks";
 import { Locked, PageHead } from "./blocks/PageBlocks";
+import { formatDelta } from "./blocks/ScoreFigure";
 
 /**
  * Registerdelen av sidan. Ett objekt bär datan, där varje fält kan saknas för
@@ -74,6 +78,19 @@ export type MarketLock = { unlocksAfterStep: number } | "notInScenario" | null;
  */
 export type SniPicker = { basePath: string; current: string | null; invalid: boolean };
 
+/**
+ * Spara registerbilden som underlag i resan (bara /app, beslut 2026-10-04).
+ * `onSave` är en Server Action som hämtar siffrorna på nytt på servern; bara
+ * SNI-koden skickas.
+ */
+export type MarketEvidence = {
+  onSave: (
+    sniCode: string,
+  ) => Promise<{ ok: true; total: number; delta: number } | { ok: false; reason: string }>;
+  /** Poäng-sidan, dit den nya poängen länkar (CLAUDE.md, undantaget för uträknade sammanfattningar). */
+  scoreHref: string;
+};
+
 type M = Dictionary["marketPage"];
 type RegistryTag = { source: Källa; dataType: DataType };
 
@@ -95,11 +112,13 @@ export function Market({
   dataKind,
   locked,
   sniPicker,
+  evidence,
 }: {
   data: MarketData;
   dataKind: DataKind;
   locked: MarketLock;
   sniPicker?: SniPicker;
+  evidence?: MarketEvidence;
 }) {
   const { t, locale } = useI18n();
   const m = t.marketPage;
@@ -249,6 +268,10 @@ export function Market({
         )}
       </section>
 
+      {evidence && overview && sniPicker?.current && (
+        <SaveEvidence evidence={evidence} sniCode={sniPicker.current} m={m} />
+      )}
+
       <section className="fdd-block" aria-labelledby="fdd-market-sim" data-tour-id="market-simulation">
         <h2 id="fdd-market-sim" className="fdd-block__title">
           {m.simulationTitle}
@@ -393,6 +416,53 @@ function Outreach({
       </dl>
       <SourceTag source={source} dataType={dataKind === "example" ? "example" : "customer"} />
     </>
+  );
+}
+
+/** Spara registerbilden som underlag: en knapp, och efteråt den nya poängen med länk. */
+function SaveEvidence({ evidence, sniCode, m }: { evidence: MarketEvidence; sniCode: string; m: M }) {
+  const copy = m.evidence;
+  const [state, setState] = useState<"idle" | "saving" | "failed">("idle");
+  const [result, setResult] = useState<{ total: number; delta: number } | null>(null);
+
+  async function save() {
+    setState("saving");
+    const outcome = await evidence.onSave(sniCode).catch(() => ({ ok: false as const, reason: "failed" }));
+    if (outcome.ok) {
+      setResult({ total: outcome.total, delta: outcome.delta });
+      setState("idle");
+    } else {
+      setState("failed");
+    }
+  }
+
+  return (
+    <section className="fdd-block fd-panel" aria-labelledby="fdd-market-evidence">
+      <h2 id="fdd-market-evidence" className="fdd-block__title">
+        {copy.title}
+      </h2>
+      <p className="fdd-muted">{copy.lede}</p>
+      {result ? (
+        <p className="fdd-note" role="status">
+          {result.delta === 0 ? (
+            copy.saved
+          ) : (
+            <Link href={evidence.scoreHref}>
+              {fill(copy.scoreAfter, { total: String(result.total), delta: formatDelta(result.delta) })}
+            </Link>
+          )}
+        </p>
+      ) : (
+        <button type="button" className="fd-btn fd-btn--primary fd-btn--sm fdd-self-start" onClick={save} disabled={state === "saving"}>
+          {state === "saving" ? copy.saving : copy.save}
+        </button>
+      )}
+      {state === "failed" && (
+        <p className="fdd-muted" role="alert">
+          {copy.failed}
+        </p>
+      )}
+    </section>
   );
 }
 

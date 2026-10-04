@@ -475,6 +475,20 @@ export type Dictionary = {
     sniPickerSubmit: string;
     sniPrompt: string;
     sniInvalid: string;
+    /** Spara registerbilden som underlag för steg 03 och 04 (systembevis, beslut 2026-10-04). */
+    evidence: {
+      title: string;
+      lede: string;
+      save: string;
+      saving: string;
+      /** {total} är den nya poängen, {delta} förändringen med tecken. */
+      scoreAfter: string;
+      saved: string;
+      failed: string;
+      /** Bevisets citat. {count} antal, {sni} SNI-koden. */
+      countQuote: string;
+      competitorsQuote: string;
+    };
     sniChooseFirst: string;
     dataLayers: {
       title: string;

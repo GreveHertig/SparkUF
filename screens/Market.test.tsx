@@ -1,5 +1,5 @@
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { LocaleProvider } from "@/i18n/context";
 import { sv } from "@/i18n/sv";
@@ -237,5 +237,56 @@ describe("Market", () => {
       </LocaleProvider>,
     );
     expect(screen.queryByLabelText(m.sniPickerLabel)).not.toBeInTheDocument();
+  });
+});
+
+describe("Market: spara registerbilden som underlag", () => {
+  const picker: SniPicker = { basePath: "/app/marknad", current: "69.201", invalid: false };
+
+  it("visas bara med en vald bransch och en marknadsbild, och sparar bara SNI-koden", async () => {
+    const onSave = vi.fn(async () => ({ ok: true as const, total: 30, delta: 6 }));
+    render(
+      <LocaleProvider>
+        <Market data={baseData([])} dataKind="live" locked={null} sniPicker={picker} evidence={{ onSave, scoreHref: "/app/poang" }} />
+      </LocaleProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: m.evidence.save }));
+    const link = await screen.findByRole("link", { name: "Sparat. Poängen är nu 30 (+6)" });
+    expect(link).toHaveAttribute("href", "/app/poang");
+    expect(onSave).toHaveBeenCalledWith("69.201");
+  });
+
+  it("utan vald bransch eller utan marknadsbild finns ingen knapp", () => {
+    const onSave = vi.fn();
+    const { rerender } = render(
+      <LocaleProvider>
+        <Market
+          data={baseData([])}
+          dataKind="live"
+          locked={null}
+          sniPicker={{ ...picker, current: null }}
+          evidence={{ onSave, scoreHref: "/app/poang" }}
+        />
+      </LocaleProvider>,
+    );
+    expect(screen.queryByRole("button", { name: m.evidence.save })).not.toBeInTheDocument();
+    rerender(
+      <LocaleProvider>
+        <Market data={{ ...baseData([]), registry: "closed" }} dataKind="live" locked={null} sniPicker={picker} evidence={{ onSave, scoreHref: "/app/poang" }} />
+      </LocaleProvider>,
+    );
+    expect(screen.queryByRole("button", { name: m.evidence.save })).not.toBeInTheDocument();
+  });
+
+  it("ett misslyckat sparande säger det, utan att visa en poäng", async () => {
+    const onSave = vi.fn(async () => ({ ok: false as const, reason: "failed" }));
+    render(
+      <LocaleProvider>
+        <Market data={baseData([])} dataKind="live" locked={null} sniPicker={picker} evidence={{ onSave, scoreHref: "/app/poang" }} />
+      </LocaleProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: m.evidence.save }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(m.evidence.failed);
+    expect(screen.queryByRole("link", { name: /Poängen är nu/ })).not.toBeInTheDocument();
   });
 });
